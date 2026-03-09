@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     stock_provider: str = "pexels"  # "pexels"
     pexels_api_key: SecretStr = SecretStr("")
 
+    # --- Assembly ---
+    ffmpeg_path: str = "ffmpeg"
+
     # --- Cache ---
     cache_backend: str = "file"  # "file" | "redis"
     cache_dir: Path = Path(".cache/llm")
