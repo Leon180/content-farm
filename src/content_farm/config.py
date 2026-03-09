@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     fish_audio_api_key: SecretStr = SecretStr("")
     fish_audio_reference_id: str = ""
 
+    # --- Visual ---
+    stock_provider: str = "pexels"  # "pexels"
+    pexels_api_key: SecretStr = SecretStr("")
+
     # --- Cache ---
     cache_backend: str = "file"  # "file" | "redis"
     cache_dir: Path = Path(".cache/llm")
