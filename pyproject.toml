@@ -1,0 +1,43 @@
+[project]
+name = "content-farm"
+version = "0.1.0"
+description = "YouTube Content Factory automation system"
+requires-python = ">=3.10"
+dependencies = [
+    "anthropic>=0.52.0,<1",
+    "pydantic>=2.10,<3",
+    "pydantic-settings>=2.7,<3",
+    "redis>=5.0,<8",
+    "tenacity>=9.0,<10",
+    "elevenlabs>=1.0,<3",
+    "fish-audio-sdk>=1.0,<2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0,<10",
+    "pytest-asyncio>=0.24,<2",
+    "pytest-cov>=6.0,<8",
+    "ruff>=0.9,<1",
+    "mypy>=1.14,<2",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/content_farm"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+plugins = ["pydantic.mypy"]
