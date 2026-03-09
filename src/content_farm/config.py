@@ -37,6 +37,13 @@ class Settings(BaseSettings):
     # --- Assembly ---
     ffmpeg_path: str = "ffmpeg"
 
+    # --- Subtitle ---
+    subtitle_provider: str = "estimation"  # "estimation"
+
+    # --- Thumbnail ---
+    thumbnail_provider: str = "pillow"  # "pillow"
+    thumbnail_font_path: str = ""  # Path to CJK font file
+
     # --- Cache ---
     cache_backend: str = "file"  # "file" | "redis"
     cache_dir: Path = Path(".cache/llm")

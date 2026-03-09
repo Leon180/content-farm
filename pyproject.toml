@@ -11,6 +11,7 @@ dependencies = [
     "tenacity>=9.0,<10",
     "elevenlabs>=1.0,<3",
     "fish-audio-sdk>=1.0,<2",
+    "Pillow>=10.0,<12",
 ]
 
 [project.optional-dependencies]
