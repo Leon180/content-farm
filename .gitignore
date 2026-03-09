@@ -37,3 +37,13 @@ htmlcov/
 
 # Claude
 .claude/
+
+# Security
+security/
+
+# Pipeline output
+output/
+
+# Generated docs / research notes
+docs/
+RESEARCH_*.md

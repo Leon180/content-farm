@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     llm_expensive_model: str = "claude-sonnet-4-6"
 
     # --- Voice ---
-    tts_provider: str = "elevenlabs"  # "elevenlabs" | "fish_audio"
+    tts_provider: str = "fish_audio"  # "fish_audio" | "elevenlabs"
     elevenlabs_api_key: SecretStr = SecretStr("")
     elevenlabs_voice_id: str = "JBFqnCBsd6RMkjVDRZzb"
     elevenlabs_model_id: str = "eleven_v3"
@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     # --- Visual ---
     stock_provider: str = "pexels"  # "pexels"
     pexels_api_key: SecretStr = SecretStr("")
+    image_provider: str = "gemini"  # "gemini" (for AI-generated images)
+    gemini_api_key: SecretStr = SecretStr("")
+    gemini_imagen_model: str = "imagen-4.0-generate-001"
 
     # --- Assembly ---
     ffmpeg_path: str = "ffmpeg"
@@ -62,6 +65,11 @@ class Settings(BaseSettings):
     # --- Content ---
     default_language: str = "zh-TW"  # zh-TW | en | ja | ko | etc.
 
+    # --- Google Drive ---
+    drive_credentials_path: str = ""  # Path to service account JSON
+    drive_folder_id: str = ""  # Shared Drive folder ID
+
     # --- Pipeline ---
+    pipeline_mode: str = "materials"  # "materials" | "full"
     max_concurrent_scenes: int = Field(default=5, ge=1, le=20)
     log_level: str = "INFO"

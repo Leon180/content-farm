@@ -13,6 +13,7 @@ from content_farm.script_gen.prompts import (
     build_outline_prompt,
     build_scene_narration_prompt,
 )
+from content_farm.types import VideoLength
 from content_farm.script_gen.schemas import (
     ExpandedScene,
     Scene,
@@ -109,6 +110,7 @@ class ScriptGenerator:
                 scene_number=scene_number,
                 total_scenes=total_scenes,
                 duration_seconds=duration_seconds,
+                is_short_form=request.video_length == VideoLength.SHORT,
             )
             cache_key = ResponseCache.make_key("scene", prompt)
 
@@ -152,5 +154,6 @@ class ScriptGenerator:
             language=request.language,
             total_duration_seconds=total_duration,
             tags=tuple(outline.tags) + tuple(request.keywords),
+            sources=tuple(outline.sources),
             ai_disclosure=True,
         )

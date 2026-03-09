@@ -49,6 +49,6 @@ class TestCreateTTSProvider:
         with pytest.raises(ValueError, match="CF_FISH_AUDIO_API_KEY"):
             create_tts_provider(settings)
 
-    def test_default_provider_is_elevenlabs(self) -> None:
+    def test_default_provider_is_fish_audio(self) -> None:
         settings = Settings()  # type: ignore[call-arg]
-        assert settings.tts_provider == "elevenlabs"
+        assert settings.tts_provider == "fish_audio"

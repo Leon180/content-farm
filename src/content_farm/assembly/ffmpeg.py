@@ -19,9 +19,11 @@ class FFmpegComposer:
         self,
         render_settings: AssemblySettings | None = None,
         ffmpeg_path: str = "ffmpeg",
+        ffprobe_path: str = "ffprobe",
     ) -> None:
         self._s = render_settings or AssemblySettings()
         self._ffmpeg = ffmpeg_path
+        self._ffprobe = ffprobe_path
 
     # ------------------------------------------------------------------
     # Public API (matches VideoComposer protocol)
@@ -86,7 +88,7 @@ class FFmpegComposer:
         )
         try:
             for path in scene_paths:
-                tmp.write(f"file '{path}'\n")
+                tmp.write(f"file '{path.resolve()}'\n")
             tmp.flush()
             tmp.close()
 
@@ -106,6 +108,28 @@ class FFmpegComposer:
 
         return output_path
 
+    async def generate_placeholder(
+        self,
+        *,
+        output_path: Path,
+        duration: float,
+    ) -> Path:
+        """Generate a black placeholder video with silence (C-3)."""
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        args = [
+            "-y",
+            "-f", "lavfi", "-i",
+            f"color=c=black:s={self._s.width}x{self._s.height}:r={self._s.fps}:d={duration:.2f}",
+            "-f", "lavfi", "-i", f"anullsrc=r=44100:cl=stereo",
+            "-t", f"{duration:.2f}",
+            "-c:v", "libx264", "-preset", "ultrafast",
+            "-c:a", "aac",
+            "-pix_fmt", self._s.pixel_format,
+            str(output_path),
+        ]
+        await self._run_ffmpeg(args)
+        return output_path
+
     async def final_render(
         self,
         *,
@@ -115,7 +139,12 @@ class FFmpegComposer:
         music_volume: float = 0.15,
         subtitle_path: Path | None = None,
     ) -> Path:
-        """Final render pass: background music, subtitles, YouTube specs."""
+        """Final render pass: background music, subtitles, YouTube specs.
+
+        Uses separate passes for subtitles (-vf) and audio mixing
+        (-filter_complex) because the subtitles filter path parsing
+        breaks inside filter_complex graphs.
+        """
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         has_music = background_music_path is not None
@@ -133,40 +162,66 @@ class FFmpegComposer:
             await self._run_ffmpeg(args)
             return output_path
 
-        # Build complex filter
-        args: list[str] = ["-y", "-i", str(video_path)]
+        # --- Pass 1: Burn subtitles with -vf (simple filter) ---
+        sub_tmpdir: tempfile.TemporaryDirectory | None = None
+        current_video = video_path
+        sub_intermediate: Path | None = None
 
-        filter_parts: list[str] = []
-        map_args: list[str] = ["-map", "0:v"]
-
-        if has_music:
-            args.extend(["-i", str(background_music_path)])
-            filter_parts.append("[0:a]volume=1.0[narration]")
-            filter_parts.append(
-                f"[1:a]volume={music_volume:.2f},"
-                "aloop=loop=-1:size=2000000000[music]"
-            )
-            filter_parts.append(
-                "[narration][music]amix=inputs=2:duration=first[aout]"
-            )
-            map_args.extend(["-map", "[aout]"])
-        else:
-            map_args.extend(["-map", "0:a"])
-
-        vf_filters: list[str] = []
         if has_subs:
-            # Escape special chars in subtitle path for FFmpeg filter
-            escaped_path = str(subtitle_path).replace("\\", "\\\\").replace(":", "\\:")
-            vf_filters.append(f"subtitles='{escaped_path}'")
+            sub_tmpdir = tempfile.TemporaryDirectory(prefix="cf_subs_")
+            sub_symlink = Path(sub_tmpdir.name) / "subs.srt"
+            sub_symlink.symlink_to(subtitle_path.resolve())
+            escaped = (
+                str(sub_symlink)
+                .replace("\\", "\\\\")
+                .replace(":", "\\:")
+                .replace("'", "\\'")
+            )
 
-        if filter_parts:
-            args.extend(["-filter_complex", ";".join(filter_parts)])
+            if has_music:
+                # Intermediate file — will do audio mixing in pass 2
+                sub_intermediate = output_path.with_suffix(".sub_tmp.mp4")
+                dest = sub_intermediate
+            else:
+                dest = output_path
 
-        if vf_filters:
-            args.extend(["-vf", ",".join(vf_filters)])
+            args = [
+                "-y",
+                "-i", str(video_path),
+                "-vf", f"subtitles={escaped}",
+                "-c:v", "libx264",
+                "-preset", self._s.preset,
+                "-crf", str(self._s.crf),
+                "-c:a", "aac",
+                "-b:a", self._s.audio_bitrate,
+                "-pix_fmt", self._s.pixel_format,
+                "-movflags", "+faststart",
+                str(dest),
+            ]
 
-        args.extend(map_args)
-        args.extend([
+            try:
+                await self._run_ffmpeg(args)
+            finally:
+                if sub_tmpdir is not None:
+                    sub_tmpdir.cleanup()
+
+            if not has_music:
+                return output_path
+            current_video = sub_intermediate
+
+        # --- Pass 2: Audio mixing with -filter_complex ---
+        assert has_music
+        args = [
+            "-y",
+            "-i", str(current_video),
+            "-i", str(background_music_path),
+            "-filter_complex",
+            f"[0:a]volume=1.0[narration];"
+            f"[1:a]volume={music_volume:.2f},"
+            f"aloop=loop=-1:size=2000000000[music];"
+            f"[narration][music]amix=inputs=2:duration=first[aout]",
+            "-map", "0:v",
+            "-map", "[aout]",
             "-c:v", "libx264",
             "-preset", self._s.preset,
             "-crf", str(self._s.crf),
@@ -175,9 +230,13 @@ class FFmpegComposer:
             "-pix_fmt", self._s.pixel_format,
             "-movflags", "+faststart",
             str(output_path),
-        ])
+        ]
 
-        await self._run_ffmpeg(args)
+        try:
+            await self._run_ffmpeg(args)
+        finally:
+            if sub_intermediate is not None:
+                sub_intermediate.unlink(missing_ok=True)
         return output_path
 
     # ------------------------------------------------------------------

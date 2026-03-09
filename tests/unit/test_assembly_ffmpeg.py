@@ -159,6 +159,7 @@ async def test_final_render_with_subtitles(
         )
 
     args = mock_exec.call_args[0]
+    # Subtitles-only uses -vf (simple filter), not -filter_complex
     assert "-vf" in args
     vf_idx = list(args).index("-vf")
     vf_str = args[vf_idx + 1]

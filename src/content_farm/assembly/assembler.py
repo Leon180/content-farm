@@ -7,6 +7,7 @@ import logging
 import re
 from pathlib import Path
 
+from content_farm.assembly.ffmpeg import FFmpegComposer
 from content_farm.assembly.protocol import VideoComposer
 from content_farm.assembly.schemas import (
     AssemblyArtifact,
@@ -116,10 +117,22 @@ class VideoAssembler:
         async with self._semaphore:
             output_path = self._output_dir / f"scene_{scene_number:03d}_composed.mp4"
 
-            # Use placeholder black video if no visual asset
-            effective_video = video_path or output_path.with_suffix(".placeholder.mp4")
+            # Generate placeholder black video if no visual asset (C-3)
+            effective_video = video_path
             if video_path is None:
-                logger.warning("Scene %d: no visual asset, using black placeholder", scene_number)
+                logger.warning("Scene %d: no visual asset, generating black placeholder", scene_number)
+                placeholder_path = output_path.with_suffix(".placeholder.mp4")
+                if isinstance(self._composer, FFmpegComposer):
+                    await self._composer.generate_placeholder(
+                        output_path=placeholder_path,
+                        duration=target_duration,
+                    )
+                    effective_video = placeholder_path
+                else:
+                    raise RuntimeError(
+                        f"Scene {scene_number}: no visual asset and composer "
+                        "does not support placeholder generation"
+                    )
 
             await self._composer.compose_scene(
                 video_path=effective_video,

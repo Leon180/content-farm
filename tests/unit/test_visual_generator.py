@@ -89,12 +89,11 @@ class TestBuildSearchQuery:
             keywords=("sea", "beach", "surf", "coast"),
         )
         query = _build_search_query(hint)
-        assert "ocean waves" in query
+        # When keywords exist, uses first 4 keywords (no description)
         assert "sea" in query
         assert "beach" in query
         assert "surf" in query
-        # Only first 3 keywords
-        assert "coast" not in query
+        assert "coast" in query
 
 
 class TestPickBestMatch:

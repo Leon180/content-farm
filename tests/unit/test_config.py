@@ -32,7 +32,7 @@ def test_settings_requires_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("CF_ANTHROPIC_API_KEY", raising=False)
 
     with pytest.raises(Exception):
-        Settings()  # type: ignore[call-arg]
+        Settings(_env_file=None)  # type: ignore[call-arg]
 
 
 def test_settings_secret_masking(monkeypatch: pytest.MonkeyPatch) -> None:

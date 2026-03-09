@@ -73,9 +73,11 @@ class ElevenLabsProvider:
             "model_id": self._model_id,
             "output_format": "mp3_44100_128",
         }
-        if previous_text is not None:
+        # previous_text/next_text only supported by older models, not eleven_v3
+        supports_context = self._model_id not in ("eleven_v3",)
+        if supports_context and previous_text is not None:
             kwargs["previous_text"] = previous_text[-1000:]
-        if next_text is not None:
+        if supports_context and next_text is not None:
             kwargs["next_text"] = next_text[:1000]
 
         stream = self._client.text_to_speech.convert(**kwargs)

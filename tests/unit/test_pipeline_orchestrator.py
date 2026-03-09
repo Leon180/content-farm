@@ -153,6 +153,8 @@ def settings(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
     s.subtitle_provider = "estimation"
     s.thumbnail_provider = "pillow"
     s.ffmpeg_path = "ffmpeg"
+    s.drive_credentials_path = ""
+    s.drive_folder_id = ""
     return s
 
 

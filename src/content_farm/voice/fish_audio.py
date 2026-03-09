@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from fishaudio import AsyncFishAudio
+from fish_audio_sdk import Session, TTSRequest
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class FishAudioProvider:
     """Async wrapper around Fish Audio text-to-speech API.
 
-    Fish Audio S1 excels at Chinese narration with natural prosody.
+    Fish Audio excels at Chinese narration with natural prosody.
     """
 
     def __init__(
@@ -21,7 +21,7 @@ class FishAudioProvider:
         api_key: str,
         reference_id: str = "",
     ) -> None:
-        self._client = AsyncFishAudio(api_key=api_key)
+        self._session = Session(apikey=api_key)
         self._reference_id = reference_id or None
 
     async def generate_speech(
@@ -37,7 +37,11 @@ class FishAudioProvider:
         if ref_id:
             kwargs["reference_id"] = ref_id
 
-        audio = await self._client.tts.convert(**kwargs)
+        request = TTSRequest(**kwargs)
+        chunks: list[bytes] = []
+        for chunk in self._session.tts(request):
+            chunks.append(chunk)
+        audio = b"".join(chunks)
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_bytes(audio)

@@ -29,7 +29,8 @@ class TestCreateVideoComposer:
             with pytest.raises(RuntimeError, match="FFmpeg binary not found"):
                 create_video_composer(settings)
 
-    def test_default_ffmpeg_path(self) -> None:
+    def test_default_ffmpeg_path(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("CF_FFMPEG_PATH", "ffmpeg")
         settings = Settings()  # type: ignore[call-arg]
         assert settings.ffmpeg_path == "ffmpeg"
 

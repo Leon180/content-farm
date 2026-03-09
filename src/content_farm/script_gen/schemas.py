@@ -28,6 +28,7 @@ class VisualHint(BaseModel):
     description: str
     style: str = "stock_footage"
     keywords: tuple[str, ...] = ()
+    source_preference: str = "auto"  # "auto" | "stock" | "ai"
 
 
 class Scene(BaseModel):
@@ -63,6 +64,7 @@ class SceneOutlineList(BaseModel):
     description: str
     scenes: tuple[SceneOutline, ...] = ()
     tags: tuple[str, ...] = ()
+    sources: tuple[str, ...] = ()
 
 
 class ExpandedScene(BaseModel):
@@ -92,6 +94,7 @@ class Script(PipelineArtifact):
     language: str = "zh-TW"
     total_duration_seconds: int = 0
     tags: tuple[str, ...] = ()
+    sources: tuple[str, ...] = ()
     ai_disclosure: bool = True
 
     @property
