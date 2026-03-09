@@ -1,0 +1,177 @@
+"""Google YouTube Data API v3 provider — OAuth2, resumable upload."""
+
+from __future__ import annotations
+
+import asyncio
+import logging
+from pathlib import Path
+
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
+
+from content_farm.youtube.schemas import UploadSettings
+
+logger = logging.getLogger(__name__)
+
+_SCOPES = [
+    "https://www.googleapis.com/auth/youtube.upload",
+    "https://www.googleapis.com/auth/youtube",
+    "https://www.googleapis.com/auth/youtube.force-ssl",
+]
+
+_TOKEN_URI = "https://oauth2.googleapis.com/token"
+
+
+class GoogleProvider:
+    """YouTube uploader using Google Data API v3 with OAuth2."""
+
+    def __init__(
+        self,
+        client_id: str,
+        client_secret: str,
+        refresh_token: str,
+    ) -> None:
+        self._client_id = client_id
+        self._client_secret = client_secret
+        self._refresh_token = refresh_token
+        self._service: object | None = None
+
+    def _build_credentials(self) -> Credentials:
+        """Reconstruct OAuth2 credentials from stored components."""
+        creds = Credentials(
+            token=None,
+            refresh_token=self._refresh_token,
+            token_uri=_TOKEN_URI,
+            client_id=self._client_id,
+            client_secret=self._client_secret,
+            scopes=_SCOPES,
+        )
+        creds.refresh(Request())
+        return creds
+
+    def _ensure_service(self) -> object:
+        """Lazily build the YouTube API service."""
+        if self._service is None:
+            creds = self._build_credentials()
+            self._service = build("youtube", "v3", credentials=creds)
+        return self._service
+
+    async def upload_video(
+        self,
+        *,
+        video_path: Path,
+        title: str,
+        description: str,
+        tags: tuple[str, ...] = (),
+        settings: UploadSettings | None = None,
+    ) -> str:
+        """Upload video via resumable upload. Returns video ID."""
+        s = settings or UploadSettings()
+        return await asyncio.to_thread(
+            self._upload_video_sync, video_path, title, description, tags, s,
+        )
+
+    def _upload_video_sync(
+        self,
+        video_path: Path,
+        title: str,
+        description: str,
+        tags: tuple[str, ...],
+        settings: UploadSettings,
+    ) -> str:
+        """Synchronous resumable upload with progress logging."""
+        service = self._ensure_service()
+
+        body = {
+            "snippet": {
+                "title": title,
+                "description": description,
+                "tags": list(tags),
+                "categoryId": settings.category_id,
+                "defaultLanguage": settings.default_language,
+                "defaultAudioLanguage": settings.default_language,
+            },
+            "status": {
+                "privacyStatus": settings.privacy_status,
+                "madeForKids": settings.made_for_kids,
+            },
+        }
+
+        media = MediaFileUpload(
+            str(video_path),
+            mimetype="video/mp4",
+            resumable=True,
+            chunksize=settings.chunk_size_bytes,
+        )
+
+        request = service.videos().insert(  # type: ignore[union-attr]
+            part="snippet,status",
+            body=body,
+            media_body=media,
+        )
+
+        response = None
+        while response is None:
+            status, response = request.next_chunk()
+            if status:
+                pct = int(status.progress() * 100)
+                logger.info("Upload progress: %d%%", pct)
+
+        video_id: str = response["id"]
+        logger.info(
+            "Video uploaded: id=%s title=%r privacy=%s",
+            video_id, title, settings.privacy_status,
+        )
+        return video_id
+
+    async def set_thumbnail(
+        self,
+        *,
+        video_id: str,
+        thumbnail_path: Path,
+    ) -> None:
+        """Set custom thumbnail for an uploaded video."""
+        await asyncio.to_thread(self._set_thumbnail_sync, video_id, thumbnail_path)
+
+    def _set_thumbnail_sync(self, video_id: str, thumbnail_path: Path) -> None:
+        service = self._ensure_service()
+        media = MediaFileUpload(str(thumbnail_path), mimetype="image/jpeg")
+        service.thumbnails().set(  # type: ignore[union-attr]
+            videoId=video_id,
+            media_body=media,
+        ).execute()
+        logger.info("Thumbnail set for video %s", video_id)
+
+    async def set_captions(
+        self,
+        *,
+        video_id: str,
+        caption_path: Path,
+        language: str = "zh-TW",
+    ) -> None:
+        """Upload SRT captions for an uploaded video."""
+        await asyncio.to_thread(
+            self._set_captions_sync, video_id, caption_path, language,
+        )
+
+    def _set_captions_sync(
+        self, video_id: str, caption_path: Path, language: str,
+    ) -> None:
+        service = self._ensure_service()
+        body = {
+            "snippet": {
+                "videoId": video_id,
+                "language": language,
+                "name": f"{language} captions",
+                "isDraft": False,
+            },
+        }
+        media = MediaFileUpload(str(caption_path), mimetype="application/octet-stream")
+        service.captions().insert(  # type: ignore[union-attr]
+            part="snippet",
+            body=body,
+            media_body=media,
+        ).execute()
+        logger.info("Captions uploaded for video %s (lang=%s)", video_id, language)

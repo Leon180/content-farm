@@ -12,6 +12,9 @@ dependencies = [
     "elevenlabs>=1.0,<3",
     "fish-audio-sdk>=1.0,<2",
     "Pillow>=10.0,<12",
+    "google-api-python-client>=2.80,<3",
+    "google-auth-oauthlib>=1.0,<2",
+    "google-auth-httplib2>=0.2,<1",
 ]
 
 [project.optional-dependencies]

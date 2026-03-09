@@ -44,6 +44,12 @@ class Settings(BaseSettings):
     thumbnail_provider: str = "pillow"  # "pillow"
     thumbnail_font_path: str = ""  # Path to CJK font file
 
+    # --- YouTube Upload ---
+    youtube_provider: str = "google"  # "google"
+    youtube_client_id: SecretStr = SecretStr("")
+    youtube_client_secret: SecretStr = SecretStr("")
+    youtube_refresh_token: SecretStr = SecretStr("")
+
     # --- Cache ---
     cache_backend: str = "file"  # "file" | "redis"
     cache_dir: Path = Path(".cache/llm")
