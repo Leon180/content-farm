@@ -50,6 +50,10 @@ class Settings(BaseSettings):
     youtube_client_secret: SecretStr = SecretStr("")
     youtube_refresh_token: SecretStr = SecretStr("")
 
+    # --- Telegram ---
+    telegram_bot_token: SecretStr = SecretStr("")  # from @BotFather
+    telegram_chat_id: str = ""  # your chat ID (from @userinfobot)
+
     # --- Cache ---
     cache_backend: str = "file"  # "file" | "redis"
     cache_dir: Path = Path(".cache/llm")
