@@ -18,6 +18,7 @@ class ThumbnailProvider(Protocol):
         title: str,
         output_path: Path,
         video_path: Path | None = None,
+        background_image_path: Path | None = None,
         settings: ThumbnailSettings | None = None,
     ) -> int:
         """Render a YouTube thumbnail image.
@@ -26,6 +27,7 @@ class ThumbnailProvider(Protocol):
             title: Text to overlay on the thumbnail.
             output_path: Where to save the JPEG.
             video_path: Optional MP4 for keyframe extraction.
+            background_image_path: Optional stock photo for background.
             settings: Render parameters (uses defaults if None).
 
         Returns:

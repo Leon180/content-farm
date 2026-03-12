@@ -1,41 +1,28 @@
-"""Content pipeline orchestrator — wires all stages together."""
+"""Content pipeline orchestrator — wires stages, checkpoints, and notifications."""
 
 from __future__ import annotations
 
 import asyncio
 import logging
-import re
-from datetime import datetime, timezone
+import shutil
 from pathlib import Path
 
 from pydantic import BaseModel
 
-from content_farm.assembly.assembler import VideoAssembler
-from content_farm.assembly.factory import create_video_composer
-from content_farm.assembly.schemas import AssemblyArtifact, AssemblyInput
+from content_farm.assembly.schemas import AssemblyArtifact
 from content_farm.config import Settings
-from content_farm.llm.cache import FileCache, NullCache, ResponseCache
-from content_farm.llm.client import LLMClient
+from content_farm.pipeline import stages
+from content_farm.pipeline.container import ServiceContainer
+from content_farm.pipeline.context import PipelineContext, create_run_dir
 from content_farm.pipeline.state import PipelineStateDB, RunStatus
-from content_farm.script_gen.generator import ScriptGenerator
 from content_farm.script_gen.schemas import Script, ScriptRequest
-from content_farm.subtitle.factory import create_subtitle_provider
-from content_farm.subtitle.generator import SubtitleGenerator
-from content_farm.subtitle.schemas import SubtitleArtifact, SubtitleInput
+from content_farm.subtitle.schemas import SubtitleArtifact
 from content_farm.telegram.approval import ApprovalGate
 from content_farm.telegram.bot import TelegramBot
-from content_farm.thumbnail.factory import create_thumbnail_provider
-from content_farm.thumbnail.generator import ThumbnailGenerator
-from content_farm.thumbnail.schemas import ThumbnailArtifact, ThumbnailInput
-from content_farm.visual.factory import create_image_provider, create_stock_provider
-from content_farm.visual.generator import VisualGenerator
+from content_farm.thumbnail.schemas import ThumbnailArtifact
 from content_farm.visual.schemas import VisualArtifact
-from content_farm.voice.factory import create_tts_provider
-from content_farm.voice.generator import VoiceGenerator
 from content_farm.voice.schemas import VoiceArtifact
-from content_farm.youtube.factory import create_youtube_uploader
-from content_farm.youtube.generator import UploadGenerator
-from content_farm.youtube.schemas import UploadArtifact, UploadInput
+from content_farm.youtube.schemas import UploadArtifact
 
 logger = logging.getLogger(__name__)
 
@@ -72,12 +59,12 @@ class MaterialsResult(BaseModel):
 class ContentPipeline:
     """Orchestrates the full content creation pipeline.
 
-    Supports two modes:
-    - **materials**: Script → Voice → Subtitle → Template video → Drive upload
-    - **full**: Script → Voice + Visual → Subtitle + Thumbnail → Assembly → Upload
+    Two modes:
+    - **materials**: Script -> Voice -> Subtitle -> Template video -> Drive
+    - **full**: Script -> Voice+Visual -> Subtitle+Thumbnail -> Assembly -> Upload
 
     Supports checkpoint/resume: each stage saves its result to SQLite.
-    On failure, `resume(run_id)` restarts from the last incomplete stage.
+    On failure, ``resume(run_id)`` restarts from the last incomplete stage.
     """
 
     def __init__(
@@ -87,11 +74,14 @@ class ContentPipeline:
         output_dir: Path | None = None,
         use_cache: bool = True,
         skip_upload: bool = False,
+        container: ServiceContainer | None = None,
     ) -> None:
         self._settings = settings
         self._base_output_dir = output_dir or Path("output")
-        self._use_cache = use_cache
         self._skip_upload = skip_upload
+        self._container = container or ServiceContainer(
+            settings, use_cache=use_cache,
+        )
         self._db = PipelineStateDB(self._base_output_dir / "pipeline_state.db")
 
     # ------------------------------------------------------------------
@@ -100,73 +90,113 @@ class ContentPipeline:
 
     async def run_materials(self, request: ScriptRequest) -> MaterialsResult:
         """Generate script + voice + subtitles + template video, deliver via Drive."""
-        run_dir = self._create_run_dir(request.topic)
+        gate, bot = self._init_telegram()
+        try:
+            return await self.run_materials_with_gate(request, gate)
+        finally:
+            if bot is not None:
+                await bot.close()
+
+    async def run_materials_with_gate(
+        self, request: ScriptRequest, gate: ApprovalGate,
+    ) -> MaterialsResult:
+        """Run materials pipeline with an externally-managed ApprovalGate."""
+        run_dir = create_run_dir(self._base_output_dir, request.topic)
         run_id = self._db.create_run(request.topic, str(run_dir))
+        ctx = PipelineContext(
+            settings=self._settings, run_id=run_id,
+            run_dir=run_dir, gate=gate, mode="materials",
+        )
         logger.info("Materials pipeline started — run=%s output=%s", run_id, run_dir)
 
-        gate, bot = self._init_telegram()
-        llm = LLMClient(api_key=self._settings.anthropic_api_key.get_secret_value())
-
         try:
-            # --- Stage 1: Script Generation ---
-            logger.info("[1/5] Generating script...")
-            script = await self._generate_script(llm, request)
-            logger.info("Script ready: %s (%d scenes)", script.video_title, len(script.scenes))
-
-            self._db.save_script(run_id, script.model_dump_json())
-            self._db.save_checkpoint(run_id, "script")
-
-            # --- Telegram: check script (with editing) ---
-            approval = await gate.check_script(script)
-            if approval.edited_script is not None:
-                script = approval.edited_script
-                self._db.save_script(run_id, script.model_dump_json())
-                logger.info("Script updated by user edits")
-
-            # --- Stage 2: Voice Generation ---
-            logger.info("[2/5] Generating voice...")
-            voice = await self._generate_voice(script, run_dir / "audio")
-            self._db.save_checkpoint(run_id, "voice", voice.model_dump_json())
-
-            # --- Stage 3: Subtitle Generation ---
-            logger.info("[3/5] Generating subtitles...")
-            subtitle = await self._generate_subtitle(script, voice, run_dir / "subtitles")
-            self._db.save_checkpoint(run_id, "subtitle", subtitle.model_dump_json())
-
-            # --- Stage 4: Template Video (blank bg + voice + subtitles) ---
-            logger.info("[4/5] Creating template video...")
-            template_path = await self._create_template_video(
-                script, voice, subtitle, run_dir,
-            )
-
-            # --- Stage 5: Upload to Google Drive ---
-            logger.info("[5/5] Uploading to Google Drive...")
-            drive_link = await self._upload_to_drive(run_dir)
-
-            # --- Telegram: deliver materials ---
-            await gate.deliver_materials(script, drive_link)
-
-            self._db.set_run_status(run_id, RunStatus.COMPLETED)
-
-            result = MaterialsResult(
-                script=script,
-                voice=voice,
-                subtitle=subtitle,
-                template_video_path=str(template_path),
-                drive_link=drive_link,
+            await self._run_materials_flow(ctx, request)
+            return MaterialsResult(
+                script=ctx.script,
+                voice=ctx.voice,
+                subtitle=ctx.subtitle,
+                template_video_path=ctx.template_video_path,
+                drive_link=ctx.drive_link,
                 output_dir=str(run_dir),
             )
-            logger.info("Materials pipeline complete — run=%s", run_id)
-            return result
-
         except Exception as exc:
             self._db.set_run_status(run_id, RunStatus.FAILED)
             await self._notify_error(gate, exc, run_id)
             raise
         finally:
-            await llm.close()
-            if bot is not None:
-                await bot.close()
+            await self._container.close()
+
+    async def resume_with_gate(
+        self, run_id: str, gate: ApprovalGate,
+    ) -> MaterialsResult:
+        """Resume a failed run from the last completed checkpoint."""
+        ctx = self._load_context(run_id, gate, mode="materials")
+        logger.info(
+            "Resuming run %s — completed: %s",
+            run_id, ctx.completed_stages,
+        )
+
+        try:
+            await self._run_materials_flow(ctx)
+            return MaterialsResult(
+                script=ctx.script,
+                voice=ctx.voice,
+                subtitle=ctx.subtitle,
+                template_video_path=ctx.template_video_path,
+                drive_link=ctx.drive_link,
+                output_dir=str(ctx.run_dir),
+            )
+        except Exception as exc:
+            self._db.set_run_status(run_id, RunStatus.FAILED)
+            await self._notify_error(gate, exc, run_id)
+            raise
+        finally:
+            await self._container.close()
+
+    async def _run_materials_flow(
+        self,
+        ctx: PipelineContext,
+        request: ScriptRequest | None = None,
+    ) -> None:
+        """Shared materials pipeline logic (used by both run and resume)."""
+        # 1. Script
+        if request is not None:
+            await self._run_stage(
+                ctx, "script", 1, 5, "正在生成腳本...",
+                stages.run_script_stage, request=request,
+            )
+        else:
+            self._restore_artifact(ctx, "script")
+        await self._check_script_approval(ctx)
+
+        # 2. Voice
+        await self._run_stage(
+            ctx, "voice", 2, 5, "正在生成語音...",
+            stages.run_voice_stage,
+        )
+
+        # 3. Subtitle
+        await self._run_stage(
+            ctx, "subtitle", 3, 5, "正在生成字幕...",
+            stages.run_subtitle_stage,
+        )
+
+        # 4. Template video (blank bg + assembly + credits)
+        if not ctx.is_completed("assembly"):
+            await ctx.gate.notify_progress(4, 5, "正在建立模板影片...")
+            await stages.run_blank_visual_stage(ctx, self._container)
+            await stages.run_template_video_stage(ctx, self._container)
+            self._save_checkpoint(ctx, "assembly")
+
+        # 5. Drive upload
+        await self._run_stage(
+            ctx, "drive", 5, 5, "正在上傳至 Google Drive...",
+            stages.run_drive_stage,
+        )
+
+        await ctx.gate.deliver_materials(ctx.script, ctx.drive_link)
+        self._db.set_run_status(ctx.run_id, RunStatus.COMPLETED)
+        logger.info("Materials pipeline complete — run=%s", ctx.run_id)
 
     # ------------------------------------------------------------------
     # Full pipeline mode
@@ -174,27 +204,24 @@ class ContentPipeline:
 
     async def run(self, request: ScriptRequest) -> PipelineResult:
         """Execute the full content pipeline."""
-        run_dir = self._create_run_dir(request.topic)
+        run_dir = create_run_dir(self._base_output_dir, request.topic)
         run_id = self._db.create_run(request.topic, str(run_dir))
+        gate, bot = self._init_telegram()
+        ctx = PipelineContext(
+            settings=self._settings, run_id=run_id,
+            run_dir=run_dir, gate=gate, mode="full",
+        )
         logger.info("Pipeline started — run=%s output=%s", run_id, run_dir)
 
-        gate, bot = self._init_telegram()
-        llm = LLMClient(api_key=self._settings.anthropic_api_key.get_secret_value())
-
         try:
-            logger.info("[1/7] Generating script...")
-            script = await self._generate_script(llm, request)
-            logger.info("Script ready: %s (%d scenes)", script.video_title, len(script.scenes))
+            # 1. Script
+            await self._run_stage(
+                ctx, "script", 1, 5, "正在生成腳本...",
+                stages.run_script_stage, request=request,
+            )
+            await self._check_script_approval(ctx)
 
-            self._db.save_script(run_id, script.model_dump_json())
-            self._db.save_checkpoint(run_id, "script")
-
-            approval = await gate.check_script(script)
-            if approval.edited_script is not None:
-                script = approval.edited_script
-                self._db.save_script(run_id, script.model_dump_json())
-
-            result = await self._run_production(script, run_dir, gate, run_id)
+            result = await self._run_production(ctx)
             await self._notify_success(gate, result)
             return result
 
@@ -203,23 +230,28 @@ class ContentPipeline:
             await self._notify_error(gate, exc, run_id)
             raise
         finally:
-            await llm.close()
+            await self._container.close()
             if bot is not None:
                 await bot.close()
 
     async def run_from_script(self, script: Script) -> PipelineResult:
-        """Run production stages from a pre-approved script (skip generation + approval)."""
+        """Run production stages from a pre-approved script."""
         topic = script.video_title or "untitled"
-        run_dir = self._create_run_dir(topic)
+        run_dir = create_run_dir(self._base_output_dir, topic)
         run_id = self._db.create_run(topic, str(run_dir))
-        logger.info("Pipeline started from script — run=%s output=%s", run_id, run_dir)
+        gate, bot = self._init_telegram()
+        ctx = PipelineContext(
+            settings=self._settings, run_id=run_id,
+            run_dir=run_dir, gate=gate, mode="full",
+        )
+        ctx.script = script
 
         self._db.save_script(run_id, script.model_dump_json())
         self._db.save_checkpoint(run_id, "script")
+        ctx.mark_completed("script")
 
-        gate, bot = self._init_telegram()
         try:
-            result = await self._run_production(script, run_dir, gate, run_id)
+            result = await self._run_production(ctx, step_offset=0, total_steps=4)
             await self._notify_success(gate, result)
             return result
         except Exception as exc:
@@ -231,32 +263,20 @@ class ContentPipeline:
                 await bot.close()
 
     async def resume(self, run_id: str) -> PipelineResult:
-        """Resume a failed or interrupted pipeline run from its last checkpoint."""
+        """Resume a failed or interrupted full pipeline run."""
         run_info = self._db.get_run(run_id)
         if run_info is None:
             raise ValueError(f"Run not found: {run_id}")
 
-        run_dir = Path(run_info.output_dir)
         next_stage = self._db.get_next_stage(run_id)
-
         if next_stage is None:
             raise ValueError(f"Run {run_id} is already complete")
 
-        script_json = self._db.get_script_json(run_id)
-        if script_json is None:
-            raise ValueError(f"Run {run_id} has no saved script — cannot resume")
-
-        script = Script.model_validate_json(script_json)
-        logger.info(
-            "Resuming run %s from stage '%s' (completed: %s)",
-            run_id, next_stage, ", ".join(run_info.completed_stages),
-        )
-
-        self._db.set_run_status(run_id, RunStatus.IN_PROGRESS)
         gate, bot = self._init_telegram()
+        ctx = self._load_context(run_id, gate, mode="full")
 
         try:
-            result = await self._run_production(script, run_dir, gate, run_id)
+            result = await self._run_production(ctx, step_offset=0, total_steps=4)
             await self._notify_success(gate, result)
             return result
         except Exception as exc:
@@ -269,121 +289,208 @@ class ContentPipeline:
 
     async def _run_production(
         self,
-        script: Script,
-        run_dir: Path,
-        gate: ApprovalGate,
-        run_id: str,
+        ctx: PipelineContext,
+        *,
+        step_offset: int = 1,
+        total_steps: int = 5,
     ) -> PipelineResult:
-        """Run voice, visual, subtitle, thumbnail, assembly, and upload stages."""
-        completed = set((self._db.get_run(run_id) or _empty_run()).completed_stages)
+        """Run voice → visual → subtitle → thumbnail → assembly → upload → drive."""
+        step = step_offset
 
-        voice: VoiceArtifact
-        visual: VisualArtifact
+        # Voice + Visual (parallel)
+        step += 1
+        await self._run_parallel_stages(
+            ctx, step, total_steps, "正在生成語音 + 搜尋素材...",
+            ("voice", stages.run_voice_stage),
+            ("visual", stages.run_visual_stage),
+        )
+        # Visual approval (skip if resuming past this point)
+        if "subtitle" not in ctx.completed_stages and ctx.visual:
+            await ctx.gate.check_visuals(ctx.visual.assets)
 
-        if "voice" in completed and "visual" in completed:
-            logger.info("[2-3/7] Restoring voice + visual from checkpoint...")
-            voice = VoiceArtifact.model_validate(self._db.get_checkpoint(run_id, "voice"))
-            visual = VisualArtifact.model_validate(self._db.get_checkpoint(run_id, "visual"))
-        else:
-            logger.info("[2-3/7] Generating voice + visual (parallel)...")
-            voice, visual = await asyncio.gather(
-                self._generate_voice(script, run_dir / "audio"),
-                self._generate_visual(script, run_dir / "visual"),
+        # Subtitle + Thumbnail (parallel)
+        step += 1
+        await self._run_parallel_stages(
+            ctx, step, total_steps, "正在生成字幕 + 縮圖...",
+            ("subtitle", stages.run_subtitle_stage),
+            ("thumbnail", stages.run_thumbnail_stage),
+        )
+
+        # Assembly
+        step += 1
+        await self._run_stage(
+            ctx, "assembly", step, total_steps, "正在合成影片...",
+            stages.run_assembly_stage,
+        )
+
+        # YouTube upload
+        step += 1
+        if not self._skip_upload:
+            await self._run_stage(
+                ctx, "upload", step, total_steps, "正在上傳...",
+                stages.run_upload_stage,
             )
-            self._db.save_checkpoint(run_id, "voice", voice.model_dump_json())
-            self._db.save_checkpoint(run_id, "visual", visual.model_dump_json())
 
-        logger.info("Voice: %d segments, Visual: %d assets", len(voice.segments), len(visual.assets))
+        # Drive upload
+        await self._run_stage(
+            ctx, "drive", step, total_steps, None,
+            stages.run_drive_stage,
+        )
 
-        # Skip visual approval if already past this stage (resuming)
-        if "subtitle" not in completed:
-            await gate.check_visuals(visual.assets)
-
-        subtitle: SubtitleArtifact
-        thumbnail: ThumbnailArtifact
-
-        if "subtitle" in completed and "thumbnail" in completed:
-            logger.info("[4-5/7] Restoring subtitle + thumbnail from checkpoint...")
-            subtitle = SubtitleArtifact.model_validate(self._db.get_checkpoint(run_id, "subtitle"))
-            thumbnail = ThumbnailArtifact.model_validate(self._db.get_checkpoint(run_id, "thumbnail"))
-        else:
-            logger.info("[4-5/7] Generating subtitles + thumbnail (parallel)...")
-            subtitle, thumbnail = await asyncio.gather(
-                self._generate_subtitle(script, voice, run_dir / "subtitles"),
-                self._generate_thumbnail(script, run_dir / "thumbnails"),
-            )
-            self._db.save_checkpoint(run_id, "subtitle", subtitle.model_dump_json())
-            self._db.save_checkpoint(run_id, "thumbnail", thumbnail.model_dump_json())
-
-        assembly: AssemblyArtifact
-
-        if "assembly" in completed:
-            logger.info("[6/7] Restoring assembly from checkpoint...")
-            assembly = AssemblyArtifact.model_validate(self._db.get_checkpoint(run_id, "assembly"))
-        else:
-            logger.info("[6/7] Assembling video...")
-            assembly = await self._assemble_video(
-                script, voice, visual, subtitle, run_dir / "assembly",
-            )
-            self._db.save_checkpoint(run_id, "assembly", assembly.model_dump_json())
-
-        logger.info("Video assembled: %s", assembly.file_path)
-
-        upload: UploadArtifact | None = None
-        if "upload" in completed:
-            upload_data = self._db.get_checkpoint(run_id, "upload")
-            if upload_data:
-                upload = UploadArtifact.model_validate(upload_data)
-        elif not self._skip_upload and self._has_youtube_credentials():
-            logger.info("[7/7] Uploading to YouTube...")
-            upload = await self._upload_video(script, assembly, thumbnail, subtitle)
-            self._db.save_checkpoint(run_id, "upload", upload.model_dump_json())
-            logger.info("Uploaded: %s", upload.url)
-        else:
-            logger.info("[7/7] YouTube upload skipped")
-
-        # --- Google Drive upload ---
-        drive_link = ""
-        if "drive" in completed:
-            drive_link = self._db.get_checkpoint(run_id, "drive") or ""
-        elif self._settings.drive_credentials_path and self._settings.drive_folder_id:
-            logger.info("[8/8] Uploading to Google Drive...")
-            drive_link = await self._upload_to_drive(run_dir)
-            self._db.save_checkpoint(run_id, "drive", drive_link)
-            logger.info("Drive link: %s", drive_link)
-        else:
-            logger.info("[8/8] Google Drive upload skipped")
-
-        self._db.set_run_status(run_id, RunStatus.COMPLETED)
+        self._db.set_run_status(ctx.run_id, RunStatus.COMPLETED)
 
         # Clean up local files after successful Drive upload
-        if drive_link and drive_link.startswith("http"):
-            self._cleanup_local(run_dir)
+        if ctx.drive_link and ctx.drive_link.startswith("http"):
+            self._cleanup_local(ctx.run_dir)
 
         result = PipelineResult(
-            script=script,
-            voice=voice,
-            visual=visual,
-            subtitle=subtitle,
-            thumbnail=thumbnail,
-            assembly=assembly,
-            upload=upload,
-            drive_link=drive_link,
-            output_dir=str(run_dir),
+            script=ctx.script,
+            voice=ctx.voice,
+            visual=ctx.visual,
+            subtitle=ctx.subtitle,
+            thumbnail=ctx.thumbnail,
+            assembly=ctx.assembly,
+            upload=ctx.upload,
+            drive_link=ctx.drive_link,
+            output_dir=str(ctx.run_dir),
         )
-        logger.info("Pipeline complete — run=%s dir=%s", run_id, run_dir)
+        logger.info("Pipeline complete — run=%s dir=%s", ctx.run_id, ctx.run_dir)
         return result
 
     # ------------------------------------------------------------------
-    # Private helpers
+    # Stage execution helpers
     # ------------------------------------------------------------------
 
-    def _create_run_dir(self, topic: str) -> Path:
-        timestamp = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S")
-        safe_topic = re.sub(r"[^\w\u4e00-\u9fff]", "_", topic)[:30].strip("_")
-        run_dir = self._base_output_dir / f"{timestamp}_{safe_topic}"
-        run_dir.mkdir(parents=True, exist_ok=True)
-        return run_dir
+    async def _run_stage(
+        self,
+        ctx: PipelineContext,
+        stage_name: str,
+        step: int,
+        total: int,
+        progress_msg: str | None,
+        stage_fn,
+        **kwargs,
+    ) -> None:
+        """Run a single stage with checkpoint load/skip/save logic."""
+        if ctx.is_completed(stage_name):
+            self._restore_artifact(ctx, stage_name)
+            return
+
+        if progress_msg:
+            await ctx.gate.notify_progress(step, total, progress_msg)
+
+        logger.info("[%d/%d] Running stage: %s", step, total, stage_name)
+        await stage_fn(ctx, self._container, **kwargs)
+        self._save_checkpoint(ctx, stage_name)
+
+    async def _run_parallel_stages(
+        self,
+        ctx: PipelineContext,
+        step: int,
+        total: int,
+        progress_msg: str,
+        *stage_defs: tuple[str, ...],
+    ) -> None:
+        """Run multiple stages in parallel, skipping completed ones."""
+        all_completed = all(ctx.is_completed(name) for name, _ in stage_defs)
+        if all_completed:
+            for name, _ in stage_defs:
+                self._restore_artifact(ctx, name)
+            return
+
+        await ctx.gate.notify_progress(step, total, progress_msg)
+        logger.info("[%d/%d] Running parallel: %s", step, total,
+                    " + ".join(name for name, _ in stage_defs))
+
+        await asyncio.gather(*(
+            fn(ctx, self._container) for _, fn in stage_defs
+        ))
+        for name, _ in stage_defs:
+            self._save_checkpoint(ctx, name)
+
+    # ------------------------------------------------------------------
+    # Checkpoint helpers
+    # ------------------------------------------------------------------
+
+    _ARTIFACT_MAP: dict[str, tuple[type, str]] = {
+        "voice": (VoiceArtifact, "voice"),
+        "visual": (VisualArtifact, "visual"),
+        "subtitle": (SubtitleArtifact, "subtitle"),
+        "thumbnail": (ThumbnailArtifact, "thumbnail"),
+        "assembly": (AssemblyArtifact, "assembly"),
+        "upload": (UploadArtifact, "upload"),
+    }
+
+    def _save_checkpoint(self, ctx: PipelineContext, stage: str) -> None:
+        """Save artifact to DB after stage completion."""
+        if stage == "script" and ctx.script is not None:
+            self._db.save_script(ctx.run_id, ctx.script.model_dump_json())
+            self._db.save_checkpoint(ctx.run_id, "script")
+        elif stage == "drive":
+            self._db.save_checkpoint(ctx.run_id, "drive", ctx.drive_link)
+        elif stage in self._ARTIFACT_MAP:
+            _, attr = self._ARTIFACT_MAP[stage]
+            artifact = getattr(ctx, attr, None)
+            artifact_json = artifact.model_dump_json() if artifact else None
+            self._db.save_checkpoint(ctx.run_id, stage, artifact_json)
+        else:
+            self._db.save_checkpoint(ctx.run_id, stage)
+        ctx.mark_completed(stage)
+
+    def _restore_artifact(self, ctx: PipelineContext, stage: str) -> None:
+        """Load artifact from DB checkpoint into context."""
+        if stage == "script":
+            json_str = self._db.get_script_json(ctx.run_id)
+            if json_str:
+                ctx.script = Script.model_validate_json(json_str)
+            return
+
+        if stage == "drive":
+            ctx.drive_link = self._db.get_checkpoint(ctx.run_id, "drive") or ""
+            return
+
+        if stage in self._ARTIFACT_MAP:
+            data = self._db.get_checkpoint(ctx.run_id, stage)
+            if data is not None:
+                model_cls, attr = self._ARTIFACT_MAP[stage]
+                setattr(ctx, attr, model_cls.model_validate(data))
+
+    def _load_context(
+        self, run_id: str, gate: ApprovalGate, *, mode: str = "materials",
+    ) -> PipelineContext:
+        """Build PipelineContext from saved checkpoint data."""
+        run_info = self._db.get_run(run_id)
+        if run_info is None:
+            raise ValueError(f"Run not found: {run_id}")
+
+        ctx = PipelineContext(
+            settings=self._settings,
+            run_id=run_id,
+            run_dir=Path(run_info.output_dir),
+            gate=gate,
+            mode=mode,
+            completed_stages=set(run_info.completed_stages),
+        )
+
+        for stage_name in run_info.completed_stages:
+            self._restore_artifact(ctx, stage_name)
+
+        self._db.set_run_status(run_id, RunStatus.IN_PROGRESS)
+        return ctx
+
+    # ------------------------------------------------------------------
+    # Approval / notification helpers
+    # ------------------------------------------------------------------
+
+    async def _check_script_approval(self, ctx: PipelineContext) -> None:
+        """Send script for human review; apply edits if any."""
+        if ctx.script is None:
+            return
+        approval = await ctx.gate.check_script(ctx.script)
+        if approval.edited_script is not None:
+            ctx.script = approval.edited_script
+            self._db.save_script(ctx.run_id, ctx.script.model_dump_json())
+            logger.info("Script updated by user edits")
 
     def _init_telegram(self) -> tuple[ApprovalGate, TelegramBot | None]:
         token = self._settings.telegram_bot_token.get_secret_value()
@@ -393,21 +500,14 @@ class ContentPipeline:
             return ApprovalGate(bot=bot), bot
         return ApprovalGate(bot=None), None
 
-    def _cleanup_local(self, run_dir: Path) -> None:
-        """Remove large media files after successful Drive upload."""
-        import shutil
-
-        for subdir in ("assembly", "audio", "visual"):
-            target = run_dir / subdir
-            if target.is_dir():
-                shutil.rmtree(target)
-                logger.info("Cleaned up local: %s", target)
-
-    async def _notify_success(self, gate: ApprovalGate, result: PipelineResult) -> None:
+    async def _notify_success(
+        self, gate: ApprovalGate, result: PipelineResult,
+    ) -> None:
         try:
             await gate.notify_completion(
                 video_path=result.assembly.file_path,
                 output_dir=result.output_dir,
+                script=result.script,
                 upload_url=result.upload.url if result.upload else None,
                 drive_link=result.drive_link or None,
             )
@@ -422,143 +522,11 @@ class ContentPipeline:
         except Exception:
             logger.warning("Failed to send failure notification", exc_info=True)
 
-    def _has_youtube_credentials(self) -> bool:
-        return bool(
-            self._settings.youtube_client_id.get_secret_value()
-            and self._settings.youtube_client_secret.get_secret_value()
-            and self._settings.youtube_refresh_token.get_secret_value()
-        )
-
-    async def _generate_script(
-        self, llm: LLMClient, request: ScriptRequest,
-    ) -> Script:
-        cache: ResponseCache
-        if self._use_cache:
-            cache = FileCache(self._settings.cache_dir)
-        else:
-            cache = NullCache()
-        gen = ScriptGenerator(llm=llm, cache=cache, settings=self._settings)
-        return await gen.generate(request)
-
-    async def _generate_voice(self, script: Script, output_dir: Path) -> VoiceArtifact:
-        tts = create_tts_provider(self._settings)
-        gen = VoiceGenerator(tts=tts, settings=self._settings, output_dir=output_dir)
-        return await gen.generate(script)
-
-    async def _generate_visual(self, script: Script, output_dir: Path) -> VisualArtifact:
-        stock = create_stock_provider(self._settings)
-        image_provider = create_image_provider(self._settings)
-        gen = VisualGenerator(
-            stock=stock, settings=self._settings, output_dir=output_dir,
-            image_provider=image_provider,
-        )
-        return await gen.generate(script)
-
-    async def _generate_subtitle(
-        self, script: Script, voice: VoiceArtifact, output_dir: Path,
-    ) -> SubtitleArtifact:
-        provider = create_subtitle_provider(self._settings)
-        gen = SubtitleGenerator(provider=provider, settings=self._settings, output_dir=output_dir)
-        return await gen.generate(SubtitleInput(script=script, voice=voice))
-
-    async def _generate_thumbnail(
-        self, script: Script, output_dir: Path,
-    ) -> ThumbnailArtifact:
-        provider = create_thumbnail_provider(self._settings)
-        gen = ThumbnailGenerator(provider=provider, settings=self._settings, output_dir=output_dir)
-        return await gen.generate(ThumbnailInput(script=script))
-
-    async def _assemble_video(
-        self,
-        script: Script,
-        voice: VoiceArtifact,
-        visual: VisualArtifact,
-        subtitle: SubtitleArtifact,
-        output_dir: Path,
-    ) -> AssemblyArtifact:
-        composer = create_video_composer(self._settings)
-        assembler = VideoAssembler(
-            composer=composer, settings=self._settings, output_dir=output_dir,
-        )
-        return await assembler.generate(AssemblyInput(
-            script=script,
-            voice=voice,
-            visual=visual,
-            subtitle_path=subtitle.file_path or None,
-        ))
-
-    async def _create_template_video(
-        self,
-        script: Script,
-        voice: VoiceArtifact,
-        subtitle: SubtitleArtifact,
-        run_dir: Path,
-    ) -> Path:
-        """Create a template video: black background + voice + subtitles.
-
-        If the script has sources, appends a subtitle-only credits section
-        at the end (no voiceover).
-        """
-        from content_farm.visual.blank import generate_blank_visuals
-
-        visual = await generate_blank_visuals(
-            script, run_dir / "visual",
-            ffmpeg_path=self._settings.ffmpeg_path,
-        )
-        assembly = await self._assemble_video(
-            script, voice, visual, subtitle, run_dir / "assembly",
-        )
-        video_path = Path(assembly.file_path)
-
-        if script.sources:
-            from content_farm.assembly.sources import append_sources_to_video
-
-            video_path = await append_sources_to_video(
-                video_path,
-                script.sources,
-                run_dir / "assembly",
-                ffmpeg_path=self._settings.ffmpeg_path,
-            )
-
-        return video_path
-
-    async def _upload_to_drive(self, run_dir: Path) -> str:
-        """Upload run directory to Google Drive, return shareable link."""
-        from content_farm.drive.uploader import create_drive_uploader
-
-        uploader = create_drive_uploader(
-            credentials_path=self._settings.drive_credentials_path,
-            folder_id=self._settings.drive_folder_id,
-        )
-        if uploader is None:
-            logger.info("Google Drive not configured — skipping upload")
-            return f"file://{run_dir}"
-
-        folder_name = run_dir.name
-        return await uploader.upload_folder(run_dir, folder_name)
-
-    async def _upload_video(
-        self,
-        script: Script,
-        assembly: AssemblyArtifact,
-        thumbnail: ThumbnailArtifact,
-        subtitle: SubtitleArtifact,
-    ) -> UploadArtifact:
-        uploader = create_youtube_uploader(self._settings)
-        gen = UploadGenerator(uploader=uploader, settings=self._settings)
-        return await gen.generate(UploadInput(
-            script=script,
-            video_path=assembly.file_path,
-            thumbnail_path=thumbnail.file_path or None,
-            subtitle_path=subtitle.file_path or None,
-            tags=script.tags,
-        ))
-
-
-def _empty_run() -> PipelineStateDB:
-    """Placeholder for when get_run returns None mid-operation."""
-    from content_farm.pipeline.state import RunInfo
-    return RunInfo(
-        run_id="", topic="", status="", output_dir="",
-        completed_stages=(), created_at="", updated_at="",
-    )
+    @staticmethod
+    def _cleanup_local(run_dir: Path) -> None:
+        """Remove large media files after successful Drive upload."""
+        for subdir in ("assembly", "audio", "visual"):
+            target = run_dir / subdir
+            if target.is_dir():
+                shutil.rmtree(target)
+                logger.info("Cleaned up local: %s", target)

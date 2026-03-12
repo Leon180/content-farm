@@ -31,8 +31,9 @@ class Settings(BaseSettings):
     fish_audio_reference_id: str = ""
 
     # --- Visual ---
-    stock_provider: str = "pexels"  # "pexels"
+    stock_provider: str = "pexels"  # "pexels" | "pixabay" | "multi"
     pexels_api_key: SecretStr = SecretStr("")
+    pixabay_api_key: SecretStr = SecretStr("")
     image_provider: str = "gemini"  # "gemini" (for AI-generated images)
     gemini_api_key: SecretStr = SecretStr("")
     gemini_imagen_model: str = "imagen-4.0-generate-001"
@@ -71,5 +72,9 @@ class Settings(BaseSettings):
 
     # --- Pipeline ---
     pipeline_mode: str = "materials"  # "materials" | "full"
+    output_dir: str = "output"
     max_concurrent_scenes: int = Field(default=5, ge=1, le=20)
     log_level: str = "INFO"
+
+    # --- Daemon ---
+    project_root: Path = Path(".")  # Base path for security/ and other relative dirs

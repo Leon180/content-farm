@@ -23,17 +23,24 @@ class TestCreateStockProvider:
         provider = create_stock_provider(settings)
         assert type(provider).__name__ == "PexelsProvider"
 
-    def test_unknown_provider_raises(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("CF_STOCK_PROVIDER", "unknown")
-        settings = Settings()  # type: ignore[call-arg]
-        with pytest.raises(ValueError, match="Unknown stock provider"):
-            create_stock_provider(settings)
-
-    def test_pexels_missing_key_raises(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_no_keys_raises(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("CF_PEXELS_API_KEY", "")
         settings = Settings()  # type: ignore[call-arg]
-        with pytest.raises(ValueError, match="CF_PEXELS_API_KEY"):
+        with pytest.raises(ValueError, match="(?i)at least one stock video API key"):
             create_stock_provider(settings)
+
+    def test_both_keys_returns_multi(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("CF_PIXABAY_API_KEY", "test-pixabay-key")
+        settings = Settings()  # type: ignore[call-arg]
+        provider = create_stock_provider(settings)
+        assert type(provider).__name__ == "MultiStockProvider"
+
+    def test_pixabay_only(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("CF_PEXELS_API_KEY", "")
+        monkeypatch.setenv("CF_PIXABAY_API_KEY", "test-pixabay-key")
+        settings = Settings()  # type: ignore[call-arg]
+        provider = create_stock_provider(settings)
+        assert type(provider).__name__ == "PixabayProvider"
 
     def test_default_provider_is_pexels(self) -> None:
         settings = Settings()  # type: ignore[call-arg]

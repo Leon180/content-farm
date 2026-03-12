@@ -37,11 +37,17 @@ class ThumbnailGenerator:
 
         output_path = self._output_dir / "thumbnail.jpg"
         video_path = Path(thumb_input.video_path) if thumb_input.video_path else None
+        bg_path = (
+            Path(thumb_input.background_image_path)
+            if thumb_input.background_image_path
+            else None
+        )
 
         file_size = await self._provider.render(
             title=thumb_input.script.video_title,
             output_path=output_path,
             video_path=video_path,
+            background_image_path=bg_path,
             settings=self._thumb_settings,
         )
 

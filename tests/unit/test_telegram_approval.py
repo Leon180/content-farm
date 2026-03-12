@@ -14,6 +14,7 @@ from content_farm.telegram.approval import (
     _format_script,
     _is_approved,
     _parse_desc_edit,
+    _parse_keyword_edits,
     _parse_scene_edits,
     _parse_title_edit,
 )
@@ -268,7 +269,7 @@ class TestApprovalGateWithBot:
         sent_text = bot.send_message.call_args.args[0]
         assert "Pipeline 失敗" in sent_text
         assert "run123" in sent_text
-        assert "--resume" in sent_text
+        assert "/continue" in sent_text
 
     @pytest.mark.anyio()
     async def test_notify_completion_none_bot(self) -> None:
@@ -304,9 +305,10 @@ class TestApprovalGateWithBot:
     @pytest.mark.anyio()
     async def test_edit_button_triggers_edit_flow(self) -> None:
         bot = _make_bot()
-        # User clicks Edit, then sends edit text, then approves re-sent script
-        bot.wait_for_callback = AsyncMock(side_effect=["edit", "approve"])
-        bot.wait_for_reply = AsyncMock(return_value="場景1：修改後的旁白")
+        # User clicks Edit, sends edit text (via wait_for_callback), then approves re-sent
+        bot.wait_for_callback = AsyncMock(
+            side_effect=["edit", "場景1：修改後的旁白", "approve"],
+        )
         gate = ApprovalGate(bot=bot)
         script = _make_script(scene_count=2)
         result = await gate.check_script(script)
@@ -320,9 +322,10 @@ class TestApprovalGateWithBot:
     @pytest.mark.anyio()
     async def test_edit_button_invalid_format_retries(self) -> None:
         bot = _make_bot()
-        # Edit → invalid text → Edit prompt again → approve
-        bot.wait_for_callback = AsyncMock(side_effect=["edit", "approve"])
-        bot.wait_for_reply = AsyncMock(return_value="garbage text no scene format")
+        # Edit → invalid text (via wait_for_callback) → retry → approve
+        bot.wait_for_callback = AsyncMock(
+            side_effect=["edit", "garbage text no scene format", "approve"],
+        )
         gate = ApprovalGate(bot=bot)
         result = await gate.check_script(_make_script())
         assert result.approved is True
@@ -351,7 +354,8 @@ class TestApprovalGateWithBot:
         await gate.deliver_materials(script, "https://drive.google.com/test")
         calls = [c.args[0] for c in bot.send_message.call_args_list]
         assert any("Google Drive" in c for c in calls)
-        assert any("素材提示" in c for c in calls)
+        assert any("腳本" in c for c in calls)
+        assert any("分鏡稿" in c for c in calls)
 
     @pytest.mark.anyio()
     async def test_deliver_materials_none_bot(self) -> None:
@@ -534,3 +538,160 @@ class TestFormatScriptSources:
         assert "參考來源" in text
         assert "來源A" in text
         assert "來源B" in text
+
+
+# ---------------------------------------------------------------------------
+# Keyword display + editing
+# ---------------------------------------------------------------------------
+
+def _make_script_with_keywords(
+    keywords: tuple[str, ...] = ("airplane", "window", "round"),
+) -> Script:
+    scenes = (
+        Scene(
+            scene_number=1,
+            title="場景1",
+            narration="旁白1",
+            visual_hint=VisualHint(description="stock", keywords=keywords),
+            duration_seconds=10,
+        ),
+        Scene(
+            scene_number=2,
+            title="場景2",
+            narration="旁白2",
+            visual_hint=VisualHint(description="stock", keywords=("ocean", "wave")),
+            duration_seconds=10,
+        ),
+    )
+    return Script(
+        video_title="T",
+        description="D",
+        language="zh-TW",
+        scenes=scenes,
+    )
+
+
+class TestFormatScriptKeywords:
+    def test_keywords_displayed(self) -> None:
+        script = _make_script_with_keywords()
+        msgs = _format_script(script)
+        text = "\n".join(msgs)
+        assert "Keywords: airplane, window, round" in text
+        assert "Keywords: ocean, wave" in text
+
+    def test_no_keywords_no_line(self) -> None:
+        script = _make_script(scene_count=1)
+        msgs = _format_script(script)
+        text = "\n".join(msgs)
+        assert "Keywords:" not in text
+
+
+class TestParseKeywordEdits:
+    def test_single(self) -> None:
+        edits = _parse_keyword_edits("場景1關鍵字：cat, dog, fish")
+        assert edits == {1: ("cat", "dog", "fish")}
+
+    def test_multiple(self) -> None:
+        text = "場景1關鍵字：cat, dog\n場景2關鍵字：ocean, wave"
+        edits = _parse_keyword_edits(text)
+        assert edits == {1: ("cat", "dog"), 2: ("ocean", "wave")}
+
+    def test_half_width_colon(self) -> None:
+        edits = _parse_keyword_edits("場景1關鍵字:a, b")
+        assert edits == {1: ("a", "b")}
+
+    def test_spaces(self) -> None:
+        edits = _parse_keyword_edits("場景 1 關鍵字 ： x , y ")
+        assert edits == {1: ("x", "y")}
+
+    def test_no_match(self) -> None:
+        assert _parse_keyword_edits("場景1：旁白") == {}
+
+    def test_empty(self) -> None:
+        assert _parse_keyword_edits("") == {}
+
+    def test_mixed_with_scene_edit(self) -> None:
+        text = "場景1：新旁白\n場景1關鍵字：sunset, beach"
+        scene_edits = _parse_scene_edits(text)
+        kw_edits = _parse_keyword_edits(text)
+        assert scene_edits == {1: "新旁白"}
+        assert kw_edits == {1: ("sunset", "beach")}
+
+
+class TestApplyKeywordEdits:
+    def test_keyword_only_edit(self) -> None:
+        script = _make_script_with_keywords()
+        edited = _apply_scene_edits(
+            {}, script, keyword_edits={1: ("new", "keywords")},
+        )
+        assert edited is not None
+        assert edited.scenes[0].visual_hint.keywords == ("new", "keywords")
+        # Narration unchanged
+        assert edited.scenes[0].narration == "旁白1"
+        # Scene 2 unchanged
+        assert edited.scenes[1].visual_hint.keywords == ("ocean", "wave")
+
+    def test_narration_and_keyword_edit(self) -> None:
+        script = _make_script_with_keywords()
+        edited = _apply_scene_edits(
+            {1: "新旁白"},
+            script,
+            keyword_edits={2: ("space", "star")},
+        )
+        assert edited is not None
+        assert edited.scenes[0].narration == "新旁白"
+        assert edited.scenes[1].visual_hint.keywords == ("space", "star")
+
+    def test_apply_script_edits_with_keywords(self) -> None:
+        script = _make_script_with_keywords()
+        text = "場景1關鍵字：sun, moon\n場景2：新旁白"
+        result = _apply_script_edits(text, script)
+        assert result is not None
+        assert result.scenes[0].visual_hint.keywords == ("sun", "moon")
+        assert result.scenes[1].narration == "新旁白"
+
+    def test_keyword_edit_preserves_hint_fields(self) -> None:
+        script = Script(
+            video_title="T",
+            description="D",
+            language="zh-TW",
+            scenes=(
+                Scene(
+                    scene_number=1,
+                    title="s1",
+                    narration="n1",
+                    visual_hint=VisualHint(
+                        description="desc",
+                        style="ai_image",
+                        keywords=("old",),
+                        source_preference="ai",
+                    ),
+                    duration_seconds=10,
+                ),
+            ),
+        )
+        edited = _apply_scene_edits(
+            {}, script, keyword_edits={1: ("new",)},
+        )
+        assert edited is not None
+        hint = edited.scenes[0].visual_hint
+        assert hint.keywords == ("new",)
+        assert hint.description == "desc"
+        assert hint.style == "ai_image"
+        assert hint.source_preference == "ai"
+
+
+class TestDirectKeywordEdit:
+    @pytest.mark.anyio()
+    async def test_direct_keyword_edit(self) -> None:
+        bot = _make_bot()
+        # User directly sends keyword edit, then approves
+        bot.wait_for_callback = AsyncMock(
+            side_effect=["場景1關鍵字：sunset, beach", "approve"],
+        )
+        gate = ApprovalGate(bot=bot)
+        script = _make_script_with_keywords()
+        result = await gate.check_script(script)
+        assert result.approved is True
+        assert result.edited_script is not None
+        assert result.edited_script.scenes[0].visual_hint.keywords == ("sunset", "beach")

@@ -20,6 +20,18 @@ class VideoResult(BaseModel):
     thumbnail_url: str = ""
 
 
+class PhotoResult(BaseModel):
+    """A single photo search result from any provider."""
+
+    model_config = {"frozen": True}
+
+    provider_id: str
+    url: str
+    width: int
+    height: int
+
+
+
 class VisualAsset(BaseModel):
     """One visual asset corresponding to a scene."""
 

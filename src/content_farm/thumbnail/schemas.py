@@ -33,6 +33,7 @@ class ThumbnailInput(BaseModel):
 
     script: Script
     video_path: str | None = None
+    background_image_path: str | None = None
 
 
 class ThumbnailArtifact(PipelineArtifact):

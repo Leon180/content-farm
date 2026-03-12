@@ -139,12 +139,13 @@ class FFmpegComposer:
         music_volume: float = 0.15,
         subtitle_path: Path | None = None,
     ) -> Path:
-        """Final render pass: background music, subtitles, YouTube specs.
+        """Final render: burn-in subtitles via drawtext, optional background music.
 
-        Uses separate passes for subtitles (-vf) and audio mixing
-        (-filter_complex) because the subtitles filter path parsing
-        breaks inside filter_complex graphs.
+        Uses FFmpeg ``drawtext`` filters (no libass needed) to bake
+        SRT subtitles directly into the video frames.
         """
+        from content_farm.assembly.drawtext import build_drawtext_filter
+
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         has_music = background_music_path is not None
@@ -162,81 +163,60 @@ class FFmpegComposer:
             await self._run_ffmpeg(args)
             return output_path
 
-        # --- Pass 1: Burn subtitles with -vf (simple filter) ---
-        sub_tmpdir: tempfile.TemporaryDirectory | None = None
-        current_video = video_path
-        sub_intermediate: Path | None = None
-
+        # Build drawtext filter string from SRT
+        drawtext_vf = ""
         if has_subs:
-            sub_tmpdir = tempfile.TemporaryDirectory(prefix="cf_subs_")
-            sub_symlink = Path(sub_tmpdir.name) / "subs.srt"
-            sub_symlink.symlink_to(subtitle_path.resolve())
-            escaped = (
-                str(sub_symlink)
-                .replace("\\", "\\\\")
-                .replace(":", "\\:")
-                .replace("'", "\\'")
+            drawtext_vf = build_drawtext_filter(subtitle_path)
+
+        args = ["-y", "-i", str(video_path)]
+
+        if has_music:
+            args.extend(["-i", str(background_music_path)])
+
+        # --- filter_complex when music (optionally with drawtext) ---
+        if has_music:
+            video_chain = "[0:v]" + drawtext_vf + "[vout];" if drawtext_vf else ""
+            audio_chain = (
+                f"[0:a]volume=1.0[narration];"
+                f"[1:a]volume={music_volume:.2f},"
+                f"aloop=loop=-1:size=2000000000[music];"
+                f"[narration][music]amix=inputs=2:duration=first[aout]"
             )
+            fc_content = video_chain + audio_chain
 
-            if has_music:
-                # Intermediate file — will do audio mixing in pass 2
-                sub_intermediate = output_path.with_suffix(".sub_tmp.mp4")
-                dest = sub_intermediate
+            # Write to file to avoid filter-graph escaping issues
+            fc_file = output_path.parent / f".fc_{output_path.stem}.txt"
+            fc_file.write_text(fc_content, encoding="utf-8")
+            args.extend(["-filter_complex_script", str(fc_file)])
+
+            if drawtext_vf:
+                args.extend(["-map", "[vout]", "-map", "[aout]"])
             else:
-                dest = output_path
+                args.extend(["-map", "0:v", "-map", "[aout]"])
 
-            args = [
-                "-y",
-                "-i", str(video_path),
-                "-vf", f"subtitles={escaped}",
+            args.extend([
                 "-c:v", "libx264",
                 "-preset", self._s.preset,
                 "-crf", str(self._s.crf),
                 "-c:a", "aac",
                 "-b:a", self._s.audio_bitrate,
                 "-pix_fmt", self._s.pixel_format,
-                "-movflags", "+faststart",
-                str(dest),
-            ]
+            ])
+        elif drawtext_vf:
+            # Subs only — write filter to file to avoid escaping issues
+            vf_file = output_path.parent / f".vf_{output_path.stem}.txt"
+            vf_file.write_text(drawtext_vf, encoding="utf-8")
+            args.extend([
+                "-filter_script:v", str(vf_file),
+                "-c:v", "libx264",
+                "-preset", self._s.preset,
+                "-crf", str(self._s.crf),
+                "-c:a", "copy",
+                "-pix_fmt", self._s.pixel_format,
+            ])
 
-            try:
-                await self._run_ffmpeg(args)
-            finally:
-                if sub_tmpdir is not None:
-                    sub_tmpdir.cleanup()
-
-            if not has_music:
-                return output_path
-            current_video = sub_intermediate
-
-        # --- Pass 2: Audio mixing with -filter_complex ---
-        assert has_music
-        args = [
-            "-y",
-            "-i", str(current_video),
-            "-i", str(background_music_path),
-            "-filter_complex",
-            f"[0:a]volume=1.0[narration];"
-            f"[1:a]volume={music_volume:.2f},"
-            f"aloop=loop=-1:size=2000000000[music];"
-            f"[narration][music]amix=inputs=2:duration=first[aout]",
-            "-map", "0:v",
-            "-map", "[aout]",
-            "-c:v", "libx264",
-            "-preset", self._s.preset,
-            "-crf", str(self._s.crf),
-            "-c:a", "aac",
-            "-b:a", self._s.audio_bitrate,
-            "-pix_fmt", self._s.pixel_format,
-            "-movflags", "+faststart",
-            str(output_path),
-        ]
-
-        try:
-            await self._run_ffmpeg(args)
-        finally:
-            if sub_intermediate is not None:
-                sub_intermediate.unlink(missing_ok=True)
+        args.extend(["-movflags", "+faststart", str(output_path)])
+        await self._run_ffmpeg(args)
         return output_path
 
     # ------------------------------------------------------------------

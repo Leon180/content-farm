@@ -24,6 +24,7 @@ class TelegramBot:
     """
 
     def __init__(self, token: str, chat_id: str) -> None:
+        self._token = token
         self._chat_id = chat_id
         self._client = httpx.AsyncClient(
             base_url=f"https://api.telegram.org/bot{token}",
@@ -33,6 +34,27 @@ class TelegramBot:
     async def close(self) -> None:
         """Close the underlying httpx client (I-7: prevent connection leak)."""
         await self._client.aclose()
+
+    # ------------------------------------------------------------------
+    # Bot commands menu
+    # ------------------------------------------------------------------
+
+    async def set_my_commands(
+        self, commands: list[tuple[str, str]],
+    ) -> None:
+        """Register bot commands for the Telegram menu.
+
+        Each item is (command, description), e.g. ("topics", "Browse trending topics").
+        """
+        payload = {
+            "commands": [
+                {"command": cmd, "description": desc}
+                for cmd, desc in commands
+            ],
+        }
+        response = await self._client.post("/setMyCommands", json=payload)
+        response.raise_for_status()
+        logger.info("Telegram commands menu set: %d commands", len(commands))
 
     # ------------------------------------------------------------------
     # Sending messages
@@ -226,6 +248,37 @@ class TelegramBot:
         response.raise_for_status()
 
     # ------------------------------------------------------------------
+    # File downloads
+    # ------------------------------------------------------------------
+
+    async def download_file(self, file_id: str, destination: Path) -> Path:
+        """Download a file from Telegram servers.
+
+        Uses getFile API to get the file path, then downloads via
+        the Telegram file API URL.
+        """
+        response = await self._client.post(
+            "/getFile", json={"file_id": file_id},
+        )
+        response.raise_for_status()
+        file_path = response.json()["result"]["file_path"]
+
+        download_url = (
+            f"https://api.telegram.org/file/bot{self._token}/{file_path}"
+        )
+        destination.parent.mkdir(parents=True, exist_ok=True)
+
+        async with httpx.AsyncClient(timeout=300.0) as dl_client:
+            async with dl_client.stream("GET", download_url) as dl_resp:
+                dl_resp.raise_for_status()
+                with destination.open("wb") as fh:
+                    async for chunk in dl_resp.aiter_bytes(chunk_size=64 * 1024):
+                        fh.write(chunk)
+
+        logger.info("Downloaded file %s → %s", file_id, destination)
+        return destination
+
+    # ------------------------------------------------------------------
     # Receiving replies and callbacks
     # ------------------------------------------------------------------
 
@@ -310,7 +363,7 @@ class TelegramBot:
             f"No Telegram callback within {timeout_seconds}s"
         )
 
-    async def _answer_callback_query(self, callback_query_id: str) -> None:
+    async def answer_callback_query(self, callback_query_id: str) -> None:
         """Acknowledge a callback query to dismiss the loading spinner."""
         response = await self._client.post(
             "/answerCallbackQuery",
@@ -318,7 +371,26 @@ class TelegramBot:
         )
         response.raise_for_status()
 
-    async def _flush_updates(self) -> int:
+    # Keep private alias for backward compatibility
+    _answer_callback_query = answer_callback_query
+
+    async def get_updates(
+        self, offset: int, timeout: int = 30,
+    ) -> tuple[list[dict[str, Any]], int]:
+        """Fetch updates from Telegram. Returns (updates, new_offset)."""
+        response = await self._client.get(
+            "/getUpdates",
+            params={"offset": offset, "timeout": timeout},
+            timeout=timeout + 10,
+        )
+        response.raise_for_status()
+        updates: list[dict[str, Any]] = response.json().get("result", [])
+        new_offset = offset
+        if updates:
+            new_offset = updates[-1]["update_id"] + 1
+        return updates, new_offset
+
+    async def flush_updates(self) -> int:
         """Flush old updates and return offset for next poll."""
         response = await self._client.get(
             "/getUpdates",
@@ -329,6 +401,9 @@ class TelegramBot:
         if updates:
             return updates[-1]["update_id"] + 1
         return 0
+
+    # Keep private alias for backward compatibility
+    _flush_updates = flush_updates
 
 
 def _split_text(text: str, max_length: int) -> list[str]:

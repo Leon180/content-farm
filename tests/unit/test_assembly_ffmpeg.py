@@ -131,10 +131,11 @@ async def test_final_render_with_background_music(
         )
 
     args = mock_exec.call_args[0]
-    assert "-filter_complex" in args
-    # Find the filter_complex value
-    fc_idx = list(args).index("-filter_complex")
-    filter_str = args[fc_idx + 1]
+    args_list = list(args)
+    assert "-filter_complex_script" in args_list
+    fc_idx = args_list.index("-filter_complex_script")
+    fc_file = Path(args_list[fc_idx + 1])
+    filter_str = fc_file.read_text(encoding="utf-8")
     assert "amix" in filter_str
     assert "volume=0.20" in filter_str
 
@@ -147,7 +148,11 @@ async def test_final_render_with_subtitles(
     subs = tmp_path / "subs.srt"
     output = tmp_path / "final.mp4"
     video.touch()
-    subs.touch()
+    # Write a real SRT so drawtext parser has content
+    subs.write_text(
+        "1\n00:00:00,000 --> 00:00:02,000\nHello\n\n",
+        encoding="utf-8",
+    )
 
     mock_proc = _mock_process()
 
@@ -159,11 +164,52 @@ async def test_final_render_with_subtitles(
         )
 
     args = mock_exec.call_args[0]
-    # Subtitles-only uses -vf (simple filter), not -filter_complex
-    assert "-vf" in args
-    vf_idx = list(args).index("-vf")
-    vf_str = args[vf_idx + 1]
-    assert "subtitles=" in vf_str
+    args_list = list(args)
+    # Burns subtitles via filter_script (drawtext written to file)
+    assert "-filter_script:v" in args_list
+    # Must re-encode video for drawtext
+    assert "libx264" in args_list
+    # Audio should be copied (no music)
+    ca_idx = args_list.index("-c:a")
+    assert args_list[ca_idx + 1] == "copy"
+
+
+@pytest.mark.asyncio
+async def test_final_render_with_music_and_subtitles(
+    composer: FFmpegComposer, tmp_path: Path,
+) -> None:
+    video = tmp_path / "concat.mp4"
+    music = tmp_path / "music.mp3"
+    subs = tmp_path / "subs.srt"
+    output = tmp_path / "final.mp4"
+    video.touch()
+    music.touch()
+    subs.write_text(
+        "1\n00:00:00,000 --> 00:00:02,000\nTest\n\n",
+        encoding="utf-8",
+    )
+
+    mock_proc = _mock_process()
+
+    with patch("asyncio.create_subprocess_exec", return_value=mock_proc) as mock_exec:
+        await composer.final_render(
+            video_path=video,
+            output_path=output,
+            background_music_path=music,
+            subtitle_path=subs,
+        )
+
+    args = mock_exec.call_args[0]
+    args_list = list(args)
+    # Filter written to file via -filter_complex_script
+    assert "-filter_complex_script" in args_list
+    # Verify the script file was written with drawtext + amix
+    fc_idx = args_list.index("-filter_complex_script")
+    fc_file = Path(args_list[fc_idx + 1])
+    fc_content = fc_file.read_text(encoding="utf-8")
+    assert "drawtext=" in fc_content
+    assert "amix" in fc_content
+    assert "[vout]" in fc_content
 
 
 @pytest.mark.asyncio

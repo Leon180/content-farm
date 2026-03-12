@@ -7,7 +7,7 @@ from pathlib import Path
 
 import httpx
 
-from content_farm.visual.schemas import VideoResult
+from content_farm.visual.schemas import PhotoResult, VideoResult
 
 logger = logging.getLogger(__name__)
 
@@ -30,8 +30,8 @@ class PexelsProvider:
         *,
         min_duration: int = 5,
         max_duration: int = 30,
-        orientation: str = "landscape",
-        per_page: int = 5,
+        orientation: str = "portrait",
+        per_page: int = 15,
     ) -> tuple[VideoResult, ...]:
         """Search Pexels for stock videos matching the query."""
         params: dict[str, object] = {
@@ -70,6 +70,52 @@ class PexelsProvider:
         logger.info("Pexels search '%s': %d results", query, len(results))
         return tuple(results)
 
+    async def search_photos(
+        self,
+        query: str,
+        *,
+        orientation: str = "landscape",
+        per_page: int = 5,
+    ) -> tuple[PhotoResult, ...]:
+        """Search Pexels for stock photos matching the query."""
+        params: dict[str, object] = {
+            "query": query,
+            "orientation": orientation,
+            "per_page": per_page,
+        }
+
+        response = await self._client.get("/v1/search", params=params)
+        response.raise_for_status()
+        data = response.json()
+
+        results: list[PhotoResult] = []
+        for photo in data.get("photos", []):
+            src = photo.get("src", {})
+            url = src.get("large2x") or src.get("large") or src.get("original", "")
+            if not url:
+                continue
+
+            results.append(
+                PhotoResult(
+                    provider_id=f"pexels:{photo['id']}",
+                    url=url,
+                    width=photo.get("width", 0),
+                    height=photo.get("height", 0),
+                )
+            )
+
+        logger.info("Pexels photo search '%s': %d results", query, len(results))
+        return tuple(results)
+
+    async def download_photo(
+        self,
+        photo: PhotoResult,
+        *,
+        output_path: Path,
+    ) -> int:
+        """Download a photo file via streaming."""
+        return await self._download(photo.url, output_path)
+
     async def download_video(
         self,
         video: VideoResult,
@@ -78,9 +124,13 @@ class PexelsProvider:
         quality: str = "hd",
     ) -> int:
         """Download a video file via streaming."""
+        return await self._download(video.url, output_path)
+
+    async def _download(self, url: str, output_path: Path) -> int:
+        """Stream-download a file from *url* to *output_path*."""
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        async with self._client.stream("GET", video.url) as response:
+        async with self._client.stream("GET", url) as response:
             response.raise_for_status()
             byte_count = 0
             with open(output_path, "wb") as f:

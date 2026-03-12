@@ -1,7 +1,8 @@
 """Estimation-based subtitle provider for zh-TW content.
 
 Splits narration text into subtitle segments proportionally
-based on character count and audio duration. No ASR needed.
+based on character count and audio duration.  Inserts brief
+gaps after sentence-ending punctuation for dramatic pacing.
 """
 
 from __future__ import annotations
@@ -17,9 +18,20 @@ _TARGET_CHARS = 17
 # Punctuation where we prefer to break (zh + latin).
 _BREAK_PUNCT = re.compile(r"[，。！？；：、\n,.!?;:]")
 
+# Sentence-ending punctuation that triggers a dramatic gap.
+_SENTENCE_END = re.compile(r"[。！？!?]$")
+
+# Default gap inserted after sentence-ending punctuation (seconds).
+_DEFAULT_GAP = 0.35
+
 
 class EstimationProvider:
-    """Generates subtitle segments by distributing timestamps proportionally."""
+    """Generates subtitle segments by distributing timestamps proportionally.
+
+    Sentence-ending marks (。！？) automatically insert a brief gap
+    (default 0.35 s) after the subtitle disappears.  Use ``……`` in
+    the narration for an extra-long pause (~0.7 s double gap).
+    """
 
     def __init__(
         self,
@@ -27,10 +39,12 @@ class EstimationProvider:
         target_chars: int = _TARGET_CHARS,
         min_chars: int = _MIN_CHARS,
         max_chars: int = _MAX_CHARS,
+        sentence_gap: float = _DEFAULT_GAP,
     ) -> None:
         self._target_chars = target_chars
         self._min_chars = min_chars
         self._max_chars = max_chars
+        self._sentence_gap = sentence_gap
 
     async def generate_segments(
         self,
@@ -39,7 +53,7 @@ class EstimationProvider:
         duration_seconds: float,
         offset_seconds: float = 0.0,
     ) -> tuple[SubtitleSegment, ...]:
-        """Split *text* into timed subtitle segments."""
+        """Split *text* into timed subtitle segments with dramatic gaps."""
         if not text.strip():
             return ()
 
@@ -51,12 +65,24 @@ class EstimationProvider:
         if total_chars == 0:
             return ()
 
+        # Count how many gaps we'll insert (every chunk that ends with 。！？
+        # EXCEPT the very last chunk — no gap needed after final subtitle).
+        gap_count = sum(
+            1 for c in chunks[:-1] if _SENTENCE_END.search(c)
+        )
+        # Extra-long pause for ……
+        ellipsis_count = sum(
+            1 for c in chunks[:-1] if c.rstrip("。！？!?").endswith("……")
+        )
+        total_gap = gap_count * self._sentence_gap + ellipsis_count * self._sentence_gap
+        speech_duration = max(duration_seconds - total_gap, duration_seconds * 0.5)
+
         segments: list[SubtitleSegment] = []
         current_time = offset_seconds
 
         for i, chunk in enumerate(chunks):
             proportion = len(chunk) / total_chars
-            chunk_duration = proportion * duration_seconds
+            chunk_duration = proportion * speech_duration
             end_time = current_time + chunk_duration
 
             segments.append(
@@ -69,6 +95,13 @@ class EstimationProvider:
                 )
             )
             current_time = end_time
+
+            # Insert gap after sentence-ending punctuation (not last chunk)
+            if i < len(chunks) - 1 and _SENTENCE_END.search(chunk):
+                gap = self._sentence_gap
+                if chunk.rstrip("。！？!?").endswith("……"):
+                    gap += self._sentence_gap  # double gap for ellipsis
+                current_time += gap
 
         return tuple(segments)
 

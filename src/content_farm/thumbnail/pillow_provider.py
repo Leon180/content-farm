@@ -40,14 +40,18 @@ class PillowProvider:
         title: str,
         output_path: Path,
         video_path: Path | None = None,
+        background_image_path: Path | None = None,
         settings: ThumbnailSettings | None = None,
     ) -> int:
         """Render a 1280x720 JPEG thumbnail with text overlay."""
         s = settings or _DEFAULT_SETTINGS
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # 1. Background
-        if video_path and video_path.exists():
+        # 1. Background: stock photo > video keyframe > gradient
+        if background_image_path and background_image_path.exists():
+            bg = Image.open(background_image_path)
+            bg = bg.resize((s.width, s.height), Image.LANCZOS)
+        elif video_path and video_path.exists():
             bg = await self._extract_keyframe(video_path, s)
         else:
             bg = _create_gradient(s)

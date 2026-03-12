@@ -11,6 +11,7 @@ from content_farm.config import Settings
 from content_farm.script_gen.schemas import Script
 from content_farm.voice.protocol import TTSProvider
 from content_farm.voice.schemas import AudioSegment, VoiceArtifact
+from content_farm.voice.text_normalize import normalize_for_tts
 
 logger = logging.getLogger(__name__)
 
@@ -109,8 +110,10 @@ class VoiceGenerator:
                     character_count=len(narration),
                 )
 
+            tts_text = normalize_for_tts(narration)
+
             await self._tts.generate_speech_with_context(
-                text=narration,
+                text=tts_text,
                 output_path=output_path,
                 previous_text=previous_text,
                 next_text=next_text,

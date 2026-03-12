@@ -159,11 +159,8 @@ def build_outline_prompt(request: ScriptRequest) -> str:
         f"For each scene provide: scene_number, title, a brief summary of what "
         f"the narration should cover, and estimated duration_seconds.\n"
         f"Also provide a video_title, description, and relevant tags.\n\n"
-        f"SOURCES (REQUIRED): Provide a 'sources' list of 2-5 reference strings. "
-        f"Each source should be a real, verifiable reference: academic papers, "
-        f"textbooks, official reports, reputable news articles, or Wikipedia entries. "
-        f"Format: 'Author/Org — Title — Year' or 'URL'. "
-        f"These will be shown as end credits in the video."
+        f"SOURCES: Set 'sources' to an empty list []. "
+        f"Do NOT fabricate references — we will add verified sources separately."
     )
 
     if is_short:
@@ -203,7 +200,8 @@ def build_scene_narration_prompt(
         f"Write natural, spoken narration that fits the target duration. "
         f"No stage directions. Include a visual_hint object describing what "
         f"the viewer should see on screen, with a description, style "
-        f"(stock_footage/animation/text_overlay), and relevant keywords."
+        f"(stock_footage/animation/text_overlay), and relevant keywords. "
+        f"Keywords MUST be in English (stock video providers work best with English queries)."
     )
 
     if is_short_form:

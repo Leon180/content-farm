@@ -1,18 +1,17 @@
-"""Tests for ContentPipeline orchestrator — all providers mocked."""
+"""Tests for ContentPipeline orchestrator — all providers mocked via ServiceContainer."""
 
 from __future__ import annotations
 
-import asyncio
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from content_farm.assembly.schemas import AssemblyArtifact, ComposedScene
+from content_farm.pipeline.container import ServiceContainer
 from content_farm.pipeline.orchestrator import ContentPipeline, PipelineResult
 from content_farm.script_gen.schemas import Scene, Script, ScriptRequest, VisualHint
 from content_farm.subtitle.schemas import SubtitleArtifact, SubtitleSegment
-from content_farm.telegram.schemas import ApprovalResult
 from content_farm.thumbnail.schemas import ThumbnailArtifact
 from content_farm.types import Tone, VideoLength
 from content_farm.visual.schemas import VisualArtifact, VisualAsset
@@ -135,7 +134,7 @@ def _make_request() -> ScriptRequest:
 # ---------------------------------------------------------------------------
 
 @pytest.fixture()
-def settings(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
+def settings() -> MagicMock:
     """Mock Settings with all required attributes."""
     s = MagicMock()
     s.anthropic_api_key.get_secret_value.return_value = "fake-key"
@@ -158,76 +157,59 @@ def settings(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
     return s
 
 
-def _patch_all():
-    """Return a dict of patches for all generators and factories."""
-    return {
-        "script_gen": patch(
-            "content_farm.pipeline.orchestrator.ScriptGenerator",
-        ),
-        "llm_client": patch(
-            "content_farm.pipeline.orchestrator.LLMClient",
-        ),
-        "tts_factory": patch(
-            "content_farm.pipeline.orchestrator.create_tts_provider",
-        ),
-        "voice_gen": patch(
-            "content_farm.pipeline.orchestrator.VoiceGenerator",
-        ),
-        "stock_factory": patch(
-            "content_farm.pipeline.orchestrator.create_stock_provider",
-        ),
-        "visual_gen": patch(
-            "content_farm.pipeline.orchestrator.VisualGenerator",
-        ),
-        "subtitle_factory": patch(
-            "content_farm.pipeline.orchestrator.create_subtitle_provider",
-        ),
-        "subtitle_gen": patch(
-            "content_farm.pipeline.orchestrator.SubtitleGenerator",
-        ),
-        "thumb_factory": patch(
-            "content_farm.pipeline.orchestrator.create_thumbnail_provider",
-        ),
-        "thumb_gen": patch(
-            "content_farm.pipeline.orchestrator.ThumbnailGenerator",
-        ),
-        "composer_factory": patch(
-            "content_farm.pipeline.orchestrator.create_video_composer",
-        ),
-        "assembler": patch(
-            "content_farm.pipeline.orchestrator.VideoAssembler",
-        ),
-        "upload_factory": patch(
-            "content_farm.pipeline.orchestrator.create_youtube_uploader",
-        ),
-        "upload_gen": patch(
-            "content_farm.pipeline.orchestrator.UploadGenerator",
-        ),
-    }
-
-
 @pytest.fixture()
-def mocks():
-    """Start all patches and configure mock return values."""
-    patches = _patch_all()
-    started = {name: p.start() for name, p in patches.items()}
+def mock_container() -> MagicMock:
+    """Mock ServiceContainer with all factory methods returning test data."""
+    container = MagicMock(spec=ServiceContainer)
+    container.settings = MagicMock()
+    container.settings.ffmpeg_path = "ffmpeg"
 
-    # Configure LLMClient
-    started["llm_client"].return_value.close = AsyncMock()
+    # Script generator
+    script_gen = MagicMock()
+    script_gen.generate = AsyncMock(return_value=_make_script())
+    container.create_script_generator.return_value = script_gen
 
-    # Configure generators to return test data
-    started["script_gen"].return_value.generate = AsyncMock(return_value=_make_script())
-    started["voice_gen"].return_value.generate = AsyncMock(return_value=_make_voice())
-    started["visual_gen"].return_value.generate = AsyncMock(return_value=_make_visual())
-    started["subtitle_gen"].return_value.generate = AsyncMock(return_value=_make_subtitle())
-    started["thumb_gen"].return_value.generate = AsyncMock(return_value=_make_thumbnail())
-    started["assembler"].return_value.generate = AsyncMock(return_value=_make_assembly())
-    started["upload_gen"].return_value.generate = AsyncMock(return_value=_make_upload())
+    # Voice generator
+    voice_gen = MagicMock()
+    voice_gen.generate = AsyncMock(return_value=_make_voice())
+    container.create_voice_generator.return_value = voice_gen
 
-    yield started
+    # Visual generator
+    visual_gen = MagicMock()
+    visual_gen.generate = AsyncMock(return_value=_make_visual())
+    container.create_visual_generator.return_value = visual_gen
 
-    for p in patches.values():
-        p.stop()
+    # Subtitle generator
+    subtitle_gen = MagicMock()
+    subtitle_gen.generate = AsyncMock(return_value=_make_subtitle())
+    container.create_subtitle_generator.return_value = subtitle_gen
+
+    # Thumbnail generator
+    thumb_gen = MagicMock()
+    thumb_gen.generate = AsyncMock(return_value=_make_thumbnail())
+    container.create_thumbnail_generator.return_value = thumb_gen
+
+    # Video assembler
+    assembler = MagicMock()
+    assembler.generate = AsyncMock(return_value=_make_assembly())
+    container.create_video_assembler.return_value = assembler
+
+    # Upload generator
+    upload_gen = MagicMock()
+    upload_gen.generate = AsyncMock(return_value=_make_upload())
+    container.create_upload_generator.return_value = upload_gen
+
+    # Drive uploader
+    container.create_drive_uploader.return_value = None
+
+    # Capability checks
+    container.has_youtube_credentials.return_value = False
+    container.has_drive_credentials.return_value = False
+
+    # Lifecycle
+    container.close = AsyncMock()
+
+    return container
 
 
 # ---------------------------------------------------------------------------
@@ -236,8 +218,13 @@ def mocks():
 
 class TestContentPipeline:
     @pytest.mark.anyio()
-    async def test_full_pipeline(self, settings: MagicMock, mocks: dict, tmp_path: Path) -> None:
-        pipeline = ContentPipeline(settings=settings, output_dir=tmp_path, skip_upload=True)
+    async def test_full_pipeline(
+        self, settings: MagicMock, mock_container: MagicMock, tmp_path: Path,
+    ) -> None:
+        pipeline = ContentPipeline(
+            settings=settings, output_dir=tmp_path,
+            skip_upload=True, container=mock_container,
+        )
         result = await pipeline.run(_make_request())
 
         assert isinstance(result, PipelineResult)
@@ -250,65 +237,98 @@ class TestContentPipeline:
         assert result.upload is None  # skip_upload=True
 
     @pytest.mark.anyio()
-    async def test_voice_visual_parallel(self, settings: MagicMock, mocks: dict, tmp_path: Path) -> None:
+    async def test_voice_visual_parallel(
+        self, settings: MagicMock, mock_container: MagicMock, tmp_path: Path,
+    ) -> None:
         """Verify voice and visual generators are both called."""
-        pipeline = ContentPipeline(settings=settings, output_dir=tmp_path, skip_upload=True)
+        pipeline = ContentPipeline(
+            settings=settings, output_dir=tmp_path,
+            skip_upload=True, container=mock_container,
+        )
         await pipeline.run(_make_request())
 
-        mocks["voice_gen"].return_value.generate.assert_called_once()
-        mocks["visual_gen"].return_value.generate.assert_called_once()
+        mock_container.create_voice_generator.assert_called_once()
+        mock_container.create_visual_generator.assert_called_once()
 
     @pytest.mark.anyio()
-    async def test_telegram_auto_approve(self, settings: MagicMock, mocks: dict, tmp_path: Path) -> None:
+    async def test_telegram_auto_approve(
+        self, settings: MagicMock, mock_container: MagicMock, tmp_path: Path,
+    ) -> None:
         """When no Telegram credentials, approval is automatic."""
         settings.telegram_bot_token.get_secret_value.return_value = ""
         settings.telegram_chat_id = ""
-        pipeline = ContentPipeline(settings=settings, output_dir=tmp_path, skip_upload=True)
+        pipeline = ContentPipeline(
+            settings=settings, output_dir=tmp_path,
+            skip_upload=True, container=mock_container,
+        )
         result = await pipeline.run(_make_request())
         assert result.script.video_title == "測試影片"
 
     @pytest.mark.anyio()
-    async def test_skip_upload_when_no_credentials(self, settings: MagicMock, mocks: dict, tmp_path: Path) -> None:
-        settings.youtube_client_id.get_secret_value.return_value = ""
-        pipeline = ContentPipeline(settings=settings, output_dir=tmp_path)
+    async def test_skip_upload_when_no_credentials(
+        self, settings: MagicMock, mock_container: MagicMock, tmp_path: Path,
+    ) -> None:
+        mock_container.has_youtube_credentials.return_value = False
+        pipeline = ContentPipeline(
+            settings=settings, output_dir=tmp_path, container=mock_container,
+        )
         result = await pipeline.run(_make_request())
         assert result.upload is None
-        mocks["upload_gen"].return_value.generate.assert_not_called()
+        mock_container.create_upload_generator.assert_not_called()
 
     @pytest.mark.anyio()
-    async def test_upload_when_credentials_present(self, settings: MagicMock, mocks: dict, tmp_path: Path) -> None:
-        settings.youtube_client_id.get_secret_value.return_value = "id"
-        settings.youtube_client_secret.get_secret_value.return_value = "secret"
-        settings.youtube_refresh_token.get_secret_value.return_value = "token"
-        pipeline = ContentPipeline(settings=settings, output_dir=tmp_path)
+    async def test_upload_when_credentials_present(
+        self, settings: MagicMock, mock_container: MagicMock, tmp_path: Path,
+    ) -> None:
+        mock_container.has_youtube_credentials.return_value = True
+        pipeline = ContentPipeline(
+            settings=settings, output_dir=tmp_path, container=mock_container,
+        )
         result = await pipeline.run(_make_request())
         assert result.upload is not None
         assert result.upload.video_id == "abc123"
 
     @pytest.mark.anyio()
-    async def test_output_dir_created(self, settings: MagicMock, mocks: dict, tmp_path: Path) -> None:
-        pipeline = ContentPipeline(settings=settings, output_dir=tmp_path, skip_upload=True)
+    async def test_output_dir_created(
+        self, settings: MagicMock, mock_container: MagicMock, tmp_path: Path,
+    ) -> None:
+        pipeline = ContentPipeline(
+            settings=settings, output_dir=tmp_path,
+            skip_upload=True, container=mock_container,
+        )
         result = await pipeline.run(_make_request())
         assert Path(result.output_dir).exists()
 
     @pytest.mark.anyio()
-    async def test_error_in_stage_propagates(self, settings: MagicMock, mocks: dict, tmp_path: Path) -> None:
-        mocks["voice_gen"].return_value.generate = AsyncMock(
-            side_effect=RuntimeError("TTS failed"),
+    async def test_error_in_stage_propagates(
+        self, settings: MagicMock, mock_container: MagicMock, tmp_path: Path,
+    ) -> None:
+        voice_gen = MagicMock()
+        voice_gen.generate = AsyncMock(side_effect=RuntimeError("TTS failed"))
+        mock_container.create_voice_generator.return_value = voice_gen
+
+        pipeline = ContentPipeline(
+            settings=settings, output_dir=tmp_path,
+            skip_upload=True, container=mock_container,
         )
-        pipeline = ContentPipeline(settings=settings, output_dir=tmp_path, skip_upload=True)
         with pytest.raises(RuntimeError, match="TTS failed"):
             await pipeline.run(_make_request())
 
     @pytest.mark.anyio()
-    async def test_llm_client_closed_on_error(self, settings: MagicMock, mocks: dict, tmp_path: Path) -> None:
-        mocks["script_gen"].return_value.generate = AsyncMock(
-            side_effect=RuntimeError("LLM error"),
+    async def test_container_closed_on_error(
+        self, settings: MagicMock, mock_container: MagicMock, tmp_path: Path,
+    ) -> None:
+        script_gen = MagicMock()
+        script_gen.generate = AsyncMock(side_effect=RuntimeError("LLM error"))
+        mock_container.create_script_generator.return_value = script_gen
+
+        pipeline = ContentPipeline(
+            settings=settings, output_dir=tmp_path,
+            skip_upload=True, container=mock_container,
         )
-        pipeline = ContentPipeline(settings=settings, output_dir=tmp_path, skip_upload=True)
         with pytest.raises(RuntimeError):
             await pipeline.run(_make_request())
-        mocks["llm_client"].return_value.close.assert_called_once()
+        mock_container.close.assert_called_once()
 
 
 class TestPipelineResult:

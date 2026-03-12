@@ -10,7 +10,11 @@ from content_farm.config import Settings
 from content_farm.script_gen.schemas import Script, VisualHint
 from content_farm.visual.image_protocol import ImageProvider
 from content_farm.visual.protocol import StockProvider
-from content_farm.visual.schemas import VideoResult, VisualArtifact, VisualAsset
+from content_farm.visual.schemas import (
+    VideoResult,
+    VisualArtifact,
+    VisualAsset,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -110,7 +114,7 @@ class VisualGenerator:
             image_path = await self._image_provider.generate_image(
                 prompt,
                 output_path=image_path,
-                aspect_ratio="16:9",
+                aspect_ratio="9:16",
             )
         except Exception:
             logger.warning(
@@ -231,3 +235,5 @@ def _build_image_prompt(hint: VisualHint) -> str:
 def _pick_best_match(results: tuple[VideoResult, ...], target_duration: int) -> VideoResult:
     """Pick the video closest to the target duration."""
     return min(results, key=lambda r: abs(r.duration_seconds - target_duration))
+
+

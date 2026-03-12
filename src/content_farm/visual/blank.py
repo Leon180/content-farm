@@ -84,8 +84,9 @@ async def _create_black_clip(
     _, stderr = await proc.communicate()
 
     if proc.returncode != 0:
+        detail = stderr.decode(errors="replace")[-500:]
         raise RuntimeError(
-            f"ffmpeg failed creating blank clip: {stderr.decode()[:500]}"
+            f"ffmpeg failed creating blank clip (exit {proc.returncode}): {detail}"
         )
 
     logger.info("Blank clip created: %s (%ds)", output_path.name, duration)

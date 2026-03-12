@@ -42,6 +42,17 @@ CREATE TABLE IF NOT EXISTS checkpoints (
     created_at    TEXT NOT NULL,
     UNIQUE(run_id, stage)
 );
+
+CREATE TABLE IF NOT EXISTS usage (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    run_id        TEXT NOT NULL REFERENCES runs(run_id),
+    stage         TEXT NOT NULL,
+    provider      TEXT NOT NULL,
+    metric        TEXT NOT NULL,
+    value         INTEGER NOT NULL,
+    model         TEXT DEFAULT '',
+    created_at    TEXT NOT NULL
+);
 """
 
 
@@ -216,6 +227,35 @@ class PipelineStateDB:
             if stage not in completed:
                 return stage
         return None
+
+
+    # ------------------------------------------------------------------
+    # Usage tracking
+    # ------------------------------------------------------------------
+
+    def save_usage(
+        self,
+        run_id: str,
+        records: list[tuple[str, str, str, int, str]],
+    ) -> None:
+        """Persist usage records (stage, provider, metric, value, model)."""
+        now = _now_iso()
+        self._conn.executemany(
+            "INSERT INTO usage (run_id, stage, provider, metric, value, model, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            [(run_id, stage, provider, metric, value, model, now)
+             for stage, provider, metric, value, model in records],
+        )
+        self._conn.commit()
+
+    def get_usage_summary(self, run_id: str) -> dict[str, int]:
+        """Return {metric: total_value} for a run."""
+        rows = self._conn.execute(
+            "SELECT metric, SUM(value) AS total "
+            "FROM usage WHERE run_id = ? GROUP BY metric",
+            (run_id,),
+        ).fetchall()
+        return {r["metric"]: r["total"] for r in rows}
 
 
 def _now_iso() -> str:
