@@ -1,0 +1,51 @@
+---
+name: script
+description: Generate a zh-TW video script based on research. Outputs script.json and storyboard.txt.
+allowed-tools: Read, Write, Glob
+argument-hint: "[topic] [--run-dir path]"
+disable-model-invocation: true
+---
+
+Generate a video script for: $ARGUMENTS
+
+## Setup
+
+1. Parse arguments: extract topic and optional `--run-dir` path
+2. If no `--run-dir` specified, find the most recent run directory in `output/` that matches the topic
+3. If no run directory exists, create one: `output/YYYYMMDD_HHMMSS_<safe_topic>/`
+
+## Read Supporting Files
+
+- For narration style rules and narrative structures, read the [prompts guide](prompts.md)
+- For the exact JSON schema, read the [schema reference](schema.md)
+- If `<run_dir>/research.md` exists, read it for factual grounding
+
+## Script Generation
+
+1. **Read research brief** — use ONLY facts and sources from `research.md`
+2. **Choose narrative structure** (from prompts.md):
+   - 懸念揭曉型: Hook → 鋪墊 → 揭曉
+   - 誤導反轉型: Hook → 展開 → 反轉
+   - 層層遞進型: Hook → 升級 → 炸裂
+3. **Generate outline** — 2-3 scenes for short-form (30-90s total)
+4. **Write full narration** per scene following the rules in prompts.md
+5. **Generate visual hints** with English keywords for stock footage
+6. **Set sources** — ONLY real URLs from research.md
+
+## Output
+
+Write two files to the run directory:
+
+1. **`script.json`** — Following the exact schema in schema.md
+2. **`storyboard.txt`** — Human-readable version with scene timings
+
+## Quality Checklist
+
+- [ ] First sentence hooks in under 3 seconds
+- [ ] Every factual claim has a source from research.md
+- [ ] Sources array contains ONLY real URLs from research
+- [ ] Narration uses spoken zh-TW, not written Chinese
+- [ ] Visual hint keywords are in English
+- [ ] Total duration 30-90 seconds for short-form
+- [ ] No filler: 「其實」「基本上」「事實上」「總之」「然而」
+- [ ] No greetings: 「大家好」「歡迎觀看」
