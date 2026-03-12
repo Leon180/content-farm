@@ -40,7 +40,7 @@ class Scene(BaseModel):
     title: str
     narration: str
     visual_hint: VisualHint
-    duration_seconds: int
+    duration_seconds: float
     transition: str = "cut"
 
 
@@ -52,7 +52,7 @@ class SceneOutline(BaseModel):
     scene_number: int
     title: str
     summary: str
-    duration_seconds: int
+    duration_seconds: float
 
 
 class SceneOutlineList(BaseModel):
@@ -76,7 +76,7 @@ class ExpandedScene(BaseModel):
     title: str
     narration: str
     visual_hint: VisualHint
-    duration_seconds: int
+    duration_seconds: float
     transition: str = "cut"
 
 
@@ -92,7 +92,7 @@ class Script(PipelineArtifact):
     target_length: VideoLength = VideoLength.MEDIUM
     tone: Tone = Tone.EDUCATIONAL
     language: str = "zh-TW"
-    total_duration_seconds: int = 0
+    total_duration_seconds: float = 0
     tags: tuple[str, ...] = ()
     sources: tuple[str, ...] = ()
     ai_disclosure: bool = True

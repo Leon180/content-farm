@@ -106,7 +106,12 @@ class EstimationProvider:
         return tuple(segments)
 
     def _split_text(self, text: str) -> list[str]:
-        """Split *text* into chunks, preferring punctuation break points."""
+        """Split *text* into chunks, ALWAYS breaking at punctuation.
+
+        Never cuts in the middle of a word or sentence.  If no punctuation
+        is found within the preferred [min_chars, max_chars] window, scans
+        forward past max_chars until the next punctuation mark.
+        """
         text = text.strip()
         if len(text) <= self._max_chars:
             return [text]
@@ -120,19 +125,28 @@ class EstimationProvider:
                     chunks.append(remaining.strip())
                 break
 
-            # Search backward from max_chars for a punctuation break.
-            best_break = self._target_chars
+            # 1) Search backward from max_chars for a punctuation break.
             window_end = min(self._max_chars, len(remaining))
+            best_break = -1
 
-            found_punct = False
             for pos in range(window_end, self._min_chars - 1, -1):
                 if pos < len(remaining) and _BREAK_PUNCT.match(remaining[pos]):
                     best_break = pos + 1  # Include the punctuation char
-                    found_punct = True
                     break
 
-            if not found_punct:
-                best_break = min(self._target_chars, len(remaining))
+            # 2) If not found, search FORWARD past max_chars for the next
+            #    punctuation mark so we never cut mid-sentence.
+            #    Limit forward scan to 2× max_chars to handle no-punctuation text.
+            if best_break < 0:
+                forward_limit = min(self._max_chars * 2, len(remaining))
+                for pos in range(window_end + 1, forward_limit):
+                    if _BREAK_PUNCT.match(remaining[pos]):
+                        best_break = pos + 1
+                        break
+
+            # 3) If still no punctuation found (text has none), cut at max_chars.
+            if best_break < 0:
+                best_break = min(self._max_chars, len(remaining))
 
             chunk = remaining[:best_break]
             remaining = remaining[best_break:].lstrip()

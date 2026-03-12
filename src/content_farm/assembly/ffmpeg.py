@@ -37,22 +37,45 @@ class FFmpegComposer:
         output_path: Path,
         target_duration: float,
     ) -> Path:
-        """Combine one video clip + one audio clip into a composed scene."""
+        """Combine one video clip + one audio clip into a composed scene.
+
+        If the video is longer than the audio, speed it up (via setpts)
+        so all visual content fits within the audio duration.
+        If the video is shorter, loop it to fill.
+        """
         output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        video_duration = await self._probe_duration(video_path)
+
+        # Build speed factor: >1 means video is longer → speed up
+        if video_duration > 0 and video_duration > target_duration:
+            speed = video_duration / target_duration
+            pts_factor = f"setpts=PTS/{speed:.4f}"
+        else:
+            pts_factor = "setpts=PTS"
+
+        # When video is shorter than audio, loop it (skip if probe failed)
+        loop_flag = (
+            ["-stream_loop", "-1"]
+            if 0 < video_duration < target_duration
+            else []
+        )
 
         vf = (
             f"scale={self._s.width}:{self._s.height}"
             ":force_original_aspect_ratio=decrease,"
             f"pad={self._s.width}:{self._s.height}:(ow-iw)/2:(oh-ih)/2,"
-            f"setsar=1,fps={self._s.fps}"
+            f"setsar=1,fps={self._s.fps},{pts_factor}"
         )
 
         args = [
             "-y",
-            "-stream_loop", "-1",
+            *loop_flag,
             "-i", str(video_path),
             "-i", str(audio_path),
             "-t", f"{target_duration:.2f}",
+            "-map", "0:v:0",
+            "-map", "1:a:0",
             "-vf", vf,
             "-c:v", "libx264",
             "-preset", self._s.preset,
@@ -67,6 +90,24 @@ class FFmpegComposer:
 
         await self._run_ffmpeg(args)
         return output_path
+
+    async def _probe_duration(self, path: Path) -> float:
+        """Get video duration in seconds via ffprobe."""
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                self._ffprobe, "-v", "quiet", "-print_format", "json",
+                "-show_format", str(path),
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, _ = await proc.communicate()
+            if proc.returncode == 0:
+                import json
+                data = json.loads(stdout)
+                return float(data["format"]["duration"])
+        except (FileNotFoundError, KeyError, ValueError):
+            pass
+        return 0.0
 
     async def concatenate(
         self,

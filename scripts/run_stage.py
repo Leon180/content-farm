@@ -1,0 +1,323 @@
+"""CLI entry point for running individual pipeline stages.
+
+Used by Claude Code skills to invoke Python stages one at a time.
+State flows through files on disk (script.json, audio/*.mp3, etc.).
+
+Usage:
+    python scripts/run_stage.py --stage voice --run-dir output/20260312_topic/
+    python scripts/run_stage.py --stage visual --run-dir output/20260312_topic/
+"""
+
+from __future__ import annotations
+
+import argparse
+import asyncio
+import json
+import logging
+import sys
+from pathlib import Path
+
+from content_farm.config import Settings
+from content_farm.pipeline.container import ServiceContainer
+from content_farm.pipeline.context import PipelineContext
+from content_farm.script_gen.schemas import Script
+from content_farm.telegram.approval import ApprovalGate
+
+logger = logging.getLogger(__name__)
+
+STAGES = (
+    "voice", "visual", "blank_visual", "subtitle",
+    "thumbnail", "assembly", "template", "drive",
+)
+
+
+# ------------------------------------------------------------------
+# Artifact reconstruction from disk
+# ------------------------------------------------------------------
+
+
+async def _rebuild_voice_artifact(run_dir: Path) -> "VoiceArtifact | None":
+    """Reconstruct VoiceArtifact by scanning audio/*.mp3 files."""
+    from content_farm.voice.schemas import AudioSegment, VoiceArtifact
+
+    audio_dir = run_dir / "audio"
+    if not audio_dir.is_dir():
+        return None
+
+    mp3s = sorted(audio_dir.glob("scene_*.mp3"))
+    if not mp3s:
+        return None
+
+    # Try loading saved artifact first
+    artifact_file = run_dir / "voice_artifact.json"
+    if artifact_file.is_file():
+        data = json.loads(artifact_file.read_text(encoding="utf-8"))
+        return VoiceArtifact.model_validate(data)
+
+    # Fallback: reconstruct from files using ffprobe
+    segments = []
+    for mp3 in mp3s:
+        scene_num = int(mp3.stem.split("_")[1])
+        duration = await _get_audio_duration(mp3)
+        segments.append(AudioSegment(
+            scene_number=scene_num,
+            file_path=str(mp3),
+            duration_seconds=round(duration, 2),
+            character_count=0,
+        ))
+
+    total = sum(s.duration_seconds for s in segments)
+    return VoiceArtifact(
+        segments=tuple(segments),
+        total_duration_seconds=total,
+        output_dir=str(audio_dir),
+    )
+
+
+async def _get_audio_duration(file_path: Path) -> float:
+    """Get audio duration via ffprobe, with byte-size fallback."""
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "ffprobe", "-v", "quiet", "-print_format", "json",
+            "-show_format", str(file_path),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, _ = await proc.communicate()
+        if proc.returncode == 0:
+            data = json.loads(stdout)
+            return float(data["format"]["duration"])
+    except (FileNotFoundError, KeyError, json.JSONDecodeError, ValueError):
+        pass
+
+    try:
+        return round((file_path.stat().st_size * 8) / 128000, 2)
+    except FileNotFoundError:
+        return 0.0
+
+
+def _rebuild_visual_artifact(run_dir: Path) -> "VisualArtifact | None":
+    """Reconstruct VisualArtifact from visual/*.mp4 files or saved artifact."""
+    from content_farm.visual.schemas import VisualArtifact, VisualAsset
+
+    # Try saved artifact first
+    artifact_file = run_dir / "visual_artifact.json"
+    if artifact_file.is_file():
+        data = json.loads(artifact_file.read_text(encoding="utf-8"))
+        return VisualArtifact.model_validate(data)
+
+    visual_dir = run_dir / "visual"
+    if not visual_dir.is_dir():
+        return None
+
+    mp4s = sorted(visual_dir.glob("scene_*.mp4"))
+    if not mp4s:
+        return None
+
+    assets = []
+    for mp4 in mp4s:
+        scene_num = int(mp4.stem.split("_")[1])
+        assets.append(VisualAsset(
+            scene_number=scene_num,
+            file_path=str(mp4),
+            source="disk",
+            duration_seconds=0.0,
+            query_used="",
+        ))
+
+    return VisualArtifact(
+        assets=tuple(assets),
+        output_dir=str(visual_dir),
+    )
+
+
+def _rebuild_subtitle_artifact(run_dir: Path) -> "SubtitleArtifact | None":
+    """Find existing subtitle file."""
+    from content_farm.subtitle.schemas import SubtitleArtifact
+
+    artifact_file = run_dir / "subtitle_artifact.json"
+    if artifact_file.is_file():
+        data = json.loads(artifact_file.read_text(encoding="utf-8"))
+        return SubtitleArtifact.model_validate(data)
+
+    sub_dir = run_dir / "subtitles"
+    if not sub_dir.is_dir():
+        return None
+
+    srt_files = sorted(sub_dir.glob("*.srt")) + sorted(sub_dir.glob("*.vtt"))
+    if not srt_files:
+        return None
+
+    return SubtitleArtifact(file_path=str(srt_files[0]))
+
+
+def _rebuild_assembly_artifact(run_dir: Path) -> "AssemblyArtifact | None":
+    """Find existing assembly output."""
+    from content_farm.assembly.schemas import AssemblyArtifact
+
+    artifact_file = run_dir / "assembly_artifact.json"
+    if artifact_file.is_file():
+        data = json.loads(artifact_file.read_text(encoding="utf-8"))
+        return AssemblyArtifact.model_validate(data)
+
+    assembly_dir = run_dir / "assembly"
+    if not assembly_dir.is_dir():
+        return None
+
+    videos = sorted(assembly_dir.glob("*.mp4"))
+    if not videos:
+        return None
+
+    return AssemblyArtifact(file_path=str(videos[0]))
+
+
+def _save_artifact(run_dir: Path, stage: str, artifact: object) -> None:
+    """Save artifact JSON for downstream stages."""
+    if artifact is None or not hasattr(artifact, "model_dump"):
+        return
+    path = run_dir / f"{stage}_artifact.json"
+    path.write_text(
+        json.dumps(artifact.model_dump(mode="json"), ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    logger.info("Saved %s", path)
+
+
+# ------------------------------------------------------------------
+# Stage execution
+# ------------------------------------------------------------------
+
+
+async def run_stage(stage: str, run_dir: Path) -> None:
+    """Load context from disk, run one stage, save artifact."""
+    from content_farm.pipeline import stages
+
+    settings = Settings()  # type: ignore[call-arg]
+    container = ServiceContainer(settings)
+
+    # Load script.json (required for all stages)
+    script_path = run_dir / "script.json"
+    if not script_path.is_file():
+        print(f"Error: {script_path} not found", file=sys.stderr)
+        sys.exit(1)
+
+    script_data = json.loads(script_path.read_text(encoding="utf-8"))
+    script = Script.model_validate(script_data)
+
+    # Build context with no-op gate (skills are human-in-the-loop)
+    gate = ApprovalGate(bot=None)
+    ctx = PipelineContext(
+        settings=settings,
+        run_id=run_dir.name,
+        run_dir=run_dir,
+        gate=gate,
+    )
+    ctx.script = script
+
+    # Reconstruct existing artifacts for stages that need them
+    ctx.voice = await _rebuild_voice_artifact(run_dir)
+    ctx.visual = _rebuild_visual_artifact(run_dir)
+    ctx.subtitle = _rebuild_subtitle_artifact(run_dir)
+    ctx.assembly = _rebuild_assembly_artifact(run_dir)
+
+    try:
+        if stage == "voice":
+            await stages.run_voice_stage(ctx, container)
+            _save_artifact(run_dir, "voice", ctx.voice)
+            # Sync script durations with actual audio lengths
+            if ctx.voice is not None:
+                ctx.script = stages.sync_script_durations(ctx.script, ctx.voice)
+                script_path.write_text(
+                    json.dumps(
+                        ctx.script.model_dump(mode="json"),
+                        ensure_ascii=False, indent=2,
+                    ),
+                    encoding="utf-8",
+                )
+                logger.info("Updated script.json with actual audio durations")
+
+        elif stage == "visual":
+            await stages.run_visual_stage(ctx, container)
+            _save_artifact(run_dir, "visual", ctx.visual)
+
+        elif stage == "blank_visual":
+            await stages.run_blank_visual_stage(ctx, container)
+            _save_artifact(run_dir, "visual", ctx.visual)
+
+        elif stage == "subtitle":
+            if ctx.voice is None:
+                print("Error: voice artifacts required for subtitle", file=sys.stderr)
+                sys.exit(1)
+            await stages.run_subtitle_stage(ctx, container)
+            _save_artifact(run_dir, "subtitle", ctx.subtitle)
+
+        elif stage == "thumbnail":
+            await stages.run_thumbnail_stage(ctx, container)
+            _save_artifact(run_dir, "thumbnail", ctx.thumbnail)
+
+        elif stage == "assembly":
+            if ctx.voice is None or ctx.visual is None:
+                print(
+                    "Error: voice + visual artifacts required for assembly",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+            await stages.run_assembly_stage(ctx, container)
+            _save_artifact(run_dir, "assembly", ctx.assembly)
+
+        elif stage == "template":
+            if ctx.voice is None or ctx.visual is None:
+                print(
+                    "Error: voice + visual artifacts required for template",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+            await stages.run_template_video_stage(ctx, container)
+            print(f"Template video: {ctx.template_video_path}")
+
+        elif stage == "drive":
+            # Sync script durations before saving
+            if ctx.voice is not None:
+                ctx.script = stages.sync_script_durations(ctx.script, ctx.voice)
+            await stages.run_drive_stage(ctx, container)
+            print(f"Drive link: {ctx.drive_link}")
+
+        else:
+            print(f"Unknown stage: {stage}", file=sys.stderr)
+            sys.exit(1)
+
+        print(f"Stage '{stage}' completed successfully.")
+
+    finally:
+        await container.close()
+
+
+# ------------------------------------------------------------------
+# CLI
+# ------------------------------------------------------------------
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Run a single pipeline stage given a run directory.",
+    )
+    parser.add_argument(
+        "--stage", required=True, choices=STAGES,
+        help="Stage to run",
+    )
+    parser.add_argument(
+        "--run-dir", required=True, type=Path,
+        help="Path to the run directory (must contain script.json)",
+    )
+    args = parser.parse_args()
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(name)s %(levelname)s %(message)s",
+    )
+
+    asyncio.run(run_stage(args.stage, args.run_dir))
+
+
+if __name__ == "__main__":
+    main()

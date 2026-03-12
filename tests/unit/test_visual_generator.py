@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -10,6 +10,13 @@ from content_farm.config import Settings
 from content_farm.script_gen.schemas import Scene, Script, VisualHint
 from content_farm.visual.generator import VisualGenerator, _build_search_query, _pick_best_match
 from content_farm.visual.schemas import VideoResult
+
+
+async def _fake_concat(clip_paths, output_path, ffmpeg_path="ffmpeg"):
+    """Stub concat that just copies the first clip."""
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    import shutil
+    shutil.copy2(clip_paths[0], output_path)
 
 
 @pytest.fixture
@@ -68,7 +75,13 @@ def visual_generator(
         _make_video_result("pexels:100", duration=15),
         _make_video_result("pexels:200", duration=20),
     )
-    mock_stock.download_video.return_value = 500_000
+
+    async def _fake_download(video, *, output_path, **kw):
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_bytes(b"fake-video")
+        return 500_000
+
+    mock_stock.download_video.side_effect = _fake_download
 
     gen = VisualGenerator(
         stock=mock_stock,
@@ -116,7 +129,9 @@ class TestPickBestMatch:
 
 
 @pytest.mark.asyncio
+@patch("content_farm.visual.generator._concat_clips", side_effect=_fake_concat)
 async def test_generate_creates_assets(
+    _mock_concat,
     visual_generator: tuple[VisualGenerator, AsyncMock],
     sample_script: Script,
 ) -> None:
@@ -129,19 +144,25 @@ async def test_generate_creates_assets(
 
 
 @pytest.mark.asyncio
+@patch("content_farm.visual.generator._concat_clips", side_effect=_fake_concat)
 async def test_generate_calls_search_per_scene(
+    _mock_concat,
     visual_generator: tuple[VisualGenerator, AsyncMock],
     sample_script: Script,
 ) -> None:
     gen, mock_stock = visual_generator
     await gen.generate(sample_script)
 
-    assert mock_stock.search_videos.call_count == 2
-    assert mock_stock.download_video.call_count == 2
+    # Scene 1 has 3 keywords → 3 searches; scene 2 has description only → 1 search
+    assert mock_stock.search_videos.call_count == 4
+    # Downloads: scene 1 gets 2 unique clips, scene 2 gets 1
+    assert mock_stock.download_video.call_count == 3
 
 
 @pytest.mark.asyncio
+@patch("content_farm.visual.generator._concat_clips", side_effect=_fake_concat)
 async def test_generate_output_paths(
+    _mock_concat,
     visual_generator: tuple[VisualGenerator, AsyncMock],
     sample_script: Script,
 ) -> None:
@@ -168,12 +189,14 @@ async def test_generate_no_results_returns_empty_asset(
 
 
 @pytest.mark.asyncio
+@patch("content_farm.visual.generator._concat_clips", side_effect=_fake_concat)
 async def test_generate_fallback_retry(
+    _mock_concat,
     visual_generator: tuple[VisualGenerator, AsyncMock],
     sample_script: Script,
 ) -> None:
     gen, mock_stock = visual_generator
-    # First call returns empty, second (fallback) returns results
+    # Return empty for some keyword searches, results for others
     mock_stock.search_videos.side_effect = [
         (),
         (_make_video_result(),),
@@ -183,7 +206,7 @@ async def test_generate_fallback_retry(
 
     artifact = await gen.generate(sample_script)
 
-    # First scene: initial search failed, fallback succeeded
-    assert artifact.assets[0].source == "pexels"
-    # search_videos called at least 3 times (2 for scene 1, 1 for scene 2)
+    # First scene: some keyword searches failed, others succeeded
+    assert artifact.assets[0].source == "stock_multi"
+    # Multiple searches per scene (per keyword)
     assert mock_stock.search_videos.call_count >= 3

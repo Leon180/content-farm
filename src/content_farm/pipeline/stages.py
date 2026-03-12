@@ -66,7 +66,14 @@ async def run_visual_stage(
     """Source stock footage or AI images for all scenes."""
     assert ctx.script is not None
     gen = container.create_visual_generator(ctx.run_dir / "visual")
-    ctx.visual = await gen.generate(ctx.script)
+    # Use actual audio durations when available
+    duration_overrides = None
+    if ctx.voice is not None:
+        duration_overrides = {
+            seg.scene_number: seg.duration_seconds
+            for seg in ctx.voice.segments
+        }
+    ctx.visual = await gen.generate(ctx.script, duration_overrides=duration_overrides)
 
 
 # ------------------------------------------------------------------
@@ -327,7 +334,7 @@ def sync_script_durations(script, voice):  # noqa: ANN001, ANN201
         actual = duration_map.get(scene.scene_number)
         if actual is not None:
             new_scenes.append(
-                scene.model_copy(update={"duration_seconds": round(actual)})
+                scene.model_copy(update={"duration_seconds": round(actual, 2)})
             )
         else:
             new_scenes.append(scene)

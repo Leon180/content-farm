@@ -64,7 +64,7 @@ async def test_prefers_punctuation_breaks() -> None:
 @pytest.mark.asyncio
 async def test_timestamps_are_continuous() -> None:
     provider = EstimationProvider(target_chars=10, max_chars=15)
-    text = "第一段字幕內容第二段字幕內容第三段字幕內容。"
+    text = "第一段字幕內容，第二段字幕內容，第三段字幕內容。"
     segments = await provider.generate_segments(text, duration_seconds=9.0)
     assert len(segments) > 1
     for i in range(1, len(segments)):
@@ -86,7 +86,7 @@ async def test_total_duration_matches() -> None:
 @pytest.mark.asyncio
 async def test_indices_are_sequential() -> None:
     provider = EstimationProvider(target_chars=10, max_chars=15)
-    text = "第一段字幕內容第二段字幕內容第三段字幕內容。"
+    text = "第一段字幕內容，第二段字幕內容，第三段字幕內容。"
     segments = await provider.generate_segments(text, duration_seconds=6.0)
     indices = [s.index for s in segments]
     assert indices == list(range(1, len(segments) + 1))

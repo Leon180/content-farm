@@ -20,27 +20,36 @@ def composer() -> FFmpegComposer:
     )
 
 
-def _mock_process(returncode: int = 0, stderr: bytes = b"") -> AsyncMock:
+def _mock_process(returncode: int = 0, stderr: bytes = b"", stdout: bytes = b"") -> AsyncMock:
     """Create a mock async process."""
     proc = AsyncMock()
-    proc.communicate.return_value = (b"", stderr)
+    proc.communicate.return_value = (stdout, stderr)
     proc.returncode = returncode
     return proc
 
 
+def _probe_stdout(duration: float) -> bytes:
+    """Build fake ffprobe JSON stdout."""
+    import json
+    return json.dumps({"format": {"duration": str(duration)}}).encode()
+
+
 @pytest.mark.asyncio
-async def test_compose_scene_command(
+async def test_compose_scene_loops_short_video(
     composer: FFmpegComposer, tmp_path: Path,
 ) -> None:
+    """When video is shorter than audio, it should loop."""
     video = tmp_path / "input.mp4"
     audio = tmp_path / "input.mp3"
     output = tmp_path / "output.mp4"
     video.touch()
     audio.touch()
 
-    mock_proc = _mock_process()
+    # Probe returns 5s video, target is 15.5s → should loop
+    probe_proc = _mock_process(stdout=_probe_stdout(5.0))
+    ffmpeg_proc = _mock_process()
 
-    with patch("asyncio.create_subprocess_exec", return_value=mock_proc) as mock_exec:
+    with patch("asyncio.create_subprocess_exec", side_effect=[probe_proc, ffmpeg_proc]) as mock_exec:
         result = await composer.compose_scene(
             video_path=video,
             audio_path=audio,
@@ -52,13 +61,46 @@ async def test_compose_scene_command(
     args = mock_exec.call_args[0]
     assert args[0] == "ffmpeg"
     assert "-stream_loop" in args
-    assert "-1" in args
-    assert "15.50" in args  # target_duration
+    assert "-map" in args
+    assert "0:v:0" in args
+    assert "1:a:0" in args
+    assert "15.50" in args
     assert "libx264" in args
-    assert "-preset" in args
-    assert "fast" in args  # custom preset
-    assert "-crf" in args
-    assert "20" in args  # custom crf
+    assert "fast" in args
+    assert "20" in args
+    # No speed-up (video < audio)
+    assert "setpts=PTS" in str(args)
+
+
+@pytest.mark.asyncio
+async def test_compose_scene_speeds_up_long_video(
+    composer: FFmpegComposer, tmp_path: Path,
+) -> None:
+    """When video is longer than audio, it should speed up."""
+    video = tmp_path / "input.mp4"
+    audio = tmp_path / "input.mp3"
+    output = tmp_path / "output.mp4"
+    video.touch()
+    audio.touch()
+
+    # Probe returns 30s video, target is 15s → should speed up 2x
+    probe_proc = _mock_process(stdout=_probe_stdout(30.0))
+    ffmpeg_proc = _mock_process()
+
+    with patch("asyncio.create_subprocess_exec", side_effect=[probe_proc, ffmpeg_proc]) as mock_exec:
+        await composer.compose_scene(
+            video_path=video,
+            audio_path=audio,
+            output_path=output,
+            target_duration=15.0,
+        )
+
+    args = mock_exec.call_args[0]
+    # Should NOT loop (video is longer)
+    assert "-stream_loop" not in args
+    # Should have speed-up in vf
+    vf_str = str(args)
+    assert "setpts=PTS/2.0000" in vf_str
 
 
 @pytest.mark.asyncio

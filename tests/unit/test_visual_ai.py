@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
@@ -15,6 +16,12 @@ from content_farm.visual.generator import (
     _should_use_ai,
 )
 from content_farm.visual.schemas import VideoResult
+
+
+async def _fake_concat(clip_paths, output_path, ffmpeg_path="ffmpeg"):
+    """Stub concat that just copies the first clip."""
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(clip_paths[0], output_path)
 
 
 def _make_video_result(duration: int = 15) -> VideoResult:
@@ -113,7 +120,13 @@ def ai_generator(
 
     mock_stock = AsyncMock()
     mock_stock.search_videos.return_value = (_make_video_result(),)
-    mock_stock.download_video.return_value = 500_000
+
+    async def _fake_download(video, *, output_path, **kw):
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_bytes(b"fake-video")
+        return 500_000
+
+    mock_stock.download_video.side_effect = _fake_download
 
     mock_image = AsyncMock()
     mock_image.generate_image.return_value = tmp_path / "scene_001.png"
@@ -150,7 +163,9 @@ async def test_ai_preference_uses_image_provider(
 
 
 @pytest.mark.asyncio
+@patch("content_farm.visual.generator._concat_clips", side_effect=_fake_concat)
 async def test_stock_preference_skips_image_provider(
+    _mock_concat,
     ai_generator: tuple[VisualGenerator, AsyncMock, AsyncMock],
 ) -> None:
     gen, mock_stock, mock_image = ai_generator
@@ -158,13 +173,15 @@ async def test_stock_preference_skips_image_provider(
 
     artifact = await gen.generate(script)
 
-    assert artifact.assets[0].source == "pexels"
+    assert artifact.assets[0].source == "stock_multi"
     mock_image.generate_image.assert_not_called()
-    mock_stock.search_videos.assert_called_once()
+    mock_stock.search_videos.assert_called()
 
 
 @pytest.mark.asyncio
+@patch("content_farm.visual.generator._concat_clips", side_effect=_fake_concat)
 async def test_ai_fallback_to_stock_on_failure(
+    _mock_concat,
     ai_generator: tuple[VisualGenerator, AsyncMock, AsyncMock],
 ) -> None:
     gen, mock_stock, mock_image = ai_generator
@@ -176,9 +193,9 @@ async def test_ai_fallback_to_stock_on_failure(
     artifact = await gen.generate(script)
 
     # Should fall back to stock
-    assert artifact.assets[0].source == "pexels"
+    assert artifact.assets[0].source == "stock_multi"
     mock_image.generate_image.assert_called_once()
-    mock_stock.search_videos.assert_called_once()
+    mock_stock.search_videos.assert_called()
 
 
 @pytest.mark.asyncio
@@ -201,7 +218,9 @@ async def test_auto_preference_with_ai_style(
 
 
 @pytest.mark.asyncio
+@patch("content_farm.visual.generator._concat_clips", side_effect=_fake_concat)
 async def test_auto_preference_with_stock_style(
+    _mock_concat,
     ai_generator: tuple[VisualGenerator, AsyncMock, AsyncMock],
 ) -> None:
     gen, mock_stock, mock_image = ai_generator
@@ -210,20 +229,27 @@ async def test_auto_preference_with_stock_style(
     artifact = await gen.generate(script)
 
     # auto + stock_footage style → use stock
-    assert artifact.assets[0].source == "pexels"
+    assert artifact.assets[0].source == "stock_multi"
     mock_image.generate_image.assert_not_called()
 
 
 @pytest.mark.asyncio
+@patch("content_farm.visual.generator._concat_clips", side_effect=_fake_concat)
 async def test_no_image_provider_always_stock(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+    _mock_concat, monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
 ) -> None:
     monkeypatch.setenv("CF_ANTHROPIC_API_KEY", "test-key")
     settings = Settings()  # type: ignore[call-arg]
 
     mock_stock = AsyncMock()
     mock_stock.search_videos.return_value = (_make_video_result(),)
-    mock_stock.download_video.return_value = 500_000
+
+    async def _fake_download(video, *, output_path, **kw):
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_bytes(b"fake-video")
+        return 500_000
+
+    mock_stock.download_video.side_effect = _fake_download
 
     gen = VisualGenerator(
         stock=mock_stock,
@@ -236,4 +262,4 @@ async def test_no_image_provider_always_stock(
     artifact = await gen.generate(script)
 
     # No image provider — should use stock even with ai preference
-    assert artifact.assets[0].source == "pexels"
+    assert artifact.assets[0].source == "stock_multi"

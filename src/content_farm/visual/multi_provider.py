@@ -23,7 +23,7 @@ class MultiStockProvider:
         *,
         min_duration: int = 5,
         max_duration: int = 30,
-        orientation: str = "portrait",
+        orientation: str = "landscape",
         per_page: int = 15,
     ) -> tuple[VideoResult, ...]:
         """Search providers in order, return first non-empty result set."""

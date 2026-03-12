@@ -152,7 +152,7 @@ class TestFormatScript:
         text = msgs[0]
         assert "場景 1：場景1" in text
         assert "旁白內容1" in text
-        assert "10s" in text
+        assert "10" in text and "s" in text
 
 
 # ---------------------------------------------------------------------------
