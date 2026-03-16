@@ -30,10 +30,30 @@ def _digits_to_chinese(match: re.Match) -> str:
     return chinese + suffix
 
 
-def normalize_for_tts(text: str) -> str:
+def apply_pronunciation_map(
+    text: str,
+    pronunciation_map: dict[str, str],
+) -> str:
+    """Apply pronunciation substitutions for TTS only.
+
+    Each key (display text) is replaced with its value (TTS text).
+    Applied in iteration order so later entries can build on earlier ones.
+    """
+    for display, tts in pronunciation_map.items():
+        text = text.replace(display, tts)
+    return text
+
+
+def normalize_for_tts(
+    text: str,
+    pronunciation_map: dict[str, str] | None = None,
+) -> str:
     """Normalize text for Chinese TTS.
 
-    Currently handles:
+    Handles:
+    - Pronunciation substitutions (鮪魚 → 偉魚 for TTS only)
     - 4-digit years: 1974年 → 一九七四年
     """
+    if pronunciation_map:
+        text = apply_pronunciation_map(text, pronunciation_map)
     return _YEAR_PATTERN.sub(_digits_to_chinese, text)

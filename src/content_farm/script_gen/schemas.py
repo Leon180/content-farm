@@ -96,6 +96,7 @@ class Script(PipelineArtifact):
     tags: tuple[str, ...] = ()
     sources: tuple[str, ...] = ()
     ai_disclosure: bool = True
+    pronunciation_map: dict[str, str] = {}
 
     @property
     def full_narration(self) -> str:

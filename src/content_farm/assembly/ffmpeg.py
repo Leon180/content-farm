@@ -111,11 +111,17 @@ class FFmpegComposer:
         output_path: Path,
         target_width: int = 1080,
         target_height: int = 1920,
+        title: str | None = None,
+        title_fontsize: int = 58,
+        title_fontcolor: str = "yellow",
+        title_borderw: int = 3,
+        title_bordercolor: str = "black",
     ) -> Path:
         """Convert landscape video to portrait with letterboxing.
 
         Places the landscape content centered vertically with black bars
         on top and bottom. Input 1920x1080 → Output 1080x1920.
+        When *title* is provided, burns it into the top black bar.
         """
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -124,6 +130,26 @@ class FFmpegComposer:
             f"pad={target_width}:{target_height}:"
             f"(ow-iw)/2:(oh-ih)/2:black"
         )
+
+        if title:
+            from content_farm.assembly.drawtext import escape_text, find_cjk_font
+
+            escaped = escape_text(title)
+            fontfile = find_cjk_font()
+
+            tokens = [
+                f"text='{escaped}'",
+                f"fontsize={title_fontsize}",
+                f"fontcolor={title_fontcolor}",
+                f"borderw={title_borderw}",
+                f"bordercolor={title_bordercolor}",
+                "x=(w-text_w)/2",
+                "y=280",
+            ]
+            if fontfile:
+                tokens.insert(1, f"fontfile='{fontfile}'")
+
+            vf += ",drawtext=" + ":".join(tokens)
 
         args = [
             "-y",

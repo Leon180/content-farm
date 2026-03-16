@@ -328,6 +328,7 @@ async def run_stage(stage: str, run_dir: Path) -> None:
             await composer.convert_to_portrait(
                 input_path=landscape_path,
                 output_path=portrait_path,
+                title=ctx.script.video_title,
             )
             logger.info("Portrait video: %s", portrait_path)
 

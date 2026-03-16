@@ -52,7 +52,7 @@ def parse_srt(content: str) -> list[tuple[float, float, str]]:
     return entries
 
 
-def _escape_text(text: str) -> str:
+def escape_text(text: str) -> str:
     """Escape text for FFmpeg drawtext ``text='...'`` (single-quoted value).
 
     The value is wrapped in single quotes by the caller, which protects
@@ -93,7 +93,7 @@ def build_drawtext_filter(
 
     parts: list[str] = []
     for start, end, text in entries:
-        escaped = _escape_text(text)
+        escaped = escape_text(text)
 
         tokens = [
             f"text='{escaped}'",
@@ -136,7 +136,7 @@ def build_drawtext_filter_from_entries(
 
     parts: list[str] = []
     for start, end, text in entries:
-        escaped = _escape_text(text)
+        escaped = escape_text(text)
 
         tokens = [
             f"text='{escaped}'",

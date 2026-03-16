@@ -1,8 +1,9 @@
 """Assemble final video from timeline-named clips.
 
-Scans visual/ for user-selected clips named ``MM:SS~MM:SS.mp4``
+Scans visual/ for user-selected clips named ``MM:SS~MM:SS.<ext>``
 (no index suffix), normalizes, concatenates, merges full audio,
-and burns subtitles.
+and burns subtitles.  Supports both video (.mp4/.mov/.webm/.mkv)
+and image (.png/.jpg/.jpeg/.webp) files.
 """
 
 from __future__ import annotations
@@ -17,11 +18,22 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-# Matches "MM:SS~MM:SS.mp4" (no _NN index = user's final pick)
-_TIMELINE_RE = re.compile(r"^(\d{2}):(\d{2})~(\d{2}):(\d{2})\.mp4$")
+_VIDEO_EXTS = frozenset({"mp4", "mov", "webm", "mkv"})
+_IMAGE_EXTS = frozenset({"png", "jpg", "jpeg", "webp"})
+_ALL_EXTS = _VIDEO_EXTS | _IMAGE_EXTS
+_EXTS_PATTERN = "|".join(sorted(_ALL_EXTS))
 
-# Matches "MM:SS~MM:SS_NN.mp4" (with index = candidate, not yet selected)
-_CANDIDATE_RE = re.compile(r"^(\d{2}):(\d{2})~(\d{2}):(\d{2})_\d+\.mp4$")
+# Matches "MM:SS~MM:SS.<ext>" (no _NN index = user's final pick)
+_TIMELINE_RE = re.compile(
+    rf"^(\d{{2}}):(\d{{2}})~(\d{{2}}):(\d{{2}})\.({_EXTS_PATTERN})$",
+    re.IGNORECASE,
+)
+
+# Matches "MM:SS~MM:SS_NN.<ext>" (with index = candidate, not yet selected)
+_CANDIDATE_RE = re.compile(
+    rf"^(\d{{2}}):(\d{{2}})~(\d{{2}}):(\d{{2}})_\d+\.({_EXTS_PATTERN})$",
+    re.IGNORECASE,
+)
 
 
 @dataclass(frozen=True)
@@ -36,11 +48,16 @@ class TimelineClip:
     def target_duration(self) -> float:
         return self.end_seconds - self.start_seconds
 
+    @property
+    def is_image(self) -> bool:
+        return self.path.suffix.lower().lstrip(".") in _IMAGE_EXTS
+
 
 def scan_timeline_clips(visual_dir: Path) -> list[TimelineClip]:
     """Find user-selected timeline clips, sorted by start time.
 
-    Only picks ``MM:SS~MM:SS.mp4`` (without index suffix).
+    Picks ``MM:SS~MM:SS.<ext>`` (without index suffix).
+    Supports video (.mp4/.mov/.webm/.mkv) and image (.png/.jpg/.jpeg/.webp).
     """
     clips: list[TimelineClip] = []
     for f in visual_dir.iterdir():
@@ -133,37 +150,56 @@ async def _normalize_clip(
     height: int,
     fps: int,
 ) -> None:
-    """Normalize a clip to target resolution, fps, and duration."""
-    source_dur = await _probe_duration(clip.path, ffprobe_path)
+    """Normalize a clip to target resolution, fps, and duration.
+
+    Handles both video files (speed-adjust to fit) and image files
+    (loop as still frame for the target duration).
+    """
     target_dur = clip.target_duration
-
-    # Build setpts for speed adjustment
-    if source_dur > 0 and abs(source_dur - target_dur) > 0.1:
-        speed = source_dur / target_dur
-        pts = f"setpts=PTS/{speed:.4f}"
-    else:
-        pts = "setpts=PTS"
-
-    vf = (
-        f"scale={width}:{height}"
-        ":force_original_aspect_ratio=decrease,"
-        f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,"
-        f"setsar=1,fps={fps},{pts}"
-    )
 
     # Use file: protocol to handle : in filenames
     input_path = f"file:{clip.path.resolve()}"
 
-    args = [
-        ffmpeg_path, "-y",
-        "-i", input_path,
-        "-t", f"{target_dur:.2f}",
-        "-vf", vf,
-        "-an",  # strip audio from stock clips
-        "-c:v", "libx264", "-preset", "medium", "-crf", "23",
-        "-pix_fmt", "yuv420p",
-        str(output_path),
-    ]
+    vf_scale = (
+        f"scale={width}:{height}"
+        ":force_original_aspect_ratio=decrease,"
+        f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,"
+        f"setsar=1,fps={fps}"
+    )
+
+    if clip.is_image:
+        # Image → video: loop still image for target duration
+        args = [
+            ffmpeg_path, "-y",
+            "-loop", "1",
+            "-i", input_path,
+            "-t", f"{target_dur:.2f}",
+            "-vf", vf_scale,
+            "-c:v", "libx264", "-preset", "medium", "-crf", "23",
+            "-pix_fmt", "yuv420p",
+            str(output_path),
+        ]
+    else:
+        # Video: speed-adjust to match target duration
+        source_dur = await _probe_duration(clip.path, ffprobe_path)
+        if source_dur > 0 and abs(source_dur - target_dur) > 0.1:
+            speed = source_dur / target_dur
+            pts = f"setpts=PTS/{speed:.4f}"
+        else:
+            pts = "setpts=PTS"
+
+        vf = f"{vf_scale},{pts}"
+        args = [
+            ffmpeg_path, "-y",
+            "-i", input_path,
+            "-t", f"{target_dur:.2f}",
+            "-vf", vf,
+            "-an",
+            "-c:v", "libx264", "-preset", "medium", "-crf", "23",
+            "-pix_fmt", "yuv420p",
+            str(output_path),
+        ]
+
     await _run(args)
 
 

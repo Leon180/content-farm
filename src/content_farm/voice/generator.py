@@ -72,6 +72,7 @@ class VoiceGenerator:
                     narration=scene.narration,
                     previous_text=previous_text,
                     next_text=next_text,
+                    pronunciation_map=script.pronunciation_map,
                 )
             )
 
@@ -132,6 +133,7 @@ class VoiceGenerator:
         narration: str,
         previous_text: str | None,
         next_text: str | None,
+        pronunciation_map: dict[str, str] | None = None,
     ) -> AudioSegment:
         """Generate audio for a single scene with continuity context."""
         async with self._semaphore:
@@ -148,7 +150,7 @@ class VoiceGenerator:
                     character_count=len(narration),
                 )
 
-            tts_text = normalize_for_tts(narration)
+            tts_text = normalize_for_tts(narration, pronunciation_map)
 
             await self._tts.generate_speech_with_context(
                 text=tts_text,
