@@ -19,8 +19,20 @@ Generate a video script for: $ARGUMENTS
 - For narration style rules and narrative structures, read the [prompts guide](prompts.md)
 - For the exact JSON schema, read the [schema reference](schema.md)
 - If `<run_dir>/research.md` exists, read it for factual grounding
+- If `<run_dir>/prescript.json` exists, use it as the structural foundation
 
 ## Script Generation
+
+### If prescript.json exists (recommended flow):
+
+1. **Read prescript.json** — use its structure, scene breakdown, and key points as the skeleton
+2. **Read research brief** — ground all facts in `research.md`
+3. **Expand narration** — write full narration for each scene based on the outline's direction
+4. **Generate visual hints** with English keywords for stock footage
+5. **Use the selected title** from prescript.json (or user's edited version)
+6. **Set sources** — ONLY real URLs from research.md
+
+### If no prescript.json (standalone mode):
 
 1. **Read research brief** — use ONLY facts and sources from `research.md`
 2. **Choose narrative structure** (from prompts.md):

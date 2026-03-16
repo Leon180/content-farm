@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock
+from pathlib import Path
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -54,6 +55,10 @@ def voice_generator(
         settings=settings,
         output_dir=tmp_path / "audio",
     )
+    # Stub out concat and subtitle generation (tested separately)
+    full_mp3 = tmp_path / "audio" / "full.mp3"
+    gen._concat_full_audio = AsyncMock(return_value=full_mp3)  # type: ignore[method-assign]
+    gen._generate_subtitles = AsyncMock(return_value=tmp_path / "subtitles" / "subtitles.srt")  # type: ignore[method-assign]
     return gen, mock_tts
 
 

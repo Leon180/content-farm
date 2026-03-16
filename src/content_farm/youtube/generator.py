@@ -47,12 +47,19 @@ class UploadGenerator:
 
         captions_set = False
         if upload_input.subtitle_path:
-            await self._uploader.set_captions(
-                video_id=video_id,
-                caption_path=Path(upload_input.subtitle_path),
-                language=upload_input.script.language,
-            )
-            captions_set = True
+            try:
+                await self._uploader.set_captions(
+                    video_id=video_id,
+                    caption_path=Path(upload_input.subtitle_path),
+                    language=upload_input.script.language,
+                )
+                captions_set = True
+            except Exception:
+                logger.warning(
+                    "Caption upload failed for %s (may need force-ssl scope)",
+                    video_id,
+                    exc_info=True,
+                )
 
         url = f"https://youtu.be/{video_id}"
         logger.info(

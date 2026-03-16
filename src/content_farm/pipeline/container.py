@@ -137,13 +137,17 @@ class ServiceContainer:
             output_dir=output_dir,
         )
 
-    def create_upload_generator(self) -> "UploadGenerator":
+    def create_upload_generator(
+        self,
+        upload_settings: "UploadSettings | None" = None,
+    ) -> "UploadGenerator":
         from content_farm.youtube.factory import create_youtube_uploader
         from content_farm.youtube.generator import UploadGenerator
 
         return UploadGenerator(
             uploader=create_youtube_uploader(self._settings),
             settings=self._settings,
+            upload_settings=upload_settings,
         )
 
     def create_drive_uploader(self) -> "DriveUploader | None":

@@ -46,7 +46,6 @@ class GoogleProvider:
             token_uri=_TOKEN_URI,
             client_id=self._client_id,
             client_secret=self._client_secret,
-            scopes=_SCOPES,
         )
         creds.refresh(Request())
         return creds

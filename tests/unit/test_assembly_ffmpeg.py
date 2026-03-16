@@ -38,14 +38,14 @@ def _probe_stdout(duration: float) -> bytes:
 async def test_compose_scene_loops_short_video(
     composer: FFmpegComposer, tmp_path: Path,
 ) -> None:
-    """When video is shorter than audio, it should loop."""
+    """When video is shorter than audio, setpts should slow it down."""
     video = tmp_path / "input.mp4"
     audio = tmp_path / "input.mp3"
     output = tmp_path / "output.mp4"
     video.touch()
     audio.touch()
 
-    # Probe returns 5s video, target is 15.5s → should loop
+    # Probe returns 5s video, target is 15.5s → should slow down via setpts
     probe_proc = _mock_process(stdout=_probe_stdout(5.0))
     ffmpeg_proc = _mock_process()
 
@@ -60,7 +60,10 @@ async def test_compose_scene_loops_short_video(
     assert result == output
     args = mock_exec.call_args[0]
     assert args[0] == "ffmpeg"
-    assert "-stream_loop" in args
+    # Speed adjustment via setpts in -vf filter
+    vf_idx = args.index("-vf")
+    vf_value = args[vf_idx + 1]
+    assert "setpts=PTS/" in vf_value
     assert "-map" in args
     assert "0:v:0" in args
     assert "1:a:0" in args
@@ -274,3 +277,29 @@ async def test_ffmpeg_failure_raises(
                 output_path=output,
                 target_duration=10.0,
             )
+
+
+@pytest.mark.asyncio
+async def test_convert_to_portrait(
+    composer: FFmpegComposer, tmp_path: Path,
+) -> None:
+    """Verify portrait conversion builds correct scale+pad filter."""
+    video = tmp_path / "input.mp4"
+    output = tmp_path / "upload" / "portrait.mp4"
+    video.touch()
+
+    mock_proc = _mock_process()
+
+    with patch("asyncio.create_subprocess_exec", return_value=mock_proc) as mock_exec:
+        result = await composer.convert_to_portrait(
+            input_path=video,
+            output_path=output,
+        )
+
+    assert result == output
+    args = mock_exec.call_args[0]
+    args_str = " ".join(str(a) for a in args)
+    assert "scale=1080:-2" in args_str
+    assert "pad=1080:1920" in args_str
+    assert "-c:a" in args
+    assert "copy" in args

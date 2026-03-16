@@ -32,6 +32,30 @@ class PhotoResult(BaseModel):
 
 
 
+class ClipInfo(BaseModel):
+    """Metadata for a single downloaded clip candidate."""
+
+    model_config = {"frozen": True}
+
+    scene_number: int
+    clip_index: int  # 1-based sequential within scene
+    file_name: str  # e.g. "scene_001_03.mp4"
+    keyword: str
+    provider_id: str  # e.g. "pexels:12345"
+    duration_seconds: float
+    width: int
+    height: int
+    thumbnail_url: str = ""
+    selected: bool = False
+
+
+class ClipsManifest(BaseModel):
+    """Manifest of all downloaded clip candidates for a run."""
+
+    clips: list[ClipInfo] = []
+    output_dir: str = ""
+
+
 class VisualAsset(BaseModel):
     """One visual asset corresponding to a scene."""
 

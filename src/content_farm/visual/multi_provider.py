@@ -26,7 +26,8 @@ class MultiStockProvider:
         orientation: str = "landscape",
         per_page: int = 15,
     ) -> tuple[VideoResult, ...]:
-        """Search providers in order, return first non-empty result set."""
+        """Search all providers and merge results for maximum variety."""
+        all_results: list[VideoResult] = []
         for provider, name in zip(self._providers, self._names):
             try:
                 results = await provider.search_videos(
@@ -37,10 +38,10 @@ class MultiStockProvider:
                     per_page=per_page,
                 )
                 if results:
-                    return results
+                    all_results.extend(results)
             except Exception:
                 logger.warning("Provider %s failed for query '%s'", name, query, exc_info=True)
-        return ()
+        return tuple(all_results)
 
     async def search_photos(
         self,
@@ -49,20 +50,21 @@ class MultiStockProvider:
         orientation: str = "landscape",
         per_page: int = 5,
     ) -> tuple[PhotoResult, ...]:
-        """Search providers in order, return first non-empty photo result set."""
+        """Search all providers and merge photo results."""
+        all_results: list[PhotoResult] = []
         for provider, name in zip(self._providers, self._names):
             try:
                 results = await provider.search_photos(
                     query, orientation=orientation, per_page=per_page,
                 )
                 if results:
-                    return results
+                    all_results.extend(results)
             except Exception:
                 logger.warning(
                     "Provider %s photo search failed for '%s'",
                     name, query, exc_info=True,
                 )
-        return ()
+        return tuple(all_results)
 
     async def download_video(
         self,

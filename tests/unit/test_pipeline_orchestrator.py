@@ -177,6 +177,13 @@ def mock_container() -> MagicMock:
     # Visual generator
     visual_gen = MagicMock()
     visual_gen.generate = AsyncMock(return_value=_make_visual())
+    clip_mock = MagicMock(scene_number=1)
+    manifest_mock = MagicMock(clips=[clip_mock], output_dir="")
+    manifest_mock.model_dump.return_value = {
+        "clips": [{"scene_number": 1, "file_name": "scene_001_01.mp4"}],
+        "output_dir": "",
+    }
+    visual_gen.download_clips = AsyncMock(return_value=manifest_mock)
     container.create_visual_generator.return_value = visual_gen
 
     # Subtitle generator

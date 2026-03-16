@@ -6,13 +6,14 @@ from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 
 from content_farm.thumbnail.pillow_provider import (
     PillowProvider,
     _create_gradient,
+    _measure_text,
     _parse_hex,
-    _wrap_text,
+    _wrap_text_by_pixel,
 )
 from content_farm.thumbnail.schemas import ThumbnailSettings
 
@@ -34,29 +35,47 @@ class TestParseHex:
         assert _parse_hex("#FFFFFF") == (255, 255, 255)
 
 
-class TestWrapText:
+def _make_draw() -> tuple[Image.Image, ImageDraw.Draw, ImageFont.ImageFont]:
+    """Create a dummy draw context for pixel-based wrap tests."""
+    img = Image.new("RGB", (1280, 720))
+    draw = ImageDraw.Draw(img)
+    font = ImageFont.load_default()
+    return img, draw, font
+
+
+class TestWrapTextByPixel:
     def test_short_text_no_wrap(self) -> None:
-        assert _wrap_text("短標題", 40) == ["短標題"]
+        _, draw, font = _make_draw()
+        result = _wrap_text_by_pixel("短標題", font, draw, max_width=1200)
+        assert result == ["短標題"]
 
     def test_empty_text(self) -> None:
-        assert _wrap_text("", 40) == []
+        _, draw, font = _make_draw()
+        assert _wrap_text_by_pixel("", font, draw, max_width=1200) == []
 
     def test_long_text_wraps(self) -> None:
+        _, draw, font = _make_draw()
         text = "這是一個非常非常長的中文影片標題需要被換行顯示在縮圖上面才行"
-        lines = _wrap_text(text, 15)
+        # Use a narrow width to force wrapping
+        lines = _wrap_text_by_pixel(text, font, draw, max_width=80)
         assert len(lines) >= 2
-        for line in lines:
-            assert len(line) <= 20  # allow some tolerance
+        # All chars preserved
+        assert "".join(lines) == text
 
     def test_prefers_punctuation_break(self) -> None:
+        _, draw, font = _make_draw()
         text = "前半段的文字內容，後半段的文字內容繼續"
-        lines = _wrap_text(text, 12)
+        # Width that fits ~10 chars but not all
+        char_w = _measure_text(draw, "字", font)
+        lines = _wrap_text_by_pixel(text, font, draw, max_width=char_w * 10)
         assert len(lines) >= 2
         assert "，" in lines[0]
 
-    def test_exact_max_chars(self) -> None:
-        text = "a" * 40
-        assert _wrap_text(text, 40) == [text]
+    def test_single_line_fits(self) -> None:
+        _, draw, font = _make_draw()
+        text = "短"
+        result = _wrap_text_by_pixel(text, font, draw, max_width=9999)
+        assert result == ["短"]
 
 
 class TestCreateGradient:

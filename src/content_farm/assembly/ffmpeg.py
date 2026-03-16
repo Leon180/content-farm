@@ -39,27 +39,22 @@ class FFmpegComposer:
     ) -> Path:
         """Combine one video clip + one audio clip into a composed scene.
 
-        If the video is longer than the audio, speed it up (via setpts)
-        so all visual content fits within the audio duration.
-        If the video is shorter, loop it to fill.
+        Adjusts video speed (via setpts) to match audio duration.
+        If video is longer, speed up; if shorter, slow down.
         """
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         video_duration = await self._probe_duration(video_path)
 
-        # Build speed factor: >1 means video is longer → speed up
-        if video_duration > 0 and video_duration > target_duration:
+        # Build speed factor: adjust video speed to match audio duration.
+        # >1 means video is longer → speed up; <1 means shorter → slow down.
+        if video_duration > 0 and abs(video_duration - target_duration) > 0.1:
             speed = video_duration / target_duration
             pts_factor = f"setpts=PTS/{speed:.4f}"
         else:
             pts_factor = "setpts=PTS"
 
-        # When video is shorter than audio, loop it (skip if probe failed)
-        loop_flag = (
-            ["-stream_loop", "-1"]
-            if 0 < video_duration < target_duration
-            else []
-        )
+        loop_flag: list[str] = []
 
         vf = (
             f"scale={self._s.width}:{self._s.height}"
@@ -108,6 +103,43 @@ class FFmpegComposer:
         except (FileNotFoundError, KeyError, ValueError):
             pass
         return 0.0
+
+    async def convert_to_portrait(
+        self,
+        *,
+        input_path: Path,
+        output_path: Path,
+        target_width: int = 1080,
+        target_height: int = 1920,
+    ) -> Path:
+        """Convert landscape video to portrait with letterboxing.
+
+        Places the landscape content centered vertically with black bars
+        on top and bottom. Input 1920x1080 → Output 1080x1920.
+        """
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        vf = (
+            f"scale={target_width}:-2,"
+            f"pad={target_width}:{target_height}:"
+            f"(ow-iw)/2:(oh-ih)/2:black"
+        )
+
+        args = [
+            "-y",
+            "-i", str(input_path),
+            "-vf", vf,
+            "-c:v", "libx264",
+            "-preset", self._s.preset,
+            "-crf", str(self._s.crf),
+            "-c:a", "copy",
+            "-pix_fmt", self._s.pixel_format,
+            "-movflags", "+faststart",
+            str(output_path),
+        ]
+
+        await self._run_ffmpeg(args)
+        return output_path
 
     async def concatenate(
         self,

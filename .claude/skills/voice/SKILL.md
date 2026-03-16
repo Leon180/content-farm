@@ -23,8 +23,10 @@ Generate voice audio for the video in: $ARGUMENTS
 
 After completion, check:
 1. `$0/audio/scene_*.mp3` files exist (one per scene)
-2. `$0/voice_artifact.json` was created
-3. No errors in the output
+2. `$0/audio/full.mp3` exists (concatenated audio)
+3. `$0/subtitles/subtitles.srt` exists (auto-generated subtitles)
+4. `$0/voice_artifact.json` was created
+5. No errors in the output
 
 ## On Failure
 

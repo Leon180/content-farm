@@ -35,6 +35,7 @@
       "Bash(__NEW_LINE_cc172a6b681fa1b1__ echo \"=== -vf test ===\")",
       "Bash(ffmpeg -y -f lavfi -i \"color=c=black:s=1080x1920:d=3:r=30\" -vf \"$FILTER\" -c:v libx264 -preset ultrafast -pix_fmt yuv420p -t 3 /tmp/dt_vf4.mp4)",
       "Bash(ffmpeg -y -f lavfi -i \"color=c=black:s=1080x1920:d=12:r=30\" -f lavfi -i \"anullsrc=cl=stereo:sample_rate=44100\" -t 12 -map 0:v -map 1:a -filter_script:v /tmp/dt_fixed.txt -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -shortest /tmp/dt_fixed_output.mp4)",
+      "WebSearch",
       "WebFetch(domain:pixabay.com)",
       "Bash(python -m pytest tests/unit/test_telegram_approval.py::TestDirectKeywordEdit -v)",
       "Bash(find src/content_farm -name \"*.py\" -exec wc -l {} ;)",
@@ -72,11 +73,43 @@
       "Bash(ffprobe -v error -show_entries stream=codec_type,bit_rate,duration -of json \"output/20260312_183000_海洋製造了你呼吸的一半氧氣/assembly/scene_002_composed.mp4\")",
       "Bash(ffprobe -v error -show_entries stream=codec_type,bit_rate,duration -of json \"output/20260312_183000_海洋製造了你呼吸的一半氧氣/assembly/scene_003_composed.mp4\")",
       "Bash(ffprobe -v error -show_entries stream=codec_type,duration,width,height,codec_name -of json \"output/20260312_183000_海洋製造了你呼吸的一半氧氣/visual/scene_003.mp4\")",
-      "Bash(.venv/bin/python -m pytest tests/ -x -q --timeout=30)"
+      "Bash(.venv/bin/python -m pytest tests/ -x -q --timeout=30)",
+      "Bash(.venv/bin/python -m pytest tests/unit/ -x -q)",
+      "Bash(.venv/bin/python -m pytest tests/unit/ -q --ignore=tests/unit/test_multi_provider.py)",
+      "Bash(.venv/bin/python -m pytest tests/unit/test_pipeline_orchestrator.py::TestContentPipeline::test_full_pipeline -x -q)",
+      "Bash(.venv/bin/python -m pytest tests/unit/test_pipeline_orchestrator.py -x -q)",
+      "Bash(.venv/bin/python -m pytest tests/unit/test_visual_factory.py tests/unit/test_youtube_generator.py -q)",
+      "Bash(.venv/bin/python -m pytest tests/unit/test_voice_concat.py tests/unit/test_visual_timeline.py tests/unit/test_assembly_timeline.py -v)",
+      "Skill(research)",
+      "Skill(research:*)",
+      "WebFetch(domain:thedecisionlab.com)",
+      "WebFetch(domain:www.nature.com)",
+      "WebFetch(domain:neurosciencenews.com)",
+      "WebFetch(domain:news.berkeley.edu)",
+      "WebFetch(domain:www.psychologytoday.com)",
+      "WebFetch(domain:greatergood.berkeley.edu)",
+      "Bash(.venv/bin/python scripts/run_stage.py --stage voice --run-dir output/20260315_120000_大腦忽略反面證據)",
+      "Bash(ffmpeg -y -f lavfi -i \"color=c=black:s=1920x1080:r=30\" -i \"output/20260315_120000_大腦忽略反面證據/audio/full.mp3\" -vf \"subtitles=output/20260315_120000_大腦忽略反面證據/subtitles/subtitles.srt:force_style=''FontSize=24,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=2,Alignment=2,MarginV=60''\" -shortest -c:v libx264 -preset fast -c:a aac \"output/20260315_120000_大腦忽略反面證據/preview_audio_sub.mp4\")",
+      "Bash(ffmpeg -y -f lavfi -i \"color=c=black:s=1920x1080:r=30\" -i \"/Users/lileon/project/content-farm/output/20260315_120000_大腦忽略反面證據/audio/full.mp3\" -vf \"subtitles=/tmp/subtitles_preview.srt:force_style=''FontName=PingFang TC,FontSize=58,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=3,Shadow=0,Alignment=2,MarginV=60''\" -c:v libx264 -preset fast -c:a aac -shortest \"/Users/lileon/project/content-farm/output/20260315_120000_大腦忽略反面證據/preview_audio_sub.mp4\")",
+      "Bash(printf \"file ''scene_001.mp3''\\\\nfile ''scene_002.mp3''\\\\nfile ''scene_003.mp3''\\\\nfile ''scene_004.mp3''\\\\nfile ''scene_005.mp3''\\\\nfile ''scene_006.mp3''\\\\n\")",
+      "Bash(ffmpeg -y -f concat -safe 0 -i /tmp/concat_audio.txt -c copy full.mp3)",
+      "Bash(ffmpeg -y -f concat -safe 0 -i /tmp/concat_audio.txt -c copy /Users/lileon/project/content-farm/output/20260315_120000_大腦忽略反面證據/audio/full.mp3)",
+      "Bash(/Users/lileon/project/content-farm/.venv/bin/python /Users/lileon/project/content-farm/scripts/run_stage.py --stage visual_timeline --run-dir \"/Users/lileon/project/content-farm/output/20260315_120000_大腦忽略反面證據\")",
+      "Bash(/Users/lileon/project/content-farm/.venv/bin/python /Users/lileon/project/content-farm/scripts/run_stage.py --stage assembly_timeline --run-dir \"/Users/lileon/project/content-farm/output/20260315_120000_大腦忽略反面證據\")",
+      "Bash(ffmpeg -y -i \"/Users/lileon/project/content-farm/output/20260315_120000_大腦忽略反面證據/assembly/_tmp/merged.mp4\" -vf \"subtitles=/tmp/subtitles_burn.srt:force_style=''FontName=PingFang TC,FontSize=58,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=3,Shadow=0,Alignment=2,MarginV=60''\" -c:v libx264 -preset medium -crf 23 -c:a copy -pix_fmt yuv420p -movflags +faststart \"/Users/lileon/project/content-farm/output/20260315_120000_大腦忽略反面證據/assembly/draft.mp4\")",
+      "Bash(ffmpeg -y -i \"/Users/lileon/project/content-farm/output/20260315_120000_大腦忽略反面證據/assembly/_tmp/merged.mp4\" -vf \"subtitles=/tmp/subtitles_burn.srt:force_style=''FontName=PingFang TC,FontSize=42,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=3,Shadow=0,Alignment=2,MarginV=40''\" -c:v libx264 -preset medium -crf 23 -c:a copy -pix_fmt yuv420p -movflags +faststart \"/Users/lileon/project/content-farm/output/20260315_120000_大腦忽略反面證據/assembly/draft.mp4\")",
+      "Bash(/Users/lileon/project/content-farm/.venv/bin/python /Users/lileon/project/content-farm/scripts/run_stage.py --stage prepareupload --run-dir \"/Users/lileon/project/content-farm/output/20260315_120000_大腦忽略反面證據\")",
+      "Bash(ffmpeg -y -i \"/Users/lileon/project/content-farm/output/20260315_120000_大腦忽略反面證據/assembly/_tmp/merged.mp4\" -vf \"scale=1080:-2,pad=1080:1920:\\(ow-iw\\)/2:\\(oh-ih\\)/2:black,drawtext=text=''為什麼改變一個人的想法，那麼難？'':fontfile=''/System/Library/Fonts/PingFang.ttc'':fontsize=48:fontcolor=white:x=\\(w-text_w\\)/2:y=200,subtitles=/tmp/subtitles_portrait.srt\\\\:force_style=''FontName=PingFang TC,FontSize=36,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=3,Shadow=0,Alignment=2,MarginV=340''\" -c:v libx264 -preset medium -crf 23 -c:a aac -b:a 192k -pix_fmt yuv420p -movflags +faststart \"/Users/lileon/project/content-farm/output/20260315_120000_大腦忽略反面證據/upload/draft_portrait.mp4\")",
+      "Bash(/Users/lileon/project/content-farm/.venv/bin/python3 -c \":*)",
+      "Bash(ffmpeg -y -i \"/Users/lileon/project/content-farm/output/20260315_120000_大腦忽略反面證據/assembly/draft.mp4\" -vf \"scale=1080:-2,pad=1080:1920:\\(ow-iw\\)/2:\\(oh-ih\\)/2:black,ass=/tmp/title_overlay.ass\" -c:v libx264 -preset medium -crf 23 -c:a aac -b:a 192k -pix_fmt yuv420p -movflags +faststart \"/Users/lileon/project/content-farm/output/20260315_120000_大腦忽略反面證據/upload/draft_portrait.mp4\")",
+      "Bash(/Users/lileon/project/content-farm/.venv/bin/python3:*)",
+      "Bash(.venv/bin/python scripts/run_stage.py --stage youtube --run-dir \"output/20260315_120000_大腦忽略反面證據\")",
+      "Bash(git add .claude/settings.json .claude/skills/assembly/SKILL.md .claude/skills/concatscene/ .claude/skills/drive/SKILL.md .claude/skills/prepareupload/SKILL.md .claude/skills/prescript/ .claude/skills/script/SKILL.md .claude/skills/upload/SKILL.md .claude/skills/visual/SKILL.md .claude/skills/voice/SKILL.md scripts/get_youtube_token.py scripts/run_stage.py src/content_farm/assembly/ffmpeg.py src/content_farm/assembly/timeline_assembly.py src/content_farm/pipeline/container.py src/content_farm/pipeline/stages.py src/content_farm/thumbnail/pillow_provider.py src/content_farm/visual/concat.py src/content_farm/visual/generator.py src/content_farm/visual/multi_provider.py src/content_farm/visual/schemas.py src/content_farm/visual/timeline.py src/content_farm/voice/concat.py src/content_farm/voice/generator.py src/content_farm/voice/schemas.py src/content_farm/youtube/generator.py src/content_farm/youtube/google_provider.py src/content_farm/youtube/meta.py tests/unit/test_assembly_ffmpeg.py tests/unit/test_assembly_timeline.py tests/unit/test_pipeline_orchestrator.py tests/unit/test_thumbnail_pillow.py tests/unit/test_visual_ai.py tests/unit/test_visual_concat.py tests/unit/test_visual_generator.py tests/unit/test_visual_timeline.py tests/unit/test_voice_concat.py tests/unit/test_voice_generator.py tests/unit/test_youtube_meta.py)"
     ],
     "additionalDirectories": [
       "/Users/lileon/project/content-farm/.claude/skills",
-      "/Users/lileon/project/content-farm/output"
+      "/Users/lileon/project/content-farm/output",
+      "/Users/lileon/project/content-farm/output/20260315_120000_大腦忽略反面證據/visual"
     ]
   }
 }

@@ -80,7 +80,8 @@ class PillowProvider:
 
         try:
             # Probe duration
-            ffprobe = self._ffmpeg.replace("ffmpeg", "ffprobe")
+            ffmpeg_path = Path(self._ffmpeg)
+            ffprobe = str(ffmpeg_path.parent / ffmpeg_path.name.replace("ffmpeg", "ffprobe"))
             probe_cmd = [
                 ffprobe, "-v", "error",
                 "-show_entries", "format=duration",
@@ -180,7 +181,9 @@ def _draw_title(
     s: ThumbnailSettings,
 ) -> None:
     """Draw wrapped, stroked title text centered on the image."""
-    lines = _wrap_text(title, s.max_title_chars)
+    padding = 60  # horizontal padding on each side
+    max_width = s.width - padding * 2
+    lines = _wrap_text_by_pixel(title, font, draw, max_width)
     line_height = s.font_size + 10
 
     total_text_height = line_height * len(lines)
@@ -200,28 +203,53 @@ def _draw_title(
         )
 
 
-def _wrap_text(text: str, max_chars: int) -> list[str]:
-    """Wrap text for thumbnail display, preferring punctuation breaks."""
+def _measure_text(
+    draw: ImageDraw.Draw,
+    text: str,
+    font: ImageFont.FreeTypeFont | ImageFont.ImageFont,
+) -> int:
+    """Return pixel width of rendered text."""
+    bbox = draw.textbbox((0, 0), text, font=font)
+    return bbox[2] - bbox[0]
+
+
+def _wrap_text_by_pixel(
+    text: str,
+    font: ImageFont.FreeTypeFont | ImageFont.ImageFont,
+    draw: ImageDraw.Draw,
+    max_width: int,
+) -> list[str]:
+    """Wrap text by pixel width, preferring breaks at punctuation."""
     text = text.strip()
     if not text:
         return []
-    if len(text) <= max_chars:
+    if _measure_text(draw, text, font) <= max_width:
         return [text]
 
     lines: list[str] = []
     remaining = text
 
     while remaining:
-        if len(remaining) <= max_chars:
+        if _measure_text(draw, remaining, font) <= max_width:
             stripped = remaining.strip()
             if stripped:
                 lines.append(stripped)
             break
 
-        best_break = max_chars
-        half = max_chars // 2
+        # Find max chars that fit within max_width
+        fit_end = 0
+        for i in range(1, len(remaining) + 1):
+            if _measure_text(draw, remaining[:i], font) > max_width:
+                break
+            fit_end = i
 
-        for pos in range(max_chars, half, -1):
+        if fit_end == 0:
+            fit_end = 1  # at least one character
+
+        # Prefer break at punctuation (scan backwards from fit_end)
+        best_break = fit_end
+        half = fit_end // 2
+        for pos in range(fit_end, half, -1):
             if pos < len(remaining) and _BREAK_PUNCT.match(remaining[pos]):
                 best_break = pos + 1
                 break

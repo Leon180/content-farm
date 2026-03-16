@@ -26,8 +26,9 @@ from content_farm.telegram.approval import ApprovalGate
 logger = logging.getLogger(__name__)
 
 STAGES = (
-    "voice", "visual", "blank_visual", "subtitle",
-    "thumbnail", "assembly", "template", "drive",
+    "voice", "visual", "visual_timeline", "blank_visual", "subtitle",
+    "thumbnail", "assembly", "assembly_timeline", "template", "drive",
+    "prepareupload", "youtube",
 )
 
 
@@ -67,10 +68,12 @@ async def _rebuild_voice_artifact(run_dir: Path) -> "VoiceArtifact | None":
         ))
 
     total = sum(s.duration_seconds for s in segments)
+    full_mp3 = audio_dir / "full.mp3"
     return VoiceArtifact(
         segments=tuple(segments),
         total_duration_seconds=total,
         output_dir=str(audio_dir),
+        full_audio_path=str(full_mp3) if full_mp3.is_file() else "",
     )
 
 
@@ -110,7 +113,7 @@ def _rebuild_visual_artifact(run_dir: Path) -> "VisualArtifact | None":
     if not visual_dir.is_dir():
         return None
 
-    mp4s = sorted(visual_dir.glob("scene_*.mp4"))
+    mp4s = sorted(visual_dir.glob("scene_[0-9][0-9][0-9].mp4"))
     if not mp4s:
         return None
 
@@ -224,6 +227,9 @@ async def run_stage(stage: str, run_dir: Path) -> None:
         if stage == "voice":
             await stages.run_voice_stage(ctx, container)
             _save_artifact(run_dir, "voice", ctx.voice)
+            # Voice now also produces subtitles
+            if ctx.subtitle is not None:
+                _save_artifact(run_dir, "subtitle", ctx.subtitle)
             # Sync script durations with actual audio lengths
             if ctx.voice is not None:
                 ctx.script = stages.sync_script_durations(ctx.script, ctx.voice)
@@ -238,6 +244,14 @@ async def run_stage(stage: str, run_dir: Path) -> None:
 
         elif stage == "visual":
             await stages.run_visual_stage(ctx, container)
+            _save_artifact(run_dir, "visual", ctx.visual)
+
+        elif stage == "visual_timeline":
+            await stages.run_visual_timeline_stage(ctx, container)
+            _save_artifact(run_dir, "visual", ctx.visual)
+
+        elif stage == "concatscene":
+            await stages.run_concat_scene_stage(ctx, container)
             _save_artifact(run_dir, "visual", ctx.visual)
 
         elif stage == "blank_visual":
@@ -265,6 +279,16 @@ async def run_stage(stage: str, run_dir: Path) -> None:
             await stages.run_assembly_stage(ctx, container)
             _save_artifact(run_dir, "assembly", ctx.assembly)
 
+        elif stage == "assembly_timeline":
+            if ctx.voice is None:
+                print(
+                    "Error: voice artifacts required for timeline assembly",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+            await stages.run_timeline_assembly_stage(ctx, container)
+            _save_artifact(run_dir, "assembly", ctx.assembly)
+
         elif stage == "template":
             if ctx.voice is None or ctx.visual is None:
                 print(
@@ -281,6 +305,106 @@ async def run_stage(stage: str, run_dir: Path) -> None:
                 ctx.script = stages.sync_script_durations(ctx.script, ctx.voice)
             await stages.run_drive_stage(ctx, container)
             print(f"Drive link: {ctx.drive_link}")
+
+        elif stage == "prepareupload":
+            from content_farm.assembly.ffmpeg import FFmpegComposer
+            from content_farm.youtube.meta import (
+                generate_meta_template, save_meta_template,
+            )
+
+            assembly = _rebuild_assembly_artifact(run_dir)
+            if assembly is None or not Path(assembly.file_path).exists():
+                print(
+                    "Error: assembly video not found. Run assembly first.",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+
+            landscape_path = Path(assembly.file_path)
+            upload_dir = run_dir / "upload"
+            portrait_path = upload_dir / f"{landscape_path.stem}_portrait.mp4"
+
+            composer = FFmpegComposer(ffmpeg_path=settings.ffmpeg_path)
+            await composer.convert_to_portrait(
+                input_path=landscape_path,
+                output_path=portrait_path,
+            )
+            logger.info("Portrait video: %s", portrait_path)
+
+            # Generate thumbnail
+            from content_farm.thumbnail.schemas import ThumbnailInput
+
+            thumb_gen = container.create_thumbnail_generator(
+                run_dir / "thumbnails",
+            )
+            video_for_thumb = str(landscape_path)
+            ctx.thumbnail = await thumb_gen.generate(
+                ThumbnailInput(
+                    script=ctx.script,
+                    video_path=video_for_thumb,
+                ),
+            )
+            logger.info("Thumbnail: %s", ctx.thumbnail.file_path)
+
+            meta = generate_meta_template(ctx.script, run_dir, portrait_path)
+            meta_path = save_meta_template(meta, run_dir)
+            logger.info("Meta template: %s", meta_path)
+            print(f"Portrait video: {portrait_path}")
+            print(f"Thumbnail: {ctx.thumbnail.file_path}")
+            print(f"Meta template: {meta_path}")
+            print("Edit youtube_meta.json, then run /project:upload")
+
+        elif stage == "youtube":
+            from content_farm.youtube.meta import load_meta_template
+            from content_farm.youtube.schemas import UploadInput, UploadSettings
+
+            meta = load_meta_template(run_dir)
+
+            video_path = run_dir / meta["video_path"]
+            if not video_path.exists():
+                print(f"Error: video not found: {video_path}", file=sys.stderr)
+                sys.exit(1)
+
+            thumbnail_path = None
+            if meta.get("thumbnail_path"):
+                tp = run_dir / meta["thumbnail_path"]
+                if tp.exists():
+                    thumbnail_path = str(tp)
+
+            subtitle_path = None
+            if meta.get("subtitle_path"):
+                sp = run_dir / meta["subtitle_path"]
+                if sp.exists():
+                    subtitle_path = str(sp)
+
+            upload_settings = UploadSettings(
+                privacy_status=meta.get("privacy_status", "private"),
+                category_id=meta.get("category_id", "22"),
+                made_for_kids=meta.get("made_for_kids", False),
+                default_language=meta.get("default_language", "zh-TW"),
+            )
+
+            upload_script = ctx.script.model_copy(update={
+                "video_title": meta["title"],
+                "description": meta["description"],
+            })
+
+            gen = container.create_upload_generator(
+                upload_settings=upload_settings,
+            )
+            upload_input = UploadInput(
+                script=upload_script,
+                video_path=str(video_path),
+                thumbnail_path=thumbnail_path,
+                subtitle_path=subtitle_path,
+                tags=tuple(meta.get("tags", [])),
+            )
+
+            artifact = await gen.generate(upload_input)
+            _save_artifact(run_dir, "upload", artifact)
+            print(f"Uploaded: {artifact.url}")
+            print(f"Video ID: {artifact.video_id}")
+            print(f"Privacy: {artifact.privacy_status}")
 
         else:
             print(f"Unknown stage: {stage}", file=sys.stderr)

@@ -76,16 +76,54 @@ class VoiceGenerator:
             )
 
         segments = await asyncio.gather(*tasks)
+        sorted_segments = sorted(segments, key=lambda s: s.scene_number)
 
-        total_duration = sum(s.duration_seconds for s in segments)
-        total_chars = sum(s.character_count for s in segments)
+        total_duration = sum(s.duration_seconds for s in sorted_segments)
+        total_chars = sum(s.character_count for s in sorted_segments)
+
+        full_path = await self._concat_full_audio(sorted_segments)
+        await self._generate_subtitles(script, sorted_segments)
 
         return VoiceArtifact(
-            segments=tuple(segments),
+            segments=tuple(sorted_segments),
             total_duration_seconds=total_duration,
             total_characters=total_chars,
             output_dir=str(self._output_dir),
+            full_audio_path=str(full_path),
         )
+
+    async def _concat_full_audio(
+        self, segments: list[AudioSegment],
+    ) -> Path:
+        """Concat scene MP3s into audio/full.mp3."""
+        from content_farm.voice.concat import concat_audio_files
+
+        paths = [Path(s.file_path) for s in segments]
+        output = self._output_dir / "full.mp3"
+        return await concat_audio_files(paths, output)
+
+    async def _generate_subtitles(
+        self, script: Script, segments: list[AudioSegment],
+    ) -> Path:
+        """Run subtitle estimation and write SRT alongside audio."""
+        from content_farm.subtitle.estimation import EstimationProvider
+        from content_farm.subtitle.generator import SubtitleGenerator
+        from content_farm.subtitle.schemas import SubtitleInput
+
+        sub_dir = self._output_dir.parent / "subtitles"
+        sub_dir.mkdir(parents=True, exist_ok=True)
+
+        voice_artifact = VoiceArtifact(
+            segments=tuple(segments),
+            total_duration_seconds=sum(s.duration_seconds for s in segments),
+            output_dir=str(self._output_dir),
+        )
+        provider = EstimationProvider()
+        gen = SubtitleGenerator(provider, self._settings, output_dir=sub_dir)
+        sub_input = SubtitleInput(script=script, voice=voice_artifact)
+        await gen.generate(sub_input)
+        logger.info("Generated subtitles at %s", sub_dir / "subtitles.srt")
+        return sub_dir / "subtitles.srt"
 
     async def _generate_scene_audio(
         self,

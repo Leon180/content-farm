@@ -44,7 +44,10 @@ async def run_voice_stage(
     ctx: PipelineContext,
     container: ServiceContainer,
 ) -> None:
-    """Generate audio narration for all scenes."""
+    """Generate audio narration for all scenes.
+
+    Also produces full.mp3 and subtitles.srt as side effects.
+    """
     assert ctx.script is not None
     gen = container.create_voice_generator(ctx.run_dir / "audio")
     ctx.voice = await gen.generate(ctx.script)
@@ -52,6 +55,13 @@ async def run_voice_stage(
     # Sync script durations with actual voice measurements so downstream
     # stages (subtitle, storyboard, etc.) use real timings.
     ctx.script = sync_script_durations(ctx.script, ctx.voice)
+
+    # Pick up subtitles produced by voice generator
+    srt_path = ctx.run_dir / "subtitles" / "subtitles.srt"
+    if srt_path.is_file():
+        from content_farm.subtitle.schemas import SubtitleArtifact
+
+        ctx.subtitle = SubtitleArtifact(file_path=str(srt_path))
 
 
 # ------------------------------------------------------------------
@@ -63,17 +73,153 @@ async def run_visual_stage(
     ctx: PipelineContext,
     container: ServiceContainer,
 ) -> None:
-    """Source stock footage or AI images for all scenes."""
+    """Download candidate clips for all scenes (no auto-concat).
+
+    Produces clip files (scene_NNN_NN.mp4) and a clips_manifest.json
+    for user review. Run /concatscene after selecting clips.
+    """
+    import json as _manifest_json
+
+    from content_farm.visual.schemas import ClipsManifest, VisualArtifact, VisualAsset
+
     assert ctx.script is not None
     gen = container.create_visual_generator(ctx.run_dir / "visual")
-    # Use actual audio durations when available
     duration_overrides = None
     if ctx.voice is not None:
         duration_overrides = {
             seg.scene_number: seg.duration_seconds
             for seg in ctx.voice.segments
         }
-    ctx.visual = await gen.generate(ctx.script, duration_overrides=duration_overrides)
+    manifest = await gen.download_clips(ctx.script, duration_overrides=duration_overrides)
+
+    # Save manifest for user editing
+    manifest_path = ctx.run_dir / "visual" / "clips_manifest.json"
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(
+        _manifest_json.dumps(
+            manifest.model_dump(mode="json"), ensure_ascii=False, indent=2,
+        ),
+        encoding="utf-8",
+    )
+    logger.info("Saved %d clips to %s", len(manifest.clips), manifest_path)
+
+    # Placeholder artifact — real one created by concatscene stage
+    scene_numbers = sorted({c.scene_number for c in manifest.clips})
+    ctx.visual = VisualArtifact(
+        assets=tuple(
+            VisualAsset(
+                scene_number=sn,
+                file_path="",
+                source="clips_downloaded",
+                duration_seconds=0.0,
+                query_used="",
+            )
+            for sn in scene_numbers
+        ),
+        output_dir=str(ctx.run_dir / "visual"),
+    )
+
+
+# ------------------------------------------------------------------
+# Visual — timeline mode (uses subtitles.srt for time ranges)
+# ------------------------------------------------------------------
+
+
+async def run_visual_timeline_stage(
+    ctx: PipelineContext,
+    container: ServiceContainer,
+) -> None:
+    """Download candidate clips using subtitle timeline for naming.
+
+    Requires subtitles/subtitles.srt to exist.  Produces clips named
+    ``MM:SS~MM:SS_NN.mp4`` and a ``timeline.md`` for user review.
+    """
+    import json as _tl_json
+
+    from content_farm.visual.schemas import ClipsManifest, VisualArtifact, VisualAsset
+    from content_farm.visual.timeline import (
+        build_scene_boundaries,
+        build_timeline_from_srt,
+        render_timeline_md,
+    )
+
+    assert ctx.script is not None
+    srt_path = ctx.run_dir / "subtitles" / "subtitles.srt"
+    if not srt_path.is_file():
+        raise FileNotFoundError(
+            f"subtitles.srt not found at {srt_path}. Run voice stage first."
+        )
+
+    script_data = ctx.script.model_dump(mode="json")
+    voice_data = ctx.voice.model_dump(mode="json") if ctx.voice else None
+
+    boundaries = build_scene_boundaries(script_data, voice_data)
+    srt_text = srt_path.read_text(encoding="utf-8")
+    blocks = build_timeline_from_srt(srt_text, boundaries)
+
+    gen = container.create_visual_generator(ctx.run_dir / "visual")
+    manifest = await gen.download_timeline_clips(blocks)
+
+    # Save manifest
+    manifest_path = ctx.run_dir / "visual" / "clips_manifest.json"
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(
+        _tl_json.dumps(
+            manifest.model_dump(mode="json"), ensure_ascii=False, indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    # Save timeline.md
+    timeline_md = render_timeline_md(blocks)
+    (ctx.run_dir / "visual" / "timeline.md").write_text(
+        timeline_md, encoding="utf-8",
+    )
+    logger.info(
+        "Timeline visual: %d blocks, %d clips downloaded",
+        len(blocks), len(manifest.clips),
+    )
+
+    # Placeholder artifact
+    scene_numbers = sorted({c.scene_number for c in manifest.clips})
+    ctx.visual = VisualArtifact(
+        assets=tuple(
+            VisualAsset(
+                scene_number=sn,
+                file_path="",
+                source="timeline_clips_downloaded",
+                duration_seconds=0.0,
+                query_used="",
+            )
+            for sn in scene_numbers
+        ),
+        output_dir=str(ctx.run_dir / "visual"),
+    )
+
+
+# ------------------------------------------------------------------
+# Concat scene (merge user-selected clips)
+# ------------------------------------------------------------------
+
+
+async def run_concat_scene_stage(
+    ctx: PipelineContext,
+    container: ServiceContainer,
+) -> None:
+    """Concatenate user-selected clips into scene videos."""
+    from content_farm.visual.concat import concat_selected_clips
+
+    manifest_path = ctx.run_dir / "visual" / "clips_manifest.json"
+    if not manifest_path.exists():
+        raise FileNotFoundError(
+            f"clips_manifest.json not found at {manifest_path}. Run /visual first."
+        )
+
+    ctx.visual = await concat_selected_clips(
+        manifest_path=manifest_path,
+        output_dir=ctx.run_dir / "visual",
+        ffmpeg_path=container.settings.ffmpeg_path,
+    )
 
 
 # ------------------------------------------------------------------
@@ -182,6 +328,41 @@ async def run_assembly_stage(
         visual=ctx.visual,
         subtitle_path=ctx.subtitle.file_path if ctx.subtitle else None,
     ))
+
+
+async def run_timeline_assembly_stage(
+    ctx: PipelineContext,
+    container: ServiceContainer,
+) -> None:
+    """Assemble video from timeline-named clips + full audio + subtitles."""
+    from content_farm.assembly.schemas import AssemblyArtifact
+    from content_farm.assembly.timeline_assembly import assemble_from_timeline
+
+    assert ctx.voice is not None
+
+    visual_dir = ctx.run_dir / "visual"
+    audio_path = Path(ctx.voice.full_audio_path) if ctx.voice.full_audio_path else (
+        ctx.run_dir / "audio" / "full.mp3"
+    )
+    subtitle_path = (
+        Path(ctx.subtitle.file_path) if ctx.subtitle else None
+    )
+
+    draft_path = await assemble_from_timeline(
+        visual_dir=visual_dir,
+        audio_path=audio_path,
+        subtitle_path=subtitle_path,
+        output_dir=ctx.run_dir / "assembly",
+        ffmpeg_path=container.settings.ffmpeg_path,
+    )
+
+    file_size = draft_path.stat().st_size if draft_path.exists() else 0
+    ctx.assembly = AssemblyArtifact(
+        file_path=str(draft_path),
+        total_duration_seconds=ctx.voice.total_duration_seconds,
+        file_size_bytes=file_size,
+        output_dir=str(ctx.run_dir / "assembly"),
+    )
 
 
 # ------------------------------------------------------------------

@@ -44,3 +44,4 @@ class VoiceArtifact(PipelineArtifact):
     voice_id: str = ""
     model_id: str = ""
     output_dir: str = ""
+    full_audio_path: str = ""

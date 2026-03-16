@@ -6,12 +6,19 @@ import asyncio
 import logging
 import tempfile
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from content_farm.config import Settings
 from content_farm.script_gen.schemas import Script, VisualHint
 from content_farm.visual.image_protocol import ImageProvider
 from content_farm.visual.protocol import StockProvider
+from content_farm.visual.concat import concat_clips
+
+if TYPE_CHECKING:
+    from content_farm.visual.timeline import TimelineBlock
 from content_farm.visual.schemas import (
+    ClipInfo,
+    ClipsManifest,
     VideoResult,
     VisualArtifact,
     VisualAsset,
@@ -36,12 +43,15 @@ class VisualGenerator:
         output_dir: Path | None = None,
         *,
         image_provider: ImageProvider | None = None,
+        clips_per_keyword: int = 3,
     ) -> None:
         self._stock = stock
         self._image_provider = image_provider
         self._settings = settings
         self._output_dir = output_dir or Path("output/visual")
         self._semaphore = asyncio.Semaphore(settings.max_concurrent_scenes)
+        self._clips_per_keyword = clips_per_keyword
+        self._global_seen_ids: set[str] = set()
 
     async def generate(
         self,
@@ -71,6 +81,195 @@ class VisualGenerator:
             total_duration_seconds=total_duration,
             output_dir=str(self._output_dir),
         )
+
+    async def download_timeline_clips(
+        self,
+        blocks: list[TimelineBlock],
+    ) -> ClipsManifest:
+        """Download candidate clips for each timeline block.
+
+        Clips are named ``MM:SS~MM:SS_NN.mp4`` (with index) so the user
+        can review, pick the best one, and rename it without the index.
+        """
+        self._output_dir.mkdir(parents=True, exist_ok=True)
+        tasks = [self._download_block_clips(b) for b in blocks]
+        results = await asyncio.gather(*tasks)
+
+        all_clips: list[ClipInfo] = []
+        for clip_list in results:
+            all_clips.extend(clip_list)
+
+        return ClipsManifest(
+            clips=all_clips,
+            output_dir=str(self._output_dir),
+        )
+
+    async def _download_block_clips(
+        self,
+        block: TimelineBlock,
+    ) -> list[ClipInfo]:
+        """Download candidate clips for a single timeline block."""
+        async with self._semaphore:
+            keywords = block.keywords[:4] if block.keywords else ["stock footage"]
+            clip_target = max(3.0, block.duration / max(len(keywords), 1))
+
+            clips: list[ClipInfo] = []
+            clip_idx = 1
+
+            for term in keywords:
+                results = await self._stock.search_videos(
+                    term,
+                    min_duration=3,
+                    max_duration=clip_target * 3,
+                )
+                unique = [
+                    r for r in results if r.provider_id not in self._global_seen_ids
+                ]
+                if not unique:
+                    continue
+
+                sorted_results = sorted(
+                    unique, key=lambda r: abs(r.duration_seconds - clip_target)
+                )
+                to_download = sorted_results[: self._clips_per_keyword]
+
+                for result in to_download:
+                    file_name = f"{block.label}_{clip_idx:02d}.mp4"
+                    clip_path = self._output_dir / file_name
+
+                    try:
+                        await self._stock.download_video(result, output_path=clip_path)
+                    except Exception:
+                        logger.warning(
+                            "Failed to download %s for %s",
+                            result.provider_id, block.label,
+                            exc_info=True,
+                        )
+                        continue
+
+                    self._global_seen_ids.add(result.provider_id)
+                    clips.append(
+                        ClipInfo(
+                            scene_number=block.scene_number,
+                            clip_index=clip_idx,
+                            file_name=file_name,
+                            keyword=term,
+                            provider_id=result.provider_id,
+                            duration_seconds=float(result.duration_seconds),
+                            width=result.width,
+                            height=result.height,
+                            thumbnail_url=result.thumbnail_url,
+                        )
+                    )
+                    clip_idx += 1
+
+            if not clips:
+                logger.warning("No clips found for block %s", block.label)
+
+            return clips
+
+    async def download_clips(
+        self,
+        script: Script,
+        duration_overrides: dict[int, float] | None = None,
+    ) -> ClipsManifest:
+        """Download multiple candidate clips per scene without concatenating.
+
+        Returns a ClipsManifest for user review. Each keyword yields up to
+        ``clips_per_keyword`` clips. Cross-scene deduplication is enforced.
+        """
+        overrides = duration_overrides or {}
+        self._output_dir.mkdir(parents=True, exist_ok=True)
+
+        tasks = []
+        for scene in script.scenes:
+            dur = (
+                overrides[scene.scene_number]
+                if scene.scene_number in overrides
+                else float(scene.duration_seconds)
+            )
+            tasks.append(
+                self._download_scene_clips(scene.scene_number, scene.visual_hint, dur)
+            )
+
+        results = await asyncio.gather(*tasks)
+        all_clips: list[ClipInfo] = []
+        for clip_list in results:
+            all_clips.extend(clip_list)
+
+        return ClipsManifest(
+            clips=all_clips,
+            output_dir=str(self._output_dir),
+        )
+
+    async def _download_scene_clips(
+        self,
+        scene_number: int,
+        hint: VisualHint,
+        target_duration: float,
+    ) -> list[ClipInfo]:
+        """Download multiple candidate clips for a single scene."""
+        async with self._semaphore:
+            keywords = hint.keywords or [hint.description[:50]]
+            search_terms = keywords[:4]
+            clip_target = max(3.0, target_duration / len(search_terms))
+
+            clips: list[ClipInfo] = []
+            clip_idx = 1
+
+            for term in search_terms:
+                results = await self._stock.search_videos(
+                    term,
+                    min_duration=3,
+                    max_duration=clip_target * 3,
+                )
+                unique = [
+                    r for r in results if r.provider_id not in self._global_seen_ids
+                ]
+                if not unique:
+                    continue
+
+                # Sort by duration proximity, take top N
+                sorted_results = sorted(
+                    unique, key=lambda r: abs(r.duration_seconds - clip_target)
+                )
+                to_download = sorted_results[: self._clips_per_keyword]
+
+                for result in to_download:
+                    file_name = f"scene_{scene_number:03d}_{clip_idx:02d}.mp4"
+                    clip_path = self._output_dir / file_name
+
+                    try:
+                        await self._stock.download_video(result, output_path=clip_path)
+                    except Exception:
+                        logger.warning(
+                            "Failed to download %s for scene %d",
+                            result.provider_id,
+                            scene_number,
+                            exc_info=True,
+                        )
+                        continue
+
+                    self._global_seen_ids.add(result.provider_id)
+                    clips.append(
+                        ClipInfo(
+                            scene_number=scene_number,
+                            clip_index=clip_idx,
+                            file_name=file_name,
+                            keyword=term,
+                            provider_id=result.provider_id,
+                            duration_seconds=float(result.duration_seconds),
+                            width=result.width,
+                            height=result.height,
+                            thumbnail_url=result.thumbnail_url,
+                        )
+                    )
+                    clip_idx += 1
+
+            if not clips:
+                logger.warning("No clips found for scene %d", scene_number)
+
+            return clips
 
     async def _source_scene_visual(
         self,
@@ -213,7 +412,7 @@ class VisualGenerator:
         if len(clip_paths) == 1:
             clip_paths[0].rename(output_path)
         else:
-            await _concat_clips(
+            await concat_clips(
                 clip_paths, output_path, self._settings.ffmpeg_path,
             )
             # Clean up individual clips
@@ -272,49 +471,5 @@ def _pick_best_match(results: tuple[VideoResult, ...], target_duration: float) -
     return min(results, key=lambda r: abs(r.duration_seconds - target_duration))
 
 
-async def _concat_clips(
-    clip_paths: list[Path],
-    output_path: Path,
-    ffmpeg_path: str = "ffmpeg",
-) -> None:
-    """Concatenate multiple video clips using the concat filter (re-encode).
-
-    Re-encoding is necessary because clips from different stock providers
-    may have different codecs, resolutions, and frame rates.
-    """
-    n = len(clip_paths)
-    inputs: list[str] = []
-    for cp in clip_paths:
-        inputs.extend(["-i", str(cp.resolve())])
-
-    # Build concat filter: scale all to 1920x1080, same fps, then concat
-    filter_parts = []
-    for i in range(n):
-        filter_parts.append(
-            f"[{i}:v]scale=1920:1080:force_original_aspect_ratio=decrease,"
-            f"pad=1920:1080:(ow-iw)/2:(oh-ih)/2,fps=30,setsar=1[v{i}]"
-        )
-    stream_labels = "".join(f"[v{i}]" for i in range(n))
-    filter_parts.append(f"{stream_labels}concat=n={n}:v=1:a=0[outv]")
-    filter_graph = ";".join(filter_parts)
-
-    cmd = [
-        ffmpeg_path, "-y",
-        *inputs,
-        "-filter_complex", filter_graph,
-        "-map", "[outv]",
-        "-c:v", "libx264", "-preset", "fast", "-crf", "23",
-        "-movflags", "+faststart",
-        str(output_path),
-    ]
-    process = await asyncio.create_subprocess_exec(
-        *cmd,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    _, stderr = await process.communicate()
-    if process.returncode != 0:
-        detail = stderr.decode(errors="replace")[-500:]
-        raise RuntimeError(f"FFmpeg concat failed: {detail}")
 
 

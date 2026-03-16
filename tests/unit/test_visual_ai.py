@@ -163,7 +163,7 @@ async def test_ai_preference_uses_image_provider(
 
 
 @pytest.mark.asyncio
-@patch("content_farm.visual.generator._concat_clips", side_effect=_fake_concat)
+@patch("content_farm.visual.generator.concat_clips", side_effect=_fake_concat)
 async def test_stock_preference_skips_image_provider(
     _mock_concat,
     ai_generator: tuple[VisualGenerator, AsyncMock, AsyncMock],
@@ -179,7 +179,7 @@ async def test_stock_preference_skips_image_provider(
 
 
 @pytest.mark.asyncio
-@patch("content_farm.visual.generator._concat_clips", side_effect=_fake_concat)
+@patch("content_farm.visual.generator.concat_clips", side_effect=_fake_concat)
 async def test_ai_fallback_to_stock_on_failure(
     _mock_concat,
     ai_generator: tuple[VisualGenerator, AsyncMock, AsyncMock],
@@ -218,7 +218,7 @@ async def test_auto_preference_with_ai_style(
 
 
 @pytest.mark.asyncio
-@patch("content_farm.visual.generator._concat_clips", side_effect=_fake_concat)
+@patch("content_farm.visual.generator.concat_clips", side_effect=_fake_concat)
 async def test_auto_preference_with_stock_style(
     _mock_concat,
     ai_generator: tuple[VisualGenerator, AsyncMock, AsyncMock],
@@ -234,7 +234,7 @@ async def test_auto_preference_with_stock_style(
 
 
 @pytest.mark.asyncio
-@patch("content_farm.visual.generator._concat_clips", side_effect=_fake_concat)
+@patch("content_farm.visual.generator.concat_clips", side_effect=_fake_concat)
 async def test_no_image_provider_always_stock(
     _mock_concat, monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
 ) -> None:
