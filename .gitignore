@@ -45,3 +45,10 @@ output/
 # Generated docs / research notes
 docs/
 RESEARCH_*.md
+
+# Generated content files
+topics_*.md
+trending_topics_*.md
+research_*.json
+material/
+.DS_Store
