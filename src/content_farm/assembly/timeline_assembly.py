@@ -23,17 +23,25 @@ _IMAGE_EXTS = frozenset({"png", "jpg", "jpeg", "webp"})
 _ALL_EXTS = _VIDEO_EXTS | _IMAGE_EXTS
 _EXTS_PATTERN = "|".join(sorted(_ALL_EXTS))
 
-# Matches "MM:SS~MM:SS.<ext>" (no _NN index = user's final pick)
+# Matches "MM:SS~MM:SS.<ext>" or "MM:SS.mmm~MM:SS.mmm.<ext>"
+# (no _NN index = user's final pick)
 _TIMELINE_RE = re.compile(
-    rf"^(\d{{2}}):(\d{{2}})~(\d{{2}}):(\d{{2}})\.({_EXTS_PATTERN})$",
+    rf"^(\d{{2}}):(\d{{2}})(?:\.(\d{{1,3}}))?~(\d{{2}}):(\d{{2}})(?:\.(\d{{1,3}}))?\.({_EXTS_PATTERN})$",
     re.IGNORECASE,
 )
 
 # Matches "MM:SS~MM:SS_NN.<ext>" (with index = candidate, not yet selected)
 _CANDIDATE_RE = re.compile(
-    rf"^(\d{{2}}):(\d{{2}})~(\d{{2}}):(\d{{2}})_\d+\.({_EXTS_PATTERN})$",
+    rf"^(\d{{2}}):(\d{{2}})(?:\.(\d{{1,3}}))?~(\d{{2}}):(\d{{2}})(?:\.(\d{{1,3}}))?_\d+\.({_EXTS_PATTERN})$",
     re.IGNORECASE,
 )
+
+
+def _parse_ms(ms_str: str | None) -> float:
+    """Parse optional millisecond group (1-3 digits) to fractional seconds."""
+    if not ms_str:
+        return 0.0
+    return int(ms_str.ljust(3, "0")) / 1000.0
 
 
 @dataclass(frozen=True)
@@ -64,8 +72,8 @@ def scan_timeline_clips(visual_dir: Path) -> list[TimelineClip]:
         m = _TIMELINE_RE.match(f.name)
         if not m:
             continue
-        start = int(m.group(1)) * 60 + int(m.group(2))
-        end = int(m.group(3)) * 60 + int(m.group(4))
+        start = int(m.group(1)) * 60 + int(m.group(2)) + _parse_ms(m.group(3))
+        end = int(m.group(4)) * 60 + int(m.group(5)) + _parse_ms(m.group(6))
         clips.append(TimelineClip(path=f, start_seconds=start, end_seconds=end))
 
     clips.sort(key=lambda c: c.start_seconds)
@@ -85,8 +93,8 @@ async def assemble_from_timeline(
     output_dir: Path,
     ffmpeg_path: str = "ffmpeg",
     ffprobe_path: str = "ffprobe",
-    width: int = 1920,
-    height: int = 1080,
+    width: int = 1080,
+    height: int = 1920,
     fps: int = 30,
 ) -> Path:
     """Full timeline assembly pipeline.
@@ -107,9 +115,21 @@ async def assemble_from_timeline(
     tmp_dir = output_dir / "_tmp"
     tmp_dir.mkdir(parents=True, exist_ok=True)
 
-    # Step 1: Normalize each clip
+    # Step 1: Normalize each clip, filling gaps with black frames
     normalized: list[Path] = []
+    cursor = 0.0  # current position in seconds
     for i, clip in enumerate(clips):
+        # Insert black filler if there's a gap before this clip
+        gap = clip.start_seconds - cursor
+        if gap > 0.05:  # >50ms gap
+            filler_path = tmp_dir / f"black_{i:03d}.mp4"
+            await _generate_black(
+                filler_path, duration=gap,
+                ffmpeg_path=ffmpeg_path,
+                width=width, height=height, fps=fps,
+            )
+            normalized.append(filler_path)
+
         norm_path = tmp_dir / f"norm_{i:03d}.mp4"
         await _normalize_clip(
             clip, norm_path,
@@ -117,6 +137,7 @@ async def assemble_from_timeline(
             width=width, height=height, fps=fps,
         )
         normalized.append(norm_path)
+        cursor = clip.end_seconds
 
     # Step 2: Concat normalized clips
     concat_path = tmp_dir / "video_only.mp4"
@@ -129,7 +150,10 @@ async def assemble_from_timeline(
     # Step 4: Burn subtitles (or just copy)
     draft_path = output_dir / "draft.mp4"
     if subtitle_path and subtitle_path.is_file():
-        await _burn_subtitles(merged_path, subtitle_path, draft_path, ffmpeg_path)
+        await _burn_subtitles(
+            merged_path, subtitle_path, draft_path, ffmpeg_path,
+            width=width, height=height,
+        )
     else:
         shutil.copy2(merged_path, draft_path)
 
@@ -180,20 +204,12 @@ async def _normalize_clip(
             str(output_path),
         ]
     else:
-        # Video: speed-adjust to match target duration
-        source_dur = await _probe_duration(clip.path, ffprobe_path)
-        if source_dur > 0 and abs(source_dur - target_dur) > 0.1:
-            speed = source_dur / target_dur
-            pts = f"setpts=PTS/{speed:.4f}"
-        else:
-            pts = "setpts=PTS"
-
-        vf = f"{vf_scale},{pts}"
+        # Video: trim to target duration (take first N seconds only)
         args = [
             ffmpeg_path, "-y",
             "-i", input_path,
             "-t", f"{target_dur:.2f}",
-            "-vf", vf,
+            "-vf", vf_scale,
             "-an",
             "-c:v", "libx264", "-preset", "medium", "-crf", "23",
             "-pix_fmt", "yuv420p",
@@ -244,7 +260,6 @@ async def _merge_audio(
         "-map", "1:a:0",
         "-c:v", "copy",
         "-c:a", "aac", "-b:a", "192k",
-        "-shortest",
         "-movflags", "+faststart",
         str(output_path),
     ]
@@ -256,27 +271,98 @@ async def _burn_subtitles(
     subtitle_path: Path,
     output_path: Path,
     ffmpeg_path: str,
+    width: int = 1080,
+    height: int = 1920,
 ) -> None:
-    """Burn SRT subtitles into the video.
+    """Burn SRT subtitles into the video using the ASS filter.
 
-    Copies SRT to /tmp to avoid FFmpeg issues with CJK paths.
+    Converts SRT → ASS with correct PlayResX/PlayResY so that libass
+    uses the actual video dimensions as its coordinate space.  Alignment=5
+    (SSA numpad 5) centers text both horizontally and vertically.
+    FontSize=52 is calibrated for a 1080px-wide canvas.
     """
-    from content_farm.assembly.drawtext import build_drawtext_filter
+    from content_farm.assembly.drawtext import find_cjk_font
 
-    drawtext_vf = build_drawtext_filter(subtitle_path)
+    # Step 1: convert SRT → raw ASS via FFmpeg
+    tmp_srt = output_path.parent / f"_tmp_subs_{output_path.stem}.srt"
+    tmp_ass_raw = output_path.parent / f"_tmp_subs_{output_path.stem}_raw.ass"
+    tmp_ass = output_path.parent / f"_tmp_subs_{output_path.stem}.ass"
+    shutil.copy2(subtitle_path, tmp_srt)
 
-    # Write filter to file to avoid shell escaping issues
-    vf_file = output_path.parent / f".vf_{output_path.stem}.txt"
-    vf_file.write_text(drawtext_vf, encoding="utf-8")
+    try:
+        convert_args = [
+            ffmpeg_path, "-y",
+            "-i", str(tmp_srt),
+            str(tmp_ass_raw),
+        ]
+        await _run(convert_args)
 
+        # Step 2: rewrite ASS header with correct PlayRes and style
+        font_name = "Arial"
+        cjk_font = find_cjk_font()
+        if cjk_font:
+            font_name = Path(cjk_font).stem
+
+        ass_content = tmp_ass_raw.read_text(encoding="utf-8")
+        new_header = (
+            "[Script Info]\n"
+            "ScriptType: v4.00+\n"
+            f"PlayResX: {width}\n"
+            f"PlayResY: {height}\n"
+            "ScaledBorderAndShadow: yes\n"
+            "\n"
+            "[V4+ Styles]\n"
+            "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour,"
+            " OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut,"
+            " ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow,"
+            " Alignment, MarginL, MarginR, MarginV, Encoding\n"
+            f"Style: Default,{font_name},78,"
+            "&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,"
+            "1,0,0,0,100,100,0,0,1,3,1,5,40,40,0,1\n"
+        )
+
+        import re as _re
+        patched = _re.sub(
+            r"\[Script Info\].*?(?=\[Events\])",
+            new_header + "\n",
+            ass_content,
+            flags=_re.DOTALL,
+        )
+        tmp_ass.write_text(patched, encoding="utf-8")
+
+        # Step 3: burn ASS into video
+        args = [
+            ffmpeg_path, "-y",
+            "-i", str(video_path),
+            "-vf", f"ass={tmp_ass}",
+            "-c:v", "libx264", "-preset", "medium", "-crf", "23",
+            "-c:a", "copy",
+            "-pix_fmt", "yuv420p",
+            "-movflags", "+faststart",
+            str(output_path),
+        ]
+        await _run(args)
+    finally:
+        tmp_srt.unlink(missing_ok=True)
+        tmp_ass_raw.unlink(missing_ok=True)
+        tmp_ass.unlink(missing_ok=True)
+
+
+async def _generate_black(
+    output_path: Path,
+    *,
+    duration: float,
+    ffmpeg_path: str,
+    width: int,
+    height: int,
+    fps: int,
+) -> None:
+    """Generate a silent black video of the given duration."""
     args = [
         ffmpeg_path, "-y",
-        "-i", str(video_path),
-        "-filter_script:v", str(vf_file),
+        "-f", "lavfi", "-i", f"color=c=black:s={width}x{height}:r={fps}:d={duration:.2f}",
         "-c:v", "libx264", "-preset", "medium", "-crf", "23",
-        "-c:a", "copy",
         "-pix_fmt", "yuv420p",
-        "-movflags", "+faststart",
         str(output_path),
     ]
     await _run(args)

@@ -320,17 +320,31 @@ async def run_stage(stage: str, run_dir: Path) -> None:
                 )
                 sys.exit(1)
 
-            landscape_path = Path(assembly.file_path)
+            source_path = Path(assembly.file_path)
             upload_dir = run_dir / "upload"
-            portrait_path = upload_dir / f"{landscape_path.stem}_portrait.mp4"
 
             composer = FFmpegComposer(ffmpeg_path=settings.ffmpeg_path)
-            await composer.convert_to_portrait(
-                input_path=landscape_path,
-                output_path=portrait_path,
-                title=ctx.script.video_title,
-            )
-            logger.info("Portrait video: %s", portrait_path)
+
+            # Check if source is already portrait (height > width)
+            src_w, src_h = await composer.probe_dimensions(source_path)
+            if src_h > src_w:
+                # Already portrait — just burn title overlay
+                portrait_path = upload_dir / f"{source_path.stem}_final.mp4"
+                await composer.burn_title_overlay(
+                    input_path=source_path,
+                    output_path=portrait_path,
+                    title=ctx.script.video_title,
+                )
+            else:
+                # Landscape — convert to portrait with title
+                portrait_path = upload_dir / f"{source_path.stem}_portrait.mp4"
+                await composer.convert_to_portrait(
+                    input_path=source_path,
+                    output_path=portrait_path,
+                    title=ctx.script.video_title,
+                    title_fontsize=87,
+                )
+            logger.info("Final video: %s", portrait_path)
 
             # Generate thumbnail
             from content_farm.thumbnail.schemas import ThumbnailInput
@@ -338,7 +352,7 @@ async def run_stage(stage: str, run_dir: Path) -> None:
             thumb_gen = container.create_thumbnail_generator(
                 run_dir / "thumbnails",
             )
-            video_for_thumb = str(landscape_path)
+            video_for_thumb = str(source_path)
             ctx.thumbnail = await thumb_gen.generate(
                 ThumbnailInput(
                     script=ctx.script,

@@ -104,6 +104,112 @@ class FFmpegComposer:
             pass
         return 0.0
 
+    async def probe_dimensions(self, path: Path) -> tuple[int, int]:
+        """Return (width, height) of a video file."""
+        import json
+        proc = await asyncio.create_subprocess_exec(
+            self._ffprobe, "-v", "quiet",
+            "-print_format", "json",
+            "-show_streams", "-select_streams", "v:0",
+            str(path),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, _ = await proc.communicate()
+        if proc.returncode == 0:
+            data = json.loads(stdout)
+            stream = data["streams"][0]
+            return int(stream["width"]), int(stream["height"])
+        return 0, 0
+
+    async def burn_title_overlay(
+        self,
+        *,
+        input_path: Path,
+        output_path: Path,
+        title: str | None = None,
+        title_fontsize: int = 90,
+        title_fontcolor: str = "yellow",
+        title_borderw: int = 4,
+        title_bordercolor: str = "black",
+        max_chars_per_line: int = 9,
+        video_width: int = 1080,
+    ) -> Path:
+        """Burn a title overlay onto an existing portrait video.
+
+        Places the title in the top area of the video (above the main
+        content area where landscape clips are letterboxed).
+        Auto-wraps long titles to fit within video width.
+        """
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        vf = ""
+        if title:
+            from content_farm.assembly.drawtext import escape_text, find_cjk_font
+
+            fontfile = find_cjk_font()
+
+            # Auto-wrap: split into lines of max_chars_per_line
+            # Respect existing newlines first
+            raw_lines = title.split("\n")
+            lines: list[str] = []
+            for raw in raw_lines:
+                raw = raw.strip()
+                if not raw:
+                    continue
+                while len(raw) > max_chars_per_line:
+                    lines.append(raw[:max_chars_per_line])
+                    raw = raw[max_chars_per_line:]
+                if raw:
+                    lines.append(raw)
+
+            line_height = int(title_fontsize * 1.4)
+            total_height = line_height * len(lines)
+            # Center title block in top black bar (0 ~ 656px for 16:9 in 1080x1920)
+            top_bar_center = 328
+            base_y = top_bar_center - total_height // 2
+
+            parts: list[str] = []
+            for i, line in enumerate(lines):
+                escaped = escape_text(line.strip())
+                if not escaped:
+                    continue
+                y_pos = base_y + i * line_height
+                tokens = [
+                    f"text='{escaped}'",
+                    f"fontsize={title_fontsize}",
+                    f"fontcolor={title_fontcolor}",
+                    f"borderw={title_borderw}",
+                    f"bordercolor={title_bordercolor}",
+                    "x=(w-text_w)/2",
+                    f"y={y_pos}",
+                ]
+                if fontfile:
+                    tokens.insert(1, f"fontfile='{fontfile}'")
+                parts.append("drawtext=" + ":".join(tokens))
+            vf = ",".join(parts)
+
+        if not vf:
+            # No title — just copy
+            import shutil
+            shutil.copy2(input_path, output_path)
+            return output_path
+
+        args = [
+            "-y",
+            "-i", str(input_path),
+            "-vf", vf,
+            "-c:v", "libx264",
+            "-preset", self._s.preset,
+            "-crf", str(self._s.crf),
+            "-c:a", "copy",
+            "-pix_fmt", self._s.pixel_format,
+            "-movflags", "+faststart",
+            str(output_path),
+        ]
+        await self._run_ffmpeg(args)
+        return output_path
+
     async def convert_to_portrait(
         self,
         *,
@@ -134,22 +240,30 @@ class FFmpegComposer:
         if title:
             from content_farm.assembly.drawtext import escape_text, find_cjk_font
 
-            escaped = escape_text(title)
             fontfile = find_cjk_font()
+            lines = title.split("\n")
+            line_height = int(title_fontsize * 1.4)
+            # Center the block of lines around y=280+fontsize
+            total_height = line_height * len(lines)
+            base_y = 280 + title_fontsize // 2 - total_height // 2
 
-            tokens = [
-                f"text='{escaped}'",
-                f"fontsize={title_fontsize}",
-                f"fontcolor={title_fontcolor}",
-                f"borderw={title_borderw}",
-                f"bordercolor={title_bordercolor}",
-                "x=(w-text_w)/2",
-                "y=280",
-            ]
-            if fontfile:
-                tokens.insert(1, f"fontfile='{fontfile}'")
-
-            vf += ",drawtext=" + ":".join(tokens)
+            for i, line in enumerate(lines):
+                escaped = escape_text(line.strip())
+                if not escaped:
+                    continue
+                y_pos = base_y + i * line_height
+                tokens = [
+                    f"text='{escaped}'",
+                    f"fontsize={title_fontsize}",
+                    f"fontcolor={title_fontcolor}",
+                    f"borderw={title_borderw}",
+                    f"bordercolor={title_bordercolor}",
+                    "x=(w-text_w)/2",
+                    f"y={y_pos}",
+                ]
+                if fontfile:
+                    tokens.insert(1, f"fontfile='{fontfile}'")
+                vf += ",drawtext=" + ":".join(tokens)
 
         args = [
             "-y",

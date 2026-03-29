@@ -19,11 +19,20 @@ Prepare YouTube upload for: $ARGUMENTS
 .venv/bin/python scripts/run_stage.py --stage prepareupload --run-dir "$0"
 ```
 
+## What it does
+
+1. **Detects orientation** — probes video dimensions
+   - Already portrait (h > w): burns title overlay only (`burn_title_overlay`)
+   - Landscape: converts to portrait + burns title (`convert_to_portrait`)
+2. **Title overlay** — video title from script.json, yellow text, centered in top area
+3. **Generates thumbnail** from video keyframe
+4. **Creates `youtube_meta.json`** with editable metadata
+
 ## Verify
 
 After completion, check:
 1. `$0/upload/` directory was created
-2. `$0/upload/*_portrait.mp4` exists (portrait 1080x1920 video)
+2. `$0/upload/*_final.mp4` (portrait input) or `*_portrait.mp4` (landscape input) exists
 3. `$0/upload/youtube_meta.json` exists with editable fields
 
 ## Next Step

@@ -17,6 +17,8 @@ Generate a video script for: $ARGUMENTS
 ## Read Supporting Files
 
 - For narration style rules and narrative structures, read the [prompts guide](prompts.md)
+- For hook formulas and retention data, read the [hooks reference](hooks.md)
+- For LLM prompt templates by content type, read the [generation prompts](generation_prompts.md)
 - For the exact JSON schema, read the [schema reference](schema.md)
 - If `<run_dir>/research.md` exists, read it for factual grounding
 - If `<run_dir>/prescript.json` exists, use it as the structural foundation
@@ -51,13 +53,27 @@ Write two files to the run directory:
 1. **`script.json`** — Following the exact schema in schema.md
 2. **`storyboard.txt`** — Human-readable version with scene timings
 
+## TTS / Subtitle Number Handling
+
+Numbers in narration must be written in **Chinese characters** for correct TTS pronunciation:
+- 2031 → 二零三一
+- 2028 → 二零二八
+- 500克 → 五百克
+- 10克 → 十克
+
+Subtitles will be corrected back to Arabic numerals in a separate step before assembly.
+
 ## Quality Checklist
 
-- [ ] First sentence hooks in under 3 seconds
+- [ ] Hook type selected from hooks.md (Pattern Interrupt+Question / Curiosity Gap / Transformation / Specific Data)
+- [ ] First 1s has visual/text interrupt; first 3s has question or curiosity gap
 - [ ] Every factual claim has a source from research.md
 - [ ] Sources array contains ONLY real URLs from research
 - [ ] Narration uses spoken zh-TW, not written Chinese
+- [ ] Numbers written in Chinese characters for TTS (二零三一, not 2031)
 - [ ] Visual hint keywords are in English
 - [ ] Total duration 30-90 seconds for short-form
 - [ ] No filler: 「其實」「基本上」「事實上」「總之」「然而」
 - [ ] No greetings: 「大家好」「歡迎觀看」
+- [ ] Includes at least 1 specific statistic or concrete result
+- [ ] No dead zones >5 seconds without new information
