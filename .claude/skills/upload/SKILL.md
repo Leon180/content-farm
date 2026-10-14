@@ -2,7 +2,7 @@
 name: upload
 description: Upload video to YouTube using prepared metadata template
 allowed-tools: Bash, Read, Glob
-argument-hint: "[run-dir]"
+argument-hint: "[run-dir, optional — defaults to latest run]"
 disable-model-invocation: true
 ---
 

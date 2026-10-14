@@ -1,17 +1,22 @@
 ---
 name: drive
-description: Upload run directory to Google Drive
+description: Upload run directory to Google Drive, then delete local copy
 allowed-tools: Bash, Read, Glob
-argument-hint: "[run-dir]"
+argument-hint: "[run-dir, optional — defaults to latest run]"
 disable-model-invocation: true
 ---
 
-Upload to Drive: $ARGUMENTS
+Upload to Drive and remove local files for: $ARGUMENTS
 
 ## Prerequisites
 
 - Drive credentials configured in `.env` (`CF_DRIVE_CREDENTIALS_PATH`, `CF_DRIVE_FOLDER_ID`)
-- Run directory must contain the files to upload
+- Run `/project:upload` (YouTube) first — this is the final cleanup step
+
+## Warning
+
+**This stage deletes the local run directory after a successful upload.**
+It is irreversible. Confirm the Drive folder link is accessible before running.
 
 ## Execution
 
@@ -21,4 +26,6 @@ Upload to Drive: $ARGUMENTS
 
 ## Verify
 
-Check the output for the Drive folder link.
+1. Check the output for the Drive folder link
+2. Open the link and confirm files are present in Google Drive
+3. Local run directory will no longer exist after completion

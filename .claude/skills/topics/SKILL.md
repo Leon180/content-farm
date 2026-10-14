@@ -9,7 +9,7 @@ Find trending video topics. Category: $ARGUMENTS
 
 ## Categories
 
-If no category specified, cover all: `science`, `technology`, `psychology`, `history`, `nature`, `trivia`
+If no category specified, cover all: `science`, `technology`, `psychology`, `history`, `space`, `culture`
 
 ## Process
 
@@ -18,6 +18,8 @@ If no category specified, cover all: `science`, `technology`, `psychology`, `his
    - `"[category] 冷知識 熱門話題"` (zh-TW)
    - `"viral [category] facts most people don't know"`
    - `"Reddit TIL [category]"` for counter-intuitive facts
+   - For `culture` category: also search `"台灣 全球排名"`, `"台灣 世界第一"`, `"台灣冷知識"`
+   - For `space` category: also search `"太空 宇宙 最新發現"`, `"NASA 2026"`
 
 2. **Filter for short-form potential** — good topics have:
    - A clear hook (surprising fact, counter-intuitive truth, mystery)
@@ -47,6 +49,13 @@ If no category specified, cover all: `science`, `technology`, `psychology`, `his
 
 5. **Save to file** — write the full list to `topics_YYYYMMDD.md` in the project root
 
+## Taiwan Localization
+
+- Include at least 1-2 topics per batch with a **Taiwan angle**
+- Taiwan angle examples: "台灣全球第X名", "台灣在這件事上領先全球", "台灣人不知道的台灣冷知識"
+- Use Taiwan-specific terms (計程車 not 出租車, 捷運 not 地鐵)
+- Connect global facts to Taiwan when natural (e.g., "全球只有X個國家做到，台灣是其中之一")
+
 ## Guidelines
 
 - Aim for 5-8 topics per category
@@ -55,3 +64,5 @@ If no category specified, cover all: `science`, `technology`, `psychology`, `his
 - Avoid topics that require complex visual effects (animation-heavy)
 - Each topic should be self-contained (no Part 1/Part 2)
 - Consider zh-TW audience interests and cultural relevance
+- Prefer suspense-reveal (懸念揭曉) topics over listicle-style ("X個你不知道的...")
+- Best-performing verticals by engagement: science > psychology > tech/AI > history > space
