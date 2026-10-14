@@ -1,0 +1,230 @@
+"""``deck.json`` schema — one slide = one scene = one narration segment.
+
+Hard rules live here as validators (fail fast, before any rendering or TTS).
+Softer production rules (slide count, pacing, layout variety) live in
+:mod:`content_farm.explainer.lint` so a short sample deck can still be rendered.
+"""
+
+from __future__ import annotations
+
+import json
+import re
+from enum import Enum
+from pathlib import Path
+from typing import Annotated, Literal, Union
+
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+# Narration speed used for the pre-voice duration estimate. Empirical guess for
+# zh-TW TTS; voice overwrites every scene with the measured duration anyway.
+CHARS_PER_SECOND = 4.5
+
+NARRATION_MIN_CHARS = 30
+NARRATION_MAX_CHARS = 220
+HEADING_MAX_CHARS = 24
+MIN_SECTIONS = 3  # YouTube chapters need >= 3 entries
+
+_WHITESPACE = re.compile(r"\s+")
+
+
+def visible_len(text: str) -> int:
+    """Character count ignoring whitespace (CJK and ASCII both count 1)."""
+    return len(_WHITESPACE.sub("", text))
+
+
+def estimate_seconds(narration: str) -> float:
+    return round(visible_len(narration) / CHARS_PER_SECOND, 2)
+
+
+class Category(str, Enum):
+    AI = "ai"
+    TECH = "tech"  # 台灣科技產業拆解 — MVP default
+    KNOWLEDGE = "knowledge"
+
+
+class Layout(str, Enum):
+    TITLE = "title"
+    BULLETS = "bullets"
+    BIG_NUMBER = "big_number"
+    COMPARE = "compare"
+    TIMELINE = "timeline"
+    QUOTE = "quote"
+
+
+class _Frozen(BaseModel):
+    model_config = {"frozen": True, "extra": "forbid"}
+
+
+BulletItem = Annotated[str, Field(min_length=1, max_length=18)]
+CompareItem = Annotated[str, Field(min_length=1, max_length=16)]
+
+
+class TitleBody(_Frozen):
+    subtitle: str = Field(default="", max_length=40)
+
+
+class BulletsBody(_Frozen):
+    items: tuple[BulletItem, ...] = Field(min_length=3, max_length=5)
+
+
+class BigNumberBody(_Frozen):
+    value: str = Field(min_length=1, max_length=10)
+    unit: str = Field(default="", max_length=8)
+    caption: str = Field(default="", max_length=40)
+
+
+class CompareSide(_Frozen):
+    label: str = Field(min_length=1, max_length=12)
+    items: tuple[CompareItem, ...] = Field(min_length=1, max_length=5)
+
+
+class CompareBody(_Frozen):
+    left: CompareSide
+    right: CompareSide
+
+
+class TimelineEvent(_Frozen):
+    when: str = Field(min_length=1, max_length=10)
+    what: str = Field(min_length=1, max_length=20)
+
+
+class TimelineBody(_Frozen):
+    events: tuple[TimelineEvent, ...] = Field(min_length=2, max_length=6)
+
+
+class QuoteBody(_Frozen):
+    text: str = Field(min_length=1, max_length=60)
+    who: str = Field(default="", max_length=30)
+
+
+SlideBody = Union[TitleBody, BulletsBody, BigNumberBody, CompareBody, TimelineBody, QuoteBody]
+
+BODY_MODELS: dict[Layout, type[BaseModel]] = {
+    Layout.TITLE: TitleBody,
+    Layout.BULLETS: BulletsBody,
+    Layout.BIG_NUMBER: BigNumberBody,
+    Layout.COMPARE: CompareBody,
+    Layout.TIMELINE: TimelineBody,
+    Layout.QUOTE: QuoteBody,
+}
+
+
+class Mascot(_Frozen):
+    """Corner mascot (晶片貓). ``pose`` maps to ``<assets>/mascot/<pose>.png``.
+
+    A missing PNG is not an error — the slot simply stays empty.
+    """
+
+    pose: str = Field(pattern=r"^[a-z][a-z0-9_-]{0,31}$")
+
+
+class Source(_Frozen):
+    id: str = Field(min_length=1, max_length=32)
+    title: str = Field(min_length=1, max_length=200)
+    url: str = ""
+    note: str = ""
+
+
+Beat = Literal["gossip", "joke"]
+
+
+class Slide(_Frozen):
+    id: str = Field(min_length=1, max_length=32)
+    layout: Layout
+    heading: str = Field(min_length=1, max_length=HEADING_MAX_CHARS)
+    body: SlideBody
+    narration: str
+    source_ids: tuple[str, ...] = ()
+    beat: Beat | None = None  # light segment: sourced gossip or an original deadpan joke
+    mascot: Mascot | None = None
+    notes: str = ""
+
+    @model_validator(mode="before")
+    @classmethod
+    def _body_matches_layout(cls, data: object) -> object:
+        """Validate ``body`` against the model of its own ``layout`` (no guessing)."""
+        if not isinstance(data, dict) or isinstance(data.get("body"), BaseModel):
+            return data
+        try:
+            layout = Layout(data.get("layout"))
+        except ValueError:
+            return data  # the enum field reports the bad layout
+        model = BODY_MODELS[layout]
+        return {**data, "body": model.model_validate(data.get("body") or {})}
+
+    @field_validator("narration")
+    @classmethod
+    def _narration_length(cls, value: str) -> str:
+        n = visible_len(value)
+        if not NARRATION_MIN_CHARS <= n <= NARRATION_MAX_CHARS:
+            raise ValueError(
+                f"narration has {n} chars; must be {NARRATION_MIN_CHARS}-{NARRATION_MAX_CHARS}"
+            )
+        return value
+
+    @model_validator(mode="after")
+    def _body_type(self) -> Slide:
+        expected = BODY_MODELS[self.layout]
+        if not isinstance(self.body, expected):
+            raise ValueError(f"layout {self.layout.value!r} needs a {expected.__name__} body")
+        if self.beat == "gossip" and not self.source_ids:
+            raise ValueError("gossip beat must cite source_ids (no unsourced rumours)")
+        return self
+
+    @property
+    def estimated_seconds(self) -> float:
+        return estimate_seconds(self.narration)
+
+
+class Section(_Frozen):
+    """One section = one YouTube chapter."""
+
+    title: str = Field(min_length=1, max_length=40)
+    slides: tuple[Slide, ...] = Field(min_length=1)
+
+
+class Deck(_Frozen):
+    version: Literal[1] = 1
+    category: Category = Category.TECH
+    title: str = Field(min_length=1, max_length=100)
+    description: str = ""
+    tags: tuple[str, ...] = ()
+    as_of: str | None = Field(default=None, pattern=r"^\d{4}-(0[1-9]|1[0-2])$")
+    # True while numbers are placeholders: every slide gets a visible
+    # "示意數字・待查證" badge and lint refuses to call the deck publishable.
+    draft_data: bool = False
+    sources: tuple[Source, ...] = ()
+    pronunciation_map: dict[str, str] = {}
+    sections: tuple[Section, ...] = Field(min_length=MIN_SECTIONS)
+
+    @model_validator(mode="after")
+    def _cross_checks(self) -> Deck:
+        if self.category in (Category.AI, Category.TECH) and not self.as_of:
+            raise ValueError(f"category {self.category.value!r} requires as_of (YYYY-MM)")
+        source_ids = [s.id for s in self.sources]
+        _ensure_unique("source id", source_ids)
+        _ensure_unique("slide id", [s.id for s in self.slides])
+        known = set(source_ids)
+        for slide in self.slides:
+            missing = [sid for sid in slide.source_ids if sid not in known]
+            if missing:
+                raise ValueError(f"slide {slide.id!r} cites unknown source_ids {missing}")
+        return self
+
+    @property
+    def slides(self) -> tuple[Slide, ...]:
+        return tuple(slide for section in self.sections for slide in section.slides)
+
+    def source_by_id(self, source_id: str) -> Source:
+        return next(s for s in self.sources if s.id == source_id)
+
+
+def _ensure_unique(label: str, values: list[str]) -> None:
+    dupes = sorted({v for v in values if values.count(v) > 1})
+    if dupes:
+        raise ValueError(f"duplicate {label}s: {dupes}")
+
+
+def load_deck(path: Path) -> Deck:
+    """Read and validate ``deck.json``. Raises ``pydantic.ValidationError``."""
+    return Deck.model_validate(json.loads(path.read_text(encoding="utf-8")))
