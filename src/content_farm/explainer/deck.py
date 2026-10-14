@@ -109,13 +109,25 @@ BODY_MODELS: dict[Layout, type[BaseModel]] = {
 }
 
 
-class Mascot(_Frozen):
-    """Corner mascot (晶片貓). ``pose`` maps to ``<assets>/mascot/<pose>.png``.
+MascotPose = Literal["idle", "point", "think", "shocked", "smug", "deadpan", "wave"]
+SAY_MAX_CHARS = 20
 
-    A missing PNG is not an error — the slot simply stays empty.
+
+class Mascot(_Frozen):
+    """Corner mascot (晶片貓).
+
+    The animated overlay (``explainer.mascot``, ``scripts/mascot_overlay.py``)
+    plays ``pose`` with a 250 ms transition at the slide change and shows
+    ``say`` in a speech bubble. The legacy static slot in the slide template
+    still maps ``pose`` to ``<assets>/mascot/<pose>.png`` (missing = empty);
+    use one or the other, not both.
     """
 
-    pose: str = Field(pattern=r"^[a-z][a-z0-9_-]{0,31}$")
+    pose: MascotPose = "idle"
+    say: str | None = Field(default=None, min_length=1, max_length=SAY_MAX_CHARS)
+    # "left" is accepted for the shared interface; the overlay currently keeps
+    # the cat bottom-right because bottom-left collides with the meta row.
+    position: Literal["right", "left"] = "right"
 
 
 class Source(_Frozen):

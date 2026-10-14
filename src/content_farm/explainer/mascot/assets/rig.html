@@ -1,0 +1,331 @@
+<!doctype html>
+<!--
+  晶片貓 rig — a layered SVG puppet driven by Live2D-style parameters.
+
+  The page is a pure function of the last applyParams() call: no CSS
+  animations, transitions or timers, so a frame captured after applyParams()
+  depends only on its parameters (deterministic clock lives in Python).
+
+  Canvas 620x540, transparent. Cat-local coordinates: 300x380 box placed at
+  (310,160); every part rotates about its own anchor (data-anchor).
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; width: 620px; height: 540px; background: transparent; overflow: hidden; }
+  #stage { position: relative; width: 620px; height: 540px; }
+  svg { position: absolute; left: 0; top: 0; overflow: visible; }
+  #bubble {
+    position: absolute; right: 252px; bottom: 322px; max-width: 330px;
+    padding: 12px 22px; box-sizing: border-box;
+    background: #ffffff; color: #1d2230; border: 4px solid #1d2230; border-radius: 22px;
+    font: 700 30px/1.3 "PingFang TC", "Noto Sans CJK TC", "Heiti TC", sans-serif;
+    white-space: pre-wrap; word-break: break-all; opacity: 0; transform-origin: 100% 100%;
+    box-shadow: 0 6px 14px rgba(0,0,0,.28);
+  }
+  #bubble::after {
+    content: ""; position: absolute; right: -22px; bottom: 6px;
+    border-style: solid; border-width: 12px 0 12px 24px;
+    border-color: transparent transparent transparent #1d2230;
+  }
+  #bubble::before {
+    content: ""; position: absolute; right: -14px; bottom: 10px; z-index: 1;
+    border-style: solid; border-width: 8px 0 8px 16px;
+    border-color: transparent transparent transparent #ffffff;
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+<svg id="rig" width="620" height="540" viewBox="0 0 620 540" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- light rim (reads on dark themes) + soft drop shadow (reads on cream) -->
+    <filter id="sep" x="-20%" y="-20%" width="140%" height="140%">
+      <feMorphology in="SourceAlpha" operator="dilate" radius="2.5" result="grow"/>
+      <feFlood flood-color="#ffffff" flood-opacity="0.55"/>
+      <feComposite in2="grow" operator="in" result="rim"/>
+      <feGaussianBlur in="SourceAlpha" stdDeviation="5" result="blur"/>
+      <feOffset in="blur" dy="5" result="off"/>
+      <feFlood flood-color="#000000" flood-opacity="0.32"/>
+      <feComposite in2="off" operator="in" result="shadow"/>
+      <feMerge><feMergeNode in="shadow"/><feMergeNode in="rim"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <clipPath id="eyeClipL"><ellipse cx="112" cy="142" rx="21" ry="20"/></clipPath>
+    <clipPath id="eyeClipR"><ellipse cx="188" cy="142" rx="21" ry="20"/></clipPath>
+    <clipPath id="mouthClipS"><path d="M139,179 Q144.5,184 150,179 Q155.5,184 161,179 C161,192 139,192 139,179 Z"/></clipPath>
+    <clipPath id="mouthClipM"><path d="M137,179 Q143.5,184 150,179 Q156.5,184 163,179 C163,202 137,202 137,179 Z"/></clipPath>
+    <clipPath id="mouthClipL"><path d="M135,179 Q142.5,184 150,179 Q157.5,184 165,179 C165,213 135,213 135,179 Z"/></clipPath>
+  </defs>
+
+  <g id="cat" filter="url(#sep)" transform="translate(310 160)">
+    <ellipse id="floorShadow" cx="150" cy="374" rx="104" ry="7" fill="#000" opacity="0.18"/>
+
+    <!-- part: tail (anchor = base 215,360); path rebuilt from ParamTail/ParamTail2 -->
+    <g id="tail" data-anchor="215,360">
+      <path id="tailOutline" fill="none" stroke="#1d2230" stroke-width="27" stroke-linecap="round" stroke-linejoin="round"/>
+      <path id="tailFill" fill="none" stroke="#cfd6df" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+      <path id="tailStripes" fill="none" stroke="#8e9aab" stroke-width="18" stroke-dasharray="7 13" stroke-dashoffset="18"/>
+    </g>
+
+    <!-- part: body (anchor = floor centre 150,372; breath scales Y about it) -->
+    <g id="body" data-anchor="150,372">
+      <path d="M112,196 C80,215 62,262 60,310 C58,345 66,372 92,372 L208,372 C234,372 242,345 240,310 C238,262 220,215 188,196 Z"
+            fill="#cfd6df" stroke="#1d2230" stroke-width="5" stroke-linejoin="round"/>
+      <path d="M72,246 Q84,252 94,247 M66,272 Q80,278 92,273 M228,246 Q216,252 206,247 M234,272 Q220,278 208,273"
+            fill="none" stroke="#8e9aab" stroke-width="6" stroke-linecap="round"/>
+      <path d="M80,298 C68,330 76,360 104,370 M220,298 C232,330 224,360 196,370"
+            fill="none" stroke="#1d2230" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="150" cy="270" rx="36" ry="58" fill="#f3f5f8"/>
+      <!-- part: left foreleg (static, viewer right) -->
+      <g id="legL">
+        <rect x="158" y="282" width="32" height="86" rx="16" fill="#cfd6df" stroke="#1d2230" stroke-width="5"/>
+        <ellipse cx="175" cy="366" rx="21" ry="10" fill="#f3f5f8" stroke="#1d2230" stroke-width="5"/>
+        <path d="M170,362 L170,370 M180,362 L180,370" stroke="#1d2230" stroke-width="3" stroke-linecap="round"/>
+      </g>
+    </g>
+
+    <!-- part: collar + chip pendant (anchor = ring 150,222) -->
+    <g id="collar">
+      <path d="M104,204 Q150,226 196,204 L197,214 Q150,236 103,214 Z" fill="#3b82f6" stroke="#1d2230" stroke-width="4" stroke-linejoin="round"/>
+      <g id="chip" data-anchor="150,224">
+        <path d="M150,222 L150,233" stroke="#1d2230" stroke-width="3"/>
+        <circle cx="150" cy="223" r="4" fill="#e2b049" stroke="#1d2230" stroke-width="2"/>
+        <g stroke="#e2b049" stroke-width="3" stroke-linecap="round">
+          <path d="M133,240 L128,240 M133,247 L128,247 M133,254 L128,254 M167,240 L172,240 M167,247 L172,247 M167,254 L172,254"/>
+        </g>
+        <rect x="133" y="233" width="34" height="28" rx="4" fill="#1f2937" stroke="#1d2230" stroke-width="3"/>
+        <rect x="142" y="239" width="16" height="16" rx="2" fill="#e2b049"/>
+        <path d="M144,241 L150,241" stroke="#fff6d5" stroke-width="2" stroke-linecap="round"/>
+      </g>
+    </g>
+
+    <!-- part: head (anchor = neck 150,205) -->
+    <g id="head" data-anchor="150,205">
+      <!-- parts: ears (anchors = ear bases), behind the head -->
+      <g id="earL" data-anchor="96,98">
+        <path d="M72,120 L68,28 L130,78 Z" fill="#cfd6df" stroke="#1d2230" stroke-width="5" stroke-linejoin="round"/>
+        <path d="M81,106 L77,46 L118,80 Z" fill="#f2b8c0"/>
+      </g>
+      <g id="earR" data-anchor="204,98">
+        <path d="M228,120 L232,28 L170,78 Z" fill="#cfd6df" stroke="#1d2230" stroke-width="5" stroke-linejoin="round"/>
+        <path d="M219,106 L223,46 L182,80 Z" fill="#f2b8c0"/>
+      </g>
+      <path id="headShape" d="M60,150 C55,95 95,62 150,62 C205,62 245,95 240,150 C242,170 232,182 248,191 C228,197 215,213 150,215 C85,213 72,197 52,191 C68,182 58,170 60,150 Z"
+            fill="#cfd6df" stroke="#1d2230" stroke-width="5" stroke-linejoin="round"/>
+      <path d="M150,98 L150,116 M137,101 L140,114 M163,101 L160,114 M60,150 L80,153 M62,163 L80,163 M240,150 L220,153 M238,163 L220,163"
+            fill="none" stroke="#8e9aab" stroke-width="5" stroke-linecap="round"/>
+
+      <!-- face (parallax: shifts further than the skull on ParamAngleX/Y) -->
+      <g id="face">
+        <ellipse cx="96" cy="170" rx="15" ry="8" fill="#f2a0ae" opacity="0.45"/>
+        <ellipse cx="204" cy="170" rx="15" ry="8" fill="#f2a0ae" opacity="0.45"/>
+        <ellipse cx="138" cy="180" rx="16" ry="12" fill="#f3f5f8"/>
+        <ellipse cx="162" cy="180" rx="16" ry="12" fill="#f3f5f8"/>
+
+        <!-- part: eyes (anchor = eye centre). open | closed variants; lids clipped to the eye -->
+        <g id="eyeL" data-anchor="112,142">
+          <g class="open">
+            <ellipse cx="112" cy="142" rx="21" ry="20" fill="#fff7e8"/>
+            <g clip-path="url(#eyeClipL)">
+              <g class="iris"><circle cx="112" cy="142" r="19" fill="#f0a63a"/>
+                <ellipse class="pupil" cx="112" cy="142" rx="4" ry="15" fill="#1d2230"/>
+                <circle cx="106" cy="135" r="4.5" fill="#fff"/><circle cx="117" cy="148" r="2" fill="#fff"/></g>
+              <ellipse cx="112" cy="142" rx="21" ry="20" fill="none" stroke="#1d2230" stroke-width="8"/>
+              <path class="lidU" d="" fill="#cfd6df"/>
+              <path class="lidD" d="" fill="#cfd6df"/>
+              <path class="lidUEdge" d="" fill="none" stroke="#1d2230" stroke-width="4" stroke-linecap="round" visibility="hidden"/>
+              <path class="lidDEdge" d="" fill="none" stroke="#1d2230" stroke-width="3.5" stroke-linecap="round" visibility="hidden"/>
+            </g>
+            <ellipse cx="112" cy="142" rx="22.2" ry="21.2" fill="none" stroke="#cfd6df" stroke-width="2.6"/>
+          </g>
+          <path class="closed" d="M93,143 Q112,153 131,143" fill="none" stroke="#1d2230" stroke-width="5" stroke-linecap="round" visibility="hidden"/>
+        </g>
+        <g id="eyeR" data-anchor="188,142">
+          <g class="open">
+            <ellipse cx="188" cy="142" rx="21" ry="20" fill="#fff7e8"/>
+            <g clip-path="url(#eyeClipR)">
+              <g class="iris"><circle cx="188" cy="142" r="19" fill="#f0a63a"/>
+                <ellipse class="pupil" cx="188" cy="142" rx="4" ry="15" fill="#1d2230"/>
+                <circle cx="182" cy="135" r="4.5" fill="#fff"/><circle cx="193" cy="148" r="2" fill="#fff"/></g>
+              <ellipse cx="188" cy="142" rx="21" ry="20" fill="none" stroke="#1d2230" stroke-width="8"/>
+              <path class="lidU" d="" fill="#cfd6df"/>
+              <path class="lidD" d="" fill="#cfd6df"/>
+              <path class="lidUEdge" d="" fill="none" stroke="#1d2230" stroke-width="4" stroke-linecap="round" visibility="hidden"/>
+              <path class="lidDEdge" d="" fill="none" stroke="#1d2230" stroke-width="3.5" stroke-linecap="round" visibility="hidden"/>
+            </g>
+            <ellipse cx="188" cy="142" rx="22.2" ry="21.2" fill="none" stroke="#cfd6df" stroke-width="2.6"/>
+          </g>
+          <path class="closed" d="M169,143 Q188,153 207,143" fill="none" stroke="#1d2230" stroke-width="5" stroke-linecap="round" visibility="hidden"/>
+        </g>
+
+        <path d="M142,166 L158,166 L150,175 Z" fill="#e88a9a" stroke="#1d2230" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M150,175 L150,179" stroke="#1d2230" stroke-width="3" stroke-linecap="round"/>
+
+        <!-- part: mouth (anchor = 150,179). Closed forms + three open sizes -->
+        <g id="mouth" data-anchor="150,179" fill="none" stroke="#1d2230" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+          <path id="mClosed" d="M136,178 Q143,187 150,179 Q157,187 164,178"/>
+          <path id="mFlat" d="M139,183 L161,183" visibility="hidden"/>
+          <path id="mSmirk" d="M136,181 Q149,188 166,174" visibility="hidden"/>
+          <ellipse id="mO" cx="150" cy="187" rx="6" ry="7.5" fill="#5a1f2b" visibility="hidden"/>
+          <g id="mS" visibility="hidden">
+            <path d="M139,179 Q144.5,184 150,179 Q155.5,184 161,179 C161,192 139,192 139,179 Z" fill="#5a1f2b"/>
+            <ellipse cx="150" cy="189" rx="7" ry="3" fill="#f07c8c" stroke="none" clip-path="url(#mouthClipS)"/>
+          </g>
+          <g id="mM" visibility="hidden">
+            <path d="M137,179 Q143.5,184 150,179 Q156.5,184 163,179 C163,202 137,202 137,179 Z" fill="#5a1f2b"/>
+            <ellipse cx="150" cy="197" rx="9" ry="5" fill="#f07c8c" stroke="none" clip-path="url(#mouthClipM)"/>
+          </g>
+          <g id="mL" visibility="hidden">
+            <path d="M135,179 Q142.5,184 150,179 Q157.5,184 165,179 C165,213 135,213 135,179 Z" fill="#5a1f2b"/>
+            <ellipse cx="150" cy="205" rx="11" ry="7" fill="#f07c8c" stroke="none" clip-path="url(#mouthClipL)"/>
+          </g>
+        </g>
+
+        <g id="whiskers" stroke="#1d2230" stroke-width="2.2" stroke-linecap="round" opacity="0.85">
+          <path d="M118,176 L70,168 M118,181 L68,183 M120,186 L74,198 M182,176 L230,168 M182,181 L232,183 M180,186 L226,198"/>
+        </g>
+      </g>
+
+      <!-- part: hat — clean-room hard hat with a chip badge (rides on the head) -->
+      <g id="hat" data-anchor="150,96">
+        <path d="M90,98 C88,44 212,44 210,98 Z" fill="#f5f7fa" stroke="#1d2230" stroke-width="5" stroke-linejoin="round"/>
+        <path d="M150,52 L150,96" stroke="#d6dde6" stroke-width="10" stroke-linecap="round"/>
+        <path d="M114,62 Q118,80 116,96 M186,62 Q182,80 184,96" fill="none" stroke="#d6dde6" stroke-width="5" stroke-linecap="round"/>
+        <path d="M74,96 Q150,110 226,96 L226,104 Q150,120 74,104 Z" fill="#f5f7fa" stroke="#1d2230" stroke-width="5" stroke-linejoin="round"/>
+        <path d="M76,100 Q150,114 224,100" fill="none" stroke="#38bdf8" stroke-width="3"/>
+        <rect x="160" y="70" width="22" height="17" rx="2" fill="#1f2937"/>
+        <rect x="166" y="74" width="10" height="9" fill="#e2b049"/>
+      </g>
+    </g>
+
+    <!-- part: right foreleg / pointing paw (anchor = shoulder 126,290) -->
+    <g id="armR" data-anchor="126,290">
+      <rect x="110" y="282" width="32" height="86" rx="16" fill="#cfd6df" stroke="#1d2230" stroke-width="5"/>
+      <ellipse cx="126" cy="366" rx="21" ry="10" fill="#f3f5f8" stroke="#1d2230" stroke-width="5"/>
+      <path class="toes" d="M121,362 L121,370 M131,362 L131,370" stroke="#1d2230" stroke-width="3" stroke-linecap="round"/>
+      <g id="beans" fill="#f2a0ae" visibility="hidden">
+        <ellipse cx="126" cy="368" rx="7" ry="4"/>
+        <circle cx="116" cy="360" r="3"/><circle cx="126" cy="357" r="3"/><circle cx="136" cy="360" r="3"/>
+      </g>
+    </g>
+  </g>
+</svg>
+<div id="bubble"></div>
+</div>
+<script>
+(() => {
+  const q = (sel) => document.querySelector(sel);
+  const deg = Math.PI / 180;
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+  const show = (el, on) => el.setAttribute('visibility', on ? 'visible' : 'hidden');
+  const anchor = (el) => el.dataset.anchor.split(',').map(Number);
+  const rotAbout = (el, a) => { const [x, y] = anchor(el); return `rotate(${a.toFixed(3)} ${x} ${y})`; };
+
+  const els = {
+    cat: q('#cat'), body: q('#body'), head: q('#head'), face: q('#face'), hat: q('#hat'),
+    earL: q('#earL'), earR: q('#earR'), eyeL: q('#eyeL'), eyeR: q('#eyeR'),
+    mouth: q('#mouth'), armR: q('#armR'), beans: q('#beans'), chip: q('#chip'), collar: q('#collar'),
+    tailOutline: q('#tailOutline'), tailFill: q('#tailFill'), tailStripes: q('#tailStripes'),
+    bubble: q('#bubble'),
+    mouths: { closed: q('#mClosed'), flat: q('#mFlat'), smirk: q('#mSmirk'), o: q('#mO'), s: q('#mS'), m: q('#mM'), l: q('#mL') },
+  };
+  let lastSay = null;
+
+  function setEye(g, cx, cy, open, smile, ballX, ballY, pupil) {
+    const ry = 20;
+    const isOpen = open > 0.08;
+    show(g.querySelector('.open'), isOpen);
+    show(g.querySelector('.closed'), !isOpen);
+    if (!isOpen) { g.removeAttribute('transform'); return; }
+    const wide = Math.max(0, open - 1);
+    g.setAttribute('transform', `translate(${cx} ${cy}) scale(${1 + wide * 0.6}) translate(${-cx} ${-cy})`);
+    const x0 = cx - 24, x1 = cx + 24, top = cy - ry - 2, bottom = cy + ry + 2;
+    // upper lid: edge bows slightly downward, like a heavy eyelid
+    const shut = clamp(1 - open, 0, 1);
+    const yU = top + shut * (2 * ry + 2), sag = 5 * Math.min(1, shut * 3);
+    const arcU = `M${x0},${yU.toFixed(2)} Q${cx},${(yU + sag).toFixed(2)} ${x1},${yU.toFixed(2)}`;
+    g.querySelector('.lidU').setAttribute('d', shut > 0 ? `${arcU} L${x1},${top - 2} L${x0},${top - 2} Z` : '');
+    const eu = g.querySelector('.lidUEdge');
+    show(eu, shut > 0.04);
+    eu.setAttribute('d', arcU);
+    // lower lid: an upward arc (the "^" of a pleased cat), not a flat bar
+    const s = clamp(smile, 0, 1);
+    const yEdge = bottom - s * ry * 1.15, bow = 12 * s;
+    const arc = `M${x0},${(yEdge + bow * 0.4).toFixed(2)} Q${cx},${(yEdge - bow).toFixed(2)} ${x1},${(yEdge + bow * 0.4).toFixed(2)}`;
+    g.querySelector('.lidD').setAttribute('d', s > 0 ? `${arc} L${x1},${bottom + 2} L${x0},${bottom + 2} Z` : '');
+    const ed = g.querySelector('.lidDEdge');
+    show(ed, s > 0.04);
+    ed.setAttribute('d', arc);
+    g.querySelector('.iris').setAttribute('transform', `translate(${(ballX * 6).toFixed(2)} ${(ballY * 5).toFixed(2)})`);
+    const p = g.querySelector('.pupil');
+    p.setAttribute('rx', (4 + 6.5 * pupil).toFixed(2));
+    p.setAttribute('ry', (15 - 3.5 * pupil).toFixed(2));
+  }
+
+  function setMouth(openY, form, oShape) {
+    const m = els.mouths;
+    let pick;
+    if (openY >= 0.66) pick = 'l';
+    else if (openY >= 0.36) pick = 'm';
+    else if (openY >= 0.08) pick = 's';
+    else if (oShape > 0.5) pick = 'o';
+    else if (form <= -0.5) pick = 'flat';
+    else if (form >= 0.5) pick = 'smirk';
+    else pick = 'closed';
+    for (const [k, el] of Object.entries(m)) show(el, k === pick);
+    return pick;
+  }
+
+  function tailPath(t1, t2, puff) {
+    const L = [40, 38, 34];
+    const a0 = (-10 + t1 * 14) * deg;
+    const a1 = a0 + (-40 + t1 * 22) * deg;
+    const a2 = a1 + (-42 + t2 * 34) * deg;
+    const p0 = [215, 360];
+    const p1 = [p0[0] + L[0] * Math.cos(a0), p0[1] + L[0] * Math.sin(a0)];
+    const p2 = [p1[0] + L[1] * Math.cos(a1), p1[1] + L[1] * Math.sin(a1)];
+    const p3 = [p2[0] + L[2] * Math.cos(a2), p2[1] + L[2] * Math.sin(a2)];
+    const mid = [(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2];
+    const f = (p) => `${p[0].toFixed(2)},${p[1].toFixed(2)}`;
+    const d = `M${f(p0)} Q${f(p1)} ${f(mid)} Q${f(p2)} ${f(p3)}`;
+    for (const el of [els.tailOutline, els.tailFill, els.tailStripes]) el.setAttribute('d', d);
+    const k = 1 + 0.55 * clamp(puff, 0, 1);
+    els.tailOutline.setAttribute('stroke-width', (27 * k).toFixed(2));
+    els.tailFill.setAttribute('stroke-width', (18 * k).toFixed(2));
+    els.tailStripes.setAttribute('stroke-width', (18 * k).toFixed(2));
+  }
+
+  window.applyParams = (p, say) => {
+    const ax = p.ParamAngleX, ay = p.ParamAngleY, az = p.ParamAngleZ, br = p.ParamBreath;
+    els.cat.setAttribute('transform',
+      `translate(${310 + p.ParamBodyX} ${160 + p.ParamBodyY}) rotate(${p.ParamBodyAngleX.toFixed(3)} 150 372)`);
+    els.body.setAttribute('transform', `translate(150 372) scale(${1 + 0.006 * br} ${1 + 0.018 * br}) translate(-150 -372)`);
+    els.collar.setAttribute('transform', `translate(0 ${(-br * 4).toFixed(2)})`);
+    els.chip.setAttribute('transform', rotAbout(els.chip, p.ParamChip));
+    els.head.setAttribute('transform',
+      `translate(${(ax * 0.5).toFixed(2)} ${(ay * 0.45 - br * 5).toFixed(2)}) ${rotAbout(els.head, az)}`);
+    els.face.setAttribute('transform', `translate(${(ax * 0.55).toFixed(2)} ${(ay * 0.4).toFixed(2)})`);
+    els.hat.setAttribute('transform', `translate(${(ax * 0.12).toFixed(2)} ${(-ay * 0.1).toFixed(2)})`);
+    els.earL.setAttribute('transform', `translate(${(-ax * 0.1).toFixed(2)} 0) ${rotAbout(els.earL, -p.ParamEarL)}`);
+    els.earR.setAttribute('transform', `translate(${(-ax * 0.1).toFixed(2)} 0) ${rotAbout(els.earR, p.ParamEarR)}`);
+    setEye(els.eyeL, 112, 142, p.ParamEyeLOpen, p.ParamEyeLSmile, p.ParamEyeBallX, p.ParamEyeBallY, p.ParamPupil);
+    setEye(els.eyeR, 188, 142, p.ParamEyeROpen, p.ParamEyeRSmile, p.ParamEyeBallX, p.ParamEyeBallY, p.ParamPupil);
+    const pick = setMouth(p.ParamMouthOpenY, p.ParamMouthForm, p.ParamMouthO);
+    const [mx, my] = anchor(els.mouth);
+    const band = pick === 'l' ? (p.ParamMouthOpenY - 0.66) / 0.34 : pick === 'm' ? (p.ParamMouthOpenY - 0.36) / 0.30
+      : pick === 's' ? (p.ParamMouthOpenY - 0.08) / 0.28 : 0.5;
+    els.mouth.setAttribute('transform', `translate(${mx} ${my}) scale(1 ${(0.9 + 0.2 * clamp(band, 0, 1)).toFixed(3)}) translate(${-mx} ${-my})`);
+    els.armR.setAttribute('transform', rotAbout(els.armR, p.ParamArmR * 118 + p.ParamArmRWave));
+    show(els.beans, p.ParamArmR > 0.6);
+    tailPath(p.ParamTail, p.ParamTail2, p.ParamTailPuff);
+    const b = clamp(p.ParamBubble, 0, 1);
+    if (say !== lastSay) { els.bubble.textContent = say || ''; lastSay = say; }
+    els.bubble.style.opacity = say ? b.toFixed(3) : '0';
+    els.bubble.style.transform = `scale(${(0.85 + 0.15 * b).toFixed(3)})`;
+    return pick;
+  };
+})();
+</script>
+</body>
+</html>
