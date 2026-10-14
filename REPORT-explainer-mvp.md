@@ -116,6 +116,14 @@ python scripts/run_stage.py --stage assembly_timeline --run-dir output/<run>
 # 不跑 upload / drive，先人工看 assembly/draft.mp4
 ```
 
+**先免費試跑（2026-10-14 補）**：只想驗證管線通不通時，voice 那一步改用本機 macOS `say`，不花錢、不需要任何 API key：
+
+```bash
+CF_TTS_PROVIDER=macos_say python scripts/run_stage.py --stage voice --run-dir output/<run>
+```
+
+其餘步驟不變。`macos_say` 的聲音很機械，**只適合開發和測試，不要拿來發布**；上面第 3 點（專有名詞怎麼唸）仍然要用 Fish Audio 才看得出來。設定與實測結果見 `REPORT-tts-macos-say.md`。
+
 試跑時要用眼睛確認的事：
 1. 每行 24 字的橫式字幕看起來是否合適；
 2. 字幕有沒有壓到 meta 列或吉祥物；
