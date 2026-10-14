@@ -51,7 +51,7 @@ class TestBuildOutlinePrompt:
     def test_short_form_guide_included(self) -> None:
         req = ScriptRequest(topic="Test", video_length=VideoLength.SHORT)
         prompt = build_outline_prompt(req)
-        assert "30-90" in prompt
+        assert "50-65" in prompt
         assert "Hook" in prompt
         assert "反轉" in prompt
 
@@ -133,7 +133,7 @@ class TestBuildSceneNarrationPrompt:
             duration_seconds=20,
             is_short_form=True,
         )
-        assert "50-80" in prompt
+        assert "55-70" in prompt
         assert "好奇缺口" in prompt
         assert "開放迴圈" in prompt
 
@@ -150,7 +150,7 @@ class TestBuildSceneNarrationPrompt:
             is_short_form=True,
         )
         assert "挑戰認知" in prompt
-        assert "前 3 秒" in prompt
+        assert "前 2 秒" in prompt
 
     def test_short_form_closing_no_cta(self) -> None:
         prompt = build_scene_narration_prompt(

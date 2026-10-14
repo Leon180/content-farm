@@ -94,7 +94,7 @@ async def test_generate_calls_outline_then_expand(
     request = ScriptRequest(
         topic="How Bitcoin Works",
         keywords=["bitcoin"],
-        video_length=VideoLength.MEDIUM,
+        video_length=VideoLength.SHORT,
         tone=Tone.EDUCATIONAL,
     )
     script = await gen.generate(request)
@@ -136,7 +136,7 @@ async def test_generate_uses_cache(
     ]
 
     gen = ScriptGenerator(llm=mock_llm, cache=mock_cache, settings=settings)
-    request = ScriptRequest(topic="Bitcoin Test")
+    request = ScriptRequest(topic="Bitcoin Test", video_length=VideoLength.SHORT)
 
     script = await gen.generate(request)
 
@@ -168,6 +168,7 @@ async def test_script_tags_merge(
     request = ScriptRequest(
         topic="Bitcoin",
         keywords=["blockchain", "mining"],
+        video_length=VideoLength.SHORT,
     )
     script = await gen.generate(request)
 

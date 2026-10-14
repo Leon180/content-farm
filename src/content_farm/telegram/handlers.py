@@ -14,12 +14,12 @@ logger = logging.getLogger(__name__)
 
 # Topic categories for /topics command
 CATEGORIES: dict[str, str] = {
-    "science": "科學",
-    "history": "歷史",
+    "science": "科學/冷知識",
+    "technology": "科技/AI",
     "psychology": "心理學",
-    "trivia": "冷知識",
-    "technology": "科技",
-    "nature": "自然",
+    "history": "歷史",
+    "space": "宇宙/太空",
+    "culture": "文化/台灣",
 }
 
 

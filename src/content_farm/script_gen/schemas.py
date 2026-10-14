@@ -4,7 +4,13 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
-from content_farm.types import PipelineArtifact, Tone, VideoLength
+from content_farm.types import (
+    GenreTemplate,
+    Orientation,
+    PipelineArtifact,
+    Tone,
+    VideoLength,
+)
 
 
 class ScriptRequest(BaseModel):
@@ -18,6 +24,8 @@ class ScriptRequest(BaseModel):
     tone: Tone = Tone.EDUCATIONAL
     language: str = "zh-TW"  # Output language for narration
     target_scene_count: int | None = None
+    orientation: Orientation = Orientation.PORTRAIT
+    genre: GenreTemplate | None = None
 
 
 class VisualHint(BaseModel):
@@ -42,6 +50,35 @@ class Scene(BaseModel):
     visual_hint: VisualHint
     duration_seconds: float
     transition: str = "cut"
+    chapter_number: int | None = None  # long-form only
+    b_roll_keywords: tuple[str, ...] = ()  # long-form B-roll refresh
+
+
+class ChapterOutline(BaseModel):
+    """One chapter in a long-form video — produced before scene expansion."""
+
+    model_config = {"frozen": True}
+
+    chapter_number: int
+    title: str
+    summary: str
+    duration_seconds: float
+    key_points: tuple[str, ...] = ()
+    hook: str = ""
+    payoff: str = ""
+    start_timestamp: float = 0.0  # seconds from video start
+
+
+class ChapterOutlineList(BaseModel):
+    """Chapter-level outline returned by the cheap model for long-form videos."""
+
+    model_config = {"frozen": True}
+
+    video_title: str
+    description: str
+    chapters: tuple[ChapterOutline, ...] = ()
+    tags: tuple[str, ...] = ()
+    sources: tuple[str, ...] = ()
 
 
 class SceneOutline(BaseModel):
@@ -97,6 +134,9 @@ class Script(PipelineArtifact):
     sources: tuple[str, ...] = ()
     ai_disclosure: bool = True
     pronunciation_map: dict[str, str] = {}
+    orientation: Orientation = Orientation.PORTRAIT
+    genre: GenreTemplate | None = None
+    chapters: tuple[ChapterOutline, ...] = ()  # non-empty for long-form
 
     @property
     def full_narration(self) -> str:

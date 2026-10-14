@@ -176,7 +176,7 @@ class TestHandleCategorySelection:
         await handle_category_selection(update, bot, trending_handler)
 
         bot.answer_callback_query.assert_called_once_with("123")
-        trending_handler.fetch_and_present.assert_called_once_with("science", "科學")
+        trending_handler.fetch_and_present.assert_called_once_with("science", "科學/冷知識")
 
     @pytest.mark.anyio()
     async def test_unknown_category_uses_key_as_name(self) -> None:

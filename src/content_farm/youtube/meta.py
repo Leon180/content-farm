@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from content_farm.script_gen.schemas import Script
+from content_farm.script_gen.schemas import ChapterOutline, Script
 from content_farm.youtube.schemas import UploadSettings
 
 
@@ -17,6 +17,8 @@ def generate_meta_template(
     """Build a youtube_meta dict pre-filled from script data.
 
     Returns a plain dict so the user can freely edit fields in the JSON file.
+    For long-form scripts with ``chapters[]``, includes a ``chapters`` list
+    of ``{timestamp, title}`` objects for human review + edit.
     """
     defaults = UploadSettings()
 
@@ -31,6 +33,10 @@ def generate_meta_template(
         "video_path": str(portrait_video_path.relative_to(run_dir)),
         "thumbnail_path": _find_relative(run_dir, "thumbnails", ("*.png", "*.jpg")),
         "subtitle_path": _find_relative(run_dir, "subtitles", ("*.srt", "*.vtt")),
+        "chapters": [
+            {"timestamp": _format_timestamp(ch.start_timestamp), "title": ch.title}
+            for ch in getattr(script, "chapters", ()) or ()
+        ],
     }
 
 
@@ -46,9 +52,62 @@ def _find_relative(run_dir: Path, subdir: str, globs: tuple[str, ...]) -> str:
     return ""
 
 
+def _format_timestamp(seconds: float) -> str:
+    """Format seconds as ``H:MM:SS`` or ``M:SS`` — YouTube's chapter-parse format.
+
+    YouTube accepts either ``0:00`` (M:SS) or ``0:00:00`` (H:MM:SS).
+    We pick the shorter form when under 1 hour.
+    """
+    total = int(round(seconds))
+    h, rem = divmod(total, 3600)
+    m, s = divmod(rem, 60)
+    if h > 0:
+        return f"{h}:{m:02d}:{s:02d}"
+    return f"{m}:{s:02d}"
+
+
+def _build_chapter_block(chapters: tuple[ChapterOutline, ...]) -> list[str]:
+    """Build the lines YouTube parses as chapter markers.
+
+    YouTube requires: first timestamp ``0:00``, at least 3 entries total,
+    each on its own line in ascending timestamp order. Format:
+    ``MM:SS title`` (or ``H:MM:SS title`` for >1hr videos).
+
+    Places a short 「章節」 label line BEFORE the timestamps so viewers
+    see a human-readable heading; YouTube's parser ignores non-timestamp
+    lines and still picks up the timestamps that follow.
+
+    Returns an empty list if the chapter set does not meet YouTube's
+    minimums — better to skip than to emit broken markers.
+    """
+    if len(chapters) < 3:
+        return []
+    if abs(chapters[0].start_timestamp) > 0.5:
+        return []  # must start at 0:00
+
+    lines = ["章節："]
+    for ch in chapters:
+        lines.append(f"{_format_timestamp(ch.start_timestamp)} {ch.title}")
+    lines.append("")
+    return lines
+
+
 def _build_description(script: Script) -> str:
-    """Build YouTube description from script metadata."""
-    parts = [script.description, ""]
+    """Build YouTube description from script metadata.
+
+    Long-form videos with ``chapters[]`` get the chapter marker block at the
+    very top (YouTube's parser scans from the top for the first ``0:00``
+    timestamp). Short-form scripts skip the chapter block entirely.
+    """
+    parts: list[str] = []
+
+    chapter_lines = _build_chapter_block(getattr(script, "chapters", ()) or ())
+    if chapter_lines:
+        parts.extend(chapter_lines)
+
+    parts.append(script.description)
+    parts.append("")
+
     if script.sources:
         parts.append("參考資料:")
         for src in script.sources:

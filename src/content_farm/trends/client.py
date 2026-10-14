@@ -15,19 +15,19 @@ _CATEGORY_IDS: dict[str, int] = {
     "science": 174,
     "history": 433,
     "psychology": 6,
-    "trivia": 0,  # No specific ID — use seed keywords
+    "culture": 0,  # No specific ID — use seed keywords
     "technology": 5,
-    "nature": 442,
+    "space": 174,  # Shares Science ID, differentiated by seeds
 }
 
 # Seed keywords per category (fallback when pytrends fails)
 _CATEGORY_SEEDS: dict[str, list[str]] = {
-    "science": ["科學", "太空", "物理", "化學", "生物"],
+    "science": ["科學", "冷知識", "物理", "化學", "生物"],
     "history": ["歷史", "古代", "戰爭", "文明", "考古"],
     "psychology": ["心理學", "人類行為", "大腦", "情緒", "認知"],
-    "trivia": ["冷知識", "你不知道的事", "為什麼", "有趣的事實"],
-    "technology": ["科技", "AI", "手機", "電腦", "未來"],
-    "nature": ["自然", "動物", "海洋", "植物", "氣候"],
+    "culture": ["台灣冷知識", "文化", "台灣全球排名", "習俗", "台灣第一"],
+    "technology": ["科技", "AI", "人工智慧", "手機", "未來"],
+    "space": ["太空", "宇宙", "黑洞", "NASA", "火星"],
 }
 
 
