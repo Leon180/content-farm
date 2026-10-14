@@ -52,3 +52,13 @@ trending_topics_*.md
 research_*.json
 material/
 .DS_Store
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
+
+# Claude Code worktrees (per-session checkouts)
+/.claude/worktrees/
+
+# Raw third-party datasets and scraped corpora (personal data; repo is public)
+data/curriculum_map/raw/
+data/curriculum_map/regret_corpus/
