@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import re
 
+from content_farm.subtitle.line_wrap import wrap_text
 from content_farm.subtitle.schemas import SubtitleSegment
 
 _MIN_CHARS = 10
@@ -40,11 +41,13 @@ class EstimationProvider:
         min_chars: int = _MIN_CHARS,
         max_chars: int = _MAX_CHARS,
         sentence_gap: float = _DEFAULT_GAP,
+        wrap_chars_per_line: int = 13,
     ) -> None:
         self._target_chars = target_chars
         self._min_chars = min_chars
         self._max_chars = max_chars
         self._sentence_gap = sentence_gap
+        self._wrap_chars_per_line = wrap_chars_per_line
 
     async def generate_segments(
         self,
@@ -52,8 +55,15 @@ class EstimationProvider:
         *,
         duration_seconds: float,
         offset_seconds: float = 0.0,
+        tts_text: str = "",
+        audio_path: str = "",
     ) -> tuple[SubtitleSegment, ...]:
-        """Split *text* into timed subtitle segments with dramatic gaps."""
+        """Split *text* into timed subtitle segments with dramatic gaps.
+
+        ``tts_text`` and ``audio_path`` are accepted for protocol
+        compatibility but not used by this estimation-based provider.
+        """
+        del tts_text, audio_path  # Unused in estimation provider
         if not text.strip():
             return ()
 
@@ -90,7 +100,7 @@ class EstimationProvider:
                     index=i + 1,
                     start_seconds=round(current_time, 3),
                     end_seconds=round(end_time, 3),
-                    text=chunk.strip(),
+                    text=wrap_text(chunk.strip(), self._wrap_chars_per_line),
                     scene_number=0,  # Set by generator
                 )
             )

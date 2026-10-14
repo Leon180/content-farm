@@ -106,8 +106,8 @@ class VoiceGenerator:
     async def _generate_subtitles(
         self, script: Script, segments: list[AudioSegment],
     ) -> Path:
-        """Run subtitle estimation and write SRT alongside audio."""
-        from content_farm.subtitle.estimation import EstimationProvider
+        """Run subtitle generation and write SRT alongside audio."""
+        from content_farm.subtitle.factory import create_subtitle_provider
         from content_farm.subtitle.generator import SubtitleGenerator
         from content_farm.subtitle.schemas import SubtitleInput
 
@@ -119,7 +119,7 @@ class VoiceGenerator:
             total_duration_seconds=sum(s.duration_seconds for s in segments),
             output_dir=str(self._output_dir),
         )
-        provider = EstimationProvider()
+        provider = create_subtitle_provider(self._settings)
         gen = SubtitleGenerator(provider, self._settings, output_dir=sub_dir)
         sub_input = SubtitleInput(script=script, voice=voice_artifact)
         await gen.generate(sub_input)
@@ -139,6 +139,8 @@ class VoiceGenerator:
         async with self._semaphore:
             output_path = self._output_dir / f"scene_{scene_number:03d}.mp3"
 
+            tts_text = normalize_for_tts(narration, pronunciation_map)
+
             # Skip API call if file already exists (I-1: file-exists guard)
             if output_path.exists() and output_path.stat().st_size > 0:
                 logger.info("Reusing existing audio: %s", output_path)
@@ -148,9 +150,8 @@ class VoiceGenerator:
                     file_path=str(output_path),
                     duration_seconds=round(duration, 2),
                     character_count=len(narration),
+                    tts_text=tts_text,
                 )
-
-            tts_text = normalize_for_tts(narration, pronunciation_map)
 
             await self._tts.generate_speech_with_context(
                 text=tts_text,
@@ -167,4 +168,5 @@ class VoiceGenerator:
                 file_path=str(output_path),
                 duration_seconds=round(duration, 2),
                 character_count=len(narration),
+                tts_text=tts_text,
             )

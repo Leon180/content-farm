@@ -118,7 +118,8 @@ def test_escape_percent_in_text(tmp_path: Path) -> None:
     )
 
     result = build_drawtext_filter(srt_path, fontfile=None)
-    assert "50%% off" in result
+    # % is replaced with full-width ％ (FFmpeg 8 drawtext treats %% as stray near CJK)
+    assert "50\uff05 off" in result
 
 
 def test_escape_colon_in_text(tmp_path: Path) -> None:

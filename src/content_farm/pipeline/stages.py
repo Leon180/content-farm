@@ -15,6 +15,7 @@ from pathlib import Path
 from content_farm.pipeline.container import ServiceContainer
 from content_farm.pipeline.context import PipelineContext
 from content_farm.script_gen.schemas import ScriptRequest
+from content_farm.types import Orientation
 
 logger = logging.getLogger(__name__)
 
@@ -348,12 +349,18 @@ async def run_timeline_assembly_stage(
         Path(ctx.subtitle.file_path) if ctx.subtitle else None
     )
 
+    # Orientation defaults to whatever the script declares (portrait for shorts,
+    # landscape for long-form). Falls back to portrait for legacy scripts
+    # generated before the orientation field was added.
+    orientation = getattr(ctx.script, "orientation", None) or Orientation.PORTRAIT
+
     draft_path = await assemble_from_timeline(
         visual_dir=visual_dir,
         audio_path=audio_path,
         subtitle_path=subtitle_path,
         output_dir=ctx.run_dir / "assembly",
         ffmpeg_path=container.settings.ffmpeg_path,
+        orientation=orientation,
     )
 
     file_size = draft_path.stat().st_size if draft_path.exists() else 0
@@ -450,6 +457,10 @@ async def run_drive_stage(
         ctx.run_dir, ctx.run_dir.name,
     )
 
+    import shutil
+    shutil.rmtree(ctx.run_dir)
+    logger.info("Local run directory deleted after Drive upload: %s", ctx.run_dir)
+
 
 # ------------------------------------------------------------------
 # Artifact audit (used by /fetch)
@@ -505,6 +516,10 @@ def sync_script_durations(script, voice):  # noqa: ANN001, ANN201
     After voice generation, actual audio lengths differ from the LLM's
     original estimates.  This syncs the script so that storyboard / JSON
     written later reflect reality.
+
+    For long-form scripts with ``chapters[]``, also recomputes each chapter's
+    ``duration_seconds`` (sum of its scenes) and ``start_timestamp`` (cumulative)
+    so YouTube chapter markers end up at the real positions in the final video.
     """
     duration_map = {
         seg.scene_number: seg.duration_seconds for seg in voice.segments
@@ -521,9 +536,35 @@ def sync_script_durations(script, voice):  # noqa: ANN001, ANN201
             new_scenes.append(scene)
 
     total = sum(s.duration_seconds for s in new_scenes)
-    return script.model_copy(
-        update={"scenes": tuple(new_scenes), "total_duration_seconds": total},
-    )
+    updates = {"scenes": tuple(new_scenes), "total_duration_seconds": total}
+
+    chapters = getattr(script, "chapters", ()) or ()
+    if chapters:
+        chapter_duration: dict[int, float] = {}
+        for scene in new_scenes:
+            ch_num = getattr(scene, "chapter_number", None)
+            if ch_num is None:
+                continue
+            chapter_duration[ch_num] = (
+                chapter_duration.get(ch_num, 0.0) + scene.duration_seconds
+            )
+
+        cursor = 0.0
+        rebuilt_chapters = []
+        for ch in chapters:
+            actual_dur = chapter_duration.get(ch.chapter_number, ch.duration_seconds)
+            rebuilt_chapters.append(
+                ch.model_copy(
+                    update={
+                        "duration_seconds": round(actual_dur, 2),
+                        "start_timestamp": round(cursor, 2),
+                    }
+                )
+            )
+            cursor += actual_dur
+        updates["chapters"] = tuple(rebuilt_chapters)
+
+    return script.model_copy(update=updates)
 
 
 def save_script_files(script, run_dir: Path) -> None:  # noqa: ANN001

@@ -206,6 +206,7 @@ class TestFactory:
         self, monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.setenv("CF_ANTHROPIC_API_KEY", "test-key")
+        monkeypatch.setenv("CF_SUBTITLE_PROVIDER", "estimation")
         settings = Settings()  # type: ignore[call-arg]
         provider = create_subtitle_provider(settings)
         assert type(provider).__name__ == "EstimationProvider"
@@ -219,9 +220,9 @@ class TestFactory:
         with pytest.raises(ValueError, match="Unknown subtitle provider"):
             create_subtitle_provider(settings)
 
-    def test_default_provider_is_estimation(
+    def test_default_provider_is_whisper(
         self, monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.setenv("CF_ANTHROPIC_API_KEY", "test-key")
         settings = Settings()  # type: ignore[call-arg]
-        assert settings.subtitle_provider == "estimation"
+        assert settings.subtitle_provider == "whisper"

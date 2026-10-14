@@ -30,6 +30,7 @@ class AudioSegment(BaseModel):
     duration_seconds: float
     character_count: int
     format: str = "mp3"
+    tts_text: str = ""  # Text sent to TTS (after pronunciation_map); used for alignment
 
 
 class VoiceArtifact(PipelineArtifact):

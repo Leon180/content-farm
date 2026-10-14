@@ -4,8 +4,15 @@ Used by Claude Code skills to invoke Python stages one at a time.
 State flows through files on disk (script.json, audio/*.mp3, etc.).
 
 Usage:
+    # Explicit path
     python scripts/run_stage.py --stage voice --run-dir output/20260312_topic/
-    python scripts/run_stage.py --stage visual --run-dir output/20260312_topic/
+
+    # Just a run name (output/ is prefixed)
+    python scripts/run_stage.py --stage voice --run-dir 20260312_topic
+
+    # Latest run with a script.json (no --run-dir at all)
+    python scripts/run_stage.py --stage voice
+    python scripts/run_stage.py --stage voice --run-dir latest
 """
 
 from __future__ import annotations
@@ -30,6 +37,59 @@ STAGES = (
     "thumbnail", "assembly", "assembly_timeline", "template", "drive",
     "prepareupload", "youtube",
 )
+
+OUTPUT_ROOT = Path("output")
+
+
+def resolve_run_dir(run_dir_arg: str | Path | None) -> Path:
+    """Turn the ``--run-dir`` argument into an absolute Path.
+
+    Accepts:
+      * ``None`` or ``"latest"`` → newest directory under ``output/`` that
+        contains a ``script.json``
+      * ``"20260312_topic"`` (no slash) → ``output/20260312_topic``
+      * full or relative path → used as-is
+
+    Raises ``FileNotFoundError`` if no candidate exists.
+    """
+    if (
+        run_dir_arg is None
+        or str(run_dir_arg).strip() == ""
+        or str(run_dir_arg).lower() == "latest"
+    ):
+        latest = _find_latest_run_dir()
+        if latest is None:
+            raise FileNotFoundError(
+                "No run directory found under output/ (need a script.json)"
+            )
+        logger.info("Using latest run: %s", latest)
+        return latest
+
+    p = Path(run_dir_arg)
+    # Bare name like "20260312_topic" → look under output/
+    if not p.is_absolute() and len(p.parts) == 1 and not p.exists():
+        candidate = OUTPUT_ROOT / p
+        if candidate.exists():
+            return candidate
+        raise FileNotFoundError(
+            f"Run directory not found: {p} (also checked {candidate})"
+        )
+
+    if not p.exists():
+        raise FileNotFoundError(f"Run directory not found: {p}")
+    return p
+
+
+def _find_latest_run_dir() -> Path | None:
+    if not OUTPUT_ROOT.is_dir():
+        return None
+    candidates = [
+        d for d in OUTPUT_ROOT.iterdir()
+        if d.is_dir() and (d / "script.json").is_file()
+    ]
+    if not candidates:
+        return None
+    return max(candidates, key=lambda d: d.stat().st_mtime)
 
 
 # ------------------------------------------------------------------
@@ -322,29 +382,40 @@ async def run_stage(stage: str, run_dir: Path) -> None:
 
             source_path = Path(assembly.file_path)
             upload_dir = run_dir / "upload"
+            upload_dir.mkdir(parents=True, exist_ok=True)
 
             composer = FFmpegComposer(ffmpeg_path=settings.ffmpeg_path)
 
-            # Check if source is already portrait (height > width)
+            # Respect the script's declared orientation: long-form landscape
+            # videos must stay landscape, short-form stays/becomes portrait.
+            from content_farm.types import Orientation as _Orientation
+
+            declared_orientation = (
+                getattr(ctx.script, "orientation", None) or _Orientation.PORTRAIT
+            )
             src_w, src_h = await composer.probe_dimensions(source_path)
-            if src_h > src_w:
-                # Already portrait — just burn title overlay
-                portrait_path = upload_dir / f"{source_path.stem}_final.mp4"
-                await composer.burn_title_overlay(
-                    input_path=source_path,
-                    output_path=portrait_path,
-                    title=ctx.script.video_title,
-                )
+            src_is_portrait = src_h > src_w
+
+            if declared_orientation == _Orientation.LANDSCAPE:
+                # Keep the landscape output as-is (no portrait conversion)
+                final_path = upload_dir / f"{source_path.stem}_final.mp4"
+                import shutil
+                shutil.copy2(source_path, final_path)
+            elif src_is_portrait:
+                # Portrait source, portrait target — copy as-is
+                final_path = upload_dir / f"{source_path.stem}_final.mp4"
+                import shutil
+                shutil.copy2(source_path, final_path)
             else:
-                # Landscape — convert to portrait with title
-                portrait_path = upload_dir / f"{source_path.stem}_portrait.mp4"
+                # Portrait target but source is landscape — convert
+                final_path = upload_dir / f"{source_path.stem}_portrait.mp4"
                 await composer.convert_to_portrait(
                     input_path=source_path,
-                    output_path=portrait_path,
-                    title=ctx.script.video_title,
+                    output_path=final_path,
+                    title="",
                     title_fontsize=87,
                 )
-            logger.info("Final video: %s", portrait_path)
+            logger.info("Final video: %s", final_path)
 
             # Generate thumbnail
             from content_farm.thumbnail.schemas import ThumbnailInput
@@ -361,10 +432,10 @@ async def run_stage(stage: str, run_dir: Path) -> None:
             )
             logger.info("Thumbnail: %s", ctx.thumbnail.file_path)
 
-            meta = generate_meta_template(ctx.script, run_dir, portrait_path)
+            meta = generate_meta_template(ctx.script, run_dir, final_path)
             meta_path = save_meta_template(meta, run_dir)
             logger.info("Meta template: %s", meta_path)
-            print(f"Portrait video: {portrait_path}")
+            print(f"Final video: {final_path}")
             print(f"Thumbnail: {ctx.thumbnail.file_path}")
             print(f"Meta template: {meta_path}")
             print("Edit youtube_meta.json, then run /project:upload")
@@ -445,8 +516,10 @@ def main() -> None:
         help="Stage to run",
     )
     parser.add_argument(
-        "--run-dir", required=True, type=Path,
-        help="Path to the run directory (must contain script.json)",
+        "--run-dir", required=False, default=None, type=str,
+        help="Path to run directory. Accepts: full path, bare name "
+             "(prefixed with output/), 'latest', or omit entirely (uses "
+             "newest run under output/ with a script.json).",
     )
     args = parser.parse_args()
 
@@ -455,7 +528,13 @@ def main() -> None:
         format="%(asctime)s %(name)s %(levelname)s %(message)s",
     )
 
-    asyncio.run(run_stage(args.stage, args.run_dir))
+    try:
+        run_dir = resolve_run_dir(args.run_dir)
+    except FileNotFoundError as exc:
+        print(f"❌ {exc}", file=sys.stderr)
+        sys.exit(1)
+
+    asyncio.run(run_stage(args.stage, run_dir))
 
 
 if __name__ == "__main__":

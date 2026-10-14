@@ -16,6 +16,8 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
+from content_farm.types import Orientation
+
 logger = logging.getLogger(__name__)
 
 _VIDEO_EXTS = frozenset({"mp4", "mov", "webm", "mkv"})
@@ -61,6 +63,43 @@ class TimelineClip:
         return self.path.suffix.lower().lstrip(".") in _IMAGE_EXTS
 
 
+@dataclass(frozen=True)
+class OrientationPreset:
+    """Video dimensions + subtitle style bundle for a given orientation."""
+
+    width: int
+    height: int
+    fps: int
+    subtitle_font_size: int
+    subtitle_alignment: int  # ASS alignment code: 2=bottom-center, 5=middle-center
+    subtitle_margin_v: int   # vertical margin from bottom (for alignment 2)
+
+
+PORTRAIT_PRESET = OrientationPreset(
+    width=1080,
+    height=1920,
+    fps=30,
+    subtitle_font_size=82,
+    subtitle_alignment=5,  # center both axes for Shorts
+    subtitle_margin_v=0,
+)
+
+LANDSCAPE_PRESET = OrientationPreset(
+    width=1920,
+    height=1080,
+    fps=30,
+    subtitle_font_size=52,
+    subtitle_alignment=2,  # bottom-center for long-form
+    subtitle_margin_v=80,
+)
+
+
+def preset_for(orientation: Orientation) -> OrientationPreset:
+    return (
+        LANDSCAPE_PRESET if orientation == Orientation.LANDSCAPE else PORTRAIT_PRESET
+    )
+
+
 def scan_timeline_clips(visual_dir: Path) -> list[TimelineClip]:
     """Find user-selected timeline clips, sorted by start time.
 
@@ -93,11 +132,15 @@ async def assemble_from_timeline(
     output_dir: Path,
     ffmpeg_path: str = "ffmpeg",
     ffprobe_path: str = "ffprobe",
-    width: int = 1080,
-    height: int = 1920,
-    fps: int = 30,
+    orientation: Orientation = Orientation.PORTRAIT,
+    width: int | None = None,
+    height: int | None = None,
+    fps: int | None = None,
 ) -> Path:
     """Full timeline assembly pipeline.
+
+    Picks dims + subtitle style from ``orientation``. Explicit ``width/height/fps``
+    kwargs override the preset (escape hatch for tests or bespoke runs).
 
     1. Scan visual/ for MM:SS~MM:SS.mp4 clips
     2. Normalize each (scale/pad, fps, strip audio)
@@ -106,6 +149,10 @@ async def assemble_from_timeline(
     5. Burn subtitles if provided
     6. Output assembly/draft.mp4
     """
+    preset = preset_for(orientation)
+    width = width if width is not None else preset.width
+    height = height if height is not None else preset.height
+    fps = fps if fps is not None else preset.fps
     clips = scan_timeline_clips(visual_dir)
     if not clips:
         msg = f"No timeline clips found in {visual_dir}"
@@ -152,7 +199,7 @@ async def assemble_from_timeline(
     if subtitle_path and subtitle_path.is_file():
         await _burn_subtitles(
             merged_path, subtitle_path, draft_path, ffmpeg_path,
-            width=width, height=height,
+            width=width, height=height, preset=preset,
         )
     else:
         shutil.copy2(merged_path, draft_path)
@@ -273,13 +320,14 @@ async def _burn_subtitles(
     ffmpeg_path: str,
     width: int = 1080,
     height: int = 1920,
+    preset: OrientationPreset = PORTRAIT_PRESET,
 ) -> None:
     """Burn SRT subtitles into the video using the ASS filter.
 
-    Converts SRT → ASS with correct PlayResX/PlayResY so that libass
-    uses the actual video dimensions as its coordinate space.  Alignment=5
-    (SSA numpad 5) centers text both horizontally and vertically.
-    FontSize=52 is calibrated for a 1080px-wide canvas.
+    Converts SRT → ASS with PlayResX/PlayResY matching the actual video
+    dimensions so libass uses the right coordinate space. Font size,
+    alignment, and margin come from ``preset`` so portrait (center/82pt)
+    and landscape (bottom/52pt) render correctly.
     """
     from content_farm.assembly.drawtext import find_cjk_font
 
@@ -316,9 +364,10 @@ async def _burn_subtitles(
             " OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut,"
             " ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow,"
             " Alignment, MarginL, MarginR, MarginV, Encoding\n"
-            f"Style: Default,{font_name},78,"
+            f"Style: Default,{font_name},{preset.subtitle_font_size},"
             "&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,"
-            "1,0,0,0,100,100,0,0,1,3,1,5,40,40,0,1\n"
+            f"1,0,0,0,100,100,0,0,1,3,1,{preset.subtitle_alignment},40,40,"
+            f"{preset.subtitle_margin_v},1\n"
         )
 
         import re as _re

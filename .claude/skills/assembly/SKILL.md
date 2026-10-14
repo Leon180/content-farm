@@ -2,7 +2,7 @@
 name: assembly
 description: Assemble final video from voice + visual + subtitles using FFmpeg
 allowed-tools: Bash, Read, Glob
-argument-hint: "[run-dir] [--template|--timeline]"
+argument-hint: "[run-dir] [assembly_timeline|assembly|template]"
 disable-model-invocation: true
 ---
 

@@ -41,8 +41,20 @@ class Settings(BaseSettings):
     # --- Assembly ---
     ffmpeg_path: str = "ffmpeg"
 
+    # --- Visual Generation (browser-automated Nano Banana) ---
+    gemini_browser_user_data_dir: str = ".cache/playwright_gemini"
+    gemini_browser_delay_s: float = 5.0
+    gemini_browser_generation_timeout_s: float = 180.0
+    gemini_browser_headless: bool = False
+    gemini_browser_use_system_chrome: bool = False
+
     # --- Subtitle ---
-    subtitle_provider: str = "estimation"  # "estimation"
+    subtitle_provider: str = "whisper"  # "whisper" (default, accurate) | "estimation" (fallback)
+    subtitle_max_chars_per_line: int = 13  # zh-TW portrait 1080x1920 @ 78pt
+    whisper_model_size: str = "base"  # tiny | base | small | medium | large-v3
+    whisper_language: str = "zh"
+    whisper_device: str = "cpu"  # "cpu" | "cuda" | "auto"
+    whisper_compute_type: str = "int8"  # int8 | float16 | float32
 
     # --- Thumbnail ---
     thumbnail_provider: str = "pillow"  # "pillow"

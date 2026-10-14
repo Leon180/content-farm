@@ -51,6 +51,8 @@ class SubtitleGenerator:
                 text=scene.narration,
                 duration_seconds=audio_seg.duration_seconds,
                 offset_seconds=cumulative_offset,
+                tts_text=audio_seg.tts_text or scene.narration,
+                audio_path=audio_seg.file_path,
             )
 
             for seg in scene_segments:

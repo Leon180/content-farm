@@ -62,7 +62,7 @@ def escape_text(text: str) -> str:
     text = text.replace("\\", "\\\\")     # \ → \\  (must be first)
     text = text.replace("'", "\u2019")    # ' → RIGHT SINGLE QUOTATION MARK
     text = text.replace(":", "\\:")       # : → \:  (option separator)
-    text = text.replace("%", "%%")        # % → %%  (drawtext format sequence)
+    text = text.replace("%", "\uff05")     # % → ％  (full-width; drawtext %% breaks with CJK on FFmpeg 8+)
     text = text.replace("\n", " ")
     return text
 
