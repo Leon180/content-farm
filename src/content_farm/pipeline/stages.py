@@ -256,7 +256,9 @@ async def run_subtitle_stage(
     from content_farm.subtitle.schemas import SubtitleInput
 
     assert ctx.script is not None and ctx.voice is not None
-    gen = container.create_subtitle_generator(ctx.run_dir / "subtitles")
+    gen = container.create_subtitle_generator(
+        ctx.run_dir / "subtitles", getattr(ctx.script, "orientation", None),
+    )
     ctx.subtitle = await gen.generate(
         SubtitleInput(script=ctx.script, voice=ctx.voice),
     )

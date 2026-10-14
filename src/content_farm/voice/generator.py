@@ -119,7 +119,9 @@ class VoiceGenerator:
             total_duration_seconds=sum(s.duration_seconds for s in segments),
             output_dir=str(self._output_dir),
         )
-        provider = create_subtitle_provider(self._settings)
+        provider = create_subtitle_provider(
+            self._settings, getattr(script, "orientation", None),
+        )
         gen = SubtitleGenerator(provider, self._settings, output_dir=sub_dir)
         sub_input = SubtitleInput(script=script, voice=voice_artifact)
         await gen.generate(sub_input)

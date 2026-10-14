@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from content_farm.assembly.assembler import VideoAssembler
     from content_farm.youtube.generator import UploadGenerator
     from content_farm.drive.uploader import DriveUploader
+    from content_farm.types import Orientation
 
 logger = logging.getLogger(__name__)
 
@@ -107,12 +108,14 @@ class ServiceContainer:
             image_provider=create_image_provider(self._settings),
         )
 
-    def create_subtitle_generator(self, output_dir: Path) -> "SubtitleGenerator":
+    def create_subtitle_generator(
+        self, output_dir: Path, orientation: "Orientation | None" = None,
+    ) -> "SubtitleGenerator":
         from content_farm.subtitle.factory import create_subtitle_provider
         from content_farm.subtitle.generator import SubtitleGenerator
 
         return SubtitleGenerator(
-            provider=create_subtitle_provider(self._settings),
+            provider=create_subtitle_provider(self._settings, orientation),
             settings=self._settings,
             output_dir=output_dir,
         )

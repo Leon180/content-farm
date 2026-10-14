@@ -51,6 +51,8 @@ class Settings(BaseSettings):
     # --- Subtitle ---
     subtitle_provider: str = "whisper"  # "whisper" (default, accurate) | "estimation" (fallback)
     subtitle_max_chars_per_line: int = 13  # zh-TW portrait 1080x1920 @ 78pt
+    # Landscape 1920x1080 @ 52pt (explainer / long-form). Portrait keeps the value above.
+    subtitle_max_chars_per_line_landscape: int = Field(default=24, ge=8, le=40)
     whisper_model_size: str = "base"  # tiny | base | small | medium | large-v3
     whisper_language: str = "zh"
     whisper_device: str = "cpu"  # "cpu" | "cuda" | "auto"
