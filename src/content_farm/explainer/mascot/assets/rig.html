@@ -316,7 +316,10 @@
     const band = pick === 'l' ? (p.ParamMouthOpenY - 0.66) / 0.34 : pick === 'm' ? (p.ParamMouthOpenY - 0.36) / 0.30
       : pick === 's' ? (p.ParamMouthOpenY - 0.08) / 0.28 : 0.5;
     els.mouth.setAttribute('transform', `translate(${mx} ${my}) scale(1 ${(0.9 + 0.2 * clamp(band, 0, 1)).toFixed(3)}) translate(${-mx} ${-my})`);
-    els.armR.setAttribute('transform', rotAbout(els.armR, p.ParamArmR * 118 + p.ParamArmRWave));
+    // raised paw also reaches: the foreleg stretches along its own axis
+    const reach = 1 + 0.32 * clamp(p.ParamArmR, 0, 1);
+    els.armR.setAttribute('transform', `${rotAbout(els.armR, p.ParamArmR * 118 + p.ParamArmRWave)} `
+      + `translate(126 290) scale(1 ${reach.toFixed(3)}) translate(-126 -290)`);
     show(els.beans, p.ParamArmR > 0.6);
     tailPath(p.ParamTail, p.ParamTail2, p.ParamTailPuff);
     const b = clamp(p.ParamBubble, 0, 1);

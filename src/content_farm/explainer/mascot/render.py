@@ -30,6 +30,13 @@ ALPHA_CODEC_ARGS = ("-c:v", "prores_ks", "-profile:v", "4444", "-pix_fmt", "yuva
                     "-vendor", "apl0")
 
 
+# Chromium re-rasters only the damaged tiles of a changed page; with the rig's
+# SVG filter that made a frame's pixels depend on the frames rendered before
+# it (measured: up to 69/255 on the tail after 5 prior frames). Full raster
+# makes every frame a function of its own parameters.
+CHROMIUM_ARGS = ("--disable-partial-raster",)
+
+
 class MascotRenderError(RuntimeError):
     """Capture or encode failed."""
 
@@ -47,7 +54,7 @@ def capture_pngs(frames: Sequence[Frame], rig: Path = RIG_PATH):
     from playwright.sync_api import sync_playwright
 
     with sync_playwright() as pw:
-        browser = pw.chromium.launch()
+        browser = pw.chromium.launch(args=list(CHROMIUM_ARGS))
         try:
             page = browser.new_page(viewport={"width": CANVAS_W, "height": CANVAS_H})
             page.goto(rig.resolve().as_uri())

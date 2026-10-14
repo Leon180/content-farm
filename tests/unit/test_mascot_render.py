@@ -66,10 +66,15 @@ def test_cat_height_is_30_to_40_percent_of_frame() -> None:
 
 
 def test_same_params_same_pixels() -> None:
-    """Separate browser sessions, different history before the frame → identical pixels."""
-    frame = _extreme("point")
-    first = list(capture_pngs([frame]))[0]
-    second = list(capture_pngs([_extreme("shocked"), frame]))[1]
+    """A frame rendered alone == the same frame after a run of slightly different ones.
+
+    Without full raster (CHROMIUM_ARGS) Chromium only re-rasters damaged tiles
+    and this differed by up to 69/255 on the tail.
+    """
+    history = [_extreme("idle", ParamTail=0.1 * i, ParamTail2=-0.1 * i, ParamBreath=0.1 * i)
+               for i in range(6)]
+    first = list(capture_pngs(history[-1:]))[0]
+    second = list(capture_pngs(history))[-1]
     assert np.array_equal(np.asarray(Image.open(io.BytesIO(first))),
                           np.asarray(Image.open(io.BytesIO(second))))
 

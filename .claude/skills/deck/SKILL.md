@@ -36,7 +36,7 @@ Schema: `src/content_farm/explainer/deck.py` (pydantic, `extra="forbid"`). Examp
     "narration": "30–220 chars; exactly what TTS reads and subtitles show",
     "source_ids": ["…"],
     "beat": null,                  // "gossip" | "joke" on light slides
-    "mascot": {"pose": "point"},   // optional; point | think | smug | shocked
+    "mascot": {"pose": "point", "say": "看這張圖"},   // optional; idle|point|think|shocked|smug|deadpan|wave; say <= 20 chars
     "notes": "reviewer-only"
   }]}]
 }
@@ -80,7 +80,7 @@ python scripts/render_slides.py --run-dir <run_dir>
 ```
 
 - Writes `slides/slide_NNN.html` (hand-editable), `slides/slide_NNN.png`, `slides/contact_sheet.png`.
-- Mascot PNGs come from `<run_dir>/assets/mascot/<pose>.png`; missing files leave the corner empty (not an error).
+- The animated mascot is a post-step: `python scripts/mascot_overlay.py --run-dir <run>` turns `assembly/draft.mp4` into `assembly/final.mp4` (local, free). The legacy static slot (`<run_dir>/assets/mascot/<pose>.png`) still works but should not be combined with the overlay.
 - Exit 1 lists every overflowing slide as `slide NN (id, layout): problem`. Shorten that slide's body text (or switch layout) in `deck.json`, rerun `deck_to_script.py` and `render_slides.py`.
 - `--show-safe-zone` hatches the bottom 200 px reserved for burned subtitles.
 
