@@ -1,0 +1,214 @@
+{
+  "version": 1,
+  "category": "tech",
+  "title": "台積電到底賺什麼錢",
+  "description": "【v2 畫面驗收用 deck，數字為示意、待查證，不可發布】【範例 deck，數字為示意、待查證，不可發布】用六張投影片拆解晶圓代工的生意模型：賺的不是「做晶片」的錢，而是「讓別人不用蓋廠」的錢。本頻道不提供投資建議。",
+  "tags": [
+    "台積電",
+    "晶圓代工",
+    "半導體",
+    "產業拆解"
+  ],
+  "as_of": "2026-10",
+  "draft_data": true,
+  "sources": [
+    {
+      "id": "ar",
+      "title": "台積電年報（示意・待查證）",
+      "url": "",
+      "note": "PLACEHOLDER — 毛利率數字需以最新年報核對"
+    },
+    {
+      "id": "pledge",
+      "title": "台積電公開說明「不與客戶競爭」（示意・待查證）",
+      "url": "",
+      "note": "PLACEHOLDER — 需找到公司官方原文",
+      "publisher": "示意媒體",
+      "published": "2026-10"
+    },
+    {
+      "id": "cowos",
+      "title": "產業報導：先進封裝產能（示意・待查證）",
+      "url": "",
+      "note": "PLACEHOLDER — 需找一手報導或法說會逐字稿"
+    },
+    {
+      "id": "history",
+      "title": "台積電公司沿革（示意・待查證）",
+      "url": "",
+      "note": "PLACEHOLDER — 年份需逐條核對"
+    }
+  ],
+  "pronunciation_map": {
+    "IDM": "I D M",
+    "AI": "A I"
+  },
+  "sections": [
+    {
+      "title": "開場：一個反直覺的答案",
+      "slides": [
+        {
+          "id": "s01",
+          "layout": "title",
+          "heading": "台積電到底賺什麼錢？",
+          "body": {
+            "subtitle": "答案不是「賣晶片」"
+          },
+          "narration": "很多人以為台積電是賣晶片的公司。但你去翻它的客戶名單，會發現它幾乎不設計自己的晶片。那它到底在賣什麼？我是晶片貓，今天用六張圖，把這門生意拆給你看。",
+          "mascot": {
+            "pose": "point"
+          },
+          "notes": "開場鉤子：反直覺提問。晶片貓自我介紹固定句。",
+          "media": {
+            "kind": "stock",
+            "query": "semiconductor wafer"
+          }
+        }
+      ]
+    },
+    {
+      "title": "拆解：錢從哪裡來",
+      "slides": [
+        {
+          "id": "s02",
+          "layout": "big_number",
+          "heading": "每賣 100 元，留下多少？",
+          "body": {
+            "value": "59",
+            "unit": "%",
+            "caption": "毛利率（示意數字，待查證）"
+          },
+          "narration": "先看一個數字：毛利率。你可以把它想成夜市攤販賣一碗一百元的麵，扣掉麵條和湯頭的成本，還剩多少。這裡寫的五十九，是待查證的示意數字，正式版會換成年報上的數字。重點是，這個比例在製造業裡高得不太正常。",
+          "source_ids": [
+            "ar"
+          ],
+          "mascot": {
+            "pose": "shocked"
+          },
+          "notes": "艱深名詞「毛利率」：先比喻（麵攤），再給定義。數字待查證。",
+          "media": {
+            "kind": "animated",
+            "animation": "count_up"
+          }
+        },
+        {
+          "id": "s03",
+          "layout": "compare",
+          "heading": "自己蓋廠 vs 找人代工",
+          "body": {
+            "left": {
+              "label": "自己蓋廠",
+              "items": [
+                "設計製造一手包",
+                "一座廠動輒數千億",
+                "產能只能自己用"
+              ]
+            },
+            "right": {
+              "label": "找人代工",
+              "items": [
+                "只管設計",
+                "產能用「租」的",
+                "錢砸在研發"
+              ]
+            }
+          },
+          "narration": "晶圓代工，就像中央廚房：餐廳只管研發菜單，菜交給專業廚房做。早年很多設計公司不敢把設計圖交出去，怕被偷學。據公司公開說法，台積電從一開始就承諾不做自己的品牌晶片、不跟客戶搶生意。這個承諾，後來變成它最值錢的招牌。",
+          "source_ids": [
+            "pledge"
+          ],
+          "beat": "gossip",
+          "notes": "產業軼事（有來源，非針對個人的傳聞）。比喻：中央廚房。",
+          "media": {
+            "kind": "stock",
+            "query": "factory production line"
+          }
+        },
+        {
+          "id": "s04",
+          "layout": "bullets",
+          "heading": "高毛利的三個來源",
+          "body": {
+            "items": [
+              "最先進製程的溢價",
+              "良率：少丟的晶圓",
+              "先進封裝：把晶片疊起來"
+            ]
+          },
+          "narration": "高毛利來自三件事。第一，最先進的製程只有少數人做得出來，可以收比較高的價錢。第二是良率，就是一片晶圓上能用的晶片比例，像烤一盤餅乾，烤焦的越少越賺。第三是先進封裝，把好幾顆晶片像樂高一樣疊在一起。冷知識：晶片貓也想被疊起來，但只換到一個紙箱。",
+          "source_ids": [
+            "cowos"
+          ],
+          "beat": "joke",
+          "mascot": {
+            "pose": "smug"
+          },
+          "notes": "良率先比喻（烤餅乾）再定義。冷笑話收尾，原創、冷面。",
+          "media": {
+            "kind": "ai_image",
+            "prompt": "A cute grey cartoon cat stacking glowing silicon chips like LEGO bricks on a workbench, warm studio lighting"
+          }
+        }
+      ]
+    },
+    {
+      "title": "結論：護城河是時間堆出來的",
+      "slides": [
+        {
+          "id": "s05",
+          "layout": "timeline",
+          "heading": "護城河怎麼長出來",
+          "body": {
+            "events": [
+              {
+                "when": "1987",
+                "what": "成立，只做代工"
+              },
+              {
+                "when": "1990s",
+                "what": "客戶從少數變成一大群"
+              },
+              {
+                "when": "2010s",
+                "what": "先進封裝起步"
+              },
+              {
+                "when": "2020s",
+                "what": "AI 晶片需求爆發"
+              }
+            ]
+          },
+          "narration": "把時間軸攤開，你會發現這條護城河不是一天挖出來的。先有「只做代工」的定位，才累積到一大群客戶；客戶多，產能就滿；產能滿，才有錢投下一代製程和封裝。等到 AI 晶片需求爆發，能接單的人已經沒剩幾個。年份是示意，正式版會逐條核對。",
+          "source_ids": [
+            "history"
+          ],
+          "notes": "原創論點：定位 → 客戶 → 產能 → 再投資的飛輪。年份待查證。",
+          "media": {
+            "kind": "animated",
+            "animation": "draw_line"
+          }
+        },
+        {
+          "id": "s06",
+          "layout": "quote",
+          "heading": "晶片貓的一句話總結",
+          "body": {
+            "text": "你付的不是晶片錢，是「不用自己蓋廠」的自由。",
+            "who": "晶片貓"
+          },
+          "narration": "所以，台積電賺的是什麼錢？它賣的不是晶片本身，而是讓全世界的設計公司不必自己蓋廠的自由。下一集，我們來拆先進封裝到底在疊什麼。提醒一下，本頻道只拆產業，不報明牌。",
+          "mascot": {
+            "pose": "think"
+          },
+          "notes": "收束到原創論點，預告下一集，口播免責。",
+          "media": {
+            "kind": "title_card",
+            "source_id": "pledge",
+            "headline": "示意標題：晶圓代工承諾不與客戶競爭（待查證）",
+            "summary": "範例卡片，正式版換成真實報導"
+          }
+        }
+      ]
+    }
+  ]
+}

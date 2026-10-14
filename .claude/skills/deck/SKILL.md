@@ -37,6 +37,7 @@ Schema: `src/content_farm/explainer/deck.py` (pydantic, `extra="forbid"`). Examp
     "source_ids": ["…"],
     "beat": null,                  // "gossip" | "joke" on light slides
     "mascot": {"pose": "point"},   // optional; point | think | smug | shocked
+    "media": {"kind": "stock", "query": "wafer fab cleanroom"},  // optional; see "Media" below
     "notes": "reviewer-only"
   }]}]
 }
@@ -52,6 +53,20 @@ Body per layout (limits are enforced; the renderer fails on overflow anyway):
 | `compare` | `left` / `right`: `label` ≤ 12, `items` 1–5 each ≤ 16 |
 | `timeline` | `events`: 2–6 × `{when ≤ 10, what ≤ 20}` |
 | `quote` | `text` ≤ 60, `who` ≤ 30 |
+
+### Media (v2) — what fills the screen
+
+`media` is optional; absent means `slide` (the static PNG). Per kind, one field is required:
+
+| kind | required | what you get |
+|---|---|---|
+| `slide` | — | static slide PNG |
+| `animated` | `animation` | same slide with an entrance animation, held on the final frame. `count_up` (big_number) · `grow_bars` (big_number/compare/bullets) · `reveal_list` (bullets/compare/timeline) · `draw_line` (timeline) · `fade_in` (any) |
+| `stock` | `query` (English) | Pexels → Pixabay B-roll, 1920×1080, lower-third with heading + key line. Falls back to `animated` when nothing suitable is found |
+| `ai_image` | `prompt` | Ken Burns on `assets/ai_images/<slide id>.png`; a red "AI 插圖待補" placeholder until it exists |
+| `title_card` | `source_id` | self-made news card (publisher, date, headline, `summary`); give that source `publisher` and `published` (YYYY-MM[-DD]). Never a screenshot |
+
+Lint wants no 3 plain `slide`s in a row and `stock` + `ai_image` ≥ 20 % of slides.
 
 ### Narration rules
 
@@ -94,10 +109,14 @@ These spend money (Fish Audio TTS). Ask before running; never run them as part o
 
 ```bash
 python scripts/run_stage.py --stage voice --run-dir <run_dir>          # TTS per slide + whisper subtitles; rewrites durations
-python scripts/slides_to_visual.py --run-dir <run_dir>                 # PNGs → visual/MM:SS.mmm~MM:SS.mmm.png from measured audio
+python scripts/media_to_visual.py --run-dir <run_dir>                  # per-slide clips → visual/MM:SS.mmm~MM:SS.mmm.{mp4,png}
 python scripts/run_stage.py --stage assembly_timeline --run-dir <run_dir>
 ```
 
+- `media_to_visual.py` (free: Pexels/Pixabay free keys, local Chromium + ffmpeg) replaces `slides_to_visual.py`, which still works for PNG-only decks. Transitions: `--transition crossfade|push|fadeblack|none`, `--transition-seconds 0.3–0.5`. Show the user `media/contact_sheet.png`: red frames mark AI placeholders and stock fallbacks (`media/media_report.json` says why).
+- AI images: the run writes `ai_image_prompts.md`. The user runs `/generate-visuals` with `--storyboard ai_image_prompts.md --out-dir assets/ai_images --variant 0`, then rerun `media_to_visual.py --replace` and assembly.
+- `credits.json` → `description_text` goes into the YouTube description (stock author + licence links).
+
 - Landscape scripts get `CF_SUBTITLE_MAX_CHARS_PER_LINE_LANDSCAPE` (default 24) per subtitle line; Shorts keep 13.
-- Re-voicing one slide: delete only that `audio/scene_NNN.mp3`, rerun voice (other scenes are reused), then `slides_to_visual.py --replace`.
+- Re-voicing one slide: delete only that `audio/scene_NNN.mp3`, rerun voice (other scenes are reused), then `media_to_visual.py --replace`.
 - Then the usual `/thumbnail`, `/prepareupload`, `/upload`, `/drive`. Make sure `slides/` is uploaded with the run — drive deletes the local run_dir.
