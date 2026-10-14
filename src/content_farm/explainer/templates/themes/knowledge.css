@@ -1,0 +1,11 @@
+/* knowledge — warm paper, dark ink, serif headings. */
+:root {
+  --bg: #f6f1e7;
+  --fg: #23201c;
+  --muted: #6f675c;
+  --rule: #ddd3c2;
+  --card: #fffaf0;
+  --accent: #b33a3a;
+  --accent-2: #2f6f8f;
+  --font-heading: "Songti TC", "Noto Serif CJK TC", serif;
+}

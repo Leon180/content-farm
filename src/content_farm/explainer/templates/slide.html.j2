@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<title>{{ slide.id }} · {{ slide.heading }}</title>
+<style>
+{{ base_css | safe }}
+{{ theme_css | safe }}
+</style>
+</head>
+<body class="theme-{{ deck.category.value }} layout-{{ slide.layout.value }}" data-slide-id="{{ slide.id }}">
+<div class="stage">
+  <header class="topbar">
+    <span class="series">{{ deck.title }}</span>
+    <span class="section">{{ section.title }}</span>
+    <span class="pageno">{{ "%02d" | format(index) }} / {{ "%02d" | format(total) }}</span>
+  </header>
+
+  <main class="content">
+    {% include "layouts/" ~ slide.layout.value ~ ".html.j2" %}
+  </main>
+
+  <footer class="meta">
+    {% if sources %}<span class="sources">來源：{{ sources | join("；") }}</span>{% endif %}
+    {% if deck.as_of %}<span class="asof">資料截至 {{ deck.as_of }}</span>{% endif %}
+    {% if disclaimer %}<span class="disclaimer">{{ disclaimer }}</span>{% endif %}
+  </footer>
+
+  {% if deck.draft_data %}<div class="draft-badge">示意數字・待查證</div>{% endif %}
+  <div class="safe-zone{% if show_safe_zone %} debug{% endif %}" aria-hidden="true"></div>
+  {% if mascot_src %}<img class="mascot" src="{{ mascot_src }}" alt="">{% endif %}
+</div>
+</body>
+</html>

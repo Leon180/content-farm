@@ -1,0 +1,8 @@
+<h1 class="heading">{{ slide.heading }}</h1>
+<div class="bignum">
+  <div class="value-row">
+    <span class="value">{{ slide.body.value }}</span>
+    {% if slide.body.unit %}<span class="unit">{{ slide.body.unit }}</span>{% endif %}
+  </div>
+  {% if slide.body.caption %}<div class="caption">{{ slide.body.caption }}</div>{% endif %}
+</div>

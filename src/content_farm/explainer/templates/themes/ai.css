@@ -1,0 +1,15 @@
+/* ai — deep navy, cyan accent. */
+:root {
+  --bg: #0b1020;
+  --fg: #e8ecf5;
+  --muted: #8e98b3;
+  --rule: #1f2a44;
+  --card: #121a30;
+  --accent: #22d3ee;
+  --accent-2: #a78bfa;
+}
+body {
+  background-image:
+    radial-gradient(900px 500px at 0% 100%, rgba(167, 139, 250, 0.10), transparent 60%),
+    radial-gradient(1100px 600px at 100% 0%, rgba(34, 211, 238, 0.10), transparent 60%);
+}

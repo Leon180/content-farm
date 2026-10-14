@@ -1,0 +1,19 @@
+/* tech — 台灣科技產業拆解 (MVP default): charcoal, orange accent, mono numbers. */
+:root {
+  --bg: #15171c;
+  --fg: #f2f2f0;
+  --muted: #9aa0a8;
+  --rule: #2d3139;
+  --card: #1e2128;
+  --accent: #ff8a1f;
+  --accent-2: #4cc9f0;
+  --font-number: "SF Mono", "Menlo", monospace;
+}
+body {
+  /* faint blueprint grid + warm glow, drawn over --bg */
+  background-image:
+    radial-gradient(1200px 600px at 100% 0%, rgba(255, 138, 31, 0.08), transparent 60%),
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: auto, 48px 48px, 48px 48px;
+}

@@ -1,0 +1,10 @@
+<h1 class="heading">{{ slide.heading }}</h1>
+<div class="timeline">
+  {% for event in slide.body.events %}
+  <div class="event">
+    <div class="when">{{ event.when }}</div>
+    <div class="dot"></div>
+    <div class="what">{{ event.what }}</div>
+  </div>
+  {% endfor %}
+</div>

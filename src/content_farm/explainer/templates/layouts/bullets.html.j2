@@ -1,0 +1,5 @@
+<h1 class="heading">{{ slide.heading }}</h1>
+<ol class="bullets">
+  {% for item in slide.body.items %}<li>{{ item }}</li>
+  {% endfor %}
+</ol>

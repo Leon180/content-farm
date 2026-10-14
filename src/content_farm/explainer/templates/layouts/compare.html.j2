@@ -1,0 +1,10 @@
+<h1 class="heading">{{ slide.heading }}</h1>
+<div class="compare">
+  {% for side, cls in [(slide.body.left, "left"), (slide.body.right, "right")] %}
+  <section class="side {{ cls }}">
+    <div class="label">{{ side.label }}</div>
+    <ul>{% for item in side.items %}<li>{{ item }}</li>{% endfor %}</ul>
+  </section>
+  {% if loop.first %}<div class="vs">VS</div>{% endif %}
+  {% endfor %}
+</div>
