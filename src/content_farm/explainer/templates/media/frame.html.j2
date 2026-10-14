@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<title>{{ slide.id }} · {{ kind }}</title>
+<style>
+{{ base_css | safe }}
+{{ theme_css | safe }}
+{{ media_css | safe }}
+</style>
+</head>
+<body class="theme-{{ deck.category.value }} media-{{ kind }}" data-slide-id="{{ slide.id }}"{% if animation %} data-animation="{{ animation }}"{% endif %}>
+<div class="stage">
+  <header class="topbar{% if kind == 'overlay' %} on-footage{% endif %}">
+    <span class="series">{{ deck.title }}</span>
+    <span class="section">{{ section.title }}</span>
+    <span class="pageno">{{ "%02d" | format(index) }} / {{ "%02d" | format(total) }}</span>
+  </header>
+
+{% if kind == "overlay" %}
+  <div class="footage-shade"></div>
+  <section class="lower-third">
+    <div class="lt-heading">{{ slide.heading }}</div>
+    {% if key_line %}<div class="lt-key">{{ key_line }}</div>{% endif %}
+  </section>
+{% elif kind == "title_card" %}
+  <main class="news-wrap">
+    <article class="news-card">
+      <div class="news-top">
+        <span class="news-outlet">{{ card.publisher }}</span>
+        <span class="news-date">{{ card.date }}</span>
+      </div>
+      <h1 class="news-headline">{{ card.headline }}</h1>
+      <div class="news-rule"></div>
+      {% if card.summary %}<p class="news-summary">{{ card.summary }}</p>{% endif %}
+      <div class="news-foot">
+        <span>來源編號 {{ card.source_id }}{% if card.domain %} · {{ card.domain }}{% endif %}</span>
+        <span class="news-note">頻道自製重點卡・非新聞截圖</span>
+      </div>
+    </article>
+  </main>
+{% elif kind == "placeholder" %}
+  <main class="ph-wrap">
+    <div class="ph-tag">AI 插圖待補</div>
+    <div class="ph-heading">{{ slide.heading }}</div>
+    <div class="ph-file">放這裡：{{ expected_path }}</div>
+    <div class="ph-prompt">{{ prompt }}</div>
+  </main>
+{% endif %}
+
+  <footer class="meta{% if kind == 'overlay' %} on-footage{% endif %}">
+    {% if sources %}<span class="sources">來源：{{ sources | join("；") }}</span>{% endif %}
+    {% if deck.as_of %}<span class="asof">資料截至 {{ deck.as_of }}</span>{% endif %}
+    {% if disclaimer %}<span class="disclaimer">{{ disclaimer }}</span>{% endif %}
+  </footer>
+  {% if deck.draft_data %}<div class="draft-badge">示意數字・待查證</div>{% endif %}
+</div>
+{% if animation %}<script>
+{{ animate_js | safe }}
+</script>{% endif %}
+</body>
+</html>

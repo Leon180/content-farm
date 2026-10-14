@@ -1,0 +1,106 @@
+"""Build per-slide media clips (animated / stock / ai_image / title_card) onto visual/.
+
+The v2 replacement for ``slides_to_visual.py`` (which still works for PNG-only
+decks). Run after voice so slots use measured durations.
+
+Usage:
+    python scripts/media_to_visual.py --run-dir output/<run>
+    python scripts/media_to_visual.py --run-dir <dir> --transition none      # hard cuts
+    python scripts/media_to_visual.py --run-dir <dir> --transition push --transition-seconds 0.5
+    python scripts/media_to_visual.py --run-dir <dir> --replace              # redo
+    python scripts/media_to_visual.py --run-dir <dir> --no-stock             # offline
+
+Needs ``<run-dir>/deck.json``, ``script.json``, ``slides/slide_NNN.png`` (render_slides)
+and voice output. Stock keys come from CF_PEXELS_API_KEY / CF_PIXABAY_API_KEY
+(environment, else ``--env-file``, default ``.env``). Downloads are cached in
+``--stock-cache`` per query. Writes:
+  visual/MM:SS.mmm~MM:SS.mmm.{mp4,png}   timeline clips for assembly_timeline
+  credits.json                            stock author / URL / licence (+ description text)
+  ai_image_prompts.{md,json}              prompts for generate_visuals.py (ai_image slides)
+  media/media_report.json                 per-slide kind used, fallbacks, timings
+  media/contact_sheet.png                 review sheet; placeholders/fallbacks flagged red
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+import time
+from pathlib import Path
+
+from pydantic import ValidationError
+
+from content_farm.explainer.deck import load_deck
+from content_farm.explainer.ffmpeg_ops import FFmpegError
+from content_farm.explainer.media_run import TRANSITION_CHOICES, MediaOptions, media_to_visual
+from content_farm.explainer.stock import StockClient
+from content_farm.explainer.timeline import (
+    DURATION_SOURCES,
+    plan_slide_timeline,
+    resolve_durations,
+)
+from content_farm.script_gen.schemas import Script
+
+KEY_NAMES = ("CF_PEXELS_API_KEY", "CF_PIXABAY_API_KEY")
+
+
+def _stock_keys(env_file: Path) -> dict[str, str]:
+    keys = {name: os.environ.get(name, "") for name in KEY_NAMES}
+    if all(keys.values()) or not env_file.is_file():
+        return keys
+    from dotenv import dotenv_values
+
+    file_values = dotenv_values(env_file)
+    return {name: keys[name] or (file_values.get(name) or "") for name in KEY_NAMES}
+
+
+def _parse_args(argv: list[str] | None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--run-dir", type=Path, required=True)
+    parser.add_argument("--source", choices=DURATION_SOURCES, default="auto")
+    parser.add_argument("--transition", choices=TRANSITION_CHOICES, default="crossfade")
+    parser.add_argument("--transition-seconds", type=float, default=0.4)
+    parser.add_argument("--replace", action="store_true", help="remove old timeline files first")
+    parser.add_argument("--no-stock", action="store_true", help="never call Pexels/Pixabay")
+    parser.add_argument("--stock-cache", type=Path, default=Path(".cache/explainer_stock"))
+    parser.add_argument("--env-file", type=Path, default=Path(".env"))
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = _parse_args(argv)
+    run_dir: Path = args.run_dir
+    started = time.monotonic()
+    try:
+        options = MediaOptions(transition=args.transition,
+                               transition_seconds=args.transition_seconds, replace=args.replace)
+        deck = load_deck(run_dir / "deck.json")
+        script = Script.model_validate_json((run_dir / "script.json").read_text(encoding="utf-8"))
+        used, durations = resolve_durations(run_dir, script, args.source)
+        clips = plan_slide_timeline(durations)
+        stock = None
+        if not args.no_stock:
+            keys = _stock_keys(args.env_file)
+            stock = StockClient(pexels_key=keys["CF_PEXELS_API_KEY"],
+                                pixabay_key=keys["CF_PIXABAY_API_KEY"], cache_dir=args.stock_cache)
+        run = media_to_visual(deck, run_dir, clips, stock=stock, options=options)
+    except (OSError, ValueError, ValidationError, FFmpegError, json.JSONDecodeError) as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
+
+    if used == "script":
+        print("WARNING: estimated durations — do not assemble from this", file=sys.stderr)
+    for r in run.results:
+        flag = "  <-- " if r.requested != r.used else ""
+        print(f"{r.index:02d} {r.slide_id:<10} {r.requested:<10} -> {r.used:<14} "
+              f"{r.build_seconds:5.1f}s  {r.note}{flag}")
+    print(f"Placed {len(run.placed)} clips from {used} durations in "
+          f"{time.monotonic() - started:.1f}s; ends at {run.placed[-1].stem}")
+    print(f"Credits: {run.credits_path}\nReport: {run.report_path}\nContact sheet: {run.contact_sheet}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

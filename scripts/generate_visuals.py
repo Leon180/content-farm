@@ -9,6 +9,10 @@ timeline filenames (``MM:SS~MM:SS.png``).
 Usage:
     python scripts/generate_visuals.py --run-dir output/<run>/
     python scripts/generate_visuals.py --run-dir output/<run>/ --variant 0  # pick Variant A
+
+Explainer ai_image slides (prompts written by media_to_visual.py):
+    python scripts/generate_visuals.py --run-dir output/<run>/ --variant 0 \
+        --storyboard ai_image_prompts.md --out-dir assets/ai_images
 """
 
 from __future__ import annotations
@@ -90,10 +94,18 @@ async def _main() -> None:
              "Avoids Google's automation detection because Chrome is a real "
              "user session.",
     )
+    ap.add_argument(
+        "--storyboard", default="storyboard_prompts.md",
+        help="Prompt file, relative to --run-dir (explainer: ai_image_prompts.md).",
+    )
+    ap.add_argument(
+        "--out-dir", default="visual",
+        help="Download directory, relative to --run-dir (explainer: assets/ai_images).",
+    )
     args = ap.parse_args()
 
     run_dir = Path(args.run_dir).resolve()
-    storyboard = run_dir / "storyboard_prompts.md"
+    storyboard = run_dir / args.storyboard
     if not storyboard.is_file():
         print(f"❌ Not found: {storyboard}")
         print("   Generate a storyboard first with `/project:storyboard <run-dir>`")
@@ -113,7 +125,7 @@ async def _main() -> None:
     user_data_dir = Path(
         args.chrome_profile or settings.gemini_browser_user_data_dir
     ).expanduser().resolve()
-    download_dir = run_dir / "visual"
+    download_dir = run_dir / args.out_dir
 
     use_system_chrome = args.system_chrome or settings.gemini_browser_use_system_chrome
 

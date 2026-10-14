@@ -137,3 +137,19 @@ body {
 .quote .text { font-family: var(--font-heading, var(--font-sans)); font-size: 66px; font-weight: 700; line-height: 1.4; }
 .quote .who { margin-top: 36px; font-size: 38px; color: var(--muted); }
 .quote .who::before { content: "— "; }
+
+/* ---- v2 animation helpers (only present when animate.js runs) ---------- */
+.anim-meter {
+  width: 100%; max-width: 1200px; height: 28px; margin-top: 28px;
+  background: var(--card); border-radius: 14px; overflow: hidden;
+}
+.anim-meter-fill { height: 100%; background: var(--accent); border-radius: 14px; }
+.bullets li.anim-bar {
+  background: var(--card); border-left: 8px solid var(--accent);
+  border-radius: 12px; padding: 4px 24px;
+}
+.timeline.anim-draw::before { display: none; }
+.anim-line {
+  position: absolute; left: 0; right: 0; top: 112px; height: 6px;
+  background: var(--accent); border-radius: 3px; transform-origin: left center;
+}

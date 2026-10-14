@@ -35,7 +35,15 @@ class SlideClip:
 
     @property
     def filename(self) -> str:
-        return f"{format_timestamp(self.start_ms)}~{format_timestamp(self.end_ms)}.png"
+        return self.filename_for(".png")
+
+    @property
+    def seconds(self) -> float:
+        return (self.end_ms - self.start_ms) / 1000
+
+    def filename_for(self, suffix: str) -> str:
+        """Timeline name with the source file's extension (``.png`` still or ``.mp4`` clip)."""
+        return f"{format_timestamp(self.start_ms)}~{format_timestamp(self.end_ms)}{suffix.lower()}"
 
 
 def format_timestamp(ms: int) -> str:
@@ -100,6 +108,26 @@ def durations_from_script(script: Script) -> list[float]:
     return [s.duration_seconds for s in sorted(script.scenes, key=lambda s: s.scene_number)]
 
 
+DURATION_SOURCES = ("auto", "audio", "voice-artifact", "script")
+
+
+def resolve_durations(run_dir: Path, script: Script, source: str) -> tuple[str, list[float]]:
+    """Per-slide durations and where they came from (``audio`` > ``voice-artifact``).
+
+    ``script`` estimates are only used when asked for explicitly (preview).
+    """
+    count = len(script.scenes)
+    audio_dir = run_dir / "audio"
+    artifact = run_dir / "voice_artifact.json"
+    if source == "audio" or (source == "auto" and (audio_dir / "scene_001.mp3").is_file()):
+        return "audio", durations_from_audio(audio_dir, count)
+    if source == "voice-artifact" or (source == "auto" and artifact.is_file()):
+        return "voice-artifact", durations_from_voice_artifact(artifact, count)
+    if source == "script":
+        return "script", durations_from_script(script)
+    raise TimelineError("no voice output found; run voice first (or --source script to preview)")
+
+
 def place_slides(
     clips: Sequence[SlideClip],
     slides_dir: Path,
@@ -117,6 +145,26 @@ def place_slides(
     missing = [p.name for p in sources if not p.is_file()]
     if missing:
         raise TimelineError(f"missing rendered slides in {slides_dir}: {missing}")
+    return place_files(clips, sources, visual_dir, replace=replace)
+
+
+def place_files(
+    clips: Sequence[SlideClip],
+    sources: Sequence[Path],
+    visual_dir: Path,
+    *,
+    replace: bool = False,
+) -> list[Path]:
+    """Copy one file per clip to ``visual/<timeline name><source suffix>``.
+
+    Same safety rule as :func:`place_slides`: refuse to mix with timeline files
+    already in ``visual/`` unless ``replace``, which removes only those.
+    """
+    if len(clips) != len(sources):
+        raise TimelineError(f"{len(clips)} clips but {len(sources)} files")
+    missing = [p.name for p in sources if not p.is_file()]
+    if missing:
+        raise TimelineError(f"missing clip files: {missing}")
 
     visual_dir.mkdir(parents=True, exist_ok=True)
     existing = scan_timeline_clips(visual_dir)
@@ -129,7 +177,7 @@ def place_slides(
 
     placed: list[Path] = []
     for clip, source in zip(clips, sources):
-        target = visual_dir / clip.filename
+        target = visual_dir / clip.filename_for(source.suffix)
         shutil.copy2(source, target)
         placed.append(target)
     return placed

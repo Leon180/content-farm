@@ -69,7 +69,10 @@ def build_pages(
     *,
     mascot_dir: Path | None = None,
     show_safe_zone: bool = False,
+    animate: bool = False,
 ) -> tuple[SlidePage, ...]:
+    """One page per slide. ``animate`` embeds ``animate.js`` with ``slide.animation``;
+    the page still opens in its final state until ``__anim.seek(t)`` is called."""
     template = _environment().get_template("slide.html.j2")
     base_css = _css("base.css")
     theme_css = _css(f"themes/{deck.category.value}.css")
@@ -90,6 +93,8 @@ def build_pages(
             show_safe_zone=show_safe_zone,
             base_css=base_css,
             theme_css=theme_css,
+            animation=slide.animation.value if animate else None,
+            animate_js=_css("animate.js") if animate else "",
         )
         pages.append(SlidePage(index=index, slide=slide, html=html))
     return tuple(pages)
