@@ -15,6 +15,8 @@ from typing import Annotated, Literal, Union
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from content_farm.explainer.media import Media
+
 # Narration speed used for the pre-voice duration estimate. Empirical guess for
 # zh-TW TTS; voice overwrites every scene with the measured duration anyway.
 CHARS_PER_SECOND = 4.5
@@ -137,6 +139,7 @@ class Slide(_Frozen):
     source_ids: tuple[str, ...] = ()
     beat: Beat | None = None  # light segment: sourced gossip or an original deadpan joke
     mascot: Mascot | None = None
+    media: Media | None = None  # None = the rendered slide (kind "slide")
     notes: str = ""
 
     @model_validator(mode="before")
@@ -209,6 +212,9 @@ class Deck(_Frozen):
             missing = [sid for sid in slide.source_ids if sid not in known]
             if missing:
                 raise ValueError(f"slide {slide.id!r} cites unknown source_ids {missing}")
+            media_source = slide.media.source_id if slide.media else ""
+            if media_source and media_source not in known:
+                raise ValueError(f"slide {slide.id!r} media cites unknown source_id {media_source!r}")
         return self
 
     @property
