@@ -118,11 +118,75 @@ class Mascot(_Frozen):
     pose: str = Field(pattern=r"^[a-z][a-z0-9_-]{0,31}$")
 
 
+class MediaKind(str, Enum):
+    """What fills the screen for a slide (v2). Absent ``media`` means ``slide``."""
+
+    SLIDE = "slide"            # the rendered static slide PNG (v1 behaviour)
+    ANIMATED = "animated"      # the same slide with an entrance animation (mp4)
+    STOCK = "stock"            # Pexels/Pixabay B-roll + key-text overlay
+    AI_IMAGE = "ai_image"      # user-generated illustration + Ken Burns
+    TITLE_CARD = "title_card"  # self-made news headline card (never a screenshot)
+
+
+class Animation(str, Enum):
+    COUNT_UP = "count_up"
+    GROW_BARS = "grow_bars"
+    REVEAL_LIST = "reveal_list"
+    DRAW_LINE = "draw_line"
+    FADE_IN = "fade_in"
+
+
+# Which layouts each animation knows how to move. ``fade_in`` works everywhere.
+ANIMATION_LAYOUTS: dict[Animation, frozenset[Layout]] = {
+    Animation.COUNT_UP: frozenset({Layout.BIG_NUMBER}),
+    Animation.GROW_BARS: frozenset({Layout.BIG_NUMBER, Layout.COMPARE, Layout.BULLETS}),
+    Animation.REVEAL_LIST: frozenset({Layout.BULLETS, Layout.COMPARE, Layout.TIMELINE}),
+    Animation.DRAW_LINE: frozenset({Layout.TIMELINE}),
+    Animation.FADE_IN: frozenset(Layout),
+}
+
+# The animation a slide falls back to when its stock/ai media is unavailable.
+DEFAULT_ANIMATION: dict[Layout, Animation] = {
+    Layout.TITLE: Animation.FADE_IN,
+    Layout.BULLETS: Animation.REVEAL_LIST,
+    Layout.BIG_NUMBER: Animation.COUNT_UP,
+    Layout.COMPARE: Animation.GROW_BARS,
+    Layout.TIMELINE: Animation.DRAW_LINE,
+    Layout.QUOTE: Animation.FADE_IN,
+}
+
+_MEDIA_REQUIRED: dict[MediaKind, str] = {
+    MediaKind.TITLE_CARD: "source_id",
+    MediaKind.STOCK: "query",
+    MediaKind.AI_IMAGE: "prompt",
+    MediaKind.ANIMATED: "animation",
+}
+
+
+class Media(_Frozen):
+    kind: MediaKind = MediaKind.SLIDE
+    query: str = Field(default="", max_length=100)       # stock: English search terms
+    prompt: str = Field(default="", max_length=1200)     # ai_image: generation prompt
+    animation: Animation | None = None                   # animated
+    headline: str = Field(default="", max_length=60)     # title_card: defaults to source title
+    summary: str = Field(default="", max_length=80)      # title_card: one-line summary
+    source_id: str = Field(default="", max_length=32)    # title_card: must be in deck.sources
+
+    @model_validator(mode="after")
+    def _required_for_kind(self) -> Media:
+        field = _MEDIA_REQUIRED.get(self.kind)
+        if field and not getattr(self, field):
+            raise ValueError(f"media kind {self.kind.value!r} requires {field!r}")
+        return self
+
+
 class Source(_Frozen):
     id: str = Field(min_length=1, max_length=32)
     title: str = Field(min_length=1, max_length=200)
     url: str = ""
     note: str = ""
+    publisher: str = Field(default="", max_length=40)  # title_card: media outlet name
+    published: str = Field(default="", pattern=r"^$|^\d{4}-\d{2}(-\d{2})?$")  # YYYY-MM[-DD]
 
 
 Beat = Literal["gossip", "joke"]
@@ -137,6 +201,7 @@ class Slide(_Frozen):
     source_ids: tuple[str, ...] = ()
     beat: Beat | None = None  # light segment: sourced gossip or an original deadpan joke
     mascot: Mascot | None = None
+    media: Media | None = None
     notes: str = ""
 
     @model_validator(mode="before")
@@ -169,11 +234,29 @@ class Slide(_Frozen):
             raise ValueError(f"layout {self.layout.value!r} needs a {expected.__name__} body")
         if self.beat == "gossip" and not self.source_ids:
             raise ValueError("gossip beat must cite source_ids (no unsourced rumours)")
+        animation = self.media.animation if self.media else None
+        if animation and self.layout not in ANIMATION_LAYOUTS[animation]:
+            allowed = sorted(layout.value for layout in ANIMATION_LAYOUTS[animation])
+            raise ValueError(
+                f"animation {animation.value!r} does not fit layout {self.layout.value!r} "
+                f"(fits {allowed})"
+            )
         return self
 
     @property
     def estimated_seconds(self) -> float:
         return estimate_seconds(self.narration)
+
+    @property
+    def media_kind(self) -> MediaKind:
+        return self.media.kind if self.media else MediaKind.SLIDE
+
+    @property
+    def animation(self) -> Animation:
+        """Animation to use when this slide is rendered as ``animated`` (incl. fallbacks)."""
+        if self.media and self.media.animation:
+            return self.media.animation
+        return DEFAULT_ANIMATION[self.layout]
 
 
 class Section(_Frozen):
@@ -209,6 +292,11 @@ class Deck(_Frozen):
             missing = [sid for sid in slide.source_ids if sid not in known]
             if missing:
                 raise ValueError(f"slide {slide.id!r} cites unknown source_ids {missing}")
+            card_source = slide.media.source_id if slide.media else ""
+            if card_source and card_source not in known:
+                raise ValueError(
+                    f"slide {slide.id!r} media.source_id {card_source!r} is not in sources"
+                )
         return self
 
     @property
