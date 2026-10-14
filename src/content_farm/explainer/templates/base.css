@@ -77,6 +77,9 @@ body {
 }
 
 /* ---- layouts ---------------------------------------------------------- */
+/* Body blocks sit centred in the space left under the heading. */
+.content > .bullets, .content > .compare, .content > .timeline { margin-top: auto; margin-bottom: auto; }
+
 .layout-title .content { justify-content: center; }
 .layout-title .title-main {
   font-family: var(--font-heading, var(--font-sans));
@@ -113,7 +116,7 @@ body {
 .compare li::before { content: "▸ "; color: var(--muted); }
 .compare .vs { align-self: center; text-align: center; font-family: var(--font-mono); font-size: 44px; font-weight: 900; color: var(--muted); }
 
-.timeline { flex: 1; position: relative; display: flex; align-items: stretch; padding-top: 24px; }
+.timeline { position: relative; display: flex; align-items: stretch; padding-top: 24px; }
 .timeline::before {
   content: ""; position: absolute; left: 0; right: 0; top: 112px; height: 6px;
   background: var(--rule); border-radius: 3px;
