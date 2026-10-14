@@ -23,12 +23,16 @@ class Settings(BaseSettings):
     llm_expensive_model: str = "claude-sonnet-4-6"
 
     # --- Voice ---
-    tts_provider: str = "fish_audio"  # "fish_audio" | "elevenlabs"
+    # "fish_audio" | "elevenlabs" | "macos_say"
+    # macos_say: free local macOS `say` voice, for development/testing only — do not publish with it.
+    tts_provider: str = "fish_audio"
     elevenlabs_api_key: SecretStr = SecretStr("")
     elevenlabs_voice_id: str = "JBFqnCBsd6RMkjVDRZzb"
     elevenlabs_model_id: str = "eleven_v3"
     fish_audio_api_key: SecretStr = SecretStr("")
     fish_audio_reference_id: str = ""
+    macos_say_voice: str = "Flo (Chinese (Taiwan))"  # list installed voices: say -v '?'
+    macos_say_rate: int | None = Field(default=None, gt=0)  # words per minute (say -r); None = voice default
 
     # --- Visual ---
     stock_provider: str = "pexels"  # "pexels" | "pixabay" | "multi"

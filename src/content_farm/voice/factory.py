@@ -33,4 +33,16 @@ def create_tts_provider(settings: Settings) -> TTSProvider:
             reference_id=settings.fish_audio_reference_id,
         )
 
-    raise ValueError(f"Unknown TTS provider: {provider!r}. Use 'elevenlabs' or 'fish_audio'.")
+    if provider == "macos_say":
+        # Free local TTS for development/testing only — never publish with it.
+        from content_farm.voice.macos_say import MacSayProvider
+
+        return MacSayProvider(
+            voice=settings.macos_say_voice,
+            rate=settings.macos_say_rate,
+            ffmpeg_path=settings.ffmpeg_path,
+        )
+
+    raise ValueError(
+        f"Unknown TTS provider: {provider!r}. Use 'elevenlabs', 'fish_audio' or 'macos_say'."
+    )
