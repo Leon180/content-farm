@@ -7,31 +7,32 @@ topics:
   - id: cowos-7722
     title: 一個數字：7,722 平方毫米
     kind: short
-    status: in_production
-    priority: 5
+    status: dropped
+    priority: 1
     category: 科技業冷笑話
-    notes: 從 CoWoS 長片 s09 切出（R5），output/offwork-7722；成片閘門等 Leon
+    notes: Leon 2026-10-16（88093246da75）改放晶片貓（chipcat backlog cowos-number，output/chipcat-7722）。offwork 開台片另找，候選見下面三則 debut
+  # 開台候選（2026-10-16 起）。三則都要 shorts_skit 渲染器（R4）才出得了片；pm-yidiandian 另需 PM 狗 rig（R11）。
+  - id: box-packaging
+    title: 貓為什麼最懂封裝
+    kind: short
+    status: idea
+    priority: 5
+    category: 工程師梗
+    notes: 開台候選一（推薦）：接 CoWoS s04 紙箱梗，裝進紙箱才肯安靜＝封裝；只要下班貓一隻角色，可導流晶片貓長片
+  - id: friday-deploy
+    title: 週五下午五點的部署
+    kind: short
+    status: idea
+    priority: 4
+    category: 工程師梗
+    notes: 開台候選二：單角色、上班族都懂；鋪陳「只是小改動」→ 停 0.6 秒 → 笑點落在週一早上；避免真實公司事故
   - id: pm-yidiandian
     title: 需求只改一點點
     kind: short
     status: idea
     priority: 4
     category: 上班族日常
-    notes: PM 狗「只改一點點」→ 下班貓「一點點是幾個點？」（品牌 Shorts 樣張那則）；需 PM 狗 rig（R11）
-  - id: box-packaging
-    title: 貓為什麼最懂封裝
-    kind: short
-    status: idea
-    priority: 4
-    category: 工程師梗
-    notes: 接 CoWoS s04 紙箱梗：裝進紙箱才肯安靜＝封裝；可導流晶片貓長片
-  - id: friday-deploy
-    title: 週五下午五點的部署
-    kind: short
-    status: idea
-    priority: 3
-    category: 工程師梗
-    notes: 鋪陳「只是小改動」→ 停 0.6 秒 → 笑點落在週一早上；避免真實公司事故
+    notes: 開台候選三：品牌 Shorts 樣張那則，PM 狗「只改一點點」→ 下班貓「一點點是幾個點？」；需 PM 狗 rig（R11），最晚能做
   - id: meeting-email
     title: 這個會其實一封信就夠
     kind: short

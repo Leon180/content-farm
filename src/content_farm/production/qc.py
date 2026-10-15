@@ -16,9 +16,11 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from content_farm.explainer.deck import Deck, MediaKind
-from content_farm.production.channels import Channel
+from content_farm.production.channels import Channel, Format
+from content_farm.production.shorts_cut import is_short_cut
 
 QC_REPORT = Path("qc") / "qc_report.json"
+SHORTS_FORMAT = Format(length="short", aspect="9:16", target_seconds=(15, 60))
 BLACK_MIN_SECONDS = 0.5
 AV_DRIFT_SECONDS = 2.0
 ASPECT_SIZES = {"16:9": (1920, 1080), "9:16": (1080, 1920)}
@@ -185,6 +187,8 @@ def portrait_subtitle_findings(srt: Path, font_path: str | None = None) -> list[
 
 
 def run_qc(run_dir: Path, channel: Channel, deck: Deck | None) -> dict:
+    if is_short_cut(run_dir):  # a Short cut from a long run: judge it as a Short on any channel
+        channel = channel.model_copy(update={"format": SHORTS_FORMAT})
     findings: list[Finding] = []
     if deck is not None:
         findings += policy_findings(channel, deck)

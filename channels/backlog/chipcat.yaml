@@ -15,7 +15,7 @@ topics:
     status: in_production
     priority: 4
     category: 半導體
-    notes: 從 CoWoS 長片 s09 切出。2026-10-15 依派工做成 offwork 頻道的 Shorts（offwork backlog cowos-7722）；歸屬哪個頻道待 Leon 決定
+    notes: 從 CoWoS 長片 s09 切出。Leon 2026-10-16（88093246da75）定案放晶片貓，類別教育；output/chipcat-7722 以 chipcat 片頭片尾重出，成片閘門等 Leon
   - id: hbm
     title: HBM 為什麼比 GPU 還難買
     kind: long

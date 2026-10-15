@@ -88,6 +88,31 @@ def test_blackdetect_finds_black_and_passes_colour(tmp_path: Path) -> None:
     assert qc.black_findings(qc.black_segments(colour))[0].level == "ok"
 
 
+@needs_ffmpeg
+def test_short_cut_on_a_long_channel_is_judged_as_a_short(tmp_path: Path) -> None:
+    """88093246da75: the 7,722 Short moved to chipcat (16:9 long channel); 1080x1920 is right."""
+    from content_farm.production import shorts_cut
+
+    run = tmp_path / "run"
+    (run / "assembly").mkdir(parents=True)
+    subprocess.run(["ffmpeg", "-v", "error", "-f", "lavfi", "-i", "color=0x3366cc:s=1080x1920:d=20",
+                    "-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono", "-t", "20", "-pix_fmt", "yuv420p",
+                    "-shortest", str(run / "assembly" / "final.mp4")], check=True)
+    chipcat = load_channel("chipcat")
+
+    def resolution() -> str:
+        report = qc.run_qc(run, chipcat, None)
+        return next(f for f in report["findings"] if f["check"] == "resolution")["level"]
+
+    assert resolution() == "error"  # control: without short_source.json it is a 16:9 long video
+    shorts_cut.write_spec(run, shorts_cut.ShortSpec(
+        long_run_dir=str(tmp_path), slide_id="s09", number="7,722", caption="c", title="t",
+        long_channel="晶片貓", long_title="CoWoS"))
+    assert resolution() == "ok"
+    report = qc.run_qc(run, chipcat, None)
+    assert next(f for f in report["findings"] if f["check"] == "duration")["level"] == "ok"
+
+
 def _script_run(tmp_path: Path) -> Path:
     run = tmp_path / "run"
     (run / "assembly").mkdir(parents=True)
