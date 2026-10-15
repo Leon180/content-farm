@@ -125,6 +125,7 @@ Show the user `slides/contact_sheet.png` (Read it so they see it inline) and wai
 These spend money (Fish Audio TTS). Ask before running; never run them as part of gate 3. For a free dry run (length / overflow / timing check, not for publishing) prefix the voice step with `CF_TTS_PROVIDER=macos_say`.
 
 ```bash
+CF_SUBTITLE_MAX_CHARS_PER_LINE_LANDSCAPE=20 \
 python scripts/run_stage.py --stage voice --run-dir <run_dir>          # TTS per slide + whisper subtitles; rewrites durations
 python scripts/media_to_visual.py --run-dir <run_dir>                  # per-slide clips → visual/MM:SS.mmm~MM:SS.mmm.{mp4,png}
 python scripts/run_stage.py --stage assembly_timeline --run-dir <run_dir>
@@ -134,6 +135,6 @@ python scripts/run_stage.py --stage assembly_timeline --run-dir <run_dir>
 - AI images: the run writes `ai_image_prompts.md`. The user runs `/generate-visuals` with `--storyboard ai_image_prompts.md --out-dir assets/ai_images --variant 0`, then rerun `media_to_visual.py --replace` and assembly.
 - `credits.json` → `description_text` goes into the YouTube description (stock author + licence links).
 
-- Landscape scripts get `CF_SUBTITLE_MAX_CHARS_PER_LINE_LANDSCAPE` (default 24) per subtitle line; Shorts keep 13.
+- Landscape scripts get `CF_SUBTITLE_MAX_CHARS_PER_LINE_LANDSCAPE` (default 24) per subtitle line; Shorts keep 13. Explainers use **20**: the wrapper allows +4 chars to reach a comma, and at 24 that makes 28-char lines (≈ 1,350 px) that run under the cat (its column starts at x = 1600). `mascot_overlay.py` measures every line and refuses to overlay when one is too wide.
 - Re-voicing one slide: delete only that `audio/scene_NNN.mp3`, rerun voice (other scenes are reused), then `media_to_visual.py --replace`.
 - Then the usual `/thumbnail`, `/prepareupload`, `/upload`, `/drive`. Make sure `slides/` is uploaded with the run — drive deletes the local run_dir.
