@@ -14,7 +14,7 @@
   --accent-2: #0b5cc2;    /* 矽藍：第二資料系列、連結 */
   --amber: #ffc21a;       /* 黃光：裝飾帶，不當文字 */
   --font-heading: "Noto Sans CJK TC", sans-serif;
-  --font-number: "SF Mono", "Menlo", monospace;
+  --font-number: "Menlo", monospace;   /* SF Mono is not visible to Chromium here */
 }
 body {
   background-image:

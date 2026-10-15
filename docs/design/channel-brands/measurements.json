@@ -1,0 +1,241 @@
+{
+  "_missing_fonts": [
+    "Zz Control Not A Font"
+  ],
+  "chipcat": {
+    "code": "chipcat",
+    "frames": [
+      "chipcat/slide_01.jpg",
+      "chipcat/slide_02.jpg",
+      "chipcat/slide_03.jpg",
+      "chipcat/thumb_1.jpg",
+      "chipcat/thumb_2.jpg",
+      "chipcat/thumb_3.jpg",
+      "chipcat/icon.png",
+      "chipcat/icon_circle.png",
+      "chipcat/banner.jpg",
+      "chipcat/shorts.jpg",
+      "chipcat/endcard.jpg"
+    ],
+    "problems": {},
+    "contrast": [
+      {
+        "pair": "內文 fg/bg",
+        "fg": "#0e1b2a",
+        "bg": "#f2f5f8",
+        "ratio": 15.88,
+        "min": 4.5,
+        "ok": true
+      },
+      {
+        "pair": "輔助字 muted/bg（22 px 頁尾）",
+        "fg": "#4a5a6b",
+        "bg": "#f2f5f8",
+        "ratio": 6.47,
+        "min": 4.5,
+        "ok": true
+      },
+      {
+        "pair": "強調大字 accent/bg（數字、年份）",
+        "fg": "#d9480f",
+        "bg": "#f2f5f8",
+        "ratio": 3.93,
+        "min": 3.0,
+        "ok": true
+      },
+      {
+        "pair": "卡片內文 fg/card",
+        "fg": "#0e1b2a",
+        "bg": "#ffffff",
+        "ratio": 17.37,
+        "min": 4.5,
+        "ok": true
+      },
+      {
+        "pair": "次強調 accent-2/bg",
+        "fg": "#0b5cc2",
+        "bg": "#f2f5f8",
+        "ratio": 5.77,
+        "min": 3.0,
+        "ok": true
+      }
+    ]
+  },
+  "yokai": {
+    "code": "yokai",
+    "frames": [
+      "yokai/slide_01.jpg",
+      "yokai/slide_02.jpg",
+      "yokai/slide_03.jpg",
+      "yokai/thumb_1.jpg",
+      "yokai/thumb_2.jpg",
+      "yokai/thumb_3.jpg",
+      "yokai/icon.png",
+      "yokai/icon_circle.png",
+      "yokai/banner.jpg",
+      "yokai/shorts.jpg",
+      "yokai/endcard.jpg"
+    ],
+    "problems": {},
+    "contrast": [
+      {
+        "pair": "內文 fg/bg",
+        "fg": "#efe4cb",
+        "bg": "#14110d",
+        "ratio": 14.9,
+        "min": 4.5,
+        "ok": true
+      },
+      {
+        "pair": "輔助字 muted/bg（22 px 頁尾）",
+        "fg": "#ab9d82",
+        "bg": "#14110d",
+        "ratio": 7.06,
+        "min": 4.5,
+        "ok": true
+      },
+      {
+        "pair": "強調大字 accent/bg（數字、年份）",
+        "fg": "#e0503a",
+        "bg": "#14110d",
+        "ratio": 4.82,
+        "min": 3.0,
+        "ok": true
+      },
+      {
+        "pair": "卡片內文 fg/card",
+        "fg": "#efe4cb",
+        "bg": "#211b14",
+        "ratio": 13.5,
+        "min": 4.5,
+        "ok": true
+      },
+      {
+        "pair": "次強調 accent-2/bg",
+        "fg": "#7fb39b",
+        "bg": "#14110d",
+        "ratio": 7.91,
+        "min": 3.0,
+        "ok": true
+      }
+    ]
+  },
+  "offwork": {
+    "code": "offwork",
+    "frames": [
+      "offwork/slide_01.jpg",
+      "offwork/slide_02.jpg",
+      "offwork/slide_03.jpg",
+      "offwork/thumb_1.jpg",
+      "offwork/thumb_2.jpg",
+      "offwork/thumb_3.jpg",
+      "offwork/icon.png",
+      "offwork/icon_circle.png",
+      "offwork/banner.jpg",
+      "offwork/shorts.jpg",
+      "offwork/endcard.jpg"
+    ],
+    "problems": {},
+    "contrast": [
+      {
+        "pair": "內文 fg/bg",
+        "fg": "#141414",
+        "bg": "#ffd84d",
+        "ratio": 13.32,
+        "min": 4.5,
+        "ok": true
+      },
+      {
+        "pair": "輔助字 muted/bg（22 px 頁尾）",
+        "fg": "#4d3f12",
+        "bg": "#ffd84d",
+        "ratio": 7.46,
+        "min": 4.5,
+        "ok": true
+      },
+      {
+        "pair": "強調大字 accent/bg（數字、年份）",
+        "fg": "#c2185b",
+        "bg": "#ffd84d",
+        "ratio": 4.25,
+        "min": 3.0,
+        "ok": true
+      },
+      {
+        "pair": "卡片內文 fg/card",
+        "fg": "#141414",
+        "bg": "#ffffff",
+        "ratio": 18.42,
+        "min": 4.5,
+        "ok": true
+      },
+      {
+        "pair": "次強調 accent-2/bg",
+        "fg": "#1a4fd8",
+        "bg": "#ffd84d",
+        "ratio": 4.81,
+        "min": 3.0,
+        "ok": true
+      }
+    ]
+  },
+  "cel": {
+    "code": "cel",
+    "frames": [
+      "cel/slide_01.jpg",
+      "cel/slide_02.jpg",
+      "cel/slide_03.jpg",
+      "cel/thumb_1.jpg",
+      "cel/thumb_2.jpg",
+      "cel/thumb_3.jpg",
+      "cel/icon.png",
+      "cel/icon_circle.png",
+      "cel/banner.jpg",
+      "cel/shorts.jpg",
+      "cel/endcard.jpg"
+    ],
+    "problems": {},
+    "contrast": [
+      {
+        "pair": "內文 fg/bg",
+        "fg": "#1f2329",
+        "bg": "#f5f1e8",
+        "ratio": 14.0,
+        "min": 4.5,
+        "ok": true
+      },
+      {
+        "pair": "輔助字 muted/bg（22 px 頁尾）",
+        "fg": "#59606b",
+        "bg": "#f5f1e8",
+        "ratio": 5.63,
+        "min": 4.5,
+        "ok": true
+      },
+      {
+        "pair": "強調大字 accent/bg（數字、年份）",
+        "fg": "#cc2f2a",
+        "bg": "#f5f1e8",
+        "ratio": 4.65,
+        "min": 3.0,
+        "ok": true
+      },
+      {
+        "pair": "卡片內文 fg/card",
+        "fg": "#1f2329",
+        "bg": "#ffffff",
+        "ratio": 15.78,
+        "min": 4.5,
+        "ok": true
+      },
+      {
+        "pair": "次強調 accent-2/bg",
+        "fg": "#2a64a8",
+        "bg": "#f5f1e8",
+        "ratio": 5.34,
+        "min": 3.0,
+        "ok": true
+      }
+    ]
+  }
+}

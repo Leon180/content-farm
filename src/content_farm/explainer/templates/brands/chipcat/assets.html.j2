@@ -1,0 +1,71 @@
+{# 晶片貓 — 拆解報告書. Tokens come from themes/brands/chipcat.css :root. #}
+{% macro style() %}
+body { background: var(--bg); color: var(--fg); font-family: "Noto Sans CJK TC", sans-serif; }
+.grid { position: absolute; inset: 0; background-image:
+  linear-gradient(rgba(14,27,42,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(14,27,42,.06) 1px, transparent 1px);
+  background-size: 32px 32px; }
+.wafer { position: absolute; border-radius: 50%; box-shadow: inset 0 0 0 4px var(--fg);
+  background: linear-gradient(var(--accent), var(--accent)) var(--die-x) var(--die-y) / 62px 46px no-repeat,
+    repeating-linear-gradient(90deg, rgba(14,27,42,.25) 0 2px, transparent 2px 64px),
+    repeating-linear-gradient(0deg, rgba(14,27,42,.25) 0 2px, transparent 2px 48px),
+    radial-gradient(circle, rgba(11,92,194,.12), rgba(11,92,194,.03)); }
+.tag { display: inline-block; background: var(--fg); color: #fff; font: 700 30px Menlo, monospace; padding: 6px 18px; letter-spacing: .08em; }
+.mono { font-family: Menlo, monospace; }
+.hl { display: inline-block; background: var(--accent); color: #fff; padding: 0 .1em; line-height: 1; }
+.rail { position: absolute; left: 0; top: 0; bottom: 0; background: var(--fg); }
+.amber { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(180deg, var(--amber) 0 22px, transparent 22px 44px); }
+{% endmacro %}
+
+{% macro thumb(t, sil) %}
+<div class="grid"></div>
+<div class="rail" style="width:28px"></div><div class="amber" style="left:28px;width:8px"></div>
+<div class="wafer" style="left:760px;top:-60px;width:620px;height:620px;--die-x:258px;--die-y:290px"></div>
+<div style="position:absolute;left:84px;top:70px;width:760px">
+  <span class="tag">{{ t.kicker }}</span>
+  <div style="margin-top:34px;font-weight:900;font-size:{{ t.size|default(132) }}px;line-height:1.18;letter-spacing:-.01em">
+    {% for line in t.lines %}<div>{{ line | replace(t.hl, '<span class="hl">' ~ t.hl ~ '</span>') | safe }}</div>{% endfor %}
+  </div>
+  <div class="mono" style="margin-top:30px;font-size:34px;font-weight:700;color:var(--accent-2)">› {{ t.sub }}</div>
+</div>
+{{ sil(900, 300, 300) }}
+<div class="mono" style="position:absolute;left:84px;bottom:34px;font-size:24px;color:var(--muted)">■ 晶片貓 TEARDOWN REPORT</div>
+{% endmacro %}
+
+{% macro icon() %}
+<div style="position:absolute;inset:0;background:var(--fg)"></div>
+<svg viewBox="0 0 800 800" style="position:absolute;inset:0">
+  <g fill="none" stroke="#2c3e55" stroke-width="6">
+    <path d="M100 250H700M100 400H700M100 550H700M250 100V700M400 100V700M550 100V700"/>
+  </g>
+  <path d="M232 302 L262 170 L340 252 H460 L538 170 L568 302 V560 Q568 590 538 590 H262 Q232 590 232 560 Z" fill="#d9480f"/>
+  <g fill="#d9480f"><rect x="190" y="340" width="34" height="20"/><rect x="190" y="410" width="34" height="20"/><rect x="190" y="480" width="34" height="20"/>
+  <rect x="576" y="340" width="34" height="20"/><rect x="576" y="410" width="34" height="20"/><rect x="576" y="480" width="34" height="20"/></g>
+  <rect x="330" y="380" width="44" height="44" fill="#0e1b2a"/><rect x="426" y="380" width="44" height="44" fill="#0e1b2a"/>
+</svg>
+{% endmacro %}
+
+{% macro banner(sil) %}
+<div class="grid"></div>
+<div class="wafer" style="left:1650px;top:250px;width:940px;height:940px;--die-x:386px;--die-y:434px"></div>
+<div class="rail" style="width:60px"></div><div class="amber" style="left:60px;width:14px"></div>
+<div style="position:absolute;left:507px;top:509px;width:1546px;height:423px;display:flex;align-items:center;gap:56px">
+  <div style="flex:1">
+    <div style="font-weight:900;font-size:150px;line-height:1">晶片貓</div>
+    <div style="margin-top:22px;font-size:46px;font-weight:700">把台灣科技業拆成你聽得懂的零件</div>
+    <div class="mono" style="margin-top:20px;font-size:32px;color:var(--accent)">每週四 20:00 ／ 長片拆解 ＋ Shorts「一個數字」</div>
+  </div>
+  {{ sil(1290, 40, 240) }}
+</div>
+{% endmacro %}
+
+{% macro shorts(sil) %}
+<div class="grid"></div>
+<div class="rail" style="width:22px"></div><div class="amber" style="left:22px;width:8px"></div>
+<div style="position:absolute;left:80px;top:250px;width:820px">
+  <span class="tag">一個數字 #07</span>
+  <div style="margin-top:30px;font-size:76px;font-weight:900;line-height:1.2">台積電一年<br>花多少錢在研發？</div>
+</div>
+<div class="mono" style="position:absolute;left:70px;top:720px;font-size:300px;font-weight:700;letter-spacing:-.06em;line-height:1">2.0<span style="font-size:110px;color:var(--accent)">千億</span></div>
+<div style="position:absolute;left:80px;top:1060px;width:700px;border-top:3px solid var(--fg);padding-top:16px;font-size:40px;color:var(--muted)">▲ 示意數字・正式版附年報出處</div>
+{{ sil(640, 1060, 280) }}
+{% endmacro %}

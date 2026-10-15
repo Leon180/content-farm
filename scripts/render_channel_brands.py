@@ -86,9 +86,19 @@ def shoot(page: object, html: str, html_path: Path, out: Path, *, size: tuple[in
     return problems
 
 
+_WIDTH_PROBE_JS = """f => {
+  const c = document.createElement('canvas').getContext('2d');
+  const probe = 'Wg@1il字體';
+  const w = font => { c.font = font; return c.measureText(probe).width; };
+  return ['monospace', 'serif'].some(fb => w(`72px "${f}", ${fb}`) !== w(`72px ${fb}`));
+}"""
+
+
 def missing_fonts(page: object, families: list[str]) -> list[str]:
-    """Families the browser cannot resolve (it silently falls back otherwise)."""
-    return [f for f in families if not page.evaluate("f => document.fonts.check(`40px \"${f}\"`, '字')", f)]
+    """Families the browser cannot resolve: the probe text measures exactly like
+    the generic fallback. (``document.fonts.check`` says true for unknown system
+    fonts, so it cannot be used.) The bogus control family must come back missing."""
+    return [f for f in families if not page.evaluate(_WIDTH_PROBE_JS, f)]
 
 
 def render_brand(page: object, code: str, work: Path, *, assets: bool) -> dict:
@@ -113,7 +123,7 @@ def render_brand(page: object, code: str, work: Path, *, assets: bool) -> dict:
 
 
 FONT_FAMILIES = ["Noto Sans CJK TC", "Songti TC", "Weibei TC", "Kaiti TC", "Yuanti TC", "HanziPen TC",
-                 "DIN Condensed", "SF Mono", "Arial Rounded MT Bold"]
+                 "DIN Condensed", "Menlo", "Arial Rounded MT Bold", "Zz Control Not A Font"]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -143,7 +153,7 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"{code}: {flag}", flush=True)
                 results_path.write_text(json.dumps(results, ensure_ascii=False, indent=2), encoding="utf-8")
             if not args.skip_assets and all(c in results for c in brand_codes()):
-                shoot(page, overview_html(OUT), args.work / "overview.html", OUT / "overview.png", size=(2400, 1500))
+                shoot(page, overview_html(OUT), args.work / "overview.html", OUT / "overview.png", size=(2400, 1340))
         finally:
             browser.close()
     return 1 if any(results[c]["problems"] for c in codes) else 0

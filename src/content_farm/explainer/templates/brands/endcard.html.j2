@@ -1,0 +1,21 @@
+{# Shared end card (last 20 s). Same geometry on every channel = the invisible
+   "same studio" line; colour, type and wording come from the brand.
+   Slots match YouTube end-screen elements: 2 videos (left) + subscribe (right). #}
+{% macro endcard(e, sil, mark) %}
+<div style="position:absolute;inset:0;background:var(--bg)"></div>
+<div style="position:absolute;left:120px;top:110px;font:{{ e.weight }} 64px {{ e.font }};color:var(--fg)">{{ e.closing }}</div>
+{% for label in ("下一支：推薦", "下一支：最新") %}
+<div style="position:absolute;left:{{ 120 + loop.index0 * 700 }}px;top:300px;width:640px;height:360px;
+  border:4px dashed var(--muted);display:flex;align-items:center;justify-content:center;
+  font:700 34px 'Noto Sans CJK TC';color:var(--muted)">{{ label }}<br>（YouTube 結束畫面元素）</div>
+{% endfor %}
+<div style="position:absolute;left:1540px;top:330px;width:300px;height:300px;border-radius:50%;
+  border:4px dashed var(--muted);display:flex;align-items:center;justify-content:center;font:700 34px 'Noto Sans CJK TC';color:var(--muted)">訂閱</div>
+{{ sil(1640, 700, 180) }}
+<div style="position:absolute;left:0;right:0;bottom:0;height:72px;display:flex;align-items:center;gap:18px;padding:0 120px;
+  border-top:2px solid var(--rule);font:500 26px 'Noto Sans CJK TC';color:var(--muted)">
+  <span style="display:inline-flex;width:40px;height:40px;color:var(--fg)">{{ mark }}</span>
+  <span>貓工所 出品（工作室名稱暫定）</span>
+  <span style="margin-left:auto">來源都在說明欄 ・ 先比喻、後定義</span>
+</div>
+{% endmacro %}
