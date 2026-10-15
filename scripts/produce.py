@@ -12,6 +12,7 @@ Usage:
     python scripts/produce.py channels                               # validate channels/*.yaml
     python scripts/produce.py short-from-long --from output/cowos --slide s09 --channel offwork \
         --run-dir output/offwork-7722 --title "…" --number 7,722 --unit mm²   # 9:16 Short (R5)
+    python scripts/produce.py manual-kit --run-dir output/cowos     # Studio upload kit + preview.html
 
 Exit codes for ``run``: 0 all steps done, 1 a step failed, 3 waiting (gate, agent
 step, or paid step without --allow-paid). Each stop prints the next command.
@@ -22,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 from datetime import date, datetime
 from pathlib import Path
@@ -30,6 +32,7 @@ import yaml
 from pydantic import ValidationError
 
 from content_farm.production.channels import Gate, load_all, load_channel
+from content_farm.production.manual_kit import write_kit
 from content_farm.production.runner import SCHEDULE_FILE, Outcome, Runner, decide
 from content_farm.production.schedule import load_backlog, plan_week
 from content_farm.production.shorts_cut import short_spec_from_long, write_spec
@@ -79,6 +82,9 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     short.add_argument("--long-title", help="default: the long deck's title")
     short.add_argument("--publish-at", help="ISO datetime with offset")
     short.add_argument("--max-load", type=float, default=None)
+
+    kit = sub.add_parser("manual-kit", help="upload/manual/: YouTube Studio checklist, texts, preview.html")
+    kit.add_argument("--run-dir", type=Path, required=True)
 
     status = sub.add_parser("status")
     status.add_argument("--run-dir", type=Path, required=True)
@@ -148,6 +154,13 @@ def cmd_short_from_long(args: argparse.Namespace) -> int:
     return result.exit_code
 
 
+def cmd_manual_kit(args: argparse.Namespace) -> int:
+    kit = write_kit(args.run_dir.resolve(), load_channel(read_channel_code(args.run_dir)))
+    flags = [*(["成片閘門未核可：預覽版"] if kit.preview else []), *(["暫用機器聲"] if kit.machine_voice else [])]
+    print(f"{kit.directory}/README.md, preview.html{'  ⚠ ' + '、'.join(flags) if flags else ''}")
+    return 0
+
+
 def cmd_decide(args: argparse.Namespace, verdict: str) -> int:
     channel = load_channel(read_channel_code(args.run_dir))
     decision = decide(args.run_dir.resolve(), channel, Gate(args.gate), verdict, note=args.note,
@@ -206,11 +219,13 @@ def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
     handlers = {"run": cmd_run, "status": cmd_status, "inbox": cmd_inbox, "plan": cmd_plan,
                 "channels": cmd_channels, "short-from-long": cmd_short_from_long,
+                "manual-kit": cmd_manual_kit,
                 "approve": lambda a: cmd_decide(a, "approved"),
                 "reject": lambda a: cmd_decide(a, "rejected")}
     try:
         return handlers[args.command](args)
-    except (OSError, ValueError, ValidationError, json.JSONDecodeError, yaml.YAMLError) as exc:
+    except (OSError, ValueError, ValidationError, json.JSONDecodeError, yaml.YAMLError,
+            subprocess.SubprocessError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
 
