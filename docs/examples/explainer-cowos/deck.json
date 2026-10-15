@@ -636,11 +636,12 @@
           "notes": "article §a-numbers。附錄 B 貓砂笑話。",
           "media": {
             "kind": "stock",
-            "query": "silicon wafer cleanroom",
+            "query": "electronic chip close up",
             "keywords": [
-              "wafer",
-              "wafers",
-              "silicon"
+              "chip",
+              "microchip",
+              "processor",
+              "wafer"
             ]
           }
         },
@@ -817,12 +818,10 @@
           },
           "media": {
             "kind": "stock",
-            "query": "semiconductor cleanroom wafer",
+            "query": "semiconductor manufacturing facility",
             "keywords": [
               "semiconductor",
-              "wafer",
-              "cleanroom",
-              "microchip"
+              "wafer"
             ]
           },
           "notes": "article §a-unknowns 二、三。"
