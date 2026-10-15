@@ -1,0 +1,54 @@
+/* editorial — 雜誌編輯: warm paper, Songti headlines, Didot numerals, hairline rules. */
+:root {
+  --bg: #f3eee5;
+  --fg: #1c1a17;
+  --muted: #5e574d;
+  --rule: #b9ae9c;
+  --card: #fbf8f2;
+  --accent: #8e1f1b;
+  --accent-2: #2b4a5f;
+  --font-heading: "Songti TC", "Noto Serif CJK TC", serif;
+  --font-number: "Didot", "Bodoni 72", "Songti TC", serif;
+  --font-mono: "Didot", "Songti TC", serif;
+}
+.topbar {
+  border-bottom: 1px solid var(--fg); font-family: var(--font-heading);
+  font-size: 24px; letter-spacing: .12em;
+}
+.topbar::after { content: ""; position: absolute; left: var(--pad-x); right: var(--pad-x); bottom: 5px; height: 1px; background: var(--fg); }
+.topbar .series { color: var(--fg); font-weight: 700; }
+.topbar .pageno { font-style: italic; color: var(--accent); }
+.heading { font-weight: 700; font-size: 70px; letter-spacing: .02em; }
+.heading::after { width: 100%; height: 1px; border-radius: 0; background: var(--fg); margin-top: 24px; }
+.layout-title .content { justify-content: flex-end; padding-bottom: 60px; }
+.layout-title .content::before {
+  content: "ISSUE 01 · 產業拆解"; position: absolute; top: 24px; left: 0;
+  font-family: var(--font-number); font-size: 30px; letter-spacing: .3em; color: var(--accent);
+}
+.layout-title .title-main { font-weight: 900; font-size: 128px; line-height: 1.1; }
+.layout-title .title-sub { font-family: var(--font-heading); font-style: italic; color: var(--accent); font-size: 48px; }
+.layout-title .title-rule { order: -1; width: 100%; height: 1px; border-radius: 0; background: var(--fg); margin: 0 0 40px; }
+.bignum .value { font-weight: 400; font-size: 320px; letter-spacing: -0.02em; }
+.bignum .unit { font-family: var(--font-number); font-weight: 400; font-size: 120px; color: var(--accent); }
+.bignum .caption { font-family: var(--font-heading); font-style: italic; color: var(--muted); }
+.compare { grid-template-columns: 1fr 1px 1fr; column-gap: 60px; }
+.compare .side { background: transparent; border-radius: 0; border-top: none; padding: 0; }
+.compare .label { font-family: var(--font-heading); font-size: 56px; border-bottom: 1px solid var(--rule); padding-bottom: 14px; }
+.compare .side.right .label { color: var(--accent); }
+.compare li { font-size: 40px; }
+.compare li::before { content: "· "; color: var(--accent); }
+.compare .vs { background: var(--fg); font-size: 0; align-self: stretch; }
+.timeline::before { height: 1px; background: var(--fg); border-radius: 0; top: 116px; }
+.timeline .when { font-weight: 400; font-size: 54px; color: var(--accent); }
+.timeline .dot { width: 14px; height: 14px; border: none; box-shadow: none; background: var(--fg); margin: 22px 0 34px; }
+.timeline .what { font-family: var(--font-heading); }
+.meta { font-family: var(--font-heading); font-style: italic; }
+.anim-meter { height: 6px; background: var(--rule); border-radius: 0; }
+.anim-meter-fill { border-radius: 0; background: var(--fg); }
+.anim-line { height: 1px; border-radius: 0; background: var(--fg); top: 116px; }
+body.media-overlay .lower-third {
+  background: var(--card); border-left: none; border-radius: 0;
+  border-top: 1px solid var(--fg); border-bottom: 1px solid var(--fg); padding: 26px 44px;
+}
+body.media-overlay .lt-heading { color: var(--fg); font-family: var(--font-heading); font-size: 62px; }
+body.media-overlay .lt-key { color: var(--accent); font-family: var(--font-heading); font-style: italic; font-weight: 400; }

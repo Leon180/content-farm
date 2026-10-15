@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from urllib.parse import urlparse
 
 from content_farm.explainer.deck import Deck, Layout, Section, Slide
-from content_farm.explainer.pages import DISCLAIMER, TEMPLATES_DIR, _css, _environment
+from content_farm.explainer.pages import DISCLAIMER, TEMPLATES_DIR, _css, _environment, theme_css
 
 KEY_LINE_MAX = 40
 
@@ -56,7 +56,10 @@ def title_card_for(deck: Deck, slide: Slide) -> TitleCard:
     )
 
 
-def _render(deck: Deck, section: Section, slide: Slide, index: int, kind: str, **extra: object) -> str:
+def _render(
+    deck: Deck, section: Section, slide: Slide, index: int, kind: str,
+    style: str | None = None, **extra: object,
+) -> str:
     template = _environment().get_template("media/frame.html.j2")
     return template.render(
         deck=deck,
@@ -68,7 +71,7 @@ def _render(deck: Deck, section: Section, slide: Slide, index: int, kind: str, *
         sources=[deck.source_by_id(sid).title for sid in slide.source_ids],
         disclaimer=DISCLAIMER[deck.category],
         base_css=_css("base.css"),
-        theme_css=_css(f"themes/{deck.category.value}.css"),
+        theme_css=theme_css(deck, style),
         media_css=(TEMPLATES_DIR / "media" / "media.css").read_text(encoding="utf-8"),
         animation=extra.pop("animation", None),
         animate_js=_css("animate.js"),
@@ -76,10 +79,12 @@ def _render(deck: Deck, section: Section, slide: Slide, index: int, kind: str, *
     )
 
 
-def overlay_html(deck: Deck, section: Section, slide: Slide, index: int) -> str:
+def overlay_html(
+    deck: Deck, section: Section, slide: Slide, index: int, style: str | None = None,
+) -> str:
     """Transparent page: top bar, lower-third (heading + key line), meta row."""
     line = key_line(slide)
-    return _render(deck, section, slide, index, "overlay",
+    return _render(deck, section, slide, index, "overlay", style=style,
                    key_line="" if line == slide.heading else line)
 
 

@@ -1,0 +1,52 @@
+/* cleanroom — 晶圓無塵室: cool white light, wafer die grid, yellow-room warning band, mono codes. */
+:root {
+  --bg: #eef2f5;
+  --fg: #0f1c2b;
+  --muted: #4d5d6e;
+  --rule: #c9d3dd;
+  --card: #ffffff;
+  --accent: #0a6fd6;
+  --accent-2: #b8860b;
+  --font-heading: "Noto Sans CJK TC", sans-serif;
+  --font-number: "SF Mono", "Menlo", monospace;
+}
+body {
+  background-image:
+    radial-gradient(circle at 1720px 220px, transparent 330px, rgba(10,111,214,.25) 331px, rgba(10,111,214,.25) 333px, transparent 334px),
+    radial-gradient(circle at 1720px 220px, rgba(10,111,214,.06) 0 330px, transparent 331px),
+    linear-gradient(rgba(15,28,43,.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15,28,43,.05) 1px, transparent 1px);
+  background-size: auto, auto, 40px 40px, 40px 40px;
+}
+.stage::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 10px;
+  background: repeating-linear-gradient(-45deg, #f2b705 0 22px, #0f1c2b 22px 44px);
+}
+.topbar { top: 10px; border-bottom: 1px solid var(--rule); font-family: var(--font-number); font-size: 22px; height: 86px; }
+.topbar .series { color: var(--fg); font-family: var(--font-heading); }
+.topbar .series::before { content: "FAB-12 / "; color: var(--accent); font-family: var(--font-number); }
+.heading { font-weight: 700; }
+.heading::after { width: 48px; height: 6px; border-radius: 0; background: var(--accent); box-shadow: 56px 0 0 #f2b705, 112px 0 0 var(--rule); }
+.layout-title .title-main { font-weight: 900; font-size: 110px; max-width: 1200px; }
+.layout-title .title-sub { font-family: var(--font-number); color: var(--accent); font-size: 40px; }
+.layout-title .title-sub::before { content: "> "; }
+.layout-title .title-rule { width: 340px; height: 6px; border-radius: 0; background: repeating-linear-gradient(90deg, var(--accent) 0 40px, transparent 40px 48px); }
+.bignum .value { color: var(--fg); font-weight: 700; letter-spacing: -0.06em; }
+.bignum .unit { color: var(--accent); font-family: var(--font-number); }
+.bignum .caption { font-family: var(--font-heading); }
+.bignum .caption::before { content: "YIELD.METRIC  "; font-family: var(--font-number); color: var(--accent); font-size: 28px; }
+.compare .side { background: var(--card); border-radius: 4px; border-top: none; border-left: 6px solid var(--accent); box-shadow: 0 1px 0 var(--rule), 0 10px 30px rgba(15,28,43,.08); }
+.compare .side.right { border-top: none; border-left-color: #f2b705; }
+.compare li::before { content: "◦ "; color: var(--accent); }
+.compare .vs { font-family: var(--font-number); color: var(--muted); }
+.timeline::before { height: 2px; background: var(--fg); border-radius: 0; }
+.timeline .when { color: var(--accent); font-weight: 700; }
+.timeline .dot { border-radius: 4px; background: var(--card); border: 2px solid var(--fg); box-shadow: inset 0 0 0 5px var(--card), inset 0 0 0 14px var(--accent); }
+.meta { font-family: var(--font-heading); }
+.anim-meter { border-radius: 0; background: repeating-linear-gradient(90deg, var(--rule) 0 30px, var(--bg) 30px 34px); height: 24px; }
+.anim-meter-fill { border-radius: 0; background: repeating-linear-gradient(90deg, #f2b705 0 30px, transparent 30px 34px); }
+.anim-line { height: 2px; border-radius: 0; background: var(--accent); box-shadow: 0 0 8px rgba(10,111,214,.6); }
+body.media-overlay .topbar.on-footage { background: rgba(238,242,245,.92); color: var(--fg); }
+body.media-overlay .lower-third { background: rgba(255,255,255,.95); border-left: 8px solid #f2b705; border-radius: 4px; }
+body.media-overlay .lt-heading { color: var(--fg); }
+body.media-overlay .lt-key { color: var(--accent); }
