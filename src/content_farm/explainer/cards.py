@@ -89,16 +89,19 @@ def overlay_html(
                    key_line="" if line == slide.heading else line)
 
 
-def title_card_html(deck: Deck, section: Section, slide: Slide, index: int) -> str:
+def title_card_html(
+    deck: Deck, section: Section, slide: Slide, index: int, brand: str | None = None,
+) -> str:
     """News headline card with an entrance animation (``__anim.seek``)."""
-    return _render(deck, section, slide, index, "title_card",
+    return _render(deck, section, slide, index, "title_card", brand=brand,
                    card=title_card_for(deck, slide), animation="title_card")
 
 
 def placeholder_html(
     deck: Deck, section: Section, slide: Slide, index: int, expected_path: str,
+    brand: str | None = None,
 ) -> str:
     """Loud stand-in shown until the AI illustration exists."""
     prompt = slide.media.prompt if slide.media else ""
-    return _render(deck, section, slide, index, "placeholder",
+    return _render(deck, section, slide, index, "placeholder", brand=brand,
                    expected_path=expected_path, prompt=prompt[:320])

@@ -93,10 +93,15 @@ class GoogleProvider:
                 "defaultAudioLanguage": settings.default_language,
             },
             "status": {
-                "privacyStatus": settings.privacy_status,
+                # publishAt requires a private video; it flips to public at that time.
+                "privacyStatus": "private" if settings.publish_at else settings.privacy_status,
                 "madeForKids": settings.made_for_kids,
             },
         }
+        if settings.publish_at:
+            body["status"]["publishAt"] = settings.publish_at
+        if settings.contains_synthetic_media is not None:
+            body["status"]["containsSyntheticMedia"] = settings.contains_synthetic_media
 
         media = MediaFileUpload(
             str(video_path),

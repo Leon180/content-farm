@@ -1,0 +1,43 @@
+# 晶片貓 選題池。status: idea → researching → ready → in_production → published（或 dropped）
+# priority 5 最急；deadline 只給有新聞時效的題目。`produce.py plan --week` 依此排片。
+channel: chipcat
+topics:
+  - id: cowos
+    title: CoWoS 為什麼卡了三年
+    kind: long
+    status: in_production
+    priority: 5
+    category: 半導體
+    notes: v2 成片已跑通（mock 配音）；等真配音與 AI 插圖
+  - id: cowos-number
+    title: 一個數字：7,722 平方毫米
+    kind: short
+    status: ready
+    priority: 4
+    category: 半導體
+    notes: 從 CoWoS 長片 s09 切出
+  - id: hbm
+    title: HBM 為什麼比 GPU 還難買
+    kind: long
+    status: researching
+    priority: 4
+    category: AI 硬體
+  - id: tsmc-q3-2026
+    title: 台積電 2026 Q3 法說會拆解
+    kind: long
+    status: idea
+    priority: 5
+    deadline: 2026-10-31
+    category: 科技公司財報
+  - id: power-ai-dc
+    title: AI 資料中心吃掉多少電
+    kind: long
+    status: idea
+    priority: 3
+    category: 能源與電力
+  - id: n2-number
+    title: 一個數字：2 奈米一片晶圓多少錢
+    kind: short
+    status: idea
+    priority: 3
+    category: 半導體

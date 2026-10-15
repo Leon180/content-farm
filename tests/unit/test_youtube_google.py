@@ -85,6 +85,25 @@ class TestUploadVideo:
         assert body["snippet"]["tags"] == ["教學"]
         assert body["snippet"]["categoryId"] == "20"
         assert body["status"]["privacyStatus"] == "unlisted"
+        assert "publishAt" not in body["status"]
+        assert "containsSyntheticMedia" not in body["status"]
+
+    @pytest.mark.asyncio
+    async def test_upload_schedules_and_discloses(
+        self, provider: GoogleProvider, mock_service: MagicMock, tmp_path: Path,
+    ) -> None:
+        provider._service = mock_service
+        video = tmp_path / "video.mp4"
+        video.write_bytes(b"fake video data")
+
+        settings = UploadSettings(privacy_status="public", publish_at="2026-10-22T19:00:00+08:00",
+                                  contains_synthetic_media=True)
+        await provider.upload_video(video_path=video, title="t", description="d", settings=settings)
+
+        status = mock_service.videos.return_value.insert.call_args.kwargs["body"]["status"]
+        assert status["privacyStatus"] == "private"
+        assert status["publishAt"] == "2026-10-22T19:00:00+08:00"
+        assert status["containsSyntheticMedia"] is True
 
     @pytest.mark.asyncio
     async def test_upload_with_progress(

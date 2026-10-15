@@ -1,0 +1,41 @@
+# 晶片貓下班了 — 冷笑話 Shorts（主力）＋迷因考古長片（之後）
+code: offwork
+name: 晶片貓下班了
+line: 冷笑話 Shorts＋迷因考古
+pipeline: shorts_skit     # 沒有文章、沒有 deck：劇本 → 配音 → 角色小劇場
+brand: offwork
+mascot:
+  name: 下班貓（晶片貓便服）＋配角 PM 狗
+  ref: chipcat-offwork
+  rig_ready: false        # 便服造型＋PM 狗未做
+voice:
+  provider: fish_audio
+  voice_id_env: CF_OFFWORK_VOICE_ID
+topic_categories: [科技業冷笑話, 上班族日常, 工程師梗]
+format:
+  length: short
+  aspect: "9:16"
+  target_seconds: [20, 50]
+cadence:
+  long_per_week: 0        # 迷因考古長片等 Shorts 驗證笑話品質後再開
+  shorts_per_week: 3
+  publish_days: []
+  shorts_days: [mon, wed, fri]
+  lead_days: 3
+  publish_time: "12:30"
+  timezone: Asia/Taipei
+shorts_strategy: 主力就是 Shorts：鋪陳→停 0.6 秒→笑點→「叮」；前 5 支看平均觀看百分比與分享數再決定量產
+media:
+  stock: false
+  ai_image: false         # 全部用角色與自製素材，不碰別人影片
+  artwork: false
+  source_footage: false
+gates: [script, final]
+youtube:
+  refresh_token_env: CF_YT_OFFWORK_REFRESH_TOKEN
+  channel_id_env: CF_YT_OFFWORK_CHANNEL_ID
+  ai_disclosure: true
+  default_privacy: private
+notes:
+  - 不做合集、不搬運、不配音描述別人的影片（YPP reused content）
+  - 笑話好不好笑只能靠前幾支的數據回答，先測再擴產

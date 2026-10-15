@@ -1,0 +1,42 @@
+# 賽璐璐研究室 — 動畫產業拆解（不用原片）
+code: cel
+name: 賽璐璐研究室
+line: 動畫產業拆解
+pipeline: explainer
+brand: cel
+deck_category: knowledge
+mascot:
+  name: 格仔（底片格身體、鉛筆呆毛）
+  ref: cel-frame          # 新角色，rig 尚未製作；未完成前跳過 mascot 疊加
+  rig_ready: false
+voice:
+  provider: fish_audio
+  voice_id_env: CF_CEL_VOICE_ID
+topic_categories: [製作委員會與錢, 動畫師勞動與薪資, 外包與海外產線, 串流與授權生意, 業界歷史事件]
+format:
+  length: long
+  aspect: "16:9"
+  target_seconds: [480, 720]
+cadence:
+  long_per_week: 0.5
+  shorts_per_week: 1
+  publish_days: [sun]
+  shorts_days: [thu]
+  lead_days: 10
+  publish_time: "20:00"
+  timezone: Asia/Taipei
+shorts_strategy: 一格一數字：一個產業數字（例如一集預算）配攝影表式比較，導流長片
+media:
+  stock: true             # 只限辦公室、手繪桌等通用畫面
+  ai_image: true          # 不得畫出近似官方角色的圖
+  artwork: false
+  source_footage: false   # 不用原片、PV、截圖（2026-07 美國法院判決；Content ID）
+gates: [article, deck, media, final]
+youtube:
+  refresh_token_env: CF_YT_CEL_REFRESH_TOKEN
+  channel_id_env: CF_YT_CEL_CHANNEL_ID
+  ai_disclosure: true
+  default_privacy: private
+notes:
+  - 講產業結構，不複述劇情
+  - 作品名稱可提，但畫面不放官方角色、截圖或近似 AI 圖

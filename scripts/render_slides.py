@@ -4,6 +4,7 @@ Usage:
     python scripts/render_slides.py --run-dir output/20261014_tsmc
     python scripts/render_slides.py --deck docs/examples/tsmc/deck.json --out-dir /tmp/slides
     python scripts/render_slides.py --run-dir <dir> --show-safe-zone   # debug overlay
+    python scripts/render_slides.py --run-dir <dir> --brand chipcat    # channel brand
 
 Mascot PNGs are looked up as <mascot-dir>/<pose>.png (default <run-dir>/assets/mascot);
 a missing pose just leaves the corner empty. Needs the ``browser`` extra
@@ -21,6 +22,7 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
+from content_farm.explainer.brands import brand_codes
 from content_farm.explainer.deck import load_deck
 from content_farm.explainer.pages import build_pages
 from content_farm.explainer.render import SlideOverflowError, make_contact_sheet, render_pages
@@ -33,6 +35,8 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--out-dir", type=Path, help="default <run-dir>/slides")
     parser.add_argument("--mascot-dir", type=Path, help="default <run-dir>/assets/mascot")
     parser.add_argument("--show-safe-zone", action="store_true", help="hatch the subtitle zone")
+    parser.add_argument("--brand", choices=brand_codes(),
+                        help="channel brand stylesheet (default: the deck category theme)")
     args = parser.parse_args(argv)
     if args.run_dir is None and (args.deck is None or args.out_dir is None):
         parser.error("give --run-dir, or both --deck and --out-dir")
@@ -52,7 +56,8 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     started = time.monotonic()
-    pages = build_pages(deck, mascot_dir=mascot_dir, show_safe_zone=args.show_safe_zone)
+    pages = build_pages(deck, mascot_dir=mascot_dir, show_safe_zone=args.show_safe_zone,
+                        brand=args.brand)
     try:
         rendered = render_pages(pages, out_dir)
     except SlideOverflowError as exc:

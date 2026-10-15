@@ -1,0 +1,44 @@
+# 妖怪溯源所 — 神話・怪物溯源（東亞比較考據）
+code: yokai
+name: 妖怪溯源所
+line: 神話・怪物溯源
+pipeline: explainer
+brand: yokai
+deck_category: knowledge   # 之後加 myth category 再換
+mascot:
+  name: 說書貓（晶片貓換裝：斗篷＋提燈）
+  ref: chipcat-storyteller
+  rig_ready: false        # 換裝造型未做；做好前跳過 mascot 疊加
+voice:
+  provider: fish_audio
+  voice_id_env: CF_YOKAI_VOICE_ID
+topic_categories: [山海經異獸, 日本妖怪, 台灣魔神仔與民間傳說, 台灣信仰的來歷, 世界比較神話]
+format:
+  length: long
+  aspect: "16:9"
+  target_seconds: [480, 720]
+cadence:
+  long_per_week: 0.5      # 隔週一支：考據＋artwork 授權審核最花人工
+  shorts_per_week: 1      # 一分鐘妖怪圖鑑卡，只當導流
+  publish_days: [sat]
+  shorts_days: [wed]
+  lead_days: 14           # 考據＋artwork 授權確認
+  publish_time: "20:00"
+  timezone: Asia/Taipei
+shorts_strategy: 一分鐘妖怪圖鑑：一隻妖怪一張卡（出處、年代、長相演變），導流長片
+media:
+  stock: false            # 沒有適合的 stock；畫面靠 artwork＋非擬真 AI 水墨
+  ai_image: true
+  artwork: true           # Met／AIC／Rijksmuseum 等 CC0；大英博物館 NC 不可用
+  artwork_license_required: true
+  source_footage: false
+gates: [article, deck, media, final]
+youtube:
+  refresh_token_env: CF_YT_YOKAI_REFRESH_TOKEN
+  channel_id_env: CF_YT_YOKAI_CHANNEL_ID
+  ai_disclosure: true
+  default_privacy: private
+notes:
+  - 讀原典自己寫；現代白話譯注另有著作權，不可照抄
+  - 媽祖、城隍等講「來歷」，不稱神話、不嘲諷、不生成神像
+  - 原住民族題材只走共製路線，不進這條自動 pipeline

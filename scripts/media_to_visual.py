@@ -9,6 +9,7 @@ Usage:
     python scripts/media_to_visual.py --run-dir <dir> --transition push --transition-seconds 0.5
     python scripts/media_to_visual.py --run-dir <dir> --replace              # redo
     python scripts/media_to_visual.py --run-dir <dir> --no-stock             # offline
+    python scripts/media_to_visual.py --run-dir <dir> --brand chipcat        # channel brand
 
 Needs ``<run-dir>/deck.json``, ``script.json``, ``slides/slide_NNN.png`` (render_slides)
 and voice output. Stock keys come from CF_PEXELS_API_KEY / CF_PIXABAY_API_KEY
@@ -32,6 +33,7 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
+from content_farm.explainer.brands import brand_codes
 from content_farm.explainer.deck import load_deck
 from content_farm.explainer.ffmpeg_ops import FFmpegError
 from content_farm.explainer.media_run import TRANSITION_CHOICES, MediaOptions, media_to_visual
@@ -66,6 +68,10 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--no-stock", action="store_true", help="never call Pexels/Pixabay")
     parser.add_argument("--stock-cache", type=Path, default=Path(".cache/explainer_stock"))
     parser.add_argument("--env-file", type=Path, default=Path(".env"))
+    parser.add_argument("--brand", choices=brand_codes(),
+                        help="channel brand for overlays/cards (default: deck category theme)")
+    parser.add_argument("--require-measured", action="store_true",
+                        help="exit 3 instead of warning when only estimated durations exist")
     return parser.parse_args(argv)
 
 
@@ -75,10 +81,14 @@ def main(argv: list[str] | None = None) -> int:
     started = time.monotonic()
     try:
         options = MediaOptions(transition=args.transition,
-                               transition_seconds=args.transition_seconds, replace=args.replace)
+                               transition_seconds=args.transition_seconds, replace=args.replace,
+                               brand=args.brand)
         deck = load_deck(run_dir / "deck.json")
         script = Script.model_validate_json((run_dir / "script.json").read_text(encoding="utf-8"))
         used, durations = resolve_durations(run_dir, script, args.source)
+        if used == "script" and args.require_measured:
+            print("Error: only estimated durations found; run voice first", file=sys.stderr)
+            return 3
         clips = plan_slide_timeline(durations)
         stock = None
         if not args.no_stock:

@@ -1,0 +1,45 @@
+# 晶片貓 — 台灣科技產業拆解（長片主力）
+# Secrets never go here: the youtube block only names env vars.
+code: chipcat
+name: 晶片貓
+line: 台灣科技產業拆解
+pipeline: explainer
+brand: chipcat
+deck_category: tech
+mascot:
+  name: 晶片貓（本尊）
+  ref: chipcat          # explainer/mascot 的角色 id；造型由 mascot 模組負責
+  rig_ready: true
+voice:
+  provider: fish_audio
+  voice_id_env: CF_CHIPCAT_VOICE_ID
+topic_categories: [半導體, 電子供應鏈, AI 硬體, 能源與電力, 科技公司財報]
+format:
+  length: long
+  aspect: "16:9"
+  target_seconds: [420, 660]
+cadence:
+  long_per_week: 1        # 提案預設；待 Leon 決定
+  shorts_per_week: 2      # 「一個數字」Shorts，由長片切出
+  publish_days: [thu]
+  shorts_days: [sat, tue]
+  lead_days: 7
+  publish_time: "19:00"
+  timezone: Asia/Taipei
+shorts_strategy: 一個數字：從長片挑一張 big_number 投影片，45 秒直式重講，導流長片
+media:
+  stock: true
+  ai_image: true
+  artwork: false
+  source_footage: false
+gates: [article, deck, media, final]
+youtube:
+  client_id_env: CF_YOUTUBE_CLIENT_ID          # 共用 OAuth client
+  client_secret_env: CF_YOUTUBE_CLIENT_SECRET
+  refresh_token_env: CF_YT_CHIPCAT_REFRESH_TOKEN  # 以該頻道身分跑 get_youtube_token.py 取得
+  channel_id_env: CF_YT_CHIPCAT_CHANNEL_ID
+  ai_disclosure: true
+  default_privacy: private
+notes:
+  - 不給投資建議；財報數字一律附來源
+  - 八卦必須有來源

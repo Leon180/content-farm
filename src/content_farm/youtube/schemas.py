@@ -18,6 +18,10 @@ class UploadSettings(BaseModel):
     made_for_kids: bool = False
     default_language: str = "zh-TW"
     chunk_size_bytes: int = Field(default=256 * 1024 * 1024, ge=1)  # 256MB
+    # Scheduled release (RFC 3339 with offset). YouTube only honours it on private videos.
+    publish_at: str | None = None
+    # status.containsSyntheticMedia — altered/synthetic content disclosure. None = not sent.
+    contains_synthetic_media: bool | None = None
 
 
 class UploadInput(BaseModel):

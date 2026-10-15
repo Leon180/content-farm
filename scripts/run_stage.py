@@ -21,6 +21,7 @@ import argparse
 import asyncio
 import json
 import logging
+import os
 import sys
 from pathlib import Path
 
@@ -468,7 +469,24 @@ async def run_stage(stage: str, run_dir: Path) -> None:
                 category_id=meta.get("category_id", "22"),
                 made_for_kids=meta.get("made_for_kids", False),
                 default_language=meta.get("default_language", "zh-TW"),
+                publish_at=meta.get("publish_at"),
+                contains_synthetic_media=meta.get("contains_synthetic_media"),
             )
+
+            # Multi-channel runs (scripts/produce.py) name the env var holding
+            # that channel's refresh token; the OAuth client stays shared.
+            token_env = (meta.get("credentials_env") or {}).get("refresh_token")
+            if token_env:
+                from dotenv import dotenv_values
+                from pydantic import SecretStr
+
+                token = os.environ.get(token_env) or dotenv_values(".env").get(token_env) or ""
+                if not token:
+                    print(f"Error: env var {token_env} (channel refresh token) is not set",
+                          file=sys.stderr)
+                    sys.exit(1)
+                container = ServiceContainer(settings.model_copy(
+                    update={"youtube_refresh_token": SecretStr(token)}))
 
             upload_script = ctx.script.model_copy(update={
                 "video_title": meta["title"],

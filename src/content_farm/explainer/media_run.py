@@ -41,6 +41,7 @@ class MediaOptions:
     transition: str = "crossfade"
     transition_seconds: float = 0.4
     replace: bool = False
+    brand: str | None = None  # channel brand (see explainer.brands); None = category theme
 
     def __post_init__(self) -> None:
         if self.transition not in TRANSITION_CHOICES:
@@ -58,10 +59,10 @@ class MediaRun:
     contact_sheet: Path
 
 
-def jobs_for(deck: Deck, clips: Sequence[SlideClip]) -> list[SlideJob]:
+def jobs_for(deck: Deck, clips: Sequence[SlideClip], brand: str | None = None) -> list[SlideJob]:
     if len(clips) != len(deck.slides):
         raise ValueError(f"{len(clips)} timeline slots for {len(deck.slides)} slides")
-    animated_pages = build_pages(deck, animate=True)
+    animated_pages = build_pages(deck, animate=True, brand=brand)
     sections = [section for section in deck.sections for _ in section.slides]
     return [
         SlideJob(index=c.index, section=sections[c.index - 1], slide=deck.slides[c.index - 1],
@@ -76,10 +77,11 @@ def media_to_visual(
 ) -> MediaRun:
     work_dir = run_dir / "media"
     write_prompt_files(deck, run_dir)
-    jobs = jobs_for(deck, clips)
+    jobs = jobs_for(deck, clips, brand=options.brand)
     with PageCapturer() as capturer:
         ctx = MediaContext(deck=deck, run_dir=run_dir, work_dir=work_dir, capturer=capturer,
-                           stock=stock, static_png_ok=options.transition == "none")
+                           stock=stock, static_png_ok=options.transition == "none",
+                           brand=options.brand)
         results = [build_clip(ctx, job) for job in jobs]
     finals = apply_transitions(results, work_dir, options)
     placed = place_files(clips, finals, run_dir / "visual", replace=options.replace)

@@ -59,6 +59,7 @@ class MediaContext:
     capturer: PageCapturer
     stock: StockClient | None
     static_png_ok: bool  # True when transitions are off: plain slides stay PNG
+    brand: str | None = None  # channel brand stylesheet (None = deck category theme)
     ai_image_dir: Path = field(init=False)
 
     def __post_init__(self) -> None:
@@ -114,7 +115,7 @@ def _animated(ctx: MediaContext, job: SlideJob, note: str = "") -> ClipResult:
 
 def _overlay_png(ctx: MediaContext, job: SlideJob) -> Path:
     html = ctx.html(f"overlay_{job.index:03d}.html",
-                    overlay_html(ctx.deck, job.section, job.slide, job.index))
+                    overlay_html(ctx.deck, job.section, job.slide, job.index, brand=ctx.brand))
     return ctx.capturer.still(html, ctx.work_dir / "overlays" / f"overlay_{job.index:03d}.png",
                               transparent=True)
 
@@ -152,7 +153,8 @@ def _ai_image(ctx: MediaContext, job: SlideJob) -> ClipResult:
                                "prompt": job.slide.media.prompt if job.slide.media else ""})
     expected = (AI_IMAGE_DIR / f"{job.slide.id}.png").as_posix()
     html = ctx.html(f"placeholder_{job.index:03d}.html",
-                    placeholder_html(ctx.deck, job.section, job.slide, job.index, expected))
+                    placeholder_html(ctx.deck, job.section, job.slide, job.index, expected,
+                                     brand=ctx.brand))
     png = ctx.capturer.still(html, ctx.work_dir / "placeholders" / f"{job.slide.id}.png")
     clip = ffmpeg_ops.still_to_clip(png, out, job.seconds)
     return _result(job, USED_PLACEHOLDER, clip, note=f"PLACEHOLDER: {expected} not found")
@@ -160,7 +162,7 @@ def _ai_image(ctx: MediaContext, job: SlideJob) -> ClipResult:
 
 def _title_card(ctx: MediaContext, job: SlideJob) -> ClipResult:
     html = ctx.html(f"title_card_{job.index:03d}.html",
-                    title_card_html(ctx.deck, job.section, job.slide, job.index))
+                    title_card_html(ctx.deck, job.section, job.slide, job.index, brand=ctx.brand))
     capture = ctx.capturer.animate(html, ctx.clip_path(job, ".mp4"), job.seconds)
     source_id = job.slide.media.source_id if job.slide.media else ""
     return _result(job, "title_card", capture.clip, note=f"source_id={source_id}")
