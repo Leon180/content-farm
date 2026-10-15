@@ -10,6 +10,7 @@ Usage:
     python scripts/produce.py inbox   --root output                 # every run waiting on a person
     python scripts/produce.py plan    --week 2026-W43               # publish calendar + topic picks
     python scripts/produce.py channels                               # validate channels/*.yaml
+    python scripts/produce.py manual-kit --run-dir output/cowos      # Studio upload kit + preview.html
 
 Exit codes for ``run``: 0 all steps done, 1 a step failed, 3 waiting (gate, agent
 step, or paid step without --allow-paid). Each stop prints the next command.
@@ -26,6 +27,7 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
+from content_farm.production import manual_kit, publish
 from content_farm.production.channels import Gate, load_all, load_channel
 from content_farm.production.runner import SCHEDULE_FILE, Outcome, Runner, decide
 from content_farm.production.schedule import load_backlog, plan_week
@@ -68,6 +70,10 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     plan.add_argument("--week", required=True, help="ISO week, e.g. 2026-W43")
     plan.add_argument("--today", type=date.fromisoformat, default=date.today())
     sub.add_parser("channels")
+    kit = sub.add_parser("manual-kit", help="upload/manual/: Studio upload checklist + preview.html")
+    kit.add_argument("--run-dir", type=Path, required=True)
+    kit.add_argument("--playlist", default="")
+    kit.add_argument("--thumbnail-at", type=float, default=2.0, help="seconds into the video")
     return parser.parse_args(argv)
 
 
@@ -164,10 +170,29 @@ def cmd_channels(_: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_manual_kit(args: argparse.Namespace) -> int:
+    """Build from youtube_meta.json when the package step ran, else from the run as it is now."""
+    channel = load_channel(read_channel_code(args.run_dir))
+    state = load_state(args.run_dir, channel.code)
+    final = state.steps.get("gate_final")
+    meta_path = args.run_dir / publish.META_PATH
+    if meta_path.is_file():
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    else:
+        meta = publish.build_meta(channel, args.run_dir)
+        print("（尚無 upload/youtube_meta.json：package 步驟未跑，meta 由目前的成片臨時產生）")
+    options = manual_kit.KitOptions(machine_voice=manual_kit.voice_is_machine(args.run_dir),
+                                    playlist=args.playlist, thumbnail_at=args.thumbnail_at,
+                                    gate_final_approved=bool(final and final.status == "approved"))
+    out = manual_kit.build_kit(channel, args.run_dir, meta, options)
+    print(f"手動上傳包：{out.resolve()}\n預覽頁：{(out / 'preview.html').resolve()}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
     handlers = {"run": cmd_run, "status": cmd_status, "inbox": cmd_inbox, "plan": cmd_plan,
-                "channels": cmd_channels,
+                "channels": cmd_channels, "manual-kit": cmd_manual_kit,
                 "approve": lambda a: cmd_decide(a, "approved"),
                 "reject": lambda a: cmd_decide(a, "rejected")}
     try:

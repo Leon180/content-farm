@@ -86,9 +86,10 @@ def cmd_fetch(args: argparse.Namespace) -> int:
     filename = f"{args.id}{suffix}"
     entry = ArtworkEntry(
         file=filename, title=args.title, artist=args.artist, date=args.date,
-        institution=args.institution or f"Wikimedia Commons（{_meta(info, 'Credit')[:80] or '來源見頁面'}）",
+        institution=args.institution or "Wikimedia Commons",
         object_id=info["title"], license=licence, license_url=licence_url,
-        source_url=info["descriptionurl"], caption=args.caption, note=args.note,
+        source_url=info["descriptionurl"], caption=args.caption,
+        note=" ".join(filter(None, [args.note, f"Commons credit: {_meta(info, 'Credit')[:200]}"])),
     )
     _download(source, folder / filename)
     (folder / f"{args.id}.commons.json").write_text(json.dumps(info, ensure_ascii=False, indent=2),
