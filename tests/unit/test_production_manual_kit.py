@@ -116,7 +116,9 @@ def test_short_cut_reads_the_voice_of_its_long_run(tmp_path: Path) -> None:
 def test_synthetic_advice_follows_the_flag() -> None:
     """chipcat."""
     assert "「否」" in synthetic_advice({"contains_synthetic_media": False})
-    assert "建議選 **「是」**" in synthetic_advice({"contains_synthetic_media": True})
+    advice = synthetic_advice({"contains_synthetic_media": True})
+    assert "選 **「否」**（Leon 2026-10-16 決策）" in advice  # disclosed in the description instead
+    assert "「是」" not in advice and "contains_synthetic_media" in advice
 
 
 # --- whole kit ------------------------------------------------------------------------------

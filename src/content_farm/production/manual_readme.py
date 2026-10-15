@@ -51,10 +51,11 @@ def synthetic_advice(meta: dict) -> str:
     """Studio's 「變造或合成內容」 answer; the description's disclosure line is separate."""
     if not meta.get("contains_synthetic_media"):
         return "選 **「否」**（頻道設定沒要求揭露，或本片沒有合成語音／AI 圖）。"
-    return ("頻道設定 `ai_disclosure: true`，建議選 **「是」**。理由：本片含合成內容（說明欄最後一行寫明是哪些）。"
-            "嚴格說 YouTube 只要求「看起來像真實」的變造內容（真人說沒說過的話、真實事件、寫實場景）揭露；"
-            "本片是解說畫面，沒有冒充真人或真實事件，不勾應該也不違規（🟡 未重新對照官方條文）。"
-            "要不要勾由 Leon 決定；說明欄的揭露文字不受影響。")
+    # Leon 2026-10-16: leave Studio's box unticked; the description line still discloses.
+    return ("選 **「否」**（Leon 2026-10-16 決策）。本片含合成內容，但都寫在說明欄最後一行；"
+            "YouTube 只要求「看起來像真實」的變造內容（真人說沒說過的話、真實事件、寫實場景）勾選，"
+            "本片是解說畫面，沒有冒充真人或真實事件（🟡 未重新對照官方條文）。"
+            "注意：upload 資料的 `contains_synthetic_media` 仍是 true，改走 API 上傳會被勾選。")
 
 
 def _elements(kit: Kit) -> list[str]:
