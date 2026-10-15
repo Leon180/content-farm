@@ -213,7 +213,7 @@ class Slide(_Frozen):
     source_ids: tuple[str, ...] = ()
     beat: Beat | None = None  # light segment: sourced gossip or an original deadpan joke
     mascot: Mascot | None = None
-    media: Media | None = None
+    media: Media | None = None  # None = the rendered slide (kind "slide")
     notes: str = ""
 
     @model_validator(mode="before")

@@ -39,6 +39,7 @@
 
 ## 事實與來源
 
+- 事實只能來自 `/article` 產出的 `article.md`；文章沒有的數字，先補進文章（含來源）再寫進 deck。
 - 每個數字都要有 `source_ids`（lint `unsourced-number`）。來源寫進 deck 的 `sources[]`，`id` 短、`title` 可讀、`url` 盡量填一手來源（年報、法說會、政府統計）。
 - 還沒查證的數字：整份 deck 設 `"draft_data": true`。每張投影片會被蓋「示意數字・待查證」章，lint 會判定不可發布。**不要把待查證數字偽裝成確定值。**
 - 區分「已證實／公司宣稱／推測」，講稿裡用字要讓觀眾聽得出差別（「據公司說法」「業界估計」）。
@@ -58,4 +59,24 @@
 
 - 開場固定句型：「我是晶片貓，今天用 N 張圖把 X 拆給你看。」
 - 語氣：資深、平穩、冷面；愛講「這個數字其實是……」。不用網路流行語堆砌。
-- 晶片貓（動態疊加層）：投影片可加 `"mascot": {"pose": "idle|point|think|shocked|smug|deadpan|wave", "say": "≤20 字對話泡泡（可省略）"}`。pose 依該頁情緒選（指圖表用 point、拋問題用 think、揭露驚人數字用 shocked、得意收尾用 smug、冷笑話用 deadpan、開場打招呼用 wave）。`beat: "joke"` 且沒寫 mascot 時自動用 deadpan。`say` 要短、冷面，例如「這個數字其實是…」。draft.mp4 完成後跑 `scripts/mascot_overlay.py --run-dir <run>` 產出 final.mp4。
+- 晶片貓（動態疊加層）：每張投影片都要寫 `"mascot": {"pose": "…", "say": "≤20 字對話泡泡（可省略）"}`，pose 依該頁情緒選（下表）。`beat: "joke"` 且沒寫 mascot 時自動用 deadpan。`say` 要短、冷面，例如「這個數字其實是…」。draft.mp4 完成後跑 `scripts/mascot_overlay.py --run-dir <run>` 產出 final.mp4。
+
+| pose | 用在 |
+|---|---|
+| `wave` | 開場自我介紹、片尾道別 |
+| `idle` | 平鋪直敘、轉場 |
+| `point` | 指出這頁的重點、關鍵數字 |
+| `think` | 拋問題、比喻、「為什麼」 |
+| `shocked` | 揭露驚人數字或反轉 |
+| `smug` | 講完冷笑話、講完自己猜對的事 |
+| `deadpan` | 八卦、冷面吐槽、「沒人知道」 |
+
+## 畫面：media（v2）
+
+Leon 的回饋：純投影片太單調。每張投影片可以建議一個 `media`，由畫面軌道決定怎麼呈現：
+
+- `slide`（預設）：要觀眾讀的內容——比較表、名單、多個數字。
+- `animated`：這頁的重點是「變化」——數字跳動 `count_up`、長條長高 `grow_bars`、清單逐條出現 `reveal_list`、時間軸畫線 `draw_line`。
+- `stock`：旁白在解釋時配的通用 B-roll（無塵室、晶圓、資料中心、工地）。**不能**拿來代表特定公司的廠或產品。搜尋詞用英文、寫畫面上實際看得到的東西（`semiconductor cleanroom wafer`），不寫抽象詞（`outsourcing`）或籠統的產業詞（`factory production line` 會抓到機車產線）。細則見 SKILL.md「Stock query rules」。
+- `ai_image`：比喻沒有實拍可用時的插圖。**只能是插畫風**，不做真實地點、真人、真產品的假照片。
+- `title_card`：新聞時間軸上的一則事件，必附 `source_id`，標題照來源原意改寫，不加油添醋。

@@ -1,0 +1,810 @@
+{
+  "version": 1,
+  "category": "tech",
+  "title": "CoWoS 先進封裝：為什麼 AI 晶片卡在這一關",
+  "description": "AI 晶片卡在 CoWoS，不是因為沒人會做，而是這門手藝被冷落多年，需求兩年內爆發，蓋廠卻要好幾年。晶片貓用 24 張圖拆解：CoWoS 是什麼、它怎麼從冷門變咽喉、誰做哪一段、台灣站在哪裡，以及還沒有人知道的事。資料截至 2026-10，所有數字附來源（見下方來源清單）。本頻道不提供投資建議。",
+  "tags": [
+    "CoWoS",
+    "先進封裝",
+    "台積電",
+    "AI晶片",
+    "HBM",
+    "半導體",
+    "產業拆解"
+  ],
+  "as_of": "2026-10",
+  "draft_data": false,
+  "sources": [
+    {
+      "id": "tsmc-pr-2013",
+      "title": "Xilinx and TSMC Reach Volume Production on all 28nm CoWoS-based All Programmable 3D IC Families",
+      "url": "https://pr.tsmc.com/english/news/1792",
+      "note": "publisher=TSMC; published=2013-10-21; accessed=2026-10-15; type=primary"
+    },
+    {
+      "id": "eetj-2017",
+      "title": "Virtex-7 2000T：シリコンインターポーザー技術の製品（EE Times Japan）",
+      "url": "https://eetimes.itmedia.co.jp/ee/articles/1705/08/news021.html",
+      "note": "publisher=EE Times Japan; published=2017-05-08; accessed=2026-10-15; type=press; page has encoding damage, structure (4 FPGA dies on one interposer, 2012 product) partially confirmed"
+    },
+    {
+      "id": "garrou-2016",
+      "title": "IFTLE 311: SEMICON Taiwan Part 5 – Packaging at TSMC",
+      "url": "https://sst.semiconductor-digest.com/insights-from-leading-edge/2016/11/iftle-311-semicon-taiwan-part-5-packaging-at-tsmc/",
+      "note": "publisher=Semiconductor Digest (Phil Garrou, summarising TSMC's SEMICON Taiwan 2016 talk); published=2016-11; accessed=2026-10-15; type=press"
+    },
+    {
+      "id": "pcper-2016",
+      "title": "NVIDIA Pascal Architecture Details: Tesla P100 GP100 GPU (p.2)",
+      "url": "https://pcper.com/2016/04/nvidia-pascal-architecture-details-tesla-p100-gp100-gpu/2/",
+      "note": "publisher=PC Perspective; published=2016-04-06; accessed=2026-10-15; type=press"
+    },
+    {
+      "id": "register-2023",
+      "title": "TSMC can only meet 80% of CoWoS demand (citing Nikkei Asia interview)",
+      "url": "https://www.theregister.com/2023/09/08/tsmc_ai_chip_crunch/",
+      "note": "publisher=The Register; published=2023-09-08; accessed=2026-10-15; type=press; paraphrase of TSMC chairman, not a verbatim quote"
+    },
+    {
+      "id": "trendforce-2024-03",
+      "title": "TSMC Reportedly Sensing Increased Orders Again, CoWoS Production Capacity Surges",
+      "url": "https://www.trendforce.com/news/2024/03/13/news-tsmc-reportedly-sensing-increased-orders-again-cowos-production-capacity-surges/",
+      "note": "publisher=TrendForce; published=2024-03-13; accessed=2026-10-15; type=analyst; market estimate, not TSMC guidance"
+    },
+    {
+      "id": "register-2024",
+      "title": "Construction of TSMC's Chiayi CoWoS plant paused over archaeological remains",
+      "url": "https://www.theregister.com/2024/06/18/tsmc_cowos_delayed/",
+      "note": "publisher=The Register; published=2024-06-18; accessed=2026-10-15; type=press"
+    },
+    {
+      "id": "trendforce-2024-06",
+      "title": "TSMC Halts Chia-Yi Plant Construction Due to Relic Found, Quickly Initiates Preparation for 2nd Plant",
+      "url": "https://www.trendforce.com/news/2024/06/18/news-tsmc-halts-chia-yi-plant-construction-due-to-relic-found-quickly-initiates-preparation-for-2nd-plant/",
+      "note": "publisher=TrendForce; published=2024-06-18; accessed=2026-10-15; type=press"
+    },
+    {
+      "id": "trendforce-ap8",
+      "title": "TSMC Acquires Innolux's Plant in Southern Taiwan to Expand Advanced Packaging Capacity",
+      "url": "https://www.trendforce.com/news/2024/08/16/news-tsmc-acquires-innoluxs-plant-in-southern-taiwan-to-expand-advanced-packaging-capacity",
+      "note": "publisher=TrendForce (citing TSMC filing / Liberty Times); published=2024-08-16; accessed=2026-10-15; type=press"
+    },
+    {
+      "id": "technews-2024-10",
+      "title": "CoWoS 產能連兩年倍增還不夠！設備廠好光景直達 2026 年",
+      "url": "https://technews.tw/?p=1295218",
+      "note": "publisher=TechNews (MoneyDJ); published=2024-10-18; accessed=2026-10-15; type=press; 2025-2026 capacity figures are unnamed industry estimates"
+    },
+    {
+      "id": "taiwannews-2024-10",
+      "title": "Nvidia CEO says Blackwell design flaw fixed with TSMC help (Reuters/CNA)",
+      "url": "https://www.taiwannews.com.tw/en/news/5957482",
+      "note": "publisher=Taiwan News (citing Reuters, CNA); published=2024-10-24; accessed=2026-10-15; type=press"
+    },
+    {
+      "id": "iftle-615",
+      "title": "IFTLE 615: TSMC Evolves CoWoS Technology, Promising 9x Reticle Size by 2027",
+      "url": "https://www.3dincites.com/2024/12/iftle-615-tsmc-evolves-cowos-technology-promising-9x-reticle-size-by-2027/",
+      "note": "publisher=3D InCites (Phil Garrou); published=2024-12-24; accessed=2026-10-15; type=press"
+    },
+    {
+      "id": "taipeitimes-2025-01",
+      "title": "Huang: CoWoS demand shifting to CoWoS-L (Reuters)",
+      "url": "https://www.taipeitimes.com/News/biz/archives/2025/01/17/2003830329",
+      "note": "publisher=Taipei Times (Reuters); published=2025-01-17; accessed=2026-10-15; type=press"
+    },
+    {
+      "id": "trendforce-2026-01",
+      "title": "TSMC Advanced Packaging Capex Projected to Grow 24% CAGR in 2025-27; Chiayi AP7 Targets WMCM and CoPoS",
+      "url": "https://www.trendforce.com/news/2026/01/21/news-tsmc-advanced-packaging-capex-projected-to-grow-24-cagr-in-2025-27-chiayi-ap7-targets-wmcm-and-copos/",
+      "note": "publisher=TrendForce (citing Commercial Times); published=2026-01-21; accessed=2026-10-15; type=press; schedules from supply-chain sources"
+    },
+    {
+      "id": "trendforce-2026-04",
+      "title": "TSMC CoWoS Wafer ASP Reportedly Nears 7nm Levels; Advanced Packaging Poised to Become a Key Profit Driver",
+      "url": "https://www.trendforce.com/news/2026/04/28/news-tsmc-cowos-wafer-asp-reportedly-nears-7nm-levels-advanced-packaging-poised-to-become-a-key-profit-driver/",
+      "note": "publisher=TrendForce (citing Commercial Times); published=2026-04-28; accessed=2026-10-15; type=press; ASP from anonymous sources"
+    },
+    {
+      "id": "tvbs-2026-04",
+      "title": "AI's Hidden Bottleneck: The PCB and Materials Supply Crunch",
+      "url": "https://news.tvbs.com.tw/english/3179482",
+      "note": "publisher=TVBS; published=2026-04-16; accessed=2026-10-15; type=press; redirects to t.media/3179482"
+    },
+    {
+      "id": "trendforce-2026-06",
+      "title": "TSMC, Amkor Forge 10-Year Arizona Advanced Packaging Partnership",
+      "url": "https://www.trendforce.com/news/2026/06/17/news-tsmc-amkor-forge-10-year-arizona-advanced-packaging-partnership-to-complete-the-u-s-chip-supply-chain/",
+      "note": "publisher=TrendForce (citing Amkor, Reuters); published=2026-06-17; accessed=2026-10-15; type=press"
+    },
+    {
+      "id": "udn-2026-07",
+      "title": "台積電第2季毛利率超標 每股盈餘27.25元",
+      "url": "https://money.udn.com/money/story/5607/9631826",
+      "note": "publisher=經濟日報; published=2026-07-16; accessed=2026-10-15; type=press"
+    },
+    {
+      "id": "techtimes-2026-07",
+      "title": "TSMC posts record quarter, AI chip demand pushes full-year growth outlook past 40%",
+      "url": "https://www.techtimes.com/articles/320696/20260716/tsmc-posts-record-quarter-ai-chip-demand-pushes-full-year-growth-outlook-past-40.html",
+      "note": "publisher=TechTimes; published=2026-07-16; accessed=2026-10-15; type=press; secondary report of the 2Q26 call, transcript not verified"
+    },
+    {
+      "id": "trendforce-2026-08",
+      "title": "TSMC Reportedly Expands Outsourcing of Key CoWoS Front-End Step to OSATs amid Rising NVIDIA, ASIC Demand",
+      "url": "https://www.trendforce.com/news/2026/08/05/news-tsmc-reportedly-expands-outsourcing-of-key-cowos-front-end-step-to-osats-amid-rising-nvidia-asic-demand/",
+      "note": "publisher=TrendForce (citing ETNews, Mydrivers); published=2026-08-05; accessed=2026-10-15; type=press; figures are reported, not company-confirmed"
+    },
+    {
+      "id": "trendforce-2026-09",
+      "title": "TSMC Reportedly Targets 2nm, 3nm Capacity Boost by mid-2027; CoWoS to Double by 2028",
+      "url": "https://www.trendforce.com/news/2026/09/14/news-tsmc-reportedly-targets-22-2nm-16-3nm-capacity-boost-by-mid-2027-cowos-to-double-by-2028/",
+      "note": "publisher=TrendForce (citing Economic Daily News); published=2026-09-14; accessed=2026-10-15; type=press; press estimate, not TSMC guidance"
+    },
+    {
+      "id": "ctee-2024-02",
+      "title": "金龍年明星產業 統一投顧：CoWoS／HBM先進封裝看旺",
+      "url": "https://www.ctee.com.tw/news/20240207700238-439901",
+      "note": "publisher=工商時報; published=2024-02-07; accessed=2026-10-15; type=press; used only for equipment-category roles, not stock views"
+    }
+  ],
+  "pronunciation_map": {
+    "CoWoS": "扣窩斯",
+    "CoWoS-L": "扣窩斯 L",
+    "CoWoS-S": "扣窩斯 S",
+    "CoPoS": "扣破斯",
+    "HBM": "H B M",
+    "HBM2": "H B M 二",
+    "GPU": "G P U",
+    "FPGA": "F P G A",
+    "ABF": "A B F",
+    "EMIB-T": "E M I B T",
+    "Amkor": "安靠",
+    "NVIDIA": "輝達",
+    "P100": "P 一百"
+  },
+  "sections": [
+    {
+      "title": "開場：卡了三年的一關",
+      "slides": [
+        {
+          "id": "s01",
+          "layout": "title",
+          "heading": "AI 晶片卡在哪一關？",
+          "body": {
+            "subtitle": "CoWoS 先進封裝，從冷門到咽喉"
+          },
+          "narration": "全世界都在搶 AI 晶片，但真正卡住出貨的，常常不是晶片本身，而是把晶片包起來的那一步。我是晶片貓，今天用二十四張圖，把 CoWoS 這一關拆給你看。",
+          "mascot": {
+            "pose": "wave"
+          },
+          "media": {
+            "kind": "ai_image",
+            "prompt": "flat illustration, a calm grey cat in a lab coat standing beside a giant glowing chip package on a conveyor belt that is jammed, dark grey background with orange accents, no text, no logos"
+          },
+          "notes": "article §a-hook。開場固定句型。"
+        },
+        {
+          "id": "s02",
+          "layout": "big_number",
+          "heading": "2023 年：只能滿足八成",
+          "body": {
+            "value": "80",
+            "unit": "%",
+            "caption": "台積電能滿足的 CoWoS 需求比例（2023-09，媒體轉述）"
+          },
+          "narration": "時間拉回 2023 年 9 月。台積電董事長接受日經訪問時說，公司大約只能滿足 80% 的 CoWoS 需求，新產能要再等約 18 個月。注意，這是媒體轉述，不是逐字引言。",
+          "source_ids": [
+            "register-2023"
+          ],
+          "mascot": {
+            "pose": "shocked"
+          },
+          "media": {
+            "kind": "title_card",
+            "headline": "台積電：CoWoS 只能滿足約八成需求",
+            "source_id": "register-2023"
+          },
+          "notes": "article §a-timeline 2023-09。"
+        },
+        {
+          "id": "s03",
+          "layout": "quote",
+          "heading": "今天要證明的一句話",
+          "body": {
+            "text": "卡住全世界的是時間差，不是技術差。",
+            "who": "晶片貓的論點"
+          },
+          "narration": "我先把結論放在這裡。CoWoS 不是什麼沒人會的黑科技，它被冷落了很多年；等到 AI 突然需要它，蓋廠、買機台、練良率都要時間。卡住全世界的，是時間差，不是技術差。接下來，我們一張一張證明它。",
+          "mascot": {
+            "pose": "point"
+          },
+          "notes": "article 開頭 > 論點、§a-conclusion。"
+        }
+      ]
+    },
+    {
+      "title": "先拆名詞：封裝、HBM、中介層",
+      "slides": [
+        {
+          "id": "s04",
+          "layout": "bullets",
+          "heading": "封裝和 HBM 是什麼",
+          "body": {
+            "items": [
+              "封裝：幫晶片穿盔甲接電線",
+              "HBM：疊起來的記憶體",
+              "放得越近，搬資料越快"
+            ]
+          },
+          "narration": "先講封裝。晶片像一顆很會算數的小腦袋，但沒有手腳、怕摔，也不能直接插上電路板。封裝就是幫它穿盔甲、接電線；精確地說，是把晶片固定、保護，再把訊號和電源接出來的製程。HBM 則像把好幾層書架疊起來，直接擺在書桌旁，是垂直堆疊的記憶體。封裝這件事，我們貓很懂：裝進紙箱，才肯安靜。",
+          "beat": "joke",
+          "mascot": {
+            "pose": "smug"
+          },
+          "media": {
+            "kind": "ai_image",
+            "prompt": "flat illustration, a tiny chip character putting on a suit of armor while a stack of bookshelves stands next to it, a cat sitting inside a cardboard box watching, dark grey background, orange accents, no text"
+          },
+          "notes": "article §a-terms（封裝、HBM）。附錄 B 紙箱笑話。"
+        },
+        {
+          "id": "s05",
+          "layout": "compare",
+          "heading": "為什麼需要中介層",
+          "body": {
+            "left": {
+              "label": "一般電路板",
+              "items": [
+                "線路比較粗",
+                "像鄉間小路",
+                "傳不了那麼多資料"
+              ]
+            },
+            "right": {
+              "label": "矽中介層",
+              "items": [
+                "佈滿極細的線",
+                "像高架路網",
+                "GPU 和 HBM 直接對話"
+              ]
+            }
+          },
+          "narration": "GPU 和 HBM 之間要傳的資料多到嚇人，一般電路板的線太粗，就像用鄉間小路連接兩座大城市。中介層是一塊佈滿細線的矽板，等於先在兩座城市之間蓋好一張高架路網。精確地說，它是放在晶片和基板之間、專門負責高密度連線的那一層。",
+          "mascot": {
+            "pose": "think"
+          },
+          "notes": "article §a-terms（中介層）。"
+        },
+        {
+          "id": "s06",
+          "layout": "bullets",
+          "heading": "CoWoS 拆成三步",
+          "body": {
+            "items": [
+              "做好 GPU 和 HBM",
+              "CoW：拼上矽底板",
+              "WoS：整塊裝上基板"
+            ]
+          },
+          "narration": "CoWoS 的全名是 Chip on Wafer on Substrate。用樂高來想：先把 GPU 和 HBM 這些積木做好，再把它們並排拼在同一塊矽底板上，這叫 CoW；最後把整塊底板裝到基板上，這叫 WoS。重點是晶片不是疊起來，而是並排坐在同一塊矽板上。",
+          "source_ids": [
+            "tsmc-pr-2013",
+            "eetj-2017"
+          ],
+          "mascot": {
+            "pose": "point"
+          },
+          "media": {
+            "kind": "animated",
+            "animation": "reveal_list"
+          },
+          "notes": "article §a-terms（CoWoS）。"
+        }
+      ]
+    },
+    {
+      "title": "冷門的那些年",
+      "slides": [
+        {
+          "id": "s07",
+          "layout": "timeline",
+          "heading": "CoWoS 不是新發明",
+          "body": {
+            "events": [
+              {
+                "when": "2012",
+                "what": "第一代 CoWoS 起步"
+              },
+              {
+                "when": "2013",
+                "what": "FPGA 全系列量產"
+              },
+              {
+                "when": "2016",
+                "what": "P100 用上中介層"
+              },
+              {
+                "when": "2016",
+                "what": "自承手機市場沒位置"
+              }
+            ]
+          },
+          "narration": "很多人以為 CoWoS 是 AI 熱潮才發明的。其實第一代在 2012 年就起步了。它早期的代表作不是 GPU，而是賽靈思的 FPGA：把四顆晶片並排拼在一片中介層上，假裝自己是一顆大晶片。2013 年，台積電宣布這個系列全面量產。",
+          "source_ids": [
+            "garrou-2016",
+            "eetj-2017",
+            "tsmc-pr-2013",
+            "pcper-2016"
+          ],
+          "beat": "gossip",
+          "mascot": {
+            "pose": "deadpan"
+          },
+          "media": {
+            "kind": "animated",
+            "animation": "draw_line"
+          },
+          "notes": "article §a-conclusion、附錄 A 第 4 則。"
+        },
+        {
+          "id": "s08",
+          "layout": "big_number",
+          "heading": "2016 年的 P100",
+          "body": {
+            "value": "610",
+            "unit": "mm²",
+            "caption": "P100 的 GPU 面積；當時中介層上限約 830 mm²"
+          },
+          "narration": "2016 年，NVIDIA 的 P100 把一顆 610 平方毫米的 GPU，旁邊擺上四疊 HBM2，全部放在中介層上。當時的報導說，中介層上限大約 830 平方毫米，P100 幾乎把它塞滿。也就是說，那時候這條路已經走到盡頭了。",
+          "source_ids": [
+            "pcper-2016"
+          ],
+          "mascot": {
+            "pose": "point"
+          },
+          "media": {
+            "kind": "animated",
+            "animation": "count_up"
+          },
+          "notes": "article §a-terms 末段。"
+        },
+        {
+          "id": "s09",
+          "layout": "big_number",
+          "heading": "拼出更大的底板",
+          "body": {
+            "value": "9",
+            "unit": "倍光罩",
+            "caption": "台積電規劃的超級載板，可用面積 7,722 mm²"
+          },
+          "narration": "曝光機一次能印的面積有上限，就像影印機一次只能印一張 A4。要做更大的中介層，就得把好幾張拼起來印。2024 年底的技術報導說，台積電當時量產 3.3 倍，承諾 5.5 倍，還規劃 9 倍光罩的超級載板，可用面積 7,722 平方毫米。",
+          "source_ids": [
+            "iftle-615"
+          ],
+          "mascot": {
+            "pose": "shocked"
+          },
+          "media": {
+            "kind": "animated",
+            "animation": "count_up"
+          },
+          "notes": "article §a-terms（光罩）、§a-numbers。"
+        }
+      ]
+    },
+    {
+      "title": "需求爆發：產能一直翻倍還不夠",
+      "slides": [
+        {
+          "id": "s10",
+          "layout": "big_number",
+          "heading": "交期：一年起跳",
+          "body": {
+            "value": "52–78",
+            "unit": "週",
+            "caption": "2026 年 7 月法說會報導的 CoWoS 交期（二手報導）"
+          },
+          "narration": "快轉到 2026 年 7 月。法說會的報導說，CoWoS 依然滿載，交期拉到 52 到 78 週，也就是一年到一年半。我上一次等這麼久，是在等罐罐打折。",
+          "source_ids": [
+            "techtimes-2026-07"
+          ],
+          "beat": "joke",
+          "mascot": {
+            "pose": "smug"
+          },
+          "media": {
+            "kind": "title_card",
+            "headline": "法說報導：CoWoS 滿載，交期 52 至 78 週",
+            "source_id": "techtimes-2026-07"
+          },
+          "notes": "article §a-hook、§a-numbers。數字來自二手報導，講稿已標明。"
+        },
+        {
+          "id": "s11",
+          "layout": "timeline",
+          "heading": "三年的新聞時間軸",
+          "body": {
+            "events": [
+              {
+                "when": "2023-09",
+                "what": "只能滿足約八成需求"
+              },
+              {
+                "when": "2024-06",
+                "what": "嘉義工地挖到古文物"
+              },
+              {
+                "when": "2024-10",
+                "what": "連兩年翻倍仍不夠"
+              },
+              {
+                "when": "2025-01",
+                "what": "Blackwell 改用 L 版"
+              },
+              {
+                "when": "2026-08",
+                "what": "CoW 擴大外包封測廠"
+              }
+            ]
+          },
+          "narration": "把這三年串起來看。2023 年只能滿足八成；2024 年 6 月，嘉義新廠工地挖到疑似古文物；同年 10 月，魏哲家說就算今年明年都翻倍，還是不夠；2025 年 NVIDIA 的 Blackwell 改用 CoWoS-L；到了 2026 年 8 月，報導說台積電連最關鍵的 CoW 步驟，都開始擴大外包給封測廠。",
+          "source_ids": [
+            "register-2023",
+            "trendforce-2024-06",
+            "technews-2024-10",
+            "taipeitimes-2025-01",
+            "trendforce-2026-08"
+          ],
+          "mascot": {
+            "pose": "point"
+          },
+          "media": {
+            "kind": "animated",
+            "animation": "draw_line"
+          },
+          "notes": "article §a-timeline。"
+        },
+        {
+          "id": "s12",
+          "layout": "bullets",
+          "heading": "月產能怎麼長",
+          "body": {
+            "items": [
+              "2024 底：3.2–3.5 萬片",
+              "2025：約 7 萬片",
+              "2026 底：13–14 萬片",
+              "2028 底：約 26 萬片"
+            ]
+          },
+          "narration": "看月產能。2024 年 3 月的市場估計，年底約 3.2 到 3.5 萬片；韓媒說 2025 年約 7 萬片，2026 年底 13 到 14 萬片；經濟日報說 2028 年底可能到 26 萬片。這些都是媒體和分析師的估計，台積電自己不公布。",
+          "source_ids": [
+            "trendforce-2024-03",
+            "trendforce-2026-08",
+            "trendforce-2026-09"
+          ],
+          "mascot": {
+            "pose": "think"
+          },
+          "media": {
+            "kind": "animated",
+            "animation": "grow_bars"
+          },
+          "notes": "article §a-numbers。務必口播「估計」。"
+        },
+        {
+          "id": "s13",
+          "layout": "quote",
+          "heading": "黃仁勳的一句話",
+          "body": {
+            "text": "那是百分之百 NVIDIA 的錯。",
+            "who": "黃仁勳談 Blackwell 設計瑕疵，2024-10"
+          },
+          "narration": "這段時間也不是一路順利。2024 年 Blackwell 延遲，外界一度猜是封裝出問題。結果 10 月黃仁勳自己說：晶片能動，但設計瑕疵讓良率偏低，那是百分之百 NVIDIA 的錯，還謝謝台積電幫忙把生產拉回來。很少看到客戶這麼替代工廠說話。",
+          "source_ids": [
+            "taiwannews-2024-10"
+          ],
+          "beat": "gossip",
+          "mascot": {
+            "pose": "deadpan"
+          },
+          "media": {
+            "kind": "title_card",
+            "headline": "黃仁勳：Blackwell 設計瑕疵是 NVIDIA 的錯",
+            "source_id": "taiwannews-2024-10"
+          },
+          "notes": "article 附錄 A 第 3 則；公開發言，非傳聞。"
+        },
+        {
+          "id": "s14",
+          "layout": "compare",
+          "heading": "從 S 版換到 L 版",
+          "body": {
+            "left": {
+              "label": "Hopper",
+              "items": [
+                "CoWoS-S",
+                "整片矽中介層"
+              ]
+            },
+            "right": {
+              "label": "Blackwell",
+              "items": [
+                "CoWoS-L",
+                "產能轉往 L 版",
+                "約兩年前的四倍"
+              ]
+            }
+          },
+          "narration": "2025 年 1 月，黃仁勳在台灣說，Hopper 用的是 CoWoS-S，Blackwell 主要改用 CoWoS-L，S 版的產能會轉成 L 版，不是砍單。他還說，現在的封裝產能大概是不到兩年前的四倍。四倍了，還是不夠。",
+          "source_ids": [
+            "taipeitimes-2025-01"
+          ],
+          "mascot": {
+            "pose": "point"
+          },
+          "notes": "article §a-timeline 2025-01。"
+        },
+        {
+          "id": "s15",
+          "layout": "big_number",
+          "heading": "一家客戶訂走一半",
+          "body": {
+            "value": "80–85",
+            "unit": "萬片",
+            "caption": "NVIDIA 據報預訂的 2026 年 CoWoS 量，超過總量一半"
+          },
+          "narration": "為什麼還是不夠？2026 年 8 月的報導說，NVIDIA 據報預訂了 80 到 85 萬片 2026 年的 CoWoS 產能，超過總量的一半。注意是據報，不是官方數字。但方向很清楚：一家客戶就吃掉一半，其他人只能排隊。",
+          "source_ids": [
+            "trendforce-2026-08"
+          ],
+          "mascot": {
+            "pose": "shocked"
+          },
+          "media": {
+            "kind": "animated",
+            "animation": "count_up"
+          },
+          "notes": "article §a-numbers。"
+        }
+      ]
+    },
+    {
+      "title": "誰做哪一段，台灣站在哪",
+      "slides": [
+        {
+          "id": "s16",
+          "layout": "big_number",
+          "heading": "一片晶圓多少錢",
+          "body": {
+            "value": "1",
+            "unit": "萬美元",
+            "caption": "CoWoS 晶圓平均售價（匿名消息）；先進封裝占 2025 營收約 10%"
+          },
+          "narration": "這門生意值多少？報導引述匿名消息，一片 CoWoS 晶圓平均售價約 1 萬美元；先進封裝在 2025 年大約占台積電營收的 10%。一片一萬美元，用完就沒了，跟我的貓砂一樣，只是貴了一點。",
+          "source_ids": [
+            "trendforce-2026-04"
+          ],
+          "beat": "joke",
+          "mascot": {
+            "pose": "smug"
+          },
+          "notes": "article §a-numbers。附錄 B 貓砂笑話。"
+        },
+        {
+          "id": "s17",
+          "layout": "compare",
+          "heading": "CoW 和 WoS 誰來做",
+          "body": {
+            "left": {
+              "label": "台積電",
+              "items": [
+                "CoW：拼上中介層",
+                "最難的一步",
+                "2026 起部分外包"
+              ]
+            },
+            "right": {
+              "label": "封測廠",
+              "items": [
+                "WoS：裝上基板",
+                "矽品、Amkor",
+                "日月光擴建 CoW"
+              ]
+            }
+          },
+          "narration": "產業鏈怎麼分工？最難的 CoW，也就是把 GPU 和 HBM 黏上中介層，長期是台積電自己做。後段的 WoS，長期由矽品、Amkor 這些封測廠在台積電授權下承接。2026 年的新變化是，連 CoW 也開始外包，日月光和矽品拿部分資本支出蓋自己的 CoW 產線。",
+          "source_ids": [
+            "trendforce-2026-08"
+          ],
+          "mascot": {
+            "pose": "point"
+          },
+          "notes": "article §a-chain。只講角色，不列個股。"
+        },
+        {
+          "id": "s18",
+          "layout": "bullets",
+          "heading": "常被忽略的兩條線",
+          "body": {
+            "items": [
+              "ABF 基板：模組的地基",
+              "利用率超過九成",
+              "設備：濕製程、點膠、檢測"
+            ]
+          },
+          "narration": "還有兩條常被忽略的供應線。一條是 ABF 基板，也就是整個模組最底下那塊多層板。台灣的基板廠欣興，2026 年把資本支出提高到 340 億元以上，約七成投入 ABF，產能利用率超過九成。另一條是設備，濕製程、點膠、檢測，有不少來自台灣本地的設備商。",
+          "source_ids": [
+            "tvbs-2026-04",
+            "ctee-2024-02"
+          ],
+          "mascot": {
+            "pose": "think"
+          },
+          "media": {
+            "kind": "stock",
+            "query": "printed circuit board substrate manufacturing factory close up"
+          },
+          "notes": "article §a-chain。stock 只用通用基板畫面，不代表特定公司。"
+        },
+        {
+          "id": "s19",
+          "layout": "big_number",
+          "heading": "面板廠變封裝廠",
+          "body": {
+            "value": "171.4",
+            "unit": "億元",
+            "caption": "台積電 2024 年買下群創台南廠，面積逾 9.6 萬平方公尺"
+          },
+          "narration": "封裝廠蓋不夠快，就用買的。2024 年 8 月，台積電用新台幣 171.4 億元，買下群創在台南的面板廠，樓地板面積超過 9.6 萬平方公尺，拿來做先進封裝。做面板的廠房，最後拿來包 AI 晶片。",
+          "source_ids": [
+            "trendforce-ap8"
+          ],
+          "beat": "gossip",
+          "mascot": {
+            "pose": "deadpan"
+          },
+          "media": {
+            "kind": "title_card",
+            "headline": "台積電買下群創台南廠 擴充先進封裝",
+            "source_id": "trendforce-ap8"
+          },
+          "notes": "article 附錄 A 第 2 則。"
+        },
+        {
+          "id": "s20",
+          "layout": "bullets",
+          "heading": "台灣的位置",
+          "body": {
+            "items": [
+              "嘉義 AP7：90 公頃",
+              "約可容六座封裝廠",
+              "亞利桑那 2028 量產"
+            ]
+          },
+          "narration": "擴產幾乎都發生在台灣。嘉義 AP7 二期用地約 90 公頃，報導說大約能放六座先進封裝廠。不過 2024 年一期工地先挖到疑似古文物，停工搶救發掘，算是全台灣唯一比 AI 還早排到 CoWoS 工地的客戶。另一邊，台積電和 Amkor 簽了十年約，美國的封裝廠預計 2028 年量產。",
+          "source_ids": [
+            "trendforce-2026-01",
+            "register-2024",
+            "trendforce-2024-06",
+            "trendforce-2026-06"
+          ],
+          "beat": "joke",
+          "mascot": {
+            "pose": "smug"
+          },
+          "media": {
+            "kind": "ai_image",
+            "prompt": "flat illustration of a construction site with cranes where workers carefully brush ancient pottery shards out of the ground, a cat in a hard hat waiting patiently with a clipboard, dark grey background, orange accents, no text, no logos"
+          },
+          "notes": "article §a-taiwan、附錄 A 第 1 則、附錄 B 古蹟笑話。ai_image 為插畫，不是實景。"
+        }
+      ]
+    },
+    {
+      "title": "沒人知道的事與結論",
+      "slides": [
+        {
+          "id": "s21",
+          "layout": "compare",
+          "heading": "產能到底多少？",
+          "body": {
+            "left": {
+              "label": "2024 年估 2026",
+              "items": [
+                "10–12 萬片",
+                "或 14 萬片以上",
+                "業界人士"
+              ]
+            },
+            "right": {
+              "label": "2026 年報導",
+              "items": [
+                "13–14 萬片",
+                "缺口約兩成",
+                "韓媒 ETNews"
+              ]
+            }
+          },
+          "narration": "第一個沒人說得準的事：產能到底多少。2024 年底，業界人士估 2026 年是 10 到 12 萬片，也可能衝到 14 萬片以上；2026 年的報導說是 13 到 14 萬片，缺口還有兩成。差距來自定義，算不算外包、算不算不同版本。台積電本身不公布這個數字。",
+          "source_ids": [
+            "technews-2024-10",
+            "trendforce-2026-08"
+          ],
+          "mascot": {
+            "pose": "think"
+          },
+          "notes": "article §a-unknowns 一。"
+        },
+        {
+          "id": "s22",
+          "layout": "bullets",
+          "heading": "瓶頸會不會搬家",
+          "body": {
+            "items": [
+              "基板材料：2027 才紓解",
+              "EMIB-T：2028 4 萬片級",
+              "CoPoS：2028 底目標"
+            ]
+          },
+          "narration": "第二件事：瓶頸會不會搬家。報導說 ABF 基板的上游材料要到 2027 年才明顯紓解。替代方案也在長：Intel 的 EMIB-T 據估 2028 年月產能 4 萬到 4.5 萬片；台積電自己的面板版 CoPoS，供應鏈說目標 2028 年底量產，但那不是公司公布的時程。",
+          "source_ids": [
+            "tvbs-2026-04",
+            "trendforce-2026-09",
+            "trendforce-2026-01"
+          ],
+          "mascot": {
+            "pose": "think"
+          },
+          "media": {
+            "kind": "stock",
+            "query": "semiconductor cleanroom engineers wafer inspection"
+          },
+          "notes": "article §a-unknowns 二、三。"
+        },
+        {
+          "id": "s23",
+          "layout": "big_number",
+          "heading": "答案寫在 2016 年",
+          "body": {
+            "value": "26",
+            "unit": "萬片／月",
+            "caption": "2028 年底 CoWoS 月產能（經濟日報估計）"
+          },
+          "narration": "回到開頭的問題。2016 年，台積電自己在簡報裡承認，CoWoS 還沒在手機市場找到位置，而且「量」是成本公式裡的頭號因素。又貴、量又小，沒有人會提前蓋好幾座廠。所以等 AI 要它，產能只能一年一年追，報導說 2028 年底才可能到 26 萬片。",
+          "source_ids": [
+            "garrou-2016",
+            "trendforce-2026-09"
+          ],
+          "beat": "gossip",
+          "mascot": {
+            "pose": "point"
+          },
+          "media": {
+            "kind": "animated",
+            "animation": "count_up"
+          },
+          "notes": "article §a-conclusion、附錄 A 第 5 則。"
+        },
+        {
+          "id": "s24",
+          "layout": "quote",
+          "heading": "卡住的是時間",
+          "body": {
+            "text": "一門被冷落多年的手藝，被要求兩年內長大將近四倍。",
+            "who": "晶片貓"
+          },
+          "narration": "所以 AI 晶片卡在這一關，真正的意思是：一門被冷落多年的手藝，被要求從 2024 年底約 3.5 萬片，兩年內長到 13 萬片以上。卡住的是蓋廠、買機台、練良率的時間，而這段時間，大部分發生在台灣。本頻道只拆產業，不報明牌。我是晶片貓，下次見。",
+          "source_ids": [
+            "trendforce-2024-03",
+            "trendforce-2026-08"
+          ],
+          "mascot": {
+            "pose": "wave"
+          },
+          "notes": "article §a-conclusion。片尾固定句。"
+        }
+      ]
+    }
+  ]
+}
