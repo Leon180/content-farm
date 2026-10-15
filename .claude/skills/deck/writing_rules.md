@@ -58,4 +58,4 @@
 
 - 開場固定句型：「我是晶片貓，今天用 N 張圖把 X 拆給你看。」
 - 語氣：資深、平穩、冷面；愛講「這個數字其實是……」。不用網路流行語堆砌。
-- 角落吉祥物：投影片可加 `"mascot": {"pose": "point|think|smug|shocked"}`。pose 依該頁情緒選（指重點用 point、拋問題用 think、講完冷笑話用 smug、揭露驚人數字用 shocked）。沒有素材時角落自動留空，不影響渲染。
+- 晶片貓（動態疊加層）：投影片可加 `"mascot": {"pose": "idle|point|think|shocked|smug|deadpan|wave", "say": "≤20 字對話泡泡（可省略）"}`。pose 依該頁情緒選（指圖表用 point、拋問題用 think、揭露驚人數字用 shocked、得意收尾用 smug、冷笑話用 deadpan、開場打招呼用 wave）。`beat: "joke"` 且沒寫 mascot 時自動用 deadpan。`say` 要短、冷面，例如「這個數字其實是…」。draft.mp4 完成後跑 `scripts/mascot_overlay.py --run-dir <run>` 產出 final.mp4。
