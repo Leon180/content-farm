@@ -8,7 +8,7 @@ import pytest
 
 from content_farm.explainer.brands import brand_css_path
 from content_farm.explainer.cards import overlay_html, placeholder_html, title_card_html
-from content_farm.explainer.deck import load_deck
+from content_farm.explainer.deck import Media, MediaKind, load_deck
 from content_farm.explainer.media_run import MediaOptions, jobs_for
 from content_farm.explainer.pages import _css
 from content_farm.explainer.timeline import SlideClip
@@ -37,7 +37,9 @@ def test_cards_use_brand_css(code: str) -> None:
     section, slide, index = _first("title_card")
     assert marker in title_card_html(DECK, section, slide, index, brand=code)
     assert marker not in title_card_html(DECK, section, slide, index)
-    section, slide, index = _first("ai_image")
+    # The example deck no longer has AI images (2026-10-15); give one slide an ai_image request.
+    section, slide, index = _first("stock")
+    slide = slide.model_copy(update={"media": Media(kind=MediaKind.AI_IMAGE, prompt="a cat")})
     assert marker in placeholder_html(DECK, section, slide, index, "assets/x.png", brand=code)
     section, slide, index = _first("stock")
     assert marker in overlay_html(DECK, section, slide, index, brand=code)
