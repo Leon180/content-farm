@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "category": "knowledge",
+  "title": "賽璐璐研究室｜一秒幾張",
+  "description": "【品牌示範 deck，非正式內容】賽璐璐研究室頻道品牌系統的示範投影片。不使用任何動畫原片或官方角色圖。",
+  "sources": [
+    {"id": "jaa", "title": "日本動畫協會《動畫產業報告》（示範用，待查證）"}
+  ],
+  "sections": [
+    {"title": "開場：錢去哪了", "slides": [
+      {"id": "s01", "layout": "title", "heading": "一集動畫要花多少錢？",
+       "body": {"subtitle": "答案藏在片尾名單裡"},
+       "narration": "一秒二十四格，今天拆第一格：一集電視動畫到底要花多少錢？答案不在新聞稿，在片尾那串你每次都跳過的名單裡。", "mascot": {"pose": "point"}}
+    ]},
+    {"title": "拆解：一秒幾張", "slides": [
+      {"id": "s02", "layout": "big_number", "heading": "一秒要畫幾張？",
+       "body": {"value": "8–12", "unit": "張", "caption": "TV 動畫常用「一拍二、一拍三」"},
+       "narration": "影片一秒有二十四格，但電視動畫通常不會畫滿。一張畫停兩格叫一拍二，停三格叫一拍三，所以一秒大約是八到十二張。", "source_ids": ["jaa"], "mascot": {"pose": "shocked"}}
+    ]},
+    {"title": "流程：一格的旅程", "slides": [
+      {"id": "s03", "layout": "timeline", "heading": "一格畫面的旅程",
+       "body": {"events": [
+         {"when": "分鏡", "what": "導演畫出鏡頭"},
+         {"when": "原畫", "what": "關鍵動作"},
+         {"when": "動畫", "what": "補中間張"},
+         {"when": "上色", "what": "仕上・數位上色"},
+         {"when": "攝影", "what": "合成與特效"}
+       ]},
+       "narration": "一格畫面要走過五站：分鏡決定鏡頭，原畫畫關鍵動作，動畫補中間張，接著上色，最後攝影合成。每一站，都是片尾名單上的一個職稱。", "source_ids": ["jaa"], "mascot": {"pose": "think"}}
+    ]}
+  ]
+}

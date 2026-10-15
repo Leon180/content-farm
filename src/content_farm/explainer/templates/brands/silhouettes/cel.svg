@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 344" fill="currentColor" fill-rule="evenodd">
+  <!-- 格仔（新角色方向）：底片格身體（兩側齒孔鏤空）、頭頂一支鉛筆當呆毛、短腿 -->
+  <path d="M112 74 L128 74 L128 10 L120 -6 L112 10 Z"/>
+  <path d="M40 74 H200 Q214 74 214 88 V284 Q214 298 200 298 H40 Q26 298 26 284 V88 Q26 74 40 74 Z
+           M36 96 h16 v20 h-16 Z M36 136 h16 v20 h-16 Z M36 176 h16 v20 h-16 Z M36 216 h16 v20 h-16 Z M36 256 h16 v20 h-16 Z
+           M188 96 h16 v20 h-16 Z M188 136 h16 v20 h-16 Z M188 176 h16 v20 h-16 Z M188 216 h16 v20 h-16 Z M188 256 h16 v20 h-16 Z
+           M66 104 H174 V250 H66 Z"/>
+  <path d="M74 112 H166 V242 H74 Z"/>
+  <rect x="78" y="296" width="20" height="44" rx="8"/>
+  <rect x="142" y="296" width="20" height="44" rx="8"/>
+</svg>

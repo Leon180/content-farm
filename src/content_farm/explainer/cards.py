@@ -58,7 +58,7 @@ def title_card_for(deck: Deck, slide: Slide) -> TitleCard:
 
 def _render(
     deck: Deck, section: Section, slide: Slide, index: int, kind: str,
-    style: str | None = None, **extra: object,
+    style: str | None = None, brand: str | None = None, **extra: object,
 ) -> str:
     template = _environment().get_template("media/frame.html.j2")
     return template.render(
@@ -71,7 +71,7 @@ def _render(
         sources=[deck.source_by_id(sid).title for sid in slide.source_ids],
         disclaimer=DISCLAIMER[deck.category],
         base_css=_css("base.css"),
-        theme_css=theme_css(deck, style),
+        theme_css=theme_css(deck, style, brand),
         media_css=(TEMPLATES_DIR / "media" / "media.css").read_text(encoding="utf-8"),
         animation=extra.pop("animation", None),
         animate_js=_css("animate.js"),
@@ -81,10 +81,11 @@ def _render(
 
 def overlay_html(
     deck: Deck, section: Section, slide: Slide, index: int, style: str | None = None,
+    brand: str | None = None,
 ) -> str:
     """Transparent page: top bar, lower-third (heading + key line), meta row."""
     line = key_line(slide)
-    return _render(deck, section, slide, index, "overlay", style=style,
+    return _render(deck, section, slide, index, "overlay", style=style, brand=brand,
                    key_line="" if line == slide.heading else line)
 
 

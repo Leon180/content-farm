@@ -139,13 +139,19 @@ def style_css_path(code: str) -> Path:
 
 def palette(code: str) -> dict[str, str]:
     """Colour roles from the stylesheet's first ``:root`` block."""
-    css = style_css_path(code).read_text(encoding="utf-8")
+    return palette_from_css(style_css_path(code).read_text(encoding="utf-8"), f"style {code!r}")
+
+
+def palette_from_css(css: str, label: str) -> dict[str, str]:
+    """Colour roles from the first ``:root`` block of any theme stylesheet."""
+    if ":root" not in css:
+        raise ValueError(f"{label} has no :root block")
     root = css[css.index(":root"):]
     root = root[: root.index("}")]
     found = {name: value.lower() for name, value in _VAR_RE.findall(root)}
     missing = [key for key in PALETTE_KEYS if key not in found]
     if missing:
-        raise ValueError(f"style {code!r} is missing palette roles: {', '.join(missing)}")
+        raise ValueError(f"{label} is missing palette roles: {', '.join(missing)}")
     return {key: found[key] for key in PALETTE_KEYS}
 
 
@@ -176,7 +182,10 @@ CONTRAST_PAIRS = (
 
 
 def contrast_report(code: str) -> list[dict[str, object]]:
-    colours = palette(code)
+    return contrast_report_for(palette(code))
+
+
+def contrast_report_for(colours: dict[str, str]) -> list[dict[str, object]]:
     return [
         {"pair": label, "fg": colours[fg], "bg": colours[bg],
          "ratio": round(contrast_ratio(colours[fg], colours[bg]), 2), "min": minimum,

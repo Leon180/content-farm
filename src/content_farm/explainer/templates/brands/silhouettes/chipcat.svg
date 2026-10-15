@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 344" fill="currentColor">
+  <!-- 晶片貓本尊：貓頭＋晶片身體（兩側接腳），一手指向左上 -->
+  <path d="M188 300 C 236 290 238 230 214 196" fill="none" stroke="currentColor" stroke-width="18" stroke-linecap="round"/>
+  <path d="M48 96 L58 10 L112 50 Z M192 96 L182 10 L128 50 Z"/>
+  <circle cx="120" cy="124" r="80"/>
+  <rect x="44" y="196" width="152" height="132" rx="14"/>
+  <path d="M30 214h14v10H30zM30 240h14v10H30zM30 266h14v10H30zM30 292h14v10H30zM196 214h14v10h-14zM196 240h14v10h-14zM196 266h14v10h-14zM196 292h14v10h-14z"/>
+  <path d="M60 220 L6 168" stroke="currentColor" stroke-width="20" stroke-linecap="round"/>
+</svg>

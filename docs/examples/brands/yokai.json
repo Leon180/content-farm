@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "category": "knowledge",
+  "title": "妖怪溯源所｜九尾狐",
+  "description": "【品牌示範 deck，非正式內容】妖怪溯源所頻道品牌系統的示範投影片；年代為示意，正式版逐條查證。",
+  "sources": [
+    {"id": "shj", "title": "《山海經・南山經》（公有領域原典）"}
+  ],
+  "sections": [
+    {"title": "開場：查戶口", "slides": [
+      {"id": "s01", "layout": "title", "heading": "九尾狐從哪裡來？",
+       "body": {"subtitle": "從山海經一路追到玉藻前"},
+       "narration": "今晚要查戶口的，是一隻有九條尾巴的狐狸。牠在不同朝代、不同國家，身分換了好幾次。我們從最早的那本書開始翻。", "mascot": {"pose": "idle"}}
+    ]},
+    {"title": "原典：先看出處", "slides": [
+      {"id": "s02", "layout": "quote", "heading": "原典怎麼寫",
+       "body": {"text": "青丘之山……有獸焉，其狀如狐而九尾，其音如嬰兒，能食人。", "who": "《山海經・南山經》"},
+       "narration": "先看出處。山海經南山經寫得很直接：青丘山上有一種野獸，樣子像狐狸、有九條尾巴，叫聲像嬰兒，會吃人。注意，這時候牠還不是美女。", "source_ids": ["shj"], "mascot": {"pose": "think"}}
+    ]},
+    {"title": "演變：形象怎麼變", "slides": [
+      {"id": "s03", "layout": "timeline", "heading": "九尾狐的形象變遷",
+       "body": {"events": [
+         {"when": "先秦", "what": "山海經：會吃人的異獸"},
+         {"when": "漢代", "what": "畫像石：祥瑞之兆"},
+         {"when": "唐宋", "what": "志怪：轉為狐妖"},
+         {"when": "室町", "what": "日本：玉藻前傳說"}
+       ]},
+       "narration": "接下來牠的形象一路在變：漢代變成吉祥的象徵，唐宋的志怪小說裡變成狐妖，到了日本，又長出玉藻前的傳說。每一站的出處，我都放在畫面下方。", "source_ids": ["shj"], "mascot": {"pose": "point"}}
+    ]}
+  ]
+}
