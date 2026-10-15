@@ -19,7 +19,7 @@ MACHINE_VOICE_BANNER = "> ⚠️ **暫用機器聲（macOS say），待換 Fish 
 def _status_lines(info: KitInfo) -> list[str]:
     qc = ("未跑" if info.qc_errors is None
           else f"{info.qc_errors} error / {info.qc_warnings} warn")
-    meta_src = ("`upload/youtube_meta.json`（package 步驟）" if info.meta_from_package
+    meta_src = ("`upload/youtube_meta.json`" if info.meta_from_package
                 else "manual-kit 臨時生成（成片閘門尚未核可，package 未跑）")
     return [
         f"- 目標頻道：**{info.channel_name}**（`{info.channel_code}`，{info.channel_line}）",

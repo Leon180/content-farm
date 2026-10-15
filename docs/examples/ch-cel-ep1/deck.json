@@ -1,0 +1,850 @@
+{
+  "version": 1,
+  "category": "knowledge",
+  "title": "動畫市場創新高，為什麼動畫公司還是窮？製作委員會的錢怎麼流",
+  "description": "2024 年日本動畫市場 3 兆 8,407 億日圓創新高，製作公司卻有三到四成虧損。賽璐璐研究室用 24 張圖拆解：製作委員會是什麼、錢從觀眾手上出發後在哪裡轉彎、為什麼有版權的人和只拿工錢的人差這麼多，以及台灣在這條河上的位置。本片不使用任何動畫原片或截圖；資料截至 2026-10，所有數字附來源（見下方來源清單）。本頻道不提供投資建議。",
+  "tags": [
+    "製作委員會",
+    "動畫產業",
+    "日本動畫",
+    "動畫師",
+    "版權",
+    "東映動畫",
+    "產業拆解",
+    "賽璐璐研究室"
+  ],
+  "as_of": "2026-10",
+  "draft_data": false,
+  "pronunciation_map": {
+    "GAINAX": "蓋納克斯",
+    "MAPPA": "瑪帕",
+    "Netflix": "網飛",
+    "IG Port": "I G Port",
+    "Hanna-Barbera": "漢納巴伯拉",
+    "Cuckoos' Nest": "咕咕巢",
+    "IP": "I P"
+  },
+  "sources": [
+    {
+      "id": "aja-2024-market-prelim",
+      "title": "日本動画協会、「アニメ産業レポート2025」刊行に先立ち市場規模の速報値を発表 海外市場は2兆円を突破",
+      "url": "https://gamebiz.jp/news/415289",
+      "note": "publisher=gamebiz.jp（報導日本動画協会 AJA 速報值）; published=2025-10-31; accessed=2026-10-15; type=press",
+      "publisher": "gamebiz",
+      "published": "2025-10-31"
+    },
+    {
+      "id": "tdb-2024-anime-prod-market",
+      "title": "アニメ制作市場 2024年は3621億円 過去最高を更新 元請制作の6割が「業績悪化」",
+      "url": "https://www.zaikei.co.jp/releases/3052570/",
+      "note": "publisher=帝国データバンク（經 zaikei 轉載）; published=2025-08-15; accessed=2026-10-15; type=analyst",
+      "publisher": "帝国データバンク",
+      "published": "2025-08-15"
+    },
+    {
+      "id": "tdb-2025-anime-prod-market",
+      "title": "アニメ制作市場、初の4千億円突破もピークアウトの可能性―人手不足と自社IPが鍵か―帝国データバンクが業界調査",
+      "url": "https://www.gamebusiness.jp/article/2026/08/20/27751.html",
+      "note": "publisher=GameBusiness.jp（報導帝国データバンク調查）; published=2026-08-20; accessed=2026-10-15; type=analyst",
+      "publisher": "GameBusiness.jp",
+      "published": "2026-08-20"
+    },
+    {
+      "id": "tdb-anime-studio-exits-2025",
+      "title": "アニメ制作の倒産・廃業、3年連続で増加へ 収益悪化、人手不足も打撃",
+      "url": "https://www.zaikei.co.jp/releases/3168528/",
+      "note": "publisher=帝国データバンク（經 zaikei 轉載）; published=2025-11-05; accessed=2026-10-15; type=analyst; 倒產只計負債 1,000 萬日圓以上的法律清算",
+      "publisher": "帝国データバンク",
+      "published": "2025-11-05"
+    },
+    {
+      "id": "jftc-creator-trade-survey-2025",
+      "title": "映画・アニメの制作現場におけるクリエイターの取引環境に係る実態調査について",
+      "url": "https://www.jftc.go.jp/houdou/pressrelease/2025/dec/251224_eigaanime.html",
+      "note": "publisher=公正取引委員会; published=2025-12-24; accessed=2026-10-15; type=primary",
+      "publisher": "公正取引委員会",
+      "published": "2025-12-24"
+    },
+    {
+      "id": "jftc-anime-inspection-2025-03",
+      "title": "アニメーション制作業等 集中調査 45名に是正指導",
+      "url": "https://www.jftc.go.jp/houdou/pressrelease/2025/mar/250328_FL.html",
+      "note": "publisher=公正取引委員会; published=2025-03-28; accessed=2026-10-15; type=primary; snippet only",
+      "publisher": "公正取引委員会",
+      "published": "2025-03-28"
+    },
+    {
+      "id": "toei-fy2025-results",
+      "title": "東映アニメ、25年3月期の連結決算は売上高13%増、営業益38%増で過去最高業績を更新",
+      "url": "https://gamebiz.jp/news/405822",
+      "note": "publisher=gamebiz.jp（報導東映動畫決算短信）; published=2025-05-16; accessed=2026-10-15; type=press",
+      "publisher": "gamebiz",
+      "published": "2025-05-16"
+    },
+    {
+      "id": "toei-fy2026-revision",
+      "title": "東映アニメ、26年3月期通期の連結業績予想を上方修正 海外における版権事業の好調や為替差益の計上",
+      "url": "https://gamebiz.jp/news/425677",
+      "note": "publisher=gamebiz.jp（報導東映動畫 IR）; published=2026-05-11; accessed=2026-10-15; type=press",
+      "publisher": "gamebiz",
+      "published": "2026-05-11"
+    },
+    {
+      "id": "ig-port-kessan-fy2026",
+      "title": "IG Port 2026年5月期 決算短信〔日本基準〕(連結)",
+      "url": "https://www2.jpx.co.jp/disc/37910/081220260715594257_tse-acedjpsm-37910-20260715337910-ixbrl.htm",
+      "note": "publisher=IG Port（東證公告）; published=2026-07-15; accessed=2026-10-15; type=primary; snippet only",
+      "publisher": "IG Port",
+      "published": "2026-07-15"
+    },
+    {
+      "id": "itmedia-anime-column-2026",
+      "title": "「作れば売れる」時代の終わり――岐路に立たされるアニメ業界、決算が映す各社の“明暗”を分けたもの",
+      "url": "https://www.itmedia.co.jp/news/article/2605/29/1260529101/",
+      "note": "publisher=ITmedia NEWS（專欄，引用 AJA 報告）; published=2026-05-30; accessed=2026-10-15; type=press",
+      "publisher": "ITmedia NEWS",
+      "published": "2026-05-30"
+    },
+    {
+      "id": "production-committee-nlab",
+      "title": "製作委員会の仕組み（ITmedia NLab）",
+      "url": "https://nlab.itmedia.co.jp/cont/articles/3268386/amp/",
+      "note": "publisher=ITmedia NLab; published=unknown; accessed=2026-10-15; type=press; snippet only",
+      "publisher": "ITmedia NLab"
+    },
+    {
+      "id": "meti-anime-transaction-2026",
+      "title": "アニメ制作の取引適正化に関する経済産業省資料",
+      "url": "https://www.meti.go.jp/policy/kyoso_seisaku/20260324002-3.pdf",
+      "note": "publisher=経済産業省; published=2026-03-24; accessed=2026-10-15; type=primary; snippet only (HTTP 403)",
+      "publisher": "経済産業省",
+      "published": "2026-03-24"
+    },
+    {
+      "id": "netflix-mappa-2026",
+      "title": "Netflix and MAPPA expand partnership to launch exclusive global anime slate",
+      "url": "https://marketech-apac.com/netflix-and-mappa-expand-partnership-to-launch-exclusive-global-anime-slate/",
+      "note": "publisher=Marketech APAC; published=2026-01-21; accessed=2026-10-15; type=press; snippet only",
+      "publisher": "Marketech APAC",
+      "published": "2026-01-21"
+    },
+    {
+      "id": "gainax-bankruptcy-2024",
+      "title": "ガイナックス 破産手続開始の申し立て",
+      "url": "https://www.phileweb.com/sp/news/hobby/202406/07/7052.html",
+      "note": "publisher=PhileWeb; published=2024-06-07; accessed=2026-10-15; type=press",
+      "publisher": "PhileWeb",
+      "published": "2024-06-07"
+    },
+    {
+      "id": "bahamut-anigamer-2025",
+      "title": "巴哈姆特動畫瘋 付費會員比例 20.5%",
+      "url": "https://www.nownews.com/news/6695698",
+      "note": "publisher=NOWnews; published=2025-06-15; accessed=2026-10-15; type=press",
+      "publisher": "NOWnews",
+      "published": "2025-06-15"
+    },
+    {
+      "id": "wang-film-mirrormedia-2016",
+      "title": "宏廣 Wang Film 報導",
+      "url": "https://www.mirrormedia.mg/story/20161018ent004",
+      "note": "publisher=鏡週刊; published=2016-10-18; accessed=2026-10-15; type=press; snippet only",
+      "publisher": "鏡週刊",
+      "published": "2016-10-18"
+    }
+  ],
+  "sections": [
+    {
+      "title": "開場：同一年的兩個新聞",
+      "slides": [
+        {
+          "id": "s01",
+          "layout": "title",
+          "heading": "動畫賣爆，動畫公司還是窮？",
+          "body": {
+            "subtitle": "製作委員會的錢，到底怎麼流"
+          },
+          "narration": "動畫一部比一部紅，周邊一檔比一檔貴，可是新聞裡的動畫公司，常常在虧錢、在倒閉。這裡是賽璐璐研究室，今天用二十四張圖，把動畫產業的錢從哪裡來、流到哪裡去，拆給你看。",
+          "mascot": {
+            "pose": "wave"
+          },
+          "media": {
+            "kind": "stock",
+            "query": "pencil sketch drawing paper desk",
+            "keywords": [
+              "sketch",
+              "drawing",
+              "pencil"
+            ]
+          },
+          "notes": "article §a-hook。通用手繪桌畫面，不得出現動畫角色。"
+        },
+        {
+          "id": "s02",
+          "layout": "big_number",
+          "heading": "2024 年：市場史上最大",
+          "body": {
+            "value": "3.84",
+            "unit": "兆日圓",
+            "caption": "2024 年日本廣義動畫市場（動畫協會速報，海外首破 2 兆）"
+          },
+          "narration": "先看第一個新聞。日本動畫協會的速報說，2024 年廣義動畫市場是 3 兆 8,407 億日圓，連續創新高；其中海外市場是 2 兆 1,702 億日圓，第一次突破 2 兆。",
+          "source_ids": [
+            "aja-2024-market-prelim"
+          ],
+          "mascot": {
+            "pose": "point"
+          },
+          "media": {
+            "kind": "animated",
+            "animation": "count_up"
+          },
+          "notes": "article §a-hook、§a-numbers。"
+        },
+        {
+          "id": "s03",
+          "layout": "big_number",
+          "heading": "同一年：六成主力喊難過",
+          "body": {
+            "value": "60.0",
+            "unit": "%",
+            "caption": "2024 年元請製作公司「業績惡化」比例（帝國資料銀行）"
+          },
+          "narration": "再看第二個新聞。帝國資料銀行調查承包整部作品的製作公司，2024 年有 34.5% 虧損，虧損加上減益，合計 60.0%。史上最好賺的一年，主力製作公司有六成說，今年比較難過。",
+          "source_ids": [
+            "tdb-2024-anime-prod-market"
+          ],
+          "mascot": {
+            "pose": "shocked"
+          },
+          "media": {
+            "kind": "title_card",
+            "source_id": "tdb-2024-anime-prod-market",
+            "headline": "動畫製作市場創新高，元請六成業績惡化",
+            "summary": "帝國資料銀行 2024 年動畫製作業調查"
+          },
+          "notes": "article §a-hook。"
+        },
+        {
+          "id": "s04",
+          "layout": "quote",
+          "heading": "今天要證明的一句話",
+          "body": {
+            "text": "動畫賣得越好，錢越流向持有版權的人，而不是把它畫出來的人。",
+            "who": "賽璐璐研究室的論點"
+          },
+          "narration": "這兩件事同時成立，不是誰在說謊，而是動畫市場和動畫公司，根本不是同一個錢包。我先把結論放在這裡：製作公司領的是工錢，不是分紅。動畫主角可以靠友情逆轉，損益表不行。",
+          "beat": "joke",
+          "mascot": {
+            "pose": "smug"
+          },
+          "notes": "article 論點、§a-conclusion；附錄 B 友情笑話。"
+        }
+      ]
+    },
+    {
+      "title": "先拆名詞",
+      "slides": [
+        {
+          "id": "s05",
+          "layout": "bullets",
+          "heading": "製作委員會＝合資擺攤",
+          "body": {
+            "items": [
+              "出資的人按比例分利潤",
+              "掌廚的同學只領工錢",
+              "攤位賺翻，工錢不變"
+            ]
+          },
+          "narration": "先講製作委員會。想像班上同學合資擺園遊會攤位，出錢的人按比例分利潤；被請來掌廚的同學，領一筆工錢，攤位賺翻了，他也不會多拿。精確地說，製作委員會是出版社、影像公司、廣告代理、玩具商、電視台、配信平台等出資者，針對單一作品組成的共同事業體。",
+          "source_ids": [
+            "production-committee-nlab"
+          ],
+          "mascot": {
+            "pose": "think"
+          },
+          "media": {
+            "kind": "animated",
+            "animation": "reveal_list"
+          },
+          "notes": "article §a-terms（製作委員會）。v1 用 stock 攤位畫面，畫面有可讀的啤酒品牌海報，改動態投影片。"
+        },
+        {
+          "id": "s06",
+          "layout": "compare",
+          "heading": "版權 vs 工錢",
+          "body": {
+            "left": {
+              "label": "持有版權",
+              "items": [
+                "每次被用都收錢",
+                "商品、遊戲、海外",
+                "作品越紅越多"
+              ]
+            },
+            "right": {
+              "label": "領製作費",
+              "items": [
+                "開工前就談定",
+                "大賣也不追加",
+                "沒出資就沒分潤"
+              ]
+            }
+          },
+          "narration": "再講版權。歌手唱一首歌拿演出費，作詞作曲的人每次被播都收版稅。版權就是作品被做成商品、遊戲、海外播映時，收授權金的權利。製作公司向委員會收製作費，作品之後的收益，多半依出資歸委員會成員。",
+          "source_ids": [
+            "production-committee-nlab"
+          ],
+          "mascot": {
+            "pose": "think"
+          },
+          "notes": "article §a-terms（版權、製作費）。"
+        },
+        {
+          "id": "s07",
+          "layout": "compare",
+          "heading": "主廚和切菜工作室",
+          "body": {
+            "left": {
+              "label": "元請",
+              "items": [
+                "向委員會接整部作品",
+                "平均年營收 27.49 億"
+              ]
+            },
+            "right": {
+              "label": "專門工作室",
+              "items": [
+                "接原畫、上色、背景",
+                "平均年營收 4.38 億"
+              ]
+            }
+          },
+          "narration": "製作公司內部也分層。元請像餐廳主廚，直接向委員會接下整部作品；專門工作室像外包的切菜工作室，接原畫、上色、背景這些分段工作。帝國資料銀行的數字，元請平均年營收 27 億 4,900 萬日圓，專門工作室只有 4 億 3,800 萬日圓。而 2025 年前九個月，就有 8 家動畫公司退出市場。",
+          "source_ids": [
+            "tdb-2024-anime-prod-market",
+            "tdb-anime-studio-exits-2025"
+          ],
+          "beat": "gossip",
+          "mascot": {
+            "pose": "deadpan"
+          },
+          "media": {
+            "kind": "stock",
+            "query": "artist drawing tablet stylus desk",
+            "keywords": [
+              "drawing",
+              "stylus",
+              "tablet",
+              "artist"
+            ]
+          },
+          "notes": "article §a-terms（元請與下請）、§a-chain、附錄 A-3。"
+        },
+        {
+          "id": "s08",
+          "layout": "compare",
+          "heading": "兩種「市場」不一樣",
+          "body": {
+            "left": {
+              "label": "廣義市場",
+              "items": [
+                "觀眾和企業付的總額",
+                "3 兆 8,407 億日圓"
+              ]
+            },
+            "right": {
+              "label": "業界市場",
+              "items": [
+                "只算製作公司營收",
+                "4,662 億日圓"
+              ]
+            }
+          },
+          "narration": "最後一個名詞。廣義市場是觀眾和企業為動畫相關商品付的總額；業界市場只算動畫製作公司的營收。同一份速報裡，2024 年廣義市場 3 兆 8,407 億日圓，業界市場只有 4,662 億日圓。",
+          "source_ids": [
+            "aja-2024-market-prelim"
+          ],
+          "mascot": {
+            "pose": "point"
+          },
+          "media": {
+            "kind": "animated",
+            "animation": "grow_bars"
+          },
+          "notes": "article §a-terms、§a-numbers。"
+        }
+      ]
+    },
+    {
+      "title": "錢怎麼流：一條河分四段",
+      "slides": [
+        {
+          "id": "s09",
+          "layout": "bullets",
+          "heading": "錢流像一條河",
+          "body": {
+            "items": [
+              "上游：觀眾付錢",
+              "窗口：播映、配信、商品",
+              "中游：製作委員會分配",
+              "下游：製作公司領製作費",
+              "再往下：工作室與接案者"
+            ]
+          },
+          "narration": "把錢流畫成一條河。上游是觀眾，買藍光、看串流、買模型、玩手遊。這些錢先流進播映、配信、商品、遊戲這些窗口，授權金再回到委員會，依出資分配。製作公司在下游，開工前就談好一筆製作費，作品後來大賣，也不會追加。",
+          "source_ids": [
+            "aja-2024-market-prelim",
+            "production-committee-nlab"
+          ],
+          "mascot": {
+            "pose": "idle"
+          },
+          "media": {
+            "kind": "animated",
+            "animation": "reveal_list"
+          },
+          "notes": "article §a-chain。"
+        },
+        {
+          "id": "s10",
+          "layout": "big_number",
+          "heading": "到製作公司只剩約一成多",
+          "body": {
+            "value": "約 12",
+            "unit": "%",
+            "caption": "業界市場 ÷ 廣義市場，2024 年（依動畫協會數字自行計算）"
+          },
+          "narration": "把兩個數字相除，4,662 億除以 3 兆 8,407 億，大約是 12%。這是我們自己算的，兩個統計範圍不同，只能當量級看。但量級很清楚：觀眾付的錢，以製作公司營收形式回來的，大約一成多。製作委員會的會議室很大，大到畫圖的人通常不在裡面。",
+          "source_ids": [
+            "aja-2024-market-prelim"
+          ],
+          "beat": "joke",
+          "mascot": {
+            "pose": "shocked"
+          },
+          "media": {
+            "kind": "animated",
+            "animation": "count_up"
+          },
+          "notes": "article §a-chain、§a-numbers（自行相除，已標明）。附錄 B 會議室笑話。"
+        },
+        {
+          "id": "s11",
+          "layout": "bullets",
+          "heading": "下游的下游",
+          "body": {
+            "items": [
+              "專門工作室虧損 41.3%",
+              "前一年是 37.0%",
+              "創作者五到七成是接案者"
+            ]
+          },
+          "narration": "再往下一層更辛苦。帝國資料銀行說，2025 年專門工作室有 41.3% 虧損，比前一年的 37.0% 還高。經產省的資料則指出，參與動畫製作的創作者，有五到七成是自由工作者，沒有公司替他們分攤風險。",
+          "source_ids": [
+            "tdb-2025-anime-prod-market",
+            "meti-anime-transaction-2026"
+          ],
+          "mascot": {
+            "pose": "think"
+          },
+          "media": {
+            "kind": "stock",
+            "query": "person drawing at home desk lamp night",
+            "keywords": [
+              "drawing",
+              "desk",
+              "sketch",
+              "artist"
+            ]
+          },
+          "notes": "article §a-chain。經產省數字為 snippet only，講稿用「資料指出」。"
+        },
+        {
+          "id": "s12",
+          "layout": "compare",
+          "heading": "有版權的公司長什麼樣",
+          "body": {
+            "left": {
+              "label": "版權事業",
+              "items": [
+                "營收 505.8 億",
+                "部門利益 259 億"
+              ]
+            },
+            "right": {
+              "label": "影像製作",
+              "items": [
+                "營收 373.2 億",
+                "部門利益 103.8 億"
+              ]
+            }
+          },
+          "narration": "反證是東映動畫。它自己持有大量作品版權，2025 年 3 月期營收 1,008 億日圓，版權事業就占 505.8 億，大約一半；版權的部門利益 259 億，比影像製作的 103.8 億多一倍以上。同樣做動畫，有版權和只拿工錢，損益表長得完全不一樣。",
+          "source_ids": [
+            "toei-fy2025-results"
+          ],
+          "mascot": {
+            "pose": "point"
+          },
+          "media": {
+            "kind": "animated",
+            "animation": "grow_bars"
+          },
+          "notes": "article §a-chain。"
+        },
+        {
+          "id": "s13",
+          "layout": "big_number",
+          "heading": "賺錢的是授權，不是動畫本身",
+          "body": {
+            "value": "海外版權",
+            "unit": "",
+            "caption": "東映動畫 2026 年上修全年預測的主因"
+          },
+          "narration": "東映的版權收入從哪來？公司說，主要是龍珠的遊戲化權，和航海王的商品化權。到了 2026 年 5 月，它上修全年預測，理由還是同一個：海外的版權事業比預期好。賣得最好的，是畫面之外的那張授權合約。",
+          "source_ids": [
+            "toei-fy2025-results",
+            "toei-fy2026-revision"
+          ],
+          "beat": "gossip",
+          "mascot": {
+            "pose": "deadpan"
+          },
+          "media": {
+            "kind": "title_card",
+            "source_id": "toei-fy2026-revision",
+            "headline": "東映動畫上修全年預測：海外版權事業好調",
+            "summary": "2026 年 5 月公布"
+          },
+          "notes": "article 附錄 A-1。不放任何作品畫面，只提片名文字。"
+        },
+        {
+          "id": "s14",
+          "layout": "big_number",
+          "heading": "以製作為主的公司",
+          "body": {
+            "value": "5.4",
+            "unit": "%",
+            "caption": "IG Port 2026 年 5 月期營業利益率（前期 9.8%）"
+          },
+          "narration": "對照另一家以製作為主的上市公司 IG Port。它 2026 年 5 月期的營業利益率只有 5.4%，前一期是 9.8%。一百塊營收，留下來的不到六塊。",
+          "source_ids": [
+            "ig-port-kessan-fy2026"
+          ],
+          "mascot": {
+            "pose": "think"
+          },
+          "notes": "article §a-chain。決算短信只取得摘要，講稿只用利益率。"
+        },
+        {
+          "id": "s15",
+          "layout": "big_number",
+          "heading": "一年三百部，人手沒變三倍",
+          "body": {
+            "value": "300",
+            "unit": "部／年",
+            "caption": "近年電視動畫年產量（2000 年代初約 100 部）"
+          },
+          "narration": "產量也在把工錢攤薄。電視動畫一年從 2000 年代初的約 100 部，增加到近年約 300 部。人手沒有跟著變三倍，工作室只好搶人，成本一路上升。一年三百部，觀眾追不完，動畫師也畫不完，只有授權合約簽得完。",
+          "source_ids": [
+            "itmedia-anime-column-2026"
+          ],
+          "beat": "joke",
+          "mascot": {
+            "pose": "smug"
+          },
+          "media": {
+            "kind": "stock",
+            "query": "stack of paper sheets office desk",
+            "keywords": [
+              "paper",
+              "stack",
+              "desk",
+              "documents"
+            ]
+          },
+          "notes": "article §a-chain；附錄 B。"
+        }
+      ]
+    },
+    {
+      "title": "新聞時間軸",
+      "slides": [
+        {
+          "id": "s16",
+          "layout": "timeline",
+          "heading": "近三年發生了什麼",
+          "body": {
+            "events": [
+              {
+                "when": "2024-06",
+                "what": "GAINAX 聲請破產"
+              },
+              {
+                "when": "2025-03",
+                "what": "公取委集中調查"
+              },
+              {
+                "when": "2025-10",
+                "what": "海外市場破 2 兆日圓"
+              },
+              {
+                "when": "2026-01",
+                "what": "Netflix 與 MAPPA 合作"
+              },
+              {
+                "when": "2026-08",
+                "what": "製作市場破 4,000 億"
+              }
+            ]
+          },
+          "narration": "把近三年串起來看。2024 年 6 月，老牌公司 GAINAX 聲請破產；2025 年 3 月，公平交易委員會集中調查動畫製作業；同年 10 月，海外市場破 2 兆日圓；2026 年 1 月，Netflix 與 MAPPA 擴大合作；8 月，製作市場首度破 4,000 億日圓。",
+          "source_ids": [
+            "gainax-bankruptcy-2024",
+            "jftc-anime-inspection-2025-03",
+            "aja-2024-market-prelim",
+            "netflix-mappa-2026",
+            "tdb-2025-anime-prod-market"
+          ],
+          "mascot": {
+            "pose": "idle"
+          },
+          "media": {
+            "kind": "animated",
+            "animation": "draw_line"
+          },
+          "notes": "article §a-timeline。"
+        },
+        {
+          "id": "s17",
+          "layout": "title",
+          "heading": "招牌不等於收入",
+          "body": {
+            "subtitle": "GAINAX：2024 年聲請破產"
+          },
+          "narration": "GAINAX 這個名字，在動畫史上非常響亮，但公司本身在 2024 年聲請破產。名作的權利早就分散在不同的權利人手上。招牌很大，不代表帳戶很大。",
+          "source_ids": [
+            "gainax-bankruptcy-2024"
+          ],
+          "beat": "gossip",
+          "mascot": {
+            "pose": "deadpan"
+          },
+          "media": {
+            "kind": "title_card",
+            "source_id": "gainax-bankruptcy-2024",
+            "headline": "GAINAX 聲請破產程序開始",
+            "summary": "2024 年 6 月公開"
+          },
+          "notes": "article 附錄 A-2。不放任何作品畫面。"
+        },
+        {
+          "id": "s18",
+          "layout": "bullets",
+          "heading": "政府開始出手",
+          "body": {
+            "items": [
+              "2025-03 集中調查",
+              "45 名業者被要求改正",
+              "2025-12 公布實態調查",
+              "預告訂定交易指針"
+            ]
+          },
+          "narration": "政府也開始出手。2025 年 3 月，日本公平交易委員會對動畫製作業集中調查，對 45 名業者發出改正指導。同年 12 月，它公布電影與動畫創作者交易環境的實態調查，預告要訂定指針，規範委託和承包之間怎麼談條件。",
+          "source_ids": [
+            "jftc-anime-inspection-2025-03",
+            "jftc-creator-trade-survey-2025"
+          ],
+          "mascot": {
+            "pose": "point"
+          },
+          "media": {
+            "kind": "title_card",
+            "source_id": "jftc-creator-trade-survey-2025",
+            "headline": "公平交易委員會公布電影與動畫創作者交易實態調查",
+            "summary": "預告訂定指針"
+          },
+          "notes": "article §a-timeline、附錄 A-4。"
+        },
+        {
+          "id": "s19",
+          "layout": "compare",
+          "heading": "另一條路：平台直接出錢",
+          "body": {
+            "left": {
+              "label": "委員會模式",
+              "items": [
+                "多家合資",
+                "製作公司領製作費"
+              ]
+            },
+            "right": {
+              "label": "平台直接合作",
+              "items": [
+                "平台出資開發",
+                "全球獨家播出"
+              ]
+            }
+          },
+          "narration": "也有人想繞過委員會。2026 年 1 月，Netflix 與 MAPPA 宣布擴大合作，共同開發原創作品，在全球獨家播出。這會不會讓製作公司分到更多，目前還沒有數字。換一個老闆，不保證換一張薪水單。",
+          "source_ids": [
+            "netflix-mappa-2026"
+          ],
+          "beat": "joke",
+          "mascot": {
+            "pose": "smug"
+          },
+          "media": {
+            "kind": "title_card",
+            "source_id": "netflix-mappa-2026",
+            "headline": "Netflix 與 MAPPA 擴大合作，全球獨家播出",
+            "summary": "合作範圍各家報導寫法不一"
+          },
+          "notes": "article §a-timeline、§a-unknowns。笑話原創。"
+        }
+      ]
+    },
+    {
+      "title": "台灣在哪個位置",
+      "slides": [
+        {
+          "id": "s20",
+          "layout": "bullets",
+          "heading": "台灣曾在下游：代工",
+          "body": {
+            "items": [
+              "1978 年成立宏廣",
+              "美國公司的海外工廠",
+              "也參與日本作品分段",
+              "轉型自製被評太晚"
+            ]
+          },
+          "narration": "台灣在這條河上出現過兩次。第一次在下游。宏廣在 1978 年成立，最早叫 Cuckoos' Nest，是美國 Hanna-Barbera 的海外代工據點，也參與過日本作品的分段製作。媒體回顧時評論，它從代工轉型自製的速度太晚。代工，正是這條河裡分到最少的那一段。",
+          "source_ids": [
+            "wang-film-mirrormedia-2016"
+          ],
+          "beat": "gossip",
+          "mascot": {
+            "pose": "deadpan"
+          },
+          "media": {
+            "kind": "stock",
+            "query": "vintage film reel projector",
+            "keywords": [
+              "film",
+              "reel",
+              "projector"
+            ]
+          },
+          "notes": "article §a-taiwan、附錄 A-5。來源為 snippet only。"
+        },
+        {
+          "id": "s21",
+          "layout": "big_number",
+          "heading": "台灣也在上游：付錢的人",
+          "body": {
+            "value": "20.5",
+            "unit": "%",
+            "caption": "巴哈姆特動畫瘋付費會員比例（2025-06，月費 99 元）"
+          },
+          "narration": "第二次在上游，台灣觀眾是付錢的那一端。巴哈姆特動畫瘋月費 99 元新台幣，2025 年 6 月付費會員比例升到 20.5%。台灣平台付的授權金，算進日本統計的海外市場，先流向委員會，而不是直接流向畫圖的工作室。",
+          "source_ids": [
+            "bahamut-anigamer-2025",
+            "aja-2024-market-prelim"
+          ],
+          "mascot": {
+            "pose": "point"
+          },
+          "media": {
+            "kind": "stock",
+            "query": "person watching tablet sofa",
+            "keywords": [
+              "tablet",
+              "watching",
+              "sofa"
+            ]
+          },
+          "notes": "article §a-taiwan。stock 不得出現動畫畫面或平台 logo。"
+        }
+      ]
+    },
+    {
+      "title": "還不知道的事與結論",
+      "slides": [
+        {
+          "id": "s22",
+          "layout": "bullets",
+          "heading": "沒人說得準的四件事",
+          "body": {
+            "items": [
+              "委員會分潤沒有公開標準",
+              "兩份製作市場數字不同",
+              "平台直投效果未知",
+              "倒閉統計低估退出"
+            ]
+          },
+          "narration": "有四件事還沒人說得準。委員會怎麼分潤，沒有公開標準。兩份製作市場數字不同，帝國資料銀行 2024 年的數字，從 3,621 億修正成 3,698 億，跟協會的 4,662 億範圍不同。平台直投有沒有用，還沒有數據。倒閉統計只算負債 1,000 萬日圓以上的法律清算，個人動畫師離開不會被算到。委員會的分潤合約，比任何伏筆都藏得深。",
+          "source_ids": [
+            "production-committee-nlab",
+            "tdb-2024-anime-prod-market",
+            "tdb-2025-anime-prod-market",
+            "aja-2024-market-prelim",
+            "tdb-anime-studio-exits-2025"
+          ],
+          "beat": "joke",
+          "mascot": {
+            "pose": "smug"
+          },
+          "notes": "article §a-unknowns。"
+        },
+        {
+          "id": "s23",
+          "layout": "big_number",
+          "heading": "下一個訊號",
+          "body": {
+            "value": "4,065",
+            "unit": "億日圓",
+            "caption": "2025 年製作市場首破 4,000 億，2026 年恐五年來首次下滑"
+          },
+          "narration": "下一個訊號要看 2026 年。帝國資料銀行說，2025 年製作市場是 4,065 億日圓，首度破 4,000 億，但 2026 年可能是五年來第一次下滑，人手不足是原因之一。報告也點出，自己握有版權，是製作公司的關鍵。",
+          "source_ids": [
+            "tdb-2025-anime-prod-market"
+          ],
+          "mascot": {
+            "pose": "idle"
+          },
+          "media": {
+            "kind": "title_card",
+            "source_id": "tdb-2025-anime-prod-market",
+            "headline": "動畫製作市場首破 4,000 億日圓，恐已見頂",
+            "summary": "帝國資料銀行 2025 年調查"
+          },
+          "notes": "article §a-timeline、§a-unknowns。"
+        },
+        {
+          "id": "s24",
+          "layout": "quote",
+          "heading": "賣爆的錢，進了誰的帳？",
+          "body": {
+            "text": "製作公司領的是工錢，不是分紅。",
+            "who": "賽璐璐研究室"
+          },
+          "narration": "所以，動畫市場創新高和動畫公司很窮，並不矛盾。觀眾的錢先經過窗口、經過委員會，最後只有約一成多回到製作公司，而且開工前就談定。想翻身的公司，做的都是同一件事：自己出資，自己拿版權。下次聽到某部動畫賣爆了，可以多問一句：賣爆的錢，進了誰的帳？本頻道只拆產業，不報明牌。這裡是賽璐璐研究室，下次見。",
+          "source_ids": [
+            "aja-2024-market-prelim",
+            "itmedia-anime-column-2026"
+          ],
+          "mascot": {
+            "pose": "wave"
+          },
+          "media": {
+            "kind": "animated",
+            "animation": "fade_in"
+          },
+          "notes": "article §a-conclusion。v1 stock 抓到比特幣與美鈔，離題且有標誌，改動態投影片。"
+        }
+      ]
+    }
+  ]
+}
