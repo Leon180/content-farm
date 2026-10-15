@@ -171,7 +171,9 @@ class Runner:
         assert step.gate is not None
         current = gate_fingerprint(self.run_dir, step)
         if state.approved(step.gate.value, current):
-            return state, None
+            decision = state.decisions[step.gate.value]
+            record = StepRecord("approved", decision.at, inputs=current, note=f"by {decision.by}")
+            return state.with_step(step.name, record), None
         decision = state.decisions.get(step.gate.value)
         unchanged_rejection = (decision is not None and decision.verdict == "rejected"
                                and decision.fingerprint == current)

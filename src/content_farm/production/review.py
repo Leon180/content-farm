@@ -134,7 +134,7 @@ def _final_section(run_dir: Path) -> str:
                    f"</td><td>{escape(f['message'])}</td></tr>" for f in qc.get("findings", []))
     summary = (f"<p class='{'error' if qc.get('errors') else 'ok'}'>QC：{qc.get('errors', '?')} error、"
                f"{qc.get('warnings', '?')} warning</p>")
-    return player + "<h2>自動品質檢查</h2>" + summary + f"<table><tbody>{rows}</tbody></table>"
+    return "<h2>自動品質檢查</h2>" + summary + f"<table><tbody>{rows}</tbody></table>" + player
 
 
 def _script_section(run_dir: Path) -> str:

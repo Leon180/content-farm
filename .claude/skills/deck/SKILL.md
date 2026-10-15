@@ -120,6 +120,17 @@ python scripts/render_slides.py --run-dir <run_dir>
 
 Show the user `slides/contact_sheet.png` (Read it so they see it inline) and wait for approval.
 
+## One-command alternative: `scripts/produce.py`
+
+For a channel run (`channels/<code>.yaml`), the runner does everything below — brand, subtitle width 20, `--require-measured`, QC, upload metadata — and stops at each gate with `review/<gate>.html`:
+
+```bash
+python scripts/produce.py run --channel chipcat --run-dir <run_dir> [--mock-voice | --allow-paid]
+python scripts/produce.py approve --run-dir <run_dir> --gate deck      # then run again to continue
+```
+
+It never runs paid TTS without `--allow-paid`, and never uploads (`/upload` stays manual). See `docs/proposals/production-workflow.md`.
+
 ## After approval — paid steps, only on explicit go-ahead
 
 These spend money (Fish Audio TTS). Ask before running; never run them as part of gate 3. For a free dry run (length / overflow / timing check, not for publishing) prefix the voice step with `CF_TTS_PROVIDER=macos_say`.
