@@ -175,9 +175,15 @@ _MEDIA_REQUIRED: dict[MediaKind, str] = {
 }
 
 
+StockKeyword = Annotated[str, Field(pattern=r"^[a-z][a-z0-9-]{1,23}$")]
+
+
 class Media(_Frozen):
     kind: MediaKind = MediaKind.SLIDE
     query: str = Field(default="", max_length=100)       # stock: English search terms
+    # stock: a clip is kept only if its Pexels slug / Pixabay tags contain one of
+    # these words (default: the query's specific words). See stock.relevance_terms.
+    keywords: tuple[StockKeyword, ...] = Field(default=(), max_length=8)
     prompt: str = Field(default="", max_length=1200)     # ai_image: generation prompt
     animation: Animation | None = None                   # animated
     headline: str = Field(default="", max_length=60)     # title_card: defaults to source title

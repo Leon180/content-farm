@@ -152,6 +152,7 @@ def write_report(
             {"index": r.index, "slide_id": r.slide_id, "requested": r.requested, "used": r.used,
              "fallback": r.requested != r.used and r.used != USED_PLACEHOLDER or None,
              "placeholder": r.used == USED_PLACEHOLDER or None,
+             "review": r.review or None,
              "seconds": r.seconds, "build_seconds": r.build_seconds, "note": r.note,
              "problems": list(r.problems), "file": str(f)}
             for r, f in zip(results, finals)
@@ -173,7 +174,8 @@ def media_contact_sheet(
     results: Sequence[ClipResult], out_path: Path, frames_dir: Path,
     *, columns: int = 3, thumb_width: int = 560,
 ) -> Path:
-    """Review sheet: one frame per slot; placeholders and fallbacks get a red frame + tag."""
+    """Review sheet: one frame per slot; placeholders and fallbacks get a red frame + tag,
+    stock clips awaiting a human check an orange one."""
     thumb_h = thumb_width * 1080 // 1920
     gutter, label_h = 24, 44
     rows = -(-len(results) // columns)
@@ -192,6 +194,10 @@ def media_contact_sheet(
             tag = "AI 圖待補" if r.used == USED_PLACEHOLDER else f"退回 {r.used}"
             draw.rectangle((x, y, x + 230, y + 56), fill="#d62828")
             draw.text((x + 14, y + 8), tag, fill="#ffffff", font=tag_font)
+        elif r.review:
+            draw.rectangle((x - 4, y - 4, x + thumb_width + 4, y + thumb_h + 4), outline="#ff9f1c", width=8)
+            draw.rectangle((x, y, x + 330, y + 56), fill="#e07a00")
+            draw.text((x + 14, y + 8), "B-roll 待人工確認", fill="#ffffff", font=tag_font)
         label = f"{r.index:02d} · {r.slide_id} · {r.requested}" + (f"→{r.used}" if flagged else "")
         draw.text((x, y + thumb_h + 8), label, fill="#ff6b6b" if flagged else "#d8dbe0", font=font)
     out_path.parent.mkdir(parents=True, exist_ok=True)

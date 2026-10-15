@@ -20,7 +20,7 @@ from content_farm.explainer.capture import PageCapturer
 from content_farm.explainer.cards import overlay_html, placeholder_html, title_card_html
 from content_farm.explainer.deck import Deck, MediaKind, Section, Slide
 from content_farm.explainer.pages import SlidePage
-from content_farm.explainer.stock import StockClient, StockUnavailable, credit_entry
+from content_farm.explainer.stock import StockClient, StockUnavailable, candidate_text, credit_entry
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +39,7 @@ class ClipResult:
     credit: dict | None = None
     build_seconds: float = 0.0
     problems: tuple[str, ...] = ()
+    review: bool = False  # needs a human look before publishing (every stock clip)
 
 
 @dataclass(frozen=True)
@@ -119,11 +120,12 @@ def _overlay_png(ctx: MediaContext, job: SlideJob) -> Path:
 
 
 def _stock(ctx: MediaContext, job: SlideJob) -> ClipResult:
-    query = job.slide.media.query if job.slide.media else ""
+    media = job.slide.media
+    query, keywords = (media.query, media.keywords) if media else ("", ())
     try:
         if ctx.stock is None:
             raise StockUnavailable("stock disabled (--no-stock)")
-        asset = ctx.stock.fetch(query, job.seconds)
+        asset = ctx.stock.fetch(query, job.seconds, keywords)
         source_seconds = ffmpeg_ops.probe(asset.path)["duration"]
         clip, mode = ffmpeg_ops.stock_to_clip(
             asset.path, _overlay_png(ctx, job), ctx.clip_path(job, ".mp4"), job.seconds, source_seconds,
@@ -132,8 +134,11 @@ def _stock(ctx: MediaContext, job: SlideJob) -> ClipResult:
         logger.warning("slide %s: stock fallback → animated: %s", job.slide.id, exc)
         return _animated(ctx, job, note=f"FALLBACK stock→animated: {exc} | ")
     cache = "cache" if asset.from_cache else "download"
-    note = f"{asset.candidate.provider}:{asset.candidate.provider_id} {mode} ({cache})"
-    return _result(job, "stock", clip, note=note, credit=credit_entry(asset, job.slide.id, job.index))
+    note = (f"{asset.candidate.provider}:{asset.candidate.provider_id} {mode} ({cache}) "
+            f"matched={'/'.join(asset.matched)} [{candidate_text(asset.candidate).strip()}]")
+    # Keyword match is evidence, not proof: a human still watches every stock clip.
+    return _result(job, "stock", clip, note=note, credit=credit_entry(asset, job.slide.id, job.index),
+                   review=True)
 
 
 def _ai_image(ctx: MediaContext, job: SlideJob) -> ClipResult:

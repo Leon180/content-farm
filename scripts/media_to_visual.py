@@ -93,7 +93,7 @@ def main(argv: list[str] | None = None) -> int:
     if used == "script":
         print("WARNING: estimated durations — do not assemble from this", file=sys.stderr)
     for r in run.results:
-        flag = "  <-- " if r.requested != r.used else ""
+        flag = "  <-- " if r.requested != r.used else ("  [review]" if r.review else "")
         print(f"{r.index:02d} {r.slide_id:<10} {r.requested:<10} -> {r.used:<14} "
               f"{r.build_seconds:5.1f}s  {r.note}{flag}")
     print(f"Placed {len(run.placed)} clips from {used} durations in "

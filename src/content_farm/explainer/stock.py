@@ -22,7 +22,7 @@ import logging
 import re
 import time
 from collections.abc import Callable
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 
 import httpx
@@ -59,6 +59,7 @@ class StockCandidate:
     author_url: str
     license_name: str
     license_url: str
+    tags: str = ""         # provider tags, comma separated (Pixabay always, Pexels rarely)
 
 
 @dataclass(frozen=True)
@@ -67,6 +68,7 @@ class StockAsset:
     candidate: StockCandidate
     path: Path
     from_cache: bool
+    matched: tuple[str, ...] = ()  # relevance terms found in the clip's slug / tags
 
 
 class RateLimiter:
@@ -132,6 +134,7 @@ def parse_pexels(data: dict) -> list[StockCandidate]:
         if chosen is None:
             continue
         user = video.get("user") or {}
+        tags = [t if isinstance(t, str) else str((t or {}).get("name", "")) for t in video.get("tags") or []]
         out.append(StockCandidate(
             provider="pexels",
             provider_id=str(video.get("id", "")),
@@ -144,6 +147,7 @@ def parse_pexels(data: dict) -> list[StockCandidate]:
             author_url=str(user.get("url", "")),
             license_name=PEXELS_LICENSE[0],
             license_url=PEXELS_LICENSE[1],
+            tags=", ".join(t for t in tags if t),
         ))
     return out
 
@@ -177,14 +181,61 @@ def parse_pixabay(data: dict) -> list[StockCandidate]:
             author_url=f"https://pixabay.com/users/{user}-{user_id}/" if user else "",
             license_name=PIXABAY_LICENSE[0],
             license_url=PIXABAY_LICENSE[1],
+            tags=str(hit.get("tags", "")),
         ))
     return out
 
 
-def rank(candidates: list[StockCandidate], min_seconds: float) -> list[StockCandidate]:
-    """Full-HD first, then long enough to only trim/slow (not loop), then longest."""
+# Words that say nothing about *what* is on screen. "factory production line"
+# is all generic and came back as a motorbike assembly line, so these never
+# count as evidence that a clip is on topic.
+GENERIC_WORDS = frozenset({
+    "a", "an", "and", "the", "of", "in", "on", "at", "with", "for", "to", "by", "from",
+    "close", "closeup", "up", "view", "shot", "footage", "video", "background", "slow", "motion",
+    "aerial", "drone", "timelapse", "time", "lapse", "4k", "hd",
+    "factory", "production", "line", "manufacturing", "industry", "industrial", "business",
+    "technology", "tech", "modern", "process", "work", "working", "worker", "workers",
+    "people", "person", "man", "woman", "engineer", "engineers", "team", "office",
+    "inspection", "equipment", "machine", "machinery", "assembly", "building", "construction",
+})
+
+
+def _words(text: str) -> set[str]:
+    seq = re.findall(r"[a-z0-9]+", text.lower())
+    words = set(seq) | {a + b for a, b in zip(seq, seq[1:])}  # "clean room" → cleanroom
+    return words | {w[:-1] for w in words if len(w) > 3 and w.endswith("s")}  # wafers → wafer
+
+
+def relevance_terms(query: str, keywords: tuple[str, ...] = ()) -> tuple[str, ...]:
+    """Words a clip must mention to count as on topic: ``keywords``, else the query's specific words."""
+    if keywords:
+        return tuple(dict.fromkeys(k.lower() for k in keywords))
+    words = re.findall(r"[a-z0-9]+", query.lower())
+    return tuple(dict.fromkeys(w for w in words if w not in GENERIC_WORDS and len(w) > 1))
+
+
+def candidate_text(c: StockCandidate) -> str:
+    """What the provider says the clip shows: the Pexels page slug + any tags."""
+    slug = c.page_url.rstrip("/").rsplit("/", 1)[-1]
+    return f"{slug} {c.tags}"
+
+
+def relevance(c: StockCandidate, terms: tuple[str, ...]) -> tuple[str, ...]:
+    words = _words(candidate_text(c))
+    hits = []
+    for term in terms:
+        parts = term.split("-")  # "clean-room" matches the slug "clean-room" too
+        if all(p in words for p in parts) or term.replace("-", "") in words:
+            hits.append(term)
+    return tuple(hits)
+
+
+def rank(candidates: list[StockCandidate], min_seconds: float,
+         terms: tuple[str, ...] = ()) -> list[StockCandidate]:
+    """Most relevance terms first, then Full-HD, then long enough to trim/slow (not loop), then longest."""
     def key(c: StockCandidate) -> tuple:
-        return (c.width >= TARGET_WIDTH, c.duration * 1.5 >= min_seconds, c.duration)
+        return (len(relevance(c, terms)), c.width >= TARGET_WIDTH, c.duration * 1.5 >= min_seconds,
+                c.duration)
     return sorted((c for c in candidates if c.duration > 0), key=key, reverse=True)
 
 
@@ -210,12 +261,23 @@ class StockClient:
     def configured(self) -> bool:
         return any(self._keys.values())
 
-    def fetch(self, query: str, min_seconds: float) -> StockAsset:
-        """Cached asset for ``query`` or :class:`StockUnavailable` with the reason."""
+    def fetch(self, query: str, min_seconds: float, keywords: tuple[str, ...] = ()) -> StockAsset:
+        """Cached on-topic asset for ``query`` or :class:`StockUnavailable` with the reason.
+
+        A clip counts only if its slug / tags mention one of :func:`relevance_terms`;
+        a cached clip that no longer passes (stricter keywords) is searched again.
+        """
+        terms = relevance_terms(query, keywords)
+        if not terms:
+            raise StockUnavailable(
+                f"query {query!r} has only generic words; name what is on screen or set media.keywords")
         entry = self._cache_dir / cache_key(query)
         cached = self._load_cache(entry, query)
         if cached is not None:
-            return cached
+            matched = relevance(cached.candidate, terms)
+            if matched:
+                return replace(cached, matched=matched)
+            logger.info("cached clip for %r mentions none of %s; searching again", query, terms)
         if not self.configured:
             raise StockUnavailable("no Pexels/Pixabay API key configured")
         reasons: list[str] = []
@@ -224,16 +286,18 @@ class StockClient:
                 reasons.append(f"{provider}: no key")
                 continue
             try:
-                ranked = rank(self._search(provider, query), min_seconds)
-                if not ranked:
-                    reasons.append(f"{provider}: no landscape >= {MIN_WIDTH}px result")
+                found = rank(self._search(provider, query), min_seconds, terms)
+                relevant = [c for c in found if relevance(c, terms)]
+                if not relevant:
+                    reasons.append(f"{provider}: {len(found)} usable result(s), none mention {'/'.join(terms)}")
                     continue
-                return self._store(entry, query, ranked[0])
+                asset = self._store(entry, query, relevant[0])
+                return replace(asset, matched=relevance(relevant[0], terms))
             except StockUnavailable as exc:
                 reasons.append(str(exc))
             except (httpx.HTTPError, ValueError, OSError) as exc:
                 reasons.append(f"{provider}: {type(exc).__name__}: {exc}")
-        raise StockUnavailable(f"no footage for {query!r} ({'; '.join(reasons)})")
+        raise StockUnavailable(f"no on-topic footage for {query!r} ({'; '.join(reasons)})")
 
     def _search(self, provider: str, query: str) -> list[StockCandidate]:
         self._limiter.wait(provider)

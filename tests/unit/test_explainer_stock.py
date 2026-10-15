@@ -21,12 +21,14 @@ from content_farm.explainer.stock import (
     parse_pexels,
     parse_pixabay,
     rank,
+    relevance,
+    relevance_terms,
 )
 
 
 def pexels_video(vid: int = 1, duration: int = 20, files: list[dict] | None = None) -> dict:
     return {
-        "id": vid, "url": f"https://www.pexels.com/video/x-{vid}/", "duration": duration,
+        "id": vid, "url": f"https://www.pexels.com/video/silicon-wafer-chip-{vid}/", "duration": duration,
         "user": {"name": "Ann Shooter", "url": "https://www.pexels.com/@ann"},
         "video_files": files if files is not None else [
             {"quality": "hd", "width": 3840, "height": 2160, "link": f"https://videos.pexels.com/{vid}-4k.mp4"},
@@ -39,6 +41,7 @@ def pexels_video(vid: int = 1, duration: int = 20, files: list[dict] | None = No
 def pixabay_hit(hid: int = 7, duration: int = 15) -> dict:
     return {
         "id": hid, "pageURL": f"https://pixabay.com/videos/x-{hid}/", "duration": duration,
+        "tags": "wafer, chip, semiconductor",
         "user": "bob", "user_id": 42,
         "videos": {
             "large": {"url": f"https://cdn.pixabay.com/{hid}-large.mp4", "width": 3840, "height": 2160},
@@ -86,7 +89,7 @@ class TestParsing:
         [c] = parse_pexels({"videos": [pexels_video()]})
         assert c.download_url.endswith("1-1080.mp4") and (c.width, c.height) == (1920, 1080)
         assert c.author == "Ann Shooter" and c.author_url.endswith("@ann")
-        assert c.page_url == "https://www.pexels.com/video/x-1/"
+        assert c.page_url == "https://www.pexels.com/video/silicon-wafer-chip-1/"
         assert c.license_name == "Pexels License"
 
     def test_pexels_skips_portrait_and_tiny(self) -> None:
@@ -155,43 +158,95 @@ class TestClient:
 
     def test_unavailable_lists_every_reason(self, tmp_path: Path) -> None:
         rec = Recorder(pexels={"videos": []}, pixabay={"hits": []})
-        with pytest.raises(StockUnavailable, match="pexels: no landscape.*pixabay: no landscape"):
-            client(tmp_path, rec).fetch("nothing", 10)
+        with pytest.raises(StockUnavailable, match="pexels: 0 usable.*pixabay: 0 usable"):
+            client(tmp_path, rec).fetch("wafer", 10)
 
     def test_no_keys(self, tmp_path: Path) -> None:
         rec = Recorder()
         with pytest.raises(StockUnavailable, match="no Pexels/Pixabay API key"):
-            client(tmp_path, rec, pexels="", pixabay="").fetch("x", 5)
+            client(tmp_path, rec, pexels="", pixabay="").fetch("wafer", 5)
         assert rec.calls == []
 
     def test_http_error_falls_through_to_pixabay(self, tmp_path: Path) -> None:
         rec = Recorder(pexels_status=500)
-        assert client(tmp_path, rec).fetch("x", 5).candidate.provider == "pixabay"
+        assert client(tmp_path, rec).fetch("wafer", 5).candidate.provider == "pixabay"
 
     def test_429_stops_further_pexels_calls(self, tmp_path: Path) -> None:
         rec = Recorder(pexels_status=429, pixabay={"hits": []})
         stock = client(tmp_path, rec)
         with pytest.raises(StockUnavailable, match="429"):
-            stock.fetch("a", 5)
+            stock.fetch("wafer", 5)
         with pytest.raises(StockUnavailable, match="pexels rate limit reached"):
-            stock.fetch("b", 5)
+            stock.fetch("chip", 5)
         pexels_calls = [c for c in rec.calls if str(c.url).startswith(PEXELS_SEARCH)]
         assert len(pexels_calls) == 1
 
     def test_remaining_zero_header_stops_next_call(self, tmp_path: Path) -> None:
         rec = Recorder(headers={"X-Ratelimit-Remaining": "0", "X-Ratelimit-Reset": "1760000000"})
         stock = client(tmp_path, rec)
-        stock.fetch("a", 5)  # this response is still used
-        asset = stock.fetch("b", 5)
+        stock.fetch("wafer", 5)  # this response is still used
+        asset = stock.fetch("chip", 5)
         assert asset.candidate.provider == "pixabay"
 
     def test_corrupt_cache_is_refetched(self, tmp_path: Path) -> None:
         rec = Recorder()
-        first = client(tmp_path, rec).fetch("x", 5)
+        first = client(tmp_path, rec).fetch("wafer", 5)
         (first.path.parent / "meta.json").write_text("{not json")
-        assert not client(tmp_path, rec).fetch("x", 5).from_cache
+        assert not client(tmp_path, rec).fetch("wafer", 5).from_cache
         meta = json.loads((first.path.parent / "meta.json").read_text())
         assert meta["candidate"]["provider"] == "pexels"
+
+
+def _video_with_slug(vid: int, slug: str, duration: int = 30) -> dict:
+    return {**pexels_video(vid, duration), "url": f"https://www.pexels.com/video/{slug}-{vid}/"}
+
+
+class TestRelevance:
+    def test_generic_words_do_not_count(self) -> None:
+        assert relevance_terms("semiconductor cleanroom wafer close up") == ("semiconductor", "cleanroom", "wafer")
+        assert relevance_terms("factory production line") == ()
+        assert relevance_terms("factory production line", ("chip", "Wafer")) == ("chip", "wafer")
+
+    def test_slug_tags_and_plural_match(self) -> None:
+        [c] = parse_pexels({"videos": [_video_with_slug(1, "engineers-holding-silicon-wafers")]})
+        assert relevance(c, ("wafer", "cleanroom")) == ("wafer",)
+        [p] = parse_pixabay({"hits": [{**pixabay_hit(), "tags": "clean-room, lab"}]})
+        assert relevance(p, ("clean-room", "cleanroom")) == ("clean-room", "cleanroom")
+
+    def test_off_topic_clip_is_skipped_for_a_relevant_one(self, tmp_path: Path) -> None:
+        # the regression: a motorbike line ranked first for a generic factory query
+        rec = Recorder(pexels={"videos": [
+            _video_with_slug(1, "motorcycle-factory-production-line-overview", 60),
+            _video_with_slug(2, "worker-in-cleanroom-with-silicon-wafer", 12),
+        ]})
+        asset = client(tmp_path, rec).fetch("semiconductor cleanroom wafer", 10)
+        assert asset.candidate.provider_id == "2"
+        assert asset.matched == ("cleanroom", "wafer")
+
+    def test_all_off_topic_falls_back_with_reason(self, tmp_path: Path) -> None:
+        rec = Recorder(pexels={"videos": [_video_with_slug(1, "motorcycle-assembly")]},
+                       pixabay={"hits": [{**pixabay_hit(), "tags": "car, robot"}]})
+        with pytest.raises(StockUnavailable, match="none mention semiconductor/wafer"):
+            client(tmp_path, rec).fetch("semiconductor wafer", 10)
+
+    def test_generic_only_query_never_searches(self, tmp_path: Path) -> None:
+        rec = Recorder()
+        with pytest.raises(StockUnavailable, match="only generic words"):
+            client(tmp_path, rec).fetch("factory production line", 10)
+        assert rec.calls == []
+
+    def test_keywords_override_query_words(self, tmp_path: Path) -> None:
+        rec = Recorder(pexels={"videos": [_video_with_slug(1, "printed-circuit-board-macro")]},
+                       pixabay={"hits": []})
+        asset = client(tmp_path, rec).fetch("pcb substrate", 10, ("circuit", "board"))
+        assert asset.matched == ("circuit", "board")
+
+    def test_cached_clip_failing_new_keywords_is_searched_again(self, tmp_path: Path) -> None:
+        rec = Recorder(pexels={"videos": [_video_with_slug(1, "silicon-wafer")]}, pixabay={"hits": []})
+        client(tmp_path, rec).fetch("wafer chip", 10)
+        rec.pexels = {"videos": [_video_with_slug(2, "chip-on-circuit-board")]}
+        asset = client(tmp_path, rec).fetch("wafer chip", 10, ("board",))
+        assert not asset.from_cache and asset.candidate.provider_id == "2"
 
 
 class TestRateLimiter:

@@ -51,6 +51,12 @@ class TestMediaValidation:
         deck = _with_media({"kind": "title_card", "source_id": "s1"})
         assert _m1(deck).media.source_id == "s1"
 
+    def test_stock_keywords_are_lowercase_words(self) -> None:
+        media = _m1(_with_media({"kind": "stock", "query": "wafer", "keywords": ["wafer", "clean-room"]})).media
+        assert media.keywords == ("wafer", "clean-room")
+        with pytest.raises(ValidationError):
+            _with_media({"kind": "stock", "query": "wafer", "keywords": ["Wafer Fab"]})
+
     def test_title_card_source_must_exist(self) -> None:
         with pytest.raises(ValidationError, match="media.source_id 'nope'"):
             _with_media({"kind": "title_card", "source_id": "nope"})

@@ -61,7 +61,12 @@
           "notes": "開場鉤子：反直覺提問。晶片貓自我介紹固定句。",
           "media": {
             "kind": "stock",
-            "query": "semiconductor wafer"
+            "query": "silicon wafer cleanroom",
+            "keywords": [
+              "wafer",
+              "wafers",
+              "silicon"
+            ]
           }
         }
       ]
@@ -121,7 +126,13 @@
           "notes": "產業軼事（有來源，非針對個人的傳聞）。比喻：中央廚房。",
           "media": {
             "kind": "stock",
-            "query": "factory production line"
+            "query": "semiconductor cleanroom wafer",
+            "keywords": [
+              "semiconductor",
+              "wafer",
+              "cleanroom",
+              "microchip"
+            ]
           }
         },
         {
