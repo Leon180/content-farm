@@ -22,6 +22,7 @@ from content_farm.youtube.meta import _find_relative, _format_timestamp
 
 META_PATH = Path("upload") / "youtube_meta.json"
 AI_DISCLOSURE_LINE = "本影片由 AI 輔助製作（配音與部分插圖為合成內容）。"
+AI_DISCLOSURE_VOICE_LINE = "本影片由 AI 輔助製作（配音為合成語音）。"
 MIN_CHAPTERS = 3
 MIN_CHAPTER_SECONDS = 10  # YouTube ignores chapter lists with shorter chapters
 
@@ -47,6 +48,12 @@ def chapter_block(chapters: list[tuple[float, str]], total_seconds: float) -> li
     return ["章節：", *(f"{_format_timestamp(start)} {title}" for start, title in chapters), ""]
 
 
+def ai_disclosure_line(credits: dict | None) -> str:
+    """Only claim synthetic illustrations when the video actually has some."""
+    items = [*(credits or {}).get("entries", []), *(credits or {}).get("pending", [])]
+    return AI_DISCLOSURE_LINE if any(i.get("kind") == "ai_image" for i in items) else AI_DISCLOSURE_VOICE_LINE
+
+
 def build_description(channel: Channel, script: Script, credits: dict | None) -> str:
     total = sum(scene.duration_seconds for scene in script.scenes)
     parts = [*chapter_block(measured_chapters(script), total), script.description, ""]
@@ -56,7 +63,7 @@ def build_description(channel: Channel, script: Script, credits: dict | None) ->
     if credit_text:
         parts += [credit_text, ""]
     if channel.youtube.ai_disclosure:
-        parts.append(AI_DISCLOSURE_LINE)
+        parts.append(ai_disclosure_line(credits))
     parts.append(f"— {channel.name}")
     return "\n".join(parts).strip() + "\n"
 

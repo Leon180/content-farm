@@ -95,8 +95,16 @@ def test_meta_uses_final_video_credits_chapters_and_schedule(tmp_path: Path) -> 
     assert meta["contains_synthetic_media"] is True
     assert meta["description"].startswith("章節：\n0:00 ")
     assert "影片素材 / Stock footage:" in meta["description"]
-    assert publish.AI_DISCLOSURE_LINE in meta["description"]
+    assert publish.AI_DISCLOSURE_VOICE_LINE in meta["description"]  # no AI illustration credited
     assert len(meta["chapters"]) == 6 and meta["chapters"][0]["timestamp"] == "0:00"
+
+
+def test_ai_disclosure_mentions_illustrations_only_when_present() -> None:
+    assert publish.ai_disclosure_line(None) == publish.AI_DISCLOSURE_VOICE_LINE
+    assert publish.ai_disclosure_line({"entries": [{"kind": "stock"}], "pending": []}) == \
+        publish.AI_DISCLOSURE_VOICE_LINE
+    assert publish.ai_disclosure_line({"entries": [{"kind": "ai_image"}]}) == publish.AI_DISCLOSURE_LINE
+    assert publish.ai_disclosure_line({"pending": [{"kind": "ai_image"}]}) == publish.AI_DISCLOSURE_LINE
 
 
 def test_chapters_follow_measured_durations(tmp_path: Path) -> None:

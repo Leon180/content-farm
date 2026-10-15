@@ -1,0 +1,89 @@
+<!doctype html>
+{# One 1080x1920 page of a 「一個數字」 Short: mode = intro | body | outro.
+   The band y≈1240–1420 stays empty for burned-in subtitles; y > 1440 is left
+   to the Shorts UI (title, buttons). Brand tokens come from the channel CSS. #}
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<style>
+{{ brand_css | safe }}
+html, body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; }
+body { background-color: var(--bg); color: var(--fg); font-family: var(--font-heading); position: relative; }
+.channel { position: absolute; left: 60px; top: 150px; padding: 8px 26px; background: var(--fg); color: var(--bg);
+  font: 900 40px var(--font-heading); border-radius: 12px; transform: rotate(-2deg); }
+.sticker { position: absolute; background: var(--accent); color: var(--card); border: 5px solid var(--fg);
+  border-radius: 14px; font-weight: 900; box-shadow: 5px 5px 0 var(--fg); padding: 6px 24px; }
+.punch { position: absolute; left: 60px; right: 60px; font-weight: 900; color: var(--card);
+  -webkit-text-stroke: 16px var(--fg); paint-order: stroke fill; text-shadow: 10px 10px 0 var(--fg); line-height: 1.05; }
+.pk { color: var(--accent); }
+.bubble { position: absolute; background: var(--card); border: var(--ink); border-radius: 44px;
+  font: 700 56px var(--font-body); padding: 22px 40px; box-shadow: var(--pop); }
+.panel { position: absolute; left: 60px; top: 290px; width: 960px; height: 900px; box-sizing: border-box;
+  background: var(--card); border: 8px solid var(--fg); box-shadow: 12px 12px 0 var(--fg); padding: 110px 56px 0; }
+.value { font-family: var(--font-number); font-size: 230px; line-height: 1; color: var(--accent);
+  -webkit-text-stroke: 10px var(--fg); paint-order: stroke fill; text-shadow: 10px 10px 0 var(--fg); white-space: nowrap; }
+.unit { font: 900 96px var(--font-body); margin-top: 18px; }
+.caption { font: 700 50px/1.35 var(--font-body); margin-top: 40px; }
+.aside { display: inline-block; margin-top: 34px; background: var(--accent-2); color: var(--card); border: 5px solid var(--fg);
+  border-radius: 14px; padding: 8px 24px; font: 900 44px var(--font-body); box-shadow: 5px 5px 0 var(--fg); transform: rotate(-2deg); }
+.source { position: absolute; left: 56px; right: 56px; bottom: 34px; font: 700 30px var(--font-body); color: var(--muted); }
+.reveal { opacity: 0; }
+</style>
+</head>
+<body class="short {{ mode }}">
+<div class="channel">{{ channel_name }}</div>
+{% if mode == "intro" %}
+  <div class="sticker" style="left:60px;top:330px;font-size:56px;transform:rotate(-4deg)">{{ spec.label }}</div>
+  <div class="punch" style="top:500px;font-size:230px">{{ spec.number }}</div>
+  {% if spec.unit %}<div class="punch" style="top:760px;font-size:150px"><span class="pk">{{ spec.unit }}</span></div>{% endif %}
+  <div class="bubble" style="left:120px;top:1010px">{{ spec.hook }}</div>
+{% elif mode == "body" %}
+  <div class="panel">
+    <div class="sticker" style="left:-14px;top:-30px;font-size:46px;transform:rotate(-3deg)">{{ spec.label }}</div>
+    <div class="value" id="value" data-target="{{ spec.number }}">{{ spec.number }}</div>
+    {% if spec.unit %}<div class="unit">{{ spec.unit }}</div>{% endif %}
+    <div class="caption reveal" data-at="0.9">{{ spec.caption }}</div>
+    {% if spec.aside %}<div class="aside reveal" data-at="1.5">{{ spec.aside }}</div>{% endif %}
+    {% if source %}<div class="source">{{ source }}</div>{% endif %}
+  </div>
+{% else %}
+  <div class="sticker" style="left:60px;top:330px;font-size:52px;transform:rotate(-4deg)">{{ spec.label }}・完整版</div>
+  <div class="punch" style="top:480px;font-size:170px">想看<span class="pk">完整</span>的？</div>
+  <div class="bubble" style="left:60px;right:60px;top:800px;text-align:center">
+    「{{ spec.long_channel }}」頻道<br>《{{ spec.long_title }}》
+  </div>
+{% endif %}
+<script>
+// Frame-exact animation runtime for PageCapturer: seek(t) sets the state at time t.
+(function () {
+  const DURATION = {{ "1.9" if mode == "body" else "0.1" }};
+  const el = document.getElementById("value");
+  const target = el ? el.dataset.target : "";
+  const plain = target.replace(/,/g, "");
+  const num = Number(plain);
+  const decimals = (plain.split(".")[1] || "").length;
+  const grouped = target.includes(",");
+  function format(v) {
+    const s = v.toFixed(decimals);
+    if (!grouped) return s;
+    const [i, f] = s.split(".");
+    return i.replace(/\B(?=(\d{3})+(?!\d))/g, ",") + (f ? "." + f : "");
+  }
+  window.__anim = {
+    duration: DURATION,
+    seek(t) {
+      if (el && Number.isFinite(num) && plain !== "") {
+        const p = Math.min(1, Math.max(0, t / 1.2));
+        el.textContent = p >= 1 ? target : format(num * (1 - Math.pow(1 - p, 3)));
+      }
+      document.querySelectorAll(".reveal").forEach((node) => {
+        const at = Number(node.dataset.at);
+        node.style.opacity = String(Math.min(1, Math.max(0, (t - at) / 0.3)));
+      });
+    },
+  };
+  window.__anim.seek(0);
+})();
+</script>
+</body>
+</html>

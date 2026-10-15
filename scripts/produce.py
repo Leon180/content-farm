@@ -10,6 +10,8 @@ Usage:
     python scripts/produce.py inbox   --root output                 # every run waiting on a person
     python scripts/produce.py plan    --week 2026-W43               # publish calendar + topic picks
     python scripts/produce.py channels                               # validate channels/*.yaml
+    python scripts/produce.py short-from-long --from output/cowos --slide s09 --channel offwork \
+        --run-dir output/offwork-7722 --title "…" --number 7,722 --unit mm²   # 9:16 Short (R5)
 
 Exit codes for ``run``: 0 all steps done, 1 a step failed, 3 waiting (gate, agent
 step, or paid step without --allow-paid). Each stop prints the next command.
@@ -24,11 +26,13 @@ import sys
 from datetime import date, datetime
 from pathlib import Path
 
+import yaml
 from pydantic import ValidationError
 
 from content_farm.production.channels import Gate, load_all, load_channel
 from content_farm.production.runner import SCHEDULE_FILE, Outcome, Runner, decide
 from content_farm.production.schedule import load_backlog, plan_week
+from content_farm.production.shorts_cut import short_spec_from_long, write_spec
 from content_farm.production.state import STATE_FILE, load_state, read_channel_code
 from content_farm.production.steps import Context, RunOptions, steps_for
 
@@ -59,6 +63,22 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         p.add_argument("--by", default="leon", help="who decided (recorded in production.json)")
         if name == "approve":
             p.add_argument("--override", default="", help="approve the final gate despite QC errors")
+
+    short = sub.add_parser("short-from-long", help="cut a 9:16 「一個數字」 Short from a long run")
+    short.add_argument("--from", dest="long_run_dir", type=Path, required=True, help="the long run-dir")
+    short.add_argument("--slide", required=True, help="slide id, e.g. s09")
+    short.add_argument("--channel", required=True, help="channel that publishes the Short")
+    short.add_argument("--run-dir", type=Path, required=True, help="new run-dir for the Short")
+    short.add_argument("--title", required=True, help="YouTube title (#Shorts is appended)")
+    short.add_argument("--number", help="hero number; default: the slide's big_number value")
+    short.add_argument("--unit", help="default: the slide's unit")
+    short.add_argument("--caption", help="default: the slide's caption")
+    short.add_argument("--aside", default="", help="optional derived comparison shown under the number")
+    short.add_argument("--hook", default="這是多大？")
+    short.add_argument("--label", default="一個數字")
+    short.add_argument("--long-title", help="default: the long deck's title")
+    short.add_argument("--publish-at", help="ISO datetime with offset")
+    short.add_argument("--max-load", type=float, default=None)
 
     status = sub.add_parser("status")
     status.add_argument("--run-dir", type=Path, required=True)
@@ -110,6 +130,24 @@ def cmd_run(args: argparse.Namespace) -> int:
     return result.exit_code
 
 
+def cmd_short_from_long(args: argparse.Namespace) -> int:
+    long_dir = args.long_run_dir.resolve()
+    long_channel = load_channel(read_channel_code(long_dir))
+    spec = short_spec_from_long(long_dir, long_channel, vars(args))
+    channel = _channel_for(args.run_dir, args.channel)
+    write_spec(args.run_dir, spec)
+    if args.publish_at:
+        _write_schedule(args.run_dir, args.publish_at)
+    runner = Runner(Context(channel, args.run_dir.resolve(), RunOptions()), max_load=args.max_load)
+    result = runner.run(force=frozenset({"cut"}))  # the long run may have changed (e.g. real voice)
+    print(f"[{result.outcome.value}] {result.step}: {result.message}")
+    if result.review_page:
+        print(f"審核頁：{result.review_page}")
+    if result.outcome is Outcome.GATE:
+        print(f"核可：python scripts/produce.py approve --run-dir {args.run_dir} --gate final")
+    return result.exit_code
+
+
 def cmd_decide(args: argparse.Namespace, verdict: str) -> int:
     channel = load_channel(read_channel_code(args.run_dir))
     decision = decide(args.run_dir.resolve(), channel, Gate(args.gate), verdict, note=args.note,
@@ -123,7 +161,7 @@ def cmd_status(args: argparse.Namespace) -> int:
     channel = load_channel(read_channel_code(args.run_dir))
     state = load_state(args.run_dir, channel.code)
     print(f"{channel.name} ({channel.code}) · {args.run_dir}")
-    for step in steps_for(channel):
+    for step in steps_for(channel, args.run_dir):
         record = state.steps.get(step.name)
         status = record.status if record else "-"
         seconds = f"{record.seconds:7.1f}s" if record and record.seconds else " " * 8
@@ -167,12 +205,12 @@ def cmd_channels(_: argparse.Namespace) -> int:
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
     handlers = {"run": cmd_run, "status": cmd_status, "inbox": cmd_inbox, "plan": cmd_plan,
-                "channels": cmd_channels,
+                "channels": cmd_channels, "short-from-long": cmd_short_from_long,
                 "approve": lambda a: cmd_decide(a, "approved"),
                 "reject": lambda a: cmd_decide(a, "rejected")}
     try:
         return handlers[args.command](args)
-    except (OSError, ValueError, ValidationError, json.JSONDecodeError) as exc:
+    except (OSError, ValueError, ValidationError, json.JSONDecodeError, yaml.YAMLError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
 
