@@ -1,0 +1,54 @@
+/* pastel — 日系粉彩: cream-pink, rounded type, sticker cards with offset shadows. */
+:root {
+  --bg: #fff3ee;
+  --fg: #3f2f3d;
+  --muted: #7a6474;
+  --rule: #f3cfd6;
+  --card: #ffffff;
+  --accent: #d9467a;
+  --accent-2: #2f8f96;
+  --font-heading: "Hiragino Maru Gothic ProN", "Noto Sans CJK TC", sans-serif;
+  --font-body: "Hiragino Maru Gothic ProN", "Noto Sans CJK TC", sans-serif;
+  --font-number: "Arial Rounded MT Bold", "Hiragino Maru Gothic ProN", sans-serif;
+  --font-mono: "Arial Rounded MT Bold", "Hiragino Maru Gothic ProN", sans-serif;
+}
+body {
+  background-image:
+    radial-gradient(circle at 12px 12px, rgba(217,70,122,.10) 3px, transparent 4px),
+    radial-gradient(600px 400px at 95% 5%, #ffe0ea, transparent 70%),
+    radial-gradient(600px 400px at 0% 100%, #dff3f1, transparent 70%);
+  background-size: 48px 48px, auto, auto;
+}
+.topbar { border-bottom: none; }
+.topbar .series { background: var(--accent); color: #fff; padding: 6px 20px; border-radius: 999px; font-size: 24px; }
+.topbar .pageno { background: #fff; padding: 4px 16px; border-radius: 999px; border: 2px solid var(--rule); }
+.heading { font-weight: 700; }
+.heading::after { width: 96px; height: 14px; border-radius: 7px; background: linear-gradient(90deg, var(--accent) 0 50%, #ffc857 50%); }
+.layout-title .content { align-items: flex-start; }
+.layout-title .title-main {
+  font-weight: 700; font-size: 104px; background: #fff; padding: 36px 56px; border-radius: 40px;
+  box-shadow: 10px 12px 0 var(--rule); border: 4px solid var(--fg);
+}
+.layout-title .title-sub { color: var(--accent); margin-left: 24px; }
+.layout-title .title-rule { display: none; }
+.bignum .value { font-weight: 400; color: var(--accent); text-shadow: 8px 8px 0 #ffd9e4; }
+.bignum .caption { background: #fff; display: inline-block; align-self: flex-start; padding: 10px 28px; border-radius: 999px; border: 3px solid var(--rule); font-size: 40px; }
+.compare .side { background: var(--card); border: 4px solid var(--fg); border-radius: 36px; box-shadow: 10px 12px 0 #ffd0dc; }
+.compare .side.right { border-top: 4px solid var(--fg); box-shadow: 10px 12px 0 #c6ebe8; }
+.compare .side.left { border-top: 4px solid var(--fg); }
+.compare .side.left .label { color: var(--accent); }
+.compare .side.right .label { color: var(--accent-2); }
+.compare li::before { content: "♡ "; color: var(--accent); }
+.compare .side.right li::before { color: var(--accent-2); }
+.compare .vs { color: var(--fg); background: #ffc857; border-radius: 50%; width: 84px; height: 84px; line-height: 84px; justify-self: center; font-size: 34px; border: 4px solid var(--fg); font-family: var(--font-number); }
+.timeline::before { height: 10px; border-radius: 5px; background: var(--rule); }
+.timeline .when { color: var(--accent); }
+.timeline .dot { width: 36px; height: 36px; background: #ffc857; border: 4px solid var(--fg); box-shadow: none; margin: 0 0 30px; }
+.anim-meter { background: #fff; border: 4px solid var(--fg); height: 40px; border-radius: 20px; }
+.anim-meter-fill { background: repeating-linear-gradient(-45deg, var(--accent) 0 16px, #f06c9b 16px 32px); border-radius: 16px; }
+.anim-line { height: 10px; border-radius: 5px; background: var(--accent); }
+body.media-overlay .topbar.on-footage { background: rgba(255,243,238,.92); color: var(--fg); }
+body.media-overlay .lower-third { background: #fff; border: 4px solid var(--fg); border-radius: 36px; box-shadow: 10px 12px 0 var(--accent); }
+body.media-overlay .lt-heading { color: var(--fg); }
+body.media-overlay .lt-key { color: var(--accent); }
+body.media-overlay .meta.on-footage { color: #fff; }

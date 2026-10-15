@@ -1,0 +1,107 @@
+/* brand: cel — 賽璐璐研究室（動畫產業拆解）
+ * 「動畫用紙」: every slide is a sheet of animation paper on the peg bar.
+ * Warm paper, non-photo-blue guides, 修正 red pencil, cut / frame counters
+ * in condensed numerals. Motion is "on twos" (stepped), never smooth.
+ * Borrowed: blueprint (guides), swiss (heavy grotesk), chalk (hand marks) —
+ * redefined around the animator's desk. No official character art, ever.
+ */
+:root {
+  --bg: #f5f1e8;
+  --fg: #1f2329;
+  --muted: #59606b;
+  --rule: #a9c8e8;
+  --card: #ffffff;
+  --accent: #cc2f2a;      /* 紅鉛筆：修正、重點、數字 */
+  --accent-2: #2a64a8;    /* 影色藍：第二系列、標籤 */
+  --guide: rgba(90,150,214,.28);
+  --font-heading: "Noto Sans CJK TC", sans-serif;
+  --font-hand: "HanziPen TC", "Noto Sans CJK TC", sans-serif;
+  --font-number: "DIN Condensed", "Avenir Next Condensed", "Noto Sans CJK TC", sans-serif;
+  --font-mono: "DIN Condensed", "Avenir Next Condensed", monospace;
+}
+body {
+  background-image:
+    linear-gradient(var(--guide) 1px, transparent 1px),
+    linear-gradient(90deg, var(--guide) 1px, transparent 1px);
+  background-size: 96px 96px, 96px 96px;
+  background-position: 0 -8px, 0 0;
+}
+/* peg-bar holes (タップ穴): one round, two slots — top centre */
+.stage::before {
+  content: ""; position: absolute; top: 14px; left: 760px; width: 400px; height: 26px; pointer-events: none;
+  background:
+    radial-gradient(circle at 200px 13px, #d8d0bf 0 12px, transparent 13px),
+    linear-gradient(#d8d0bf, #d8d0bf) 0 2px / 110px 22px no-repeat,
+    linear-gradient(#d8d0bf, #d8d0bf) 290px 2px / 110px 22px no-repeat;
+  border-radius: 12px;
+}
+/* 作画フレーム: a blue frame guide with corner marks, above the subtitle zone */
+.stage::after {
+  content: ""; position: absolute; left: 60px; top: 104px; right: 60px; height: 776px; pointer-events: none;
+  border: 2px solid rgba(42,100,168,.45);
+  background:
+    linear-gradient(rgba(42,100,168,.45), rgba(42,100,168,.45)) 50% 0 / 2px 26px no-repeat,
+    linear-gradient(rgba(42,100,168,.45), rgba(42,100,168,.45)) 0 50% / 26px 2px no-repeat;
+}
+.topbar { top: 44px; height: 56px; border-bottom: none; font-size: 24px; gap: 16px; padding: 0 60px; }
+.topbar .series, .topbar .section, .topbar .pageno { border: 2px solid var(--fg); padding: 2px 14px; height: 44px; display: flex; align-items: center; }
+.topbar .series { color: var(--fg); }
+.topbar .series::before { content: "作品"; font-size: 16px; color: var(--muted); margin-right: 10px; }
+.topbar .section { flex: 1; color: var(--fg); }
+.topbar .section::before { content: "SCENE"; font: 18px var(--font-number); color: var(--muted); margin-right: 10px; }
+.topbar .pageno { font-family: var(--font-number); font-size: 32px; color: var(--accent); border-color: var(--accent); padding-top: 6px; }
+.topbar .pageno::before { content: "CUT\00a0"; color: var(--accent); }
+.content { top: 130px; }
+.heading { font-weight: 900; }
+.heading::after {
+  width: 300px; height: 14px; margin-top: 14px; border-radius: 0; background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='14'><path d='M2 9 C 60 3, 120 12, 180 6 S 270 4, 298 8' stroke='%23cc2f2a' stroke-width='5' fill='none' stroke-linecap='round'/></svg>");
+}
+
+.layout-title .title-main { font-size: 112px; font-weight: 900; }
+.layout-title .title-sub { font-family: var(--font-hand); color: var(--accent); font-size: 48px; transform: rotate(-2deg); }
+.layout-title .title-sub::before { content: "↳ "; }
+.layout-title .title-rule {
+  width: auto; height: auto; background: none; border-radius: 0; margin-top: 52px; align-self: flex-start;
+  font: 30px var(--font-number); color: var(--accent-2); letter-spacing: .12em;
+  border: 2px solid var(--accent-2); padding: 8px 16px 4px;
+}
+.layout-title .title-rule::before { content: "1 秒 ＝ 24 格　｜　TC 00:00:00+00"; }
+
+.bignum .value-row { align-self: flex-start; position: relative; padding: 0 40px; }
+.bignum .value-row::after {
+  content: ""; position: absolute; left: -10px; right: -30px; top: -26px; bottom: -20px;
+  border: 6px solid var(--accent); border-radius: 50%; transform: rotate(-4deg); pointer-events: none;
+}
+.bignum .value { font-family: var(--font-number); color: var(--fg); font-weight: 700; font-size: 280px; letter-spacing: 0; padding-top: 24px; }
+.bignum .unit { font-family: var(--font-hand); color: var(--accent); }
+.bignum .caption { margin-top: 40px; }
+
+/* compare becomes two timesheet columns */
+.compare { grid-template-columns: 1fr 80px 1fr; }
+.compare .side { background: var(--card); border-radius: 0; border: 2px solid var(--fg); border-top: 2px solid var(--fg); padding: 0; }
+.compare .label { margin: 0; padding: 14px 28px; border-bottom: 2px solid var(--fg); font-size: 44px; }
+.compare .side.left .label { color: var(--accent-2); }
+.compare .side.right .label { color: var(--accent); }
+.compare ul { gap: 0; counter-reset: row; }
+.compare li { counter-increment: row; padding: 12px 28px; border-bottom: 1px solid var(--rule); }
+.compare li::before { content: counter(row) " "; font: 32px var(--font-number); color: var(--muted); margin-right: 12px; }
+.compare .vs { font-family: var(--font-number); color: var(--muted); font-size: 40px; }
+
+.timeline::before { height: 4px; border-radius: 0; background: repeating-linear-gradient(90deg, var(--accent-2) 0 24px, transparent 24px 32px); }
+.timeline .when { font-family: var(--font-number); color: var(--accent-2); font-size: 52px; }
+.timeline .event:last-child .when { color: var(--accent); }
+.timeline .dot { border-radius: 0; transform: rotate(45deg); width: 28px; height: 28px; background: var(--card); border: 4px solid var(--fg); box-shadow: none; }
+.timeline .event:last-child .dot { background: var(--accent); border-color: var(--accent); }
+
+.quote .text { font-family: var(--font-hand); }
+.meta { left: 80px; }
+.meta .sources::before { content: "CREDIT › "; font-family: var(--font-number); color: var(--accent-2); }
+.anim-meter { border-radius: 0; background: var(--card); border: 2px solid var(--fg); }
+.anim-meter-fill { border-radius: 0; background: repeating-linear-gradient(90deg, var(--accent) 0 20px, transparent 20px 24px); }
+.anim-line { height: 4px; border-radius: 0; background: var(--accent); }
+body.media-overlay .stage::before, body.media-overlay .stage::after { display: none; }
+body.media-overlay .topbar.on-footage { background: rgba(245,241,232,.94); }
+body.media-overlay .lower-third { background: var(--card); border: 2px solid var(--fg); border-left: 10px solid var(--accent); border-radius: 0; }
+body.media-overlay .lt-heading { color: var(--fg); }
+body.media-overlay .lt-key { color: var(--accent); font-family: var(--font-hand); }

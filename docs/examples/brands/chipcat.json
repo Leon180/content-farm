@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "category": "tech",
+  "title": "晶片貓｜CoWoS 拆解",
+  "description": "【品牌示範 deck，非正式內容】晶片貓頻道品牌系統的示範投影片。",
+  "as_of": "2026-10",
+  "sources": [
+    {"id": "tsmc", "title": "TSMC 3DFabric 技術說明頁（示範用，待查證）"}
+  ],
+  "sections": [
+    {"title": "開場：瓶頸在哪", "slides": [
+      {"id": "s01", "layout": "title", "heading": "AI 晶片為什麼卡在封裝？",
+       "body": {"subtitle": "瓶頸不在晶片，在 CoWoS"},
+       "narration": "先講結論：AI 晶片缺貨，卡住的不是晶片本身，而是把晶片包起來的那一步。我是晶片貓，今天把 CoWoS 拆給你看。", "mascot": {"pose": "point"}}
+    ]},
+    {"title": "拆解：2.5D 是什麼", "slides": [
+      {"id": "s02", "layout": "big_number", "heading": "CoWoS 到底是幾 D？",
+       "body": {"value": "2.5", "unit": "D", "caption": "晶片並排在同一塊中介層上"},
+       "narration": "你可以把它想成在同一塊砧板上切好幾道菜，菜跟菜靠得很近，端菜的路就短。精確一點說：多顆晶片並排放在同一塊中介層上，所以叫 2.5D。", "source_ids": ["tsmc"], "mascot": {"pose": "think"}}
+    ]},
+    {"title": "比較：差在哪", "slides": [
+      {"id": "s03", "layout": "compare", "heading": "傳統封裝 vs CoWoS",
+       "body": {
+         "left": {"label": "傳統封裝", "items": ["晶片各包各的", "靠電路板傳訊號", "距離遠、頻寬小"]},
+         "right": {"label": "CoWoS", "items": ["晶片並排一起包", "走中介層的細線", "距離近、頻寬大"]}
+       },
+       "narration": "左邊是傳統做法，晶片各包各的，訊號要繞一大圈電路板；右邊是 CoWoS，晶片肩並肩，走中介層上的細線。這個數字有來源，我放在左下角。", "source_ids": ["tsmc"], "mascot": {"pose": "smug"}}
+    ]}
+  ]
+}

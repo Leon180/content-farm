@@ -1,0 +1,67 @@
+{# 賽璐璐研究室 — 動畫用紙. Production paperwork, never official character art. #}
+{% macro style() %}
+body { background: var(--bg); color: var(--fg); font-family: "Noto Sans CJK TC", sans-serif; }
+.paper { position: absolute; inset: 0; background-image:
+  linear-gradient(var(--guide) 1px, transparent 1px), linear-gradient(90deg, var(--guide) 1px, transparent 1px);
+  background-size: 64px 64px; }
+.pegs { position: absolute; height: 22px; background:
+  radial-gradient(circle at 50% 11px, #d8d0bf 0 10px, transparent 11px),
+  linear-gradient(#d8d0bf, #d8d0bf) 0 1px / 34% 20px no-repeat, linear-gradient(#d8d0bf, #d8d0bf) 100% 1px / 34% 20px no-repeat; }
+.cut { position: absolute; border: 3px solid var(--accent); color: var(--accent); font: 700 40px "DIN Condensed", sans-serif; padding: 6px 14px 0; }
+.din { font-family: "DIN Condensed", sans-serif; }
+.hand { font-family: "HanziPen TC", sans-serif; color: var(--accent); }
+.ring { position: absolute; border: 8px solid var(--accent); border-radius: 50%; transform: rotate(-5deg); }
+.sheet { position: absolute; background: #fff; border: 3px solid var(--fg); }
+.sheet .row { height: 44px; border-bottom: 1px solid var(--rule); display: flex; }
+.sheet .row span { width: 60px; border-right: 1px solid var(--rule); font: 26px "DIN Condensed"; color: var(--muted); padding: 10px 0 0 8px; }
+{% endmacro %}
+
+{% macro thumb(t, sil) %}
+<div class="paper"></div>
+<div class="pegs" style="left:440px;top:12px;width:400px"></div>
+<div class="cut" style="right:40px;top:40px">CUT {{ t.cut }}</div>
+<div style="position:absolute;left:60px;top:110px;width:760px;font-weight:900;font-size:{{ t.size|default(120) }}px;line-height:1.1">
+  {% for line in t.lines %}<div>{{ line }}</div>{% endfor %}
+</div>
+<div class="din" style="position:absolute;left:{{ t.num_x|default(100) }}px;top:390px;font-size:300px;line-height:1">{{ t.num }}<span class="hand" style="font-size:90px">{{ t.unit }}</span></div>
+<div class="ring" style="left:{{ t.num_x|default(100) - 40 }}px;top:370px;width:{{ t.ring_w|default(420) }}px;height:300px"></div>
+<div class="hand" style="position:absolute;left:620px;top:560px;font-size:46px;transform:rotate(-4deg)">{{ t.note }}</div>
+{{ sil(930, 230, 280) }}
+{% endmacro %}
+
+{% macro icon() %}
+<div style="position:absolute;inset:0;background:var(--bg)"></div>
+<div class="paper"></div>
+<svg viewBox="0 0 800 800" style="position:absolute;inset:0" fill-rule="evenodd">
+  <path fill="#1f2329" d="M190 170 H610 Q640 170 640 200 V600 Q640 630 610 630 H190 Q160 630 160 600 V200 Q160 170 190 170 Z
+     M180 210 h34 v44 h-34 Z M180 300 h34 v44 h-34 Z M180 390 h34 v44 h-34 Z M180 480 h34 v44 h-34 Z M180 570 h34 v30 h-34 Z
+     M586 210 h34 v44 h-34 Z M586 300 h34 v44 h-34 Z M586 390 h34 v44 h-34 Z M586 480 h34 v44 h-34 Z M586 570 h34 v30 h-34 Z
+     M250 220 H550 V580 H250 Z"/>
+  <text x="400" y="470" text-anchor="middle" font-family="DIN Condensed" font-size="260" fill="#1f2329">24</text>
+  <ellipse cx="400" cy="390" rx="200" ry="150" fill="none" stroke="#cc2f2a" stroke-width="20" transform="rotate(-6 400 390)"/>
+</svg>
+{% endmacro %}
+
+{% macro banner(sil) %}
+<div class="paper"></div>
+<div class="pegs" style="left:1080px;top:40px;width:400px"></div>
+<div style="position:absolute;left:507px;top:509px;width:1546px;height:423px;border:3px solid rgba(42,100,168,.5)">
+  <div style="position:absolute;left:60px;top:46px;font-weight:900;font-size:136px;line-height:1">賽璐璐研究室</div>
+  <div style="position:absolute;left:64px;top:206px;font-size:44px;font-weight:700">動畫是一門生意：錢、人、時間，一格一格拆給你看</div>
+  <div class="din" style="position:absolute;left:64px;top:290px;font-size:40px;color:var(--accent-2)">EVERY TUE 20:00　｜　長片拆解 ＋ SHORTS 一格冷知識</div>
+  <div class="cut" style="right:40px;top:40px">CUT 001</div>
+  {{ sil(1250, 110, 200) }}
+</div>
+{% endmacro %}
+
+{% macro shorts(sil) %}
+<div class="paper"></div>
+<div class="pegs" style="left:340px;top:200px;width:400px"></div>
+<div class="cut" style="left:70px;top:250px">CUT 044 ｜ 3+12</div>
+<div style="position:absolute;left:70px;top:350px;width:820px;font-weight:900;font-size:84px;line-height:1.2">片尾名單上的<br>「作畫監督」<br>在做什麼？</div>
+<div class="sheet" style="left:70px;top:770px;width:560px;height:440px">
+  {% for i in range(10) %}<div class="row"><span>{{ i + 1 }}</span>{% if i in (1, 4, 7) %}<em class="hand" style="padding:2px 0 0 18px;font-size:30px">修正 ✓</em>{% endif %}</div>{% endfor %}
+</div>
+<div class="hand" style="position:absolute;left:90px;top:1240px;font-size:52px;transform:rotate(-3deg)">統一每一張的臉，<br>不讓角色「走鐘」</div>
+{{ sil(650, 900, 240) }}
+{% endmacro %}

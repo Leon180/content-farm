@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "category": "knowledge",
+  "title": "晶片貓下班了｜迷因考古",
+  "description": "【品牌示範 deck，非正式內容】晶片貓下班了頻道（迷因考古長片）的示範投影片；年份為示意，正式版要附最早用例來源。",
+  "sources": [
+    {"id": "jargon", "title": "Jargon File 詞條（示範用，待查證）"}
+  ],
+  "sections": [
+    {"title": "開場：這句話誰先說的", "slides": [
+      {"id": "s01", "layout": "title", "heading": "「不是 bug 是 feature」考古",
+       "body": {"subtitle": "工程師最古老的藉口"},
+       "narration": "下班了，來考古一句話：這不是 bug，是 feature。每個工程師都說過，但第一個說的人是誰？好，我們開挖。", "mascot": {"pose": "deadpan"}}
+    ]},
+    {"title": "考古：多老了", "slides": [
+      {"id": "s02", "layout": "big_number", "heading": "這句話到底幾歲了？",
+       "body": {"value": "40+", "unit": "年", "caption": "最早用例待考證（示意數字）"},
+       "narration": "這句話的年紀，可能比在座很多工程師還大。這裡的數字是示意，正式版會附上最早的用例和出處。好，冷。", "source_ids": ["jargon"], "mascot": {"pose": "shocked"}}
+    ]},
+    {"title": "翻譯：雞同鴨講", "slides": [
+      {"id": "s03", "layout": "compare", "heading": "工程師說 vs PM 聽到",
+       "body": {
+         "left": {"label": "工程師說", "items": ["這是 feature", "快好了", "小改一下"]},
+         "right": {"label": "PM 聽到", "items": ["可以上線了", "今天會好", "五分鐘的事"]}
+       },
+       "narration": "最後來翻譯一下。工程師說快好了，PM 聽到的是今天會好。工程師說小改一下，PM 聽到的是五分鐘的事。下班。", "beat": "joke", "mascot": {"pose": "smug"}}
+    ]}
+  ]
+}

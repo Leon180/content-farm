@@ -1,0 +1,66 @@
+/* blueprint — 藍圖工程圖: cyanotype blue, white line grid, dimension marks, mono labels. */
+:root {
+  --bg: #123e7c;
+  --fg: #f3f8ff;
+  --muted: #b9d0f0;
+  --rule: #6f97cf;
+  --card: #164a91;
+  --accent: #ffd35c;
+  --accent-2: #9fe3ff;
+  --font-heading: "Noto Sans CJK TC", sans-serif;
+  --font-number: "Menlo", "SF Mono", monospace;
+  --font-mono: "Menlo", "SF Mono", monospace;
+}
+body {
+  background-image:
+    linear-gradient(rgba(255,255,255,.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.16) 1px, transparent 1px),
+    linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px);
+  background-size: 120px 120px, 120px 120px, 24px 24px, 24px 24px;
+}
+/* drawing frame + title block corner */
+.stage::before {
+  content: ""; position: absolute; inset: 24px; border: 2px solid rgba(243,248,255,.7); pointer-events: none;
+}
+.topbar { border-bottom: 2px solid rgba(243,248,255,.7); margin: 24px 24px 0; height: 72px; padding: 0 96px; font-family: var(--font-mono); font-size: 22px; letter-spacing: .06em; }
+.topbar .series { color: var(--fg); font-family: var(--font-heading); }
+.topbar .pageno::before { content: "SHEET "; color: var(--muted); }
+.heading { font-weight: 700; }
+.heading::after {
+  width: 100%; height: 14px; border-radius: 0; margin-top: 16px; background: none;
+  border-left: 2px solid var(--accent); border-right: 2px solid var(--accent);
+  background-image: linear-gradient(var(--accent), var(--accent)); background-size: 100% 2px;
+  background-position: center; background-repeat: no-repeat; max-width: 560px;
+}
+.layout-title .title-main { font-size: 108px; }
+.layout-title .title-sub { font-family: var(--font-mono); color: var(--accent); font-size: 40px; }
+.layout-title .title-sub::before { content: "// "; }
+.layout-title .title-rule { width: 100%; height: 2px; border-radius: 0; background: rgba(243,248,255,.7); }
+.layout-title .content::after {
+  content: "DWG NO. TSMC-001   SCALE 1:1   REV A"; position: absolute; right: 0; bottom: 20px;
+  font-family: var(--font-mono); font-size: 22px; color: var(--muted); border: 2px solid var(--rule); padding: 10px 18px;
+}
+.bignum .value { font-weight: 700; color: var(--fg); letter-spacing: -0.04em; }
+.bignum .unit { color: var(--accent); font-family: var(--font-mono); }
+.bignum .caption { font-family: var(--font-mono); font-size: 40px; }
+.bignum .caption::before { content: "▲ "; color: var(--accent); }
+.compare .side { background: rgba(255,255,255,.04); border: 2px dashed rgba(243,248,255,.65); border-radius: 0; }
+.compare .side.right { border: 2px solid var(--accent); border-top-width: 2px; }
+.compare .side.left { border-top-width: 2px; }
+.compare .label { font-family: var(--font-heading); }
+.compare .label::before { content: "A/ "; font-family: var(--font-mono); color: var(--muted); font-size: 32px; }
+.compare .side.right .label::before { content: "B/ "; }
+.compare li::before { content: "+ "; color: var(--accent-2); font-family: var(--font-mono); }
+.compare .vs { color: var(--accent); }
+.timeline::before { height: 2px; background: var(--fg); border-radius: 0; }
+.timeline .when { color: var(--accent); }
+.timeline .dot { border-radius: 0; transform: rotate(45deg); width: 24px; height: 24px; background: var(--bg); border: 3px solid var(--fg); box-shadow: none; margin: 8px 0 32px 4px; }
+.anim-meter { border-radius: 0; background: transparent; border: 2px solid var(--fg); height: 26px; }
+.anim-meter-fill { border-radius: 0; background: repeating-linear-gradient(90deg, var(--accent) 0 18px, transparent 18px 24px); }
+.anim-line { height: 2px; border-radius: 0; background: var(--accent); }
+.meta { font-family: var(--font-mono); font-size: 20px; }
+body.media-overlay .stage::before { border-color: rgba(255,255,255,.5); }
+body.media-overlay .topbar.on-footage { background: rgba(18,62,124,.88); }
+body.media-overlay .lower-third { background: rgba(18,62,124,.92); border-left: none; border: 2px solid var(--fg); border-radius: 0; }
+body.media-overlay .lt-key { color: var(--accent); font-family: var(--font-mono); font-weight: 400; }

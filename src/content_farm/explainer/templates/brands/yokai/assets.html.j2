@@ -1,0 +1,73 @@
+{# 妖怪溯源所 — 夜讀古籍. The monster is the star; the 說書貓 stays small. #}
+{% macro style() %}
+body { background: var(--bg); color: var(--fg); font-family: "Songti TC", serif; }
+.glow { position: absolute; border-radius: 50%; background: radial-gradient(circle, rgba(201,164,92,.32), transparent 65%); }
+.frame { position: absolute; border: 2px solid rgba(239,228,203,.5); box-shadow: inset 0 0 0 8px var(--bg), inset 0 0 0 9px rgba(239,228,203,.28); }
+.plate { position: absolute; display: flex; align-items: flex-end; justify-content: flex-end; padding: 18px;
+  background:
+    repeating-linear-gradient(135deg, rgba(239,228,203,.07) 0 2px, transparent 2px 14px),
+    radial-gradient(ellipse at 50% 60%, rgba(239,228,203,.10), transparent 70%);
+  border: 2px dashed rgba(239,228,203,.35); color: var(--muted); font: 22px "Noto Sans CJK TC", sans-serif; }
+.beast { position: absolute; fill: #050403; filter: drop-shadow(0 0 3px rgba(201,164,92,.9)) drop-shadow(0 0 28px rgba(201,164,92,.35)); }
+.vtitle { position: absolute; writing-mode: vertical-rl; font-family: "Weibei TC", "Songti TC", serif; letter-spacing: .06em;
+  text-shadow: 0 0 30px rgba(201,164,92,.4); }
+.seal { position: absolute; background: var(--accent); color: var(--bg); border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  writing-mode: vertical-rl; font-family: "Weibei TC", serif; box-shadow: inset 0 0 0 5px var(--accent), inset 0 0 0 8px var(--bg); }
+.note { font-family: "Kaiti TC", "BiauKai", serif; color: var(--gold); }
+{% endmacro %}
+
+{# a nine-tailed fox / generic beast silhouette, only to show where the artwork plate goes #}
+{% macro beast(x, y, w) %}
+<svg class="beast" viewBox="0 0 600 420" style="left:{{ x }}px;top:{{ y }}px;width:{{ w }}px">
+  <path d="M120 300 C 90 230 140 170 210 175 L240 120 L262 170 C 300 160 340 170 360 200 L470 200 C 520 150 560 80 590 40
+           C 580 110 560 160 520 210 C 575 170 600 150 600 150 C 580 210 545 240 505 255 C 560 250 590 240 590 240
+           C 560 290 510 300 470 290 L430 300 L440 400 L410 400 L395 315 L300 320 L290 400 L260 400 L262 318
+           C 200 320 150 330 120 300 Z"/>
+</svg>
+{% endmacro %}
+
+{% macro thumb(t, sil) %}
+<div class="glow" style="left:120px;top:-80px;width:900px;height:900px"></div>
+<div class="frame" style="left:18px;top:18px;right:18px;bottom:18px"></div>
+<div class="plate" style="left:56px;top:56px;width:760px;height:608px">館藏版畫／水墨插圖位置（CC0，逐件查授權）</div>
+{{ beast(110, 150, 660) }}
+<div class="vtitle" style="right:200px;top:60px;font-size:{{ t.size|default(170) }}px;height:600px">{{ t.title }}</div>
+<div class="vtitle note" style="right:96px;top:70px;font-size:44px;font-family:'Kaiti TC',serif">{{ t.sub }}</div>
+<div class="seal" style="right:108px;bottom:120px;width:96px;height:96px;font-size:34px">{{ t.seal }}</div>
+{{ sil(60, 470, 140) }}
+{% endmacro %}
+
+{% macro icon() %}
+<div style="position:absolute;inset:0;background:var(--bg)"></div>
+<div class="glow" style="left:100px;top:100px;width:600px;height:600px"></div>
+<div class="seal" style="left:190px;top:190px;width:420px;height:420px;font-size:250px;border-radius:30px;transform:rotate(-4deg);
+  box-shadow:inset 0 0 0 16px var(--accent), inset 0 0 0 26px var(--bg)">溯</div>
+{% endmacro %}
+
+{% macro banner(sil) %}
+<div class="glow" style="left:900px;top:300px;width:1200px;height:900px"></div>
+{{ beast(1740, 430, 640) }}
+<div class="frame" style="left:507px;top:509px;width:1546px;height:423px"></div>
+<div style="position:absolute;left:580px;top:560px;width:1000px">
+  <div style="font-family:'Weibei TC',serif;font-size:140px;line-height:1.05;letter-spacing:.06em">妖怪溯源所</div>
+  <div class="note" style="margin-top:16px;font-size:44px;white-space:nowrap">替每一隻妖怪查戶口：原典、年代、怎麼變成今天的樣子</div>
+  <div style="margin-top:14px;font-size:30px;color:var(--muted)">每週六 21:00 ／ 長片溯源 ＋ Shorts「一分鐘妖怪圖鑑」</div>
+</div>
+<div class="seal" style="left:1880px;top:770px;width:120px;height:120px;font-size:44px">溯源</div>
+{% endmacro %}
+
+{% macro shorts(sil) %}
+<div class="glow" style="left:40px;top:300px;width:1000px;height:1000px"></div>
+<div class="frame" style="left:40px;top:220px;width:880px;height:1240px"></div>
+<div style="position:absolute;left:90px;top:262px;font-size:34px;color:var(--muted)">一分鐘妖怪圖鑑　其之十二</div>
+<div style="position:absolute;left:90px;top:320px;font-family:'Weibei TC',serif;font-size:120px">魔神仔</div>
+<div class="plate" style="left:90px;top:490px;width:780px;height:560px">館藏版畫／水墨插圖位置</div>
+{{ beast(130, 600, 700) }}
+<div style="position:absolute;left:90px;top:1080px;width:780px;font-size:40px;line-height:1.7">
+  <div><span style="color:var(--accent)">出處</span>　臺灣民間口傳（示範）</div>
+  <div><span style="color:var(--accent)">首見</span>　日治時期文獻（待查證）</div>
+  <div><span style="color:var(--accent)">危險度</span>　◆◆◇◇◇</div>
+</div>
+<div class="seal" style="left:760px;top:330px;width:110px;height:110px;font-size:40px">台灣</div>
+{{ sil(700, 1270, 160) }}
+{% endmacro %}

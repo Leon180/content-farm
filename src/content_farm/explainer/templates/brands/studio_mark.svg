@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" fill="currentColor" fill-rule="evenodd">
+  <!-- 工作室標記：一個長了貓耳的方框（「拆解」的框 + 貓）。四個頻道共用，只在片尾與 About 出現。 -->
+  <path d="M6 30 L18 4 L38 24 H62 L82 4 L94 30 V94 H6 Z M20 40 V80 H80 V40 Z"/>
+  <rect x="32" y="52" width="12" height="12"/><rect x="56" y="52" width="12" height="12"/>
+</svg>
