@@ -136,6 +136,36 @@ def ken_burns(
     return out
 
 
+def artwork_plate(
+    image: Path, overlay: Path | None, out: Path, duration: float, *, zoom: float = 0.05,
+) -> Path:
+    """Whole artwork (never cropped) on a blurred, darkened copy of itself, slow push-in.
+
+    Scrolls and portrait prints would lose heads and inscriptions under the
+    cover-crop that :func:`ken_burns` uses, so the work is fitted inside the
+    frame above the lower third instead.
+    """
+    total = frame_count(duration)
+    w2, h2 = WIDTH * 2, HEIGHT * 2
+    graph = (
+        f"[0:v]split=2[a][b];"
+        f"[a]scale={w2}:{h2}:force_original_aspect_ratio=increase,crop={w2}:{h2},"
+        f"boxblur=40:3,eq=brightness=-0.32:saturation=0.55[bg];"
+        f"[b]scale={w2 - 360}:{h2 - 520}:force_original_aspect_ratio=decrease[fg];"
+        f"[bg][fg]overlay=(W-w)/2:(H-h)/2-140,"
+        f"zoompan=z='1+{zoom}*on/{total}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'"
+        f":d={total}:s={WIDTH}x{HEIGHT}:fps={FPS},setsar=1"
+    )
+    args = ["ffmpeg", "-y", "-i", str(image)]
+    if overlay is not None:
+        args += ["-i", str(overlay), "-filter_complex", f"{graph}[k];[k][1:v]overlay=0:0[v]",
+                 "-map", "[v]"]
+    else:
+        args += ["-filter_complex", f"{graph}[v]", "-map", "[v]"]
+    run([*args, *_out(out, total)])
+    return out
+
+
 def first_frame(clip: Path, out: Path) -> Path:
     out.parent.mkdir(parents=True, exist_ok=True)
     run(["ffmpeg", "-y", "-i", str(clip), "-frames:v", "1", str(out)])

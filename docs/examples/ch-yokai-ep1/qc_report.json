@@ -1,0 +1,47 @@
+{
+  "video": "assembly/draft.mp4",
+  "errors": 0,
+  "warnings": 0,
+  "findings": [
+    {
+      "check": "media_policy",
+      "level": "ok",
+      "message": "29 slides within channel media policy"
+    },
+    {
+      "check": "credits",
+      "level": "ok",
+      "message": "12 credited assets, none pending"
+    },
+    {
+      "check": "subtitle_safe_zone",
+      "level": "ok",
+      "message": "every subtitle line clears the mascot column"
+    },
+    {
+      "check": "final_video",
+      "level": "ok",
+      "message": "assembly/draft.mp4"
+    },
+    {
+      "check": "resolution",
+      "level": "ok",
+      "message": "1920x1080 (expected 1920x1080)"
+    },
+    {
+      "check": "duration",
+      "level": "ok",
+      "message": "544.1s (channel target 480-720s)"
+    },
+    {
+      "check": "av_drift",
+      "level": "ok",
+      "message": "audio/video differ by 1.69s"
+    },
+    {
+      "check": "black_frames",
+      "level": "ok",
+      "message": "no black segment >= 0.5s"
+    }
+  ]
+}

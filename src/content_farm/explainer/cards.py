@@ -81,12 +81,15 @@ def _render(
 
 def overlay_html(
     deck: Deck, section: Section, slide: Slide, index: int, style: str | None = None,
-    brand: str | None = None,
+    brand: str | None = None, artwork_caption: str = "",
 ) -> str:
-    """Transparent page: top bar, lower-third (heading + key line), meta row."""
+    """Transparent page: top bar, lower-third (heading + key line), meta row.
+
+    ``artwork_caption`` names the work on screen (artist, title, year).
+    """
     line = key_line(slide)
     return _render(deck, section, slide, index, "overlay", style=style, brand=brand,
-                   key_line="" if line == slide.heading else line)
+                   key_line="" if line == slide.heading else line, artwork_caption=artwork_caption)
 
 
 def title_card_html(
@@ -99,9 +102,9 @@ def title_card_html(
 
 def placeholder_html(
     deck: Deck, section: Section, slide: Slide, index: int, expected_path: str,
-    brand: str | None = None,
+    brand: str | None = None, tag: str = "AI 插圖待補",
 ) -> str:
-    """Loud stand-in shown until the AI illustration exists."""
+    """Loud stand-in shown until the AI illustration (or artwork) exists."""
     prompt = slide.media.prompt if slide.media else ""
     return _render(deck, section, slide, index, "placeholder", brand=brand,
-                   expected_path=expected_path, prompt=prompt[:320])
+                   expected_path=expected_path, prompt=prompt[:320], placeholder_tag=tag)

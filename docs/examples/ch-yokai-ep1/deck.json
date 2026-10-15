@@ -1,0 +1,799 @@
+{
+  "version": 1,
+  "category": "knowledge",
+  "title": "九尾狐不是一開始就是狐狸精",
+  "description": "九尾狐在《山海經》裡是會吃人的野獸，漢代變成皇帝最想看到的吉祥物，最後才成了禍國的妲己與玉藻前。妖怪溯源所用原典和公共領域畫作，一站一站追這隻狐狸三千年的履歷：每一筆設定是哪個年代、哪本書加上去的。資料截至 2026-10；原典引自維基文庫等公共領域版本，白話為頻道自寫；片中畫作皆為公共領域或 CC0，作者與收藏單位列於下方。",
+  "tags": [
+    "九尾狐",
+    "妖怪",
+    "山海經",
+    "妲己",
+    "玉藻前",
+    "封神演義",
+    "殺生石",
+    "浮世繪",
+    "妖怪溯源所"
+  ],
+  "as_of": "2026-10",
+  "draft_data": false,
+  "sources": [
+    {
+      "id": "shj-nanshan",
+      "title": "山海經・南山經（青丘之山）",
+      "url": "https://zh.wikisource.org/wiki/山海經/南山經",
+      "note": "publisher=維基文庫; accessed=2026-10-15; type=primary; 「有獸焉，其狀如狐而九尾，其音如嬰兒，能食人；食者不蠱」",
+      "publisher": "維基文庫"
+    },
+    {
+      "id": "shj-haiwai",
+      "title": "山海經・海外東經（青丘國）",
+      "url": "https://zh.wikisource.org/wiki/山海經/海外東經",
+      "note": "publisher=維基文庫; accessed=2026-10-15; type=primary; 「其狐四足九尾」",
+      "publisher": "維基文庫"
+    },
+    {
+      "id": "shj-dahuang",
+      "title": "山海經（四庫全書本）卷14 大荒東經・郭璞注",
+      "url": "https://zh.wikisource.org/wiki/山海經_(四庫全書本)/卷14",
+      "note": "publisher=維基文庫; accessed=2026-10-15; type=primary; 「有青丘之國有狐九尾」注「太平則出而為瑞也」",
+      "publisher": "維基文庫"
+    },
+    {
+      "id": "baihutong",
+      "title": "白虎通・封禪",
+      "url": "https://zh.wikisource.org/wiki/白虎通/卷05",
+      "note": "publisher=維基文庫; accessed=2026-10-15; type=primary; 「德至鳥獸則…狐九尾」「狐死首丘，不忘本也」「九妃得其所，子孫繁息也」",
+      "publisher": "維基文庫"
+    },
+    {
+      "id": "wuyue",
+      "title": "吳越春秋・越王無餘外傳（四庫全書本卷4）",
+      "url": "https://zh.wikisource.org/zh-hant/呉越春秋_(四庫全書本)/卷4",
+      "note": "publisher=維基文庫; accessed=2026-10-15; type=primary; 「乃有白狐九尾造於禹…其九尾者王之證也」",
+      "publisher": "維基文庫"
+    },
+    {
+      "id": "gao-2011",
+      "title": "高莉芬〈九尾狐：漢畫像西王母配屬動物圖像及其象徵考察〉",
+      "url": "https://ah.lib.nccu.edu.tw/handle/140.119/57213",
+      "note": "publisher=政大中文學報 15 期; published=2011-06; accessed=2026-10-15; type=paper",
+      "publisher": "政大中文學報",
+      "published": "2011-06"
+    },
+    {
+      "id": "xuanzhongji",
+      "title": "玄中記（輯佚本）",
+      "url": "https://zh.wikisource.org/wiki/玄中記",
+      "note": "publisher=維基文庫; accessed=2026-10-15; type=primary; 「狐五十歲能變化為婦人。百歲為美女」「千歲即與天通為天狐」",
+      "publisher": "維基文庫"
+    },
+    {
+      "id": "chaoye",
+      "title": "朝野僉載・補輯",
+      "url": "https://zh.wikisource.org/wiki/朝野僉載/補輯",
+      "note": "publisher=維基文庫; accessed=2026-10-15; type=primary; 「百姓多事狐神…無狐魅，不成村」",
+      "publisher": "維基文庫"
+    },
+    {
+      "id": "thepaper-2018",
+      "title": "河西〈說狐：如何從祥瑞變成魅惑人的妖精〉",
+      "url": "https://www.thepaper.cn/newsDetail_forward_2027581",
+      "note": "publisher=澎湃新聞; published=2018-03-14; accessed=2026-10-15; type=press; 書評性質，平話「九尾金毛狐子」為其轉引",
+      "publisher": "澎湃新聞",
+      "published": "2018-03-14"
+    },
+    {
+      "id": "fengshen-01",
+      "title": "封神演義 第一回",
+      "url": "https://zh.wikisource.org/wiki/封神演義/卷001",
+      "note": "publisher=維基文庫; accessed=2026-10-15; type=primary; 「這三妖一個是千年狐狸精」",
+      "publisher": "維基文庫"
+    },
+    {
+      "id": "fengshen-97",
+      "title": "封神演義 第九十七回 摘星樓紂王自焚",
+      "url": "https://zh.wikisource.org/wiki/封神演義/卷097",
+      "note": "publisher=維基文庫; accessed=2026-10-15; type=primary; 「你是九尾狐狸在恩州驛迷死蘇妲己」",
+      "publisher": "維基文庫"
+    },
+    {
+      "id": "kotobank-tamamo",
+      "title": "玉藻前（精選版 日本国語大辞典 等）",
+      "url": "https://kotobank.jp/word/玉藻前-94189",
+      "note": "publisher=コトバンク; accessed=2026-10-15; type=reference",
+      "publisher": "コトバンク"
+    },
+    {
+      "id": "kotobank-sessho",
+      "title": "殺生石（日本大百科全書ニッポニカ、デジタル大辞泉）",
+      "url": "https://kotobank.jp/word/殺生石-87272",
+      "note": "publisher=コトバンク; accessed=2026-10-15; type=reference; 硫化水素などのガス、昆虫類が多く死ぬ",
+      "publisher": "コトバンク"
+    },
+    {
+      "id": "sangoku-1803",
+      "title": "絵本三国妖婦伝（高井蘭山）書誌",
+      "url": "https://dc.lib.kagoshima-u.ac.jp/item/0125820004",
+      "note": "publisher=鹿児島大学附属図書館; accessed=2026-10-15; type=primary; 享和3年（1803）刊",
+      "publisher": "鹿兒島大學圖書館"
+    },
+    {
+      "id": "kuniyoshi-print",
+      "title": "歌川國芳《和漢準源氏 乙女》天羅國班足王・惡狐華陽夫人（Wikimedia Commons）",
+      "url": "https://commons.wikimedia.org/wiki/File:Prince_Hanzoku_terrorised_by_a_nine-_tailed_fox.jpg",
+      "note": "publisher=Wikimedia Commons; accessed=2026-10-15; type=primary; 畫面題簽本身寫「惡狐華陽夫人」",
+      "publisher": "Wikimedia Commons"
+    },
+    {
+      "id": "nasu-pr-2022",
+      "title": "那須町観光協会：殺生石が割れたことを受け",
+      "url": "https://kyodonewsprwire.jp/release/202203238956",
+      "note": "publisher=共同通信PRワイヤー; published=2022-03-23; accessed=2026-10-15; type=primary",
+      "publisher": "共同通信PRワイヤー",
+      "published": "2022-03-23"
+    },
+    {
+      "id": "guardian-2022",
+      "title": "Japan's 'killing stone' splits in two, releasing superstitions amid the sulphur springs",
+      "url": "https://www.theguardian.com/world/2022/mar/07/japans-killing-stone-splits-in-two-releasing-superstitions-and-toxic-gases",
+      "note": "publisher=The Guardian; published=2022-03-07; accessed=2026-10-15; type=press; 原站擋抓取，經 Yahoo 轉載核對",
+      "publisher": "The Guardian",
+      "published": "2022-03-07"
+    },
+    {
+      "id": "kumiho-wiki",
+      "title": "Kumiho",
+      "url": "https://en.wikipedia.org/wiki/Kumiho",
+      "note": "publisher=Wikipedia; accessed=2026-10-15; type=reference; 僅作一句帶過",
+      "publisher": "Wikipedia"
+    }
+  ],
+  "pronunciation_map": {
+    "張鷟": "張濁",
+    "妲己": "達己",
+    "玉藻前": "玉早前",
+    "華陽夫人": "華陽夫人",
+    "구미호": "古米虎",
+    "齜牙": "資牙"
+  },
+  "sections": [
+    {
+      "title": "開場：你以為的九尾狐",
+      "slides": [
+        {
+          "id": "s01",
+          "layout": "title",
+          "heading": "九尾狐不是一開始就是狐狸精",
+          "body": {
+            "subtitle": "一隻狐狸的三千年履歷"
+          },
+          "narration": "提到九尾狐，你腦中浮現的大概是妲己：美得要命，害死了商朝。日本動漫裡的九尾也差不多，不是封印在誰身上的大妖，就是化成美女的狐仙。但如果翻開最早寫到牠的書，你會發現，牠跟美女一點關係都沒有。",
+          "media": {
+            "kind": "artwork",
+            "artwork": "hokusai_fox"
+          }
+        },
+        {
+          "id": "s02",
+          "layout": "compare",
+          "heading": "你以為的 vs 原典寫的",
+          "body": {
+            "left": {
+              "label": "你以為",
+              "items": [
+                "絕世美女",
+                "迷惑君王",
+                "禍國殃民"
+              ]
+            },
+            "right": {
+              "label": "最早的原典",
+              "items": [
+                "會吃人的野獸",
+                "叫聲像嬰兒",
+                "吃了牠能辟邪"
+              ]
+            }
+          },
+          "narration": "左邊是我們熟悉的九尾狐，右邊是最早的原典。差很多對吧？牠會吃人，叫聲像嬰兒，而且有好幾百年，牠還是皇帝最想看到的吉兆。如果九尾狐有經紀人，這份履歷大概會被要求重寫。",
+          "beat": "joke",
+          "media": {
+            "kind": "animated",
+            "animation": "reveal_list"
+          }
+        },
+        {
+          "id": "s03",
+          "layout": "bullets",
+          "heading": "這集的五個停靠站",
+          "body": {
+            "items": [
+              "山海經：吃人的怪獸",
+              "漢代：皇帝的吉祥物",
+              "志怪：狐狸開始修煉",
+              "封神：妲己與九尾",
+              "日本：玉藻前與殺生石"
+            ]
+          },
+          "narration": "這集我們沿著時間走五站：山海經、漢代、魏晉到唐宋的志怪、明代的封神演義，最後渡海到日本。每一站都看同一件事：這隻狐狸的設定，是在哪裡、被誰改寫的。有點像追一個網路迷因，看它最早從哪個論壇冒出來，又被誰轉貼、改圖。",
+          "media": {
+            "kind": "animated",
+            "animation": "reveal_list"
+          }
+        }
+      ]
+    },
+    {
+      "title": "第一站：山海經的野獸",
+      "slides": [
+        {
+          "id": "s04",
+          "layout": "quote",
+          "heading": "南山經：青丘之山",
+          "body": {
+            "text": "有獸焉，其狀如狐而九尾，其音如嬰兒，能食人；食者不蠱。",
+            "who": "《山海經・南山經》"
+          },
+          "narration": "第一站，山海經的南山經。原文說，青丘之山有一種獸，長得像狐狸、有九條尾巴，叫聲像嬰兒，會吃人。最後一句最有意思：人如果吃了牠的肉，就不會被邪氣侵擾。畫面上這張，是清代官修類書古今圖書集成裡的九尾狐圖，畫法還是圖鑑式的，重點在長相，不在個性。",
+          "beat": "gossip",
+          "source_ids": [
+            "shj-nanshan"
+          ],
+          "media": {
+            "kind": "artwork",
+            "artwork": "kokon"
+          }
+        },
+        {
+          "id": "s05",
+          "layout": "bullets",
+          "heading": "這時的九尾狐是一隻野獸",
+          "body": {
+            "items": [
+              "沒有變身",
+              "沒有魅惑",
+              "像老虎多過像美女",
+              "甚至像一味藥材"
+            ]
+          },
+          "narration": "注意，這裡的九尾狐只是一隻野獸，跟老虎差不多，不會變身，也不會魅惑人。牠甚至有點像一味藥材。山海經大概是史上第一本，把怪獸寫成保健食品的書。",
+          "beat": "joke",
+          "source_ids": [
+            "shj-nanshan"
+          ],
+          "media": {
+            "kind": "animated",
+            "animation": "reveal_list"
+          }
+        },
+        {
+          "id": "s06",
+          "layout": "quote",
+          "heading": "海外東經：只有一句",
+          "body": {
+            "text": "其狐四足九尾。",
+            "who": "《山海經・海外東經》"
+          },
+          "narration": "山海經另一處，海外東經寫青丘國，也只淡淡記了一句：那裡的狐狸，四隻腳、九條尾巴。沒有善惡，沒有故事，就是一筆圖鑑式的紀錄。換句話說，在最早的版本裡，九尾狐連個性都還沒有，只是一張物種卡。",
+          "source_ids": [
+            "shj-haiwai"
+          ],
+          "media": {
+            "kind": "animated",
+            "animation": "fade_in"
+          }
+        }
+      ]
+    },
+    {
+      "title": "第二站：皇帝的吉祥物",
+      "slides": [
+        {
+          "id": "s07",
+          "layout": "quote",
+          "heading": "郭璞注：太平才出現",
+          "body": {
+            "text": "太平則出而為瑞也。",
+            "who": "郭璞注《山海經・大荒東經》"
+          },
+          "narration": "到了替山海經作注的郭璞，九尾狐翻身了。他在大荒東經底下寫：天下太平，牠才會出現，是祥瑞。祥瑞是什麼？想像老師在作業上蓋一個優，祥瑞就是老天爺蓋給皇帝的章。",
+          "source_ids": [
+            "shj-dahuang"
+          ],
+          "media": {
+            "kind": "animated",
+            "animation": "fade_in"
+          }
+        },
+        {
+          "id": "s08",
+          "layout": "bullets",
+          "heading": "白虎通：九條尾巴的意思",
+          "body": {
+            "items": [
+              "君主有德才出現",
+              "九尾＝子孫繁盛",
+              "狐死首丘＝不忘本"
+            ]
+          },
+          "narration": "東漢的白虎通說得更白：君主的德行感動鳥獸，就會出現九尾狐。為什麼是九條尾巴？書裡的解釋是，九妃各得其所，子孫繁盛。還有一句，狐狸死的時候頭會朝著出生的山丘，代表不忘本。",
+          "beat": "gossip",
+          "source_ids": [
+            "baihutong"
+          ],
+          "media": {
+            "kind": "animated",
+            "animation": "reveal_list"
+          }
+        },
+        {
+          "id": "s09",
+          "layout": "quote",
+          "heading": "大禹與九尾白狐",
+          "body": {
+            "text": "乃有白狐九尾造於禹……其九尾者，王之證也。",
+            "who": "《吳越春秋・越王無餘外傳》"
+          },
+          "narration": "最有名的例子是大禹。吳越春秋記載，大禹走到塗山，有一隻九尾白狐來到他面前。書裡說，九條尾巴，就是當王的證明。白色代表他的衣服顏色，九條尾巴代表王位。一隻狐狸，在這裡被當成了上天發下來的蓋章公文。",
+          "source_ids": [
+            "wuyue"
+          ],
+          "media": {
+            "kind": "animated",
+            "animation": "fade_in"
+          }
+        },
+        {
+          "id": "s10",
+          "layout": "big_number",
+          "heading": "三十歲還沒娶妻",
+          "body": {
+            "value": "30",
+            "unit": "歲",
+            "caption": "《吳越春秋》：禹三十未娶，行到塗山"
+          },
+          "narration": "而且同一段還交代了背景：大禹三十歲還沒娶妻。九尾白狐一出現，他就娶了塗山氏。所以這隻狐狸不只是上天的認證，還兼差當了催婚的親戚。",
+          "beat": "joke",
+          "source_ids": [
+            "wuyue"
+          ],
+          "media": {
+            "kind": "animated",
+            "animation": "count_up"
+          }
+        },
+        {
+          "id": "s11",
+          "layout": "bullets",
+          "heading": "畫在仙界的九尾狐",
+          "body": {
+            "items": [
+              "漢畫像石：陪西王母",
+              "和搗藥玉兔同框",
+              "墓頂天界也有牠"
+            ]
+          },
+          "narration": "在漢代的畫像石上，九尾狐常跟搗藥的玉兔一起，陪在西王母身邊，是仙界的一員。一直到五世紀，甘肅酒泉一座墓的墓頂上，九尾狐還被畫在天界的位置。這時候，牠是神仙那一隊的。請記住這個畫面，因為接下來，牠會一路從天上掉到人間。",
+          "source_ids": [
+            "gao-2011"
+          ],
+          "media": {
+            "kind": "artwork",
+            "artwork": "yanju_fox"
+          }
+        }
+      ]
+    },
+    {
+      "title": "第三站：狐狸開始修煉",
+      "slides": [
+        {
+          "id": "s12",
+          "layout": "timeline",
+          "heading": "玄中記的狐狸升級表",
+          "body": {
+            "events": [
+              {
+                "when": "50 歲",
+                "what": "能變成婦人"
+              },
+              {
+                "when": "100 歲",
+                "what": "變成美女"
+              },
+              {
+                "when": "1000 歲",
+                "what": "與天相通，成天狐"
+              }
+            ]
+          },
+          "narration": "轉折來自另一條線：普通狐狸。晉代的志怪書玄中記，列了一張狐狸升級表：五十歲能變成婦人，一百歲變成美女，一千歲與天相通，成為天狐。志怪，就是古代版的都市傳說合輯。",
+          "beat": "gossip",
+          "source_ids": [
+            "xuanzhongji"
+          ],
+          "media": {
+            "kind": "animated",
+            "animation": "draw_line"
+          }
+        },
+        {
+          "id": "s13",
+          "layout": "quote",
+          "heading": "唐代：家家拜狐神",
+          "body": {
+            "text": "無狐魅，不成村。",
+            "who": "張鷟《朝野僉載》引唐代諺語"
+          },
+          "narration": "這張升級表本來跟九尾狐無關，但它把狐狸和變成美女綁在一起了。到了唐代，張鷟在朝野僉載裡說，百姓家家拜狐神，還有一句諺語：沒有狐仙，就不像一個村子。狐狸從遠方的異獸，變成住在你家隔壁的鄰居，這一步很關鍵：牠離人越近，故事就越多。",
+          "source_ids": [
+            "chaoye"
+          ],
+          "media": {
+            "kind": "animated",
+            "animation": "fade_in"
+          }
+        },
+        {
+          "id": "s14",
+          "layout": "compare",
+          "heading": "唐宋之間，風向轉了",
+          "body": {
+            "left": {
+              "label": "唐代",
+              "items": [
+                "白狐多當吉兆",
+                "狐神有人拜"
+              ]
+            },
+            "right": {
+              "label": "宋代以後",
+              "items": [
+                "敵意明顯起來",
+                "狐狸＝妖精"
+              ]
+            }
+          },
+          "narration": "有學者認為，唐代人看到白狐，多半還當吉兆；宋代以後，對狐狸的敵意才明顯起來。這個轉折沒有精確的年份，比較像一段慢慢發酵的時間。好比一個藝人，人設不是一夜崩的，是一則一則新聞累積的。",
+          "beat": "joke",
+          "source_ids": [
+            "thepaper-2018"
+          ],
+          "media": {
+            "kind": "animated",
+            "animation": "reveal_list"
+          }
+        }
+      ]
+    },
+    {
+      "title": "第四站：妲己與九尾兩個字",
+      "slides": [
+        {
+          "id": "s15",
+          "layout": "bullets",
+          "heading": "狐狸精遇上妲己",
+          "body": {
+            "items": [
+              "元：武王伐紂平話",
+              "明：封神演義",
+              "妲己＝狐狸精定型"
+            ]
+          },
+          "narration": "元代的講史話本武王伐紂平話，據轉引已經出現九尾金毛狐子。到了明代的封神演義，狐狸精附身妲己的故事才真正家喻戶曉，一路演到今天的電視劇和布袋戲。",
+          "source_ids": [
+            "thepaper-2018",
+            "fengshen-01"
+          ],
+          "media": {
+            "kind": "artwork",
+            "artwork": "daji_1814"
+          }
+        },
+        {
+          "id": "s16",
+          "layout": "compare",
+          "heading": "九尾兩個字在哪一回",
+          "body": {
+            "left": {
+              "label": "第一回",
+              "items": [
+                "千年狐狸精",
+                "沒有九尾"
+              ]
+            },
+            "right": {
+              "label": "第九十七回",
+              "items": [
+                "九尾狐狸",
+                "妲己伏誅時"
+              ]
+            }
+          },
+          "narration": "但有個細節很少人注意：封神演義第一回，女媧派去的是千年狐狸精，沒說九尾。九尾狐狸這四個字，要到第九十七回、妲己伏誅時才出現。也就是說，狐狸精先有，九尾是後來才黏上去的標籤。",
+          "beat": "gossip",
+          "source_ids": [
+            "fengshen-01",
+            "fengshen-97"
+          ],
+          "media": {
+            "kind": "animated",
+            "animation": "grow_bars"
+          }
+        },
+        {
+          "id": "s17",
+          "layout": "title",
+          "heading": "妲己成了反面教材",
+          "body": {
+            "subtitle": "清代彩繪冊頁〈妲己害政〉"
+          },
+          "narration": "從此以後，妲己就成了王朝滅亡的標準反面教材。這張清代的彩繪冊頁，標題就直接叫妲己害政。王朝為什麼亡？有一隻狐狸可以怪，故事就好說多了。把責任推給一個妖怪，比檢討制度省事得多，這大概也是狐狸精這個設定能流傳幾百年的原因。",
+          "media": {
+            "kind": "artwork",
+            "artwork": "dijian_daji"
+          }
+        },
+        {
+          "id": "s17a",
+          "layout": "compare",
+          "heading": "同一隻狐狸的三張臉",
+          "body": {
+            "left": {
+              "label": "圖鑑與仙界",
+              "items": [
+                "異獸圖譜",
+                "西王母身邊"
+              ]
+            },
+            "right": {
+              "label": "江戶浮世繪",
+              "items": [
+                "白面金毛妖狐",
+                "宮廷美女"
+              ]
+            }
+          },
+          "narration": "文字會改寫，圖像也會。開場那張葛飾北齋的素描，旁邊題字寫的是白面金毛九尾之妖狐，狐狸齜牙咧嘴、尾巴高舉。同樣是九條尾巴，從圖鑑裡的異獸、仙界的吉祥物，到浮世繪裡的妖婦，觀眾一眼就看得出來，時代要的角色不一樣了。",
+          "media": {
+            "kind": "artwork",
+            "artwork": "hokusai_fox"
+          }
+        },
+        {
+          "id": "s18",
+          "layout": "bullets",
+          "heading": "我們還沒查到的事",
+          "body": {
+            "items": [
+              "平話原文未見全文",
+              "宋代轉折沒有定年",
+              "石燕畫冊的說明文字"
+            ]
+          },
+          "narration": "先誠實交代三件我們還沒查到的事：武王伐紂平話的原文，我們只看到轉引；宋代的轉折，沒有學者給出明確年份；鳥山石燕畫冊裡的說明文字，我們也還沒取得原件。妖怪溯源所的規矩是，查不到就說查不到。",
+          "beat": "joke",
+          "source_ids": [
+            "thepaper-2018"
+          ],
+          "media": {
+            "kind": "animated",
+            "animation": "reveal_list"
+          }
+        }
+      ]
+    },
+    {
+      "title": "第五站：渡海到日本",
+      "slides": [
+        {
+          "id": "s19",
+          "layout": "title",
+          "heading": "日本的九尾狐：玉藻前",
+          "body": {
+            "subtitle": "鳥山石燕〈玉藻前〉"
+          },
+          "narration": "日本的九尾狐叫玉藻前。在御伽草子玉藻的草紙和能劇殺生石裡，她是鳥羽上皇身邊的絕世美女，其實是狐狸，被識破之後逃到那須野，最後化成一塊石頭。畫面上是鳥山石燕在妖怪畫冊裡畫的玉藻前，宮廷女子的身後，拖著一道狐狸的影子。",
+          "source_ids": [
+            "kotobank-tamamo"
+          ],
+          "media": {
+            "kind": "artwork",
+            "artwork": "sekien_tamamo"
+          }
+        },
+        {
+          "id": "s20",
+          "layout": "big_number",
+          "heading": "繪本三國妖婦傳",
+          "body": {
+            "value": "1803",
+            "unit": "年",
+            "caption": "高井蘭山讀本刊行：天竺、中國、日本"
+          },
+          "narration": "江戶時代的出版業把她的履歷寫成跨國的。高井蘭山的讀本繪本三國妖婦傳，在一八零三年刊行。歌川國芳這張浮世繪，題簽直接寫著：惡狐華陽夫人，畫的是天竺那一段。",
+          "beat": "gossip",
+          "source_ids": [
+            "sangoku-1803",
+            "kuniyoshi-print"
+          ],
+          "media": {
+            "kind": "artwork",
+            "artwork": "hanzoku"
+          }
+        },
+        {
+          "id": "s21",
+          "layout": "timeline",
+          "heading": "同一隻狐狸的三國巡迴",
+          "body": {
+            "events": [
+              {
+                "when": "天竺",
+                "what": "華陽夫人，迷惑班足王"
+              },
+              {
+                "when": "中國",
+                "what": "妲己，傾覆商朝"
+              },
+              {
+                "when": "日本",
+                "what": "玉藻前，化為殺生石"
+              }
+            ]
+          },
+          "narration": "於是同一隻狐狸有了三國巡迴：先在天竺當華陽夫人，迷惑班足王；再到中國當妲己；最後渡海到日本，成了玉藻前。一隻狐狸跑了三個國家，簽證大概都辦不下來。",
+          "source_ids": [
+            "sangoku-1803",
+            "kotobank-tamamo"
+          ],
+          "media": {
+            "kind": "animated",
+            "animation": "draw_line"
+          }
+        },
+        {
+          "id": "s22",
+          "layout": "bullets",
+          "heading": "殺生石為什麼會殺生",
+          "body": {
+            "items": [
+              "那須有硫氣孔",
+              "噴出硫化氫等氣體",
+              "附近昆蟲常死掉"
+            ]
+          },
+          "narration": "那塊石頭叫殺生石，傳說靠近的生物都會死。這倒不全是傳說：那一帶有硫氣孔，會噴出硫化氫之類的氣體，附近的昆蟲常常死掉。九尾狐的詛咒，有一部分其實是火山化學。",
+          "beat": "joke",
+          "source_ids": [
+            "kotobank-sessho"
+          ],
+          "media": {
+            "kind": "artwork",
+            "artwork": "yoshitoshi_tamamo"
+          }
+        },
+        {
+          "id": "s23",
+          "layout": "big_number",
+          "heading": "殺生石裂成兩半",
+          "body": {
+            "value": "2022",
+            "unit": "年3月",
+            "caption": "那須町觀光協會發新聞稿說明"
+          },
+          "narration": "然後是二零二二年三月，殺生石被發現裂成兩半。那須町觀光協會發了新聞稿說明，英國衛報也報導，日本網友開始擔心，九尾狐是不是被放出來了。至於石頭為什麼裂，比較無聊但比較可能的解釋，是長年的風化和熱脹冷縮。",
+          "beat": "gossip",
+          "source_ids": [
+            "nasu-pr-2022",
+            "guardian-2022"
+          ],
+          "media": {
+            "kind": "artwork",
+            "artwork": "sekien_sessho"
+          }
+        },
+        {
+          "id": "s24",
+          "layout": "bullets",
+          "heading": "我們看到的是合流版",
+          "body": {
+            "items": [
+              "封神榜：布袋戲電視劇",
+              "日本動漫的九尾",
+              "韓國的구미호"
+            ]
+          },
+          "narration": "台灣觀眾熟悉的九尾狐，其實是兩條線的合流：一條是封神榜的布袋戲和電視劇，一條是日本動漫。韓國也有九尾狐傳說，叫구미호，同樣偏向會吃人的妖狐。我們看到的，幾乎都是狐狸精那一面。",
+          "source_ids": [
+            "kumiho-wiki"
+          ],
+          "media": {
+            "kind": "artwork",
+            "artwork": "gakutei_tamamo"
+          }
+        }
+      ]
+    },
+    {
+      "title": "結論：被改寫的是我們",
+      "slides": [
+        {
+          "id": "s24a",
+          "layout": "bullets",
+          "heading": "為什麼偏偏是狐狸",
+          "body": {
+            "items": [
+              "住在田邊和墳地旁",
+              "夜裡出沒、叫聲尖細",
+              "聰明難抓又好看"
+            ]
+          },
+          "narration": "為什麼偏偏是狐狸？牠住在人的田邊和墳地附近，晚上出沒，叫聲尖細，常常偷雞，聰明、難抓，又長得好看。這幾個條件加起來，剛好適合裝進人對身邊看不見的威脅的想像。換成一頭牛，大概就很難演妖婦了。",
+          "media": {
+            "kind": "animated",
+            "animation": "reveal_list"
+          }
+        },
+        {
+          "id": "s25",
+          "layout": "compare",
+          "heading": "動物沒變，變的是人",
+          "body": {
+            "left": {
+              "label": "需要吉兆時",
+              "items": [
+                "證明皇帝有德",
+                "尾巴多子孫多"
+              ]
+            },
+            "right": {
+              "label": "需要替罪時",
+              "items": [
+                "解釋王朝滅亡",
+                "夜行難捉摸"
+              ]
+            }
+          },
+          "narration": "回頭看這三千年：漢代人需要證明皇帝有德，牠就是吉兆，尾巴多代表子孫多，簡直是催生廣告；後來的人需要解釋王朝為什麼會亡，牠就成了替罪的美女。狐狸本身沒變，變的是人用什麼眼光看牠。",
+          "beat": "joke",
+          "media": {
+            "kind": "animated",
+            "animation": "grow_bars"
+          }
+        },
+        {
+          "id": "s25a",
+          "layout": "bullets",
+          "heading": "片中的畫從哪裡來",
+          "body": {
+            "items": [
+              "作者過世超過百年",
+              "大都會博物館 CC0",
+              "維基共享資源公共領域",
+              "出處逐張列在說明欄"
+            ]
+          },
+          "narration": "順便交代片中的畫從哪裡來：北齋、國芳、芳年、石燕這些畫家都已過世超過一百年，作品屬於公共領域；大都會博物館等館方也把這類館藏圖像免費開放，連商業使用都可以。每一張的作者、年代、收藏單位和授權連結，都列在說明欄，歡迎去查。",
+          "media": {
+            "kind": "artwork",
+            "artwork": "gakutei_tamamo"
+          }
+        },
+        {
+          "id": "s26",
+          "layout": "title",
+          "heading": "每一版九尾狐都是一面鏡子",
+          "body": {
+            "subtitle": "下一集：天狗，中國的流星怎麼變成日本的山伏"
+          },
+          "narration": "妖怪溯源所想做的，不是告訴你九尾狐其實是好的，而是把每一層改寫攤開來。下次看到九尾狐，想想那個時代的人在怕什麼、在盼什麼。下一集，我們追天狗：中國的流星，怎麼變成日本山裡的鼻子長長的修行者。",
+          "media": {
+            "kind": "animated",
+            "animation": "fade_in"
+          }
+        }
+      ]
+    }
+  ]
+}

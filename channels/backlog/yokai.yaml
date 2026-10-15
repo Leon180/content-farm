@@ -1,0 +1,56 @@
+# 妖怪溯源所 選題池。status: idea → researching → ready → in_production → published（或 dropped）
+# priority 5 最急；常青題不給 deadline。`produce.py plan --week` 依此排片。
+# 來源：docs/research/newchannel-myth-2026-10.md §①（分支 worktree-cf-newch-myth）
+# 規則：讀原典自己寫；artwork 只用 CC0／公共領域（大英博物館 NC 不可用）；
+#       原住民族題材只走共製，不放進這份選題池。
+channel: yokai
+topics:
+  - id: kyubi
+    title: 九尾狐不是一開始就是狐狸精
+    kind: long
+    status: in_production
+    priority: 5
+    category: 山海經異獸
+    notes: 開台第一支。山海經→漢代祥瑞→唐宋狐魅→妲己→玉藻前；畫面用鳥山石燕、歌川國芳等公共領域浮世繪
+  - id: kyubi-card
+    title: 一分鐘妖怪圖鑑：九尾狐
+    kind: short
+    status: idea
+    priority: 4
+    category: 山海經異獸
+    notes: 從 kyubi 長片切出；「九尾狐在山海經裡會吃人」一個反差
+  - id: tengu
+    title: 天狗：中國的流星怎麼變成日本的山伏
+    kind: long
+    status: researching
+    priority: 4
+    category: 日本妖怪
+    notes: 鳥山石燕《画図百鬼夜行》天狗、北齋漫畫皆公共領域
+  - id: taotie
+    title: 饕餮：從青銅器花紋到貪吃的代名詞
+    kind: long
+    status: idea
+    priority: 3
+    category: 山海經異獸
+    notes: Met／Cleveland 的商周青銅器 CC0 照片
+  - id: dragon-east-west
+    title: 龍為什麼在東方是好的、在西方是壞的
+    kind: long
+    status: idea
+    priority: 3
+    category: 世界比較神話
+    notes: Rijksmuseum／Met 的西洋屠龍畫與中國龍紋 CC0 件
+  - id: kappa
+    title: 河童：日本人為什麼怕被拔「尻子玉」
+    kind: long
+    status: idea
+    priority: 2
+    category: 日本妖怪
+    notes: 鳥山石燕「河童」、歌川國芳水虎圖
+  - id: mosinna
+    title: 魔神仔：台灣山裡帶走人的是什麼
+    kind: long
+    status: idea
+    priority: 3
+    category: 台灣魔神仔與民間傳說
+    notes: 畫面素材最少（無公共領域圖），需自製地圖＋報導 title card；先確認不涉及原住民族傳說

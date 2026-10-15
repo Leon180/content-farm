@@ -138,6 +138,7 @@ class MediaKind(str, Enum):
     STOCK = "stock"            # Pexels/Pixabay B-roll + key-text overlay
     AI_IMAGE = "ai_image"      # user-generated illustration + Ken Burns
     TITLE_CARD = "title_card"  # self-made news headline card (never a screenshot)
+    ARTWORK = "artwork"        # public-domain / CC0 museum image (assets/artwork/artwork.json)
 
 
 class Animation(str, Enum):
@@ -172,6 +173,7 @@ _MEDIA_REQUIRED: dict[MediaKind, str] = {
     MediaKind.STOCK: "query",
     MediaKind.AI_IMAGE: "prompt",
     MediaKind.ANIMATED: "animation",
+    MediaKind.ARTWORK: "artwork",
 }
 
 
@@ -189,6 +191,7 @@ class Media(_Frozen):
     headline: str = Field(default="", max_length=60)     # title_card: defaults to source title
     summary: str = Field(default="", max_length=80)      # title_card: one-line summary
     source_id: str = Field(default="", max_length=32)    # title_card: must be in deck.sources
+    artwork: str = Field(default="", max_length=40)      # artwork: id in assets/artwork/artwork.json
 
     @model_validator(mode="after")
     def _required_for_kind(self) -> Media:

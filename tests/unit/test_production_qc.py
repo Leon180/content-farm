@@ -11,7 +11,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from content_farm.explainer.deck import load_deck
+from content_farm.explainer.deck import Deck, load_deck
 from content_farm.explainer.to_script import deck_to_script
 from content_farm.production import publish, qc
 from content_farm.production.channels import load_channel
@@ -25,6 +25,20 @@ def test_policy_blocks_stock_on_yokai_but_not_chipcat() -> None:
     assert qc.policy_findings(load_channel("chipcat"), deck)[0].level == "ok"
     finding = qc.policy_findings(load_channel("yokai"), deck)[0]
     assert finding.level == "error" and "stock" in finding.message
+
+
+def test_policy_allows_artwork_only_where_the_channel_does() -> None:
+    data = json.loads((EXAMPLE / "deck.json").read_text(encoding="utf-8"))
+    slide = data["sections"][0]["slides"][0]
+    slide["media"] = {"kind": "artwork", "artwork": "tamamo"}
+    for section in data["sections"]:
+        for other in section["slides"]:
+            if other is not slide and (other.get("media") or {}).get("kind") == "stock":
+                other["media"] = None
+    deck = Deck.model_validate(data)
+    assert qc.policy_findings(load_channel("yokai"), deck)[0].level == "ok"
+    finding = qc.policy_findings(load_channel("chipcat"), deck)[0]
+    assert finding.level == "error" and "artwork" in finding.message
 
 
 def test_credits_pending_and_missing_fields_are_errors() -> None:
@@ -124,6 +138,16 @@ def test_chapter_block_rejects_short_or_few_chapters() -> None:
     assert publish.chapter_block([(0, "a"), (5, "b"), (60, "c")], 120) == []
     assert publish.chapter_block([(1, "a"), (60, "b"), (90, "c")], 120) == []
     assert publish.chapter_block([(0, "a"), (60, "b"), (90, "c")], 120)[1] == "0:00 a"
+
+
+def test_ai_disclosure_matches_credits() -> None:
+    assert publish.ai_disclosure_line(None) == publish.AI_DISCLOSURE_LINE
+    ai = {"entries": [{"kind": "ai_image"}], "pending": []}
+    assert publish.ai_disclosure_line(ai) == publish.AI_DISCLOSURE_LINE
+    placeholder = {"entries": [], "pending": [{"kind": "ai_image"}]}
+    assert publish.ai_disclosure_line(placeholder) == publish.AI_DISCLOSURE_LINE
+    artwork_only = {"entries": [{"kind": "artwork"}, {"kind": "stock"}], "pending": []}
+    assert publish.ai_disclosure_line(artwork_only) == publish.AI_VOICE_ONLY_LINE
 
 
 def test_naive_publish_time_rejected(tmp_path: Path) -> None:

@@ -48,6 +48,8 @@ def policy_findings(channel: Channel, deck: Deck) -> list[Finding]:
         allowed.add(MediaKind.STOCK)
     if channel.media.ai_image:
         allowed.add(MediaKind.AI_IMAGE)
+    if channel.media.artwork:
+        allowed.add(MediaKind.ARTWORK)
     bad = [f"{slide.id}:{slide.media_kind.value}" for slide in deck.slides
            if slide.media_kind not in allowed]
     if bad:
