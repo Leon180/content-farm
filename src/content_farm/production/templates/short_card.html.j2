@@ -48,9 +48,9 @@ body { background-color: var(--bg); color: var(--fg); font-family: var(--font-he
   </div>
 {% else %}
   <div class="sticker" style="left:60px;top:330px;font-size:52px;transform:rotate(-4deg)">{{ spec.label }}・完整版</div>
-  <div class="punch" style="top:480px;font-size:170px">想看<span class="pk">完整</span>的？</div>
-  <div class="bubble" style="left:60px;right:60px;top:800px;text-align:center">
-    「{{ spec.long_channel }}」頻道<br>《{{ spec.long_title }}》
+  <div class="punch" style="top:500px;font-size:136px;white-space:nowrap">想看<span class="pk">完整</span>的？</div>
+  <div class="bubble" style="left:60px;right:60px;top:760px;text-align:center;font-size:46px;line-height:1.4">
+    「{{ spec.long_channel }}」頻道<br><span style="word-break:keep-all">《{{ spec.long_title }}》</span>
   </div>
 {% endif %}
 <script>
