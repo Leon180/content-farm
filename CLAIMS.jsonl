@@ -1,16 +1,15 @@
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/REPORT-explainer-v2.md","min_bytes":2000,"why":"派工時宣告的預期產物"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/output/explainer-cowos-v2/assembly/final.mp4","min_bytes":10000000,"why":"CoWoS 成片（output/ 不 commit）"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/output/explainer-cowos-v2/credits.json","min_bytes":1000,"why":"3 筆 stock credit + 3 筆 pending"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/docs/examples/explainer-cowos/frames/mascot_talking_s01.png","min_bytes":10000}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/docs/examples/explainer-cowos/frames/mascot_point_s06.png","min_bytes":10000}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/docs/examples/explainer-cowos/frames/mascot_deadpan_s19.png","min_bytes":10000}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/docs/examples/explainer-cowos/frames/stock_s22.png","min_bytes":10000}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/docs/examples/explainer-cowos/frames/animated_s12_grow_bars.png","min_bytes":10000}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/docs/examples/explainer-cowos/frames/title_card_s02.png","min_bytes":10000}
-{"kind":"blob_equal","a":"feat/explainer-v2-mascot:src/content_farm/explainer/mascot/overlay.py","b":"HEAD:src/content_farm/explainer/mascot/overlay.py","why":"沒有移動貓的位置或禁區，只縮字幕"}
-{"kind":"blob_equal","a":"3332fa4:src/content_farm/assembly/timeline_assembly.py","b":"HEAD:src/content_farm/assembly/timeline_assembly.py","why":"assembly 一行未改"}
-{"kind":"blob_equal","a":"3332fa4:src/content_farm/config.py","b":"HEAD:src/content_farm/config.py","why":"字幕行寬預設值沒改；講解片用環境變數 20"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/tests/unit/test_subtitle_atoms.py","min_bytes":2000,"why":"斷行修正的測試（54 個）"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/docs/examples/explainer-cowos/frames/subtitle_fix_2025_year_s16.png","min_bytes":10000,"why":"修正後 2025 年同行"}{"kind":"blob_equal","a":"feat/explainer-v2-visuals:src/content_farm/explainer/media.py","b":"3423b2b:src/content_farm/explainer/media.py","why":"media schema/分派以 visuals 為準（合併當下）"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/src/content_farm/explainer/deck.py","pattern":"from content_farm.explainer.media import Media","why":"research 的 media schema import 已丟掉"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/.claude/skills/deck/SKILL.md","pattern":"<<<<<<<","why":"skill 衝突已解"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-production-workflow/REPORT-production-workflow.md","min_bytes":2000,"why":"派工時宣告的預期產物"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-production-workflow/docs/proposals/production-workflow.md","min_bytes":5000,"why":"提案文件"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-production-workflow/output/cowos-chipcat/assembly/final.mp4","min_bytes":10000000,"why":"runner 重跑的 CoWoS 成片（chipcat、mock 配音；output/ 不 commit）"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-production-workflow/output/cowos-chipcat/upload/youtube_meta.json","min_bytes":2000,"why":"package 步驟產出：final.mp4、章節、credits、AI 揭露、publish_at"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-production-workflow/output/cowos-chipcat/qc/qc_report.json","min_bytes":500,"why":"QC 抓到 3 張 AI 佔位（1 error），其餘通過"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-production-workflow/docs/examples/production-workflow/brand-switch/s09_yokai.jpg","min_bytes":20000,"why":"其他品牌渲染截圖"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-production-workflow/docs/examples/production-workflow/brand-switch/s14_cel.jpg","min_bytes":20000,"why":"其他品牌渲染截圖"}
+{"kind":"blob_equal","a":"ab84f74:src/content_farm/explainer/brands.py","b":"HEAD:src/content_farm/explainer/brands.py","why":"品牌註冊表原樣併入"}
+{"kind":"blob_equal","a":"ab84f74:tests/unit/test_explainer_brands.py","b":"HEAD:tests/unit/test_explainer_brands.py","why":"品牌測試原樣併入"}
+{"kind":"blob_equal","a":"ab84f74:src/content_farm/explainer/templates/themes/brands/chipcat.css","b":"HEAD:src/content_farm/explainer/templates/themes/brands/chipcat.css","why":"品牌 CSS 原樣併入"}
+{"kind":"blob_equal","a":"ab84f74:src/content_farm/explainer/templates/brands/endcard.html.j2","b":"HEAD:src/content_farm/explainer/templates/brands/endcard.html.j2","why":"templates/brands 併入"}
+{"kind":"blob_equal","a":"8907817:src/content_farm/explainer/mascot/overlay.py","b":"HEAD:src/content_farm/explainer/mascot/overlay.py","why":"沒有改 mascot/（另一支 worker 的範圍）"}
+{"kind":"blob_equal","a":"8907817:src/content_farm/explainer/mascot/run.py","b":"HEAD:src/content_farm/explainer/mascot/run.py","why":"沒有改 mascot/"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-production-workflow/channels","pattern":"1//0","why":"頻道設定檔沒有 refresh token 值，只有變數名"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-production-workflow/src/content_farm/production","pattern":"TODO","why":"沒有留暫時碼"}
