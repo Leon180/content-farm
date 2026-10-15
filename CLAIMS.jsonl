@@ -1,15 +1,10 @@
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-production-workflow/REPORT-production-workflow.md","min_bytes":2000,"why":"派工時宣告的預期產物"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-production-workflow/docs/proposals/production-workflow.md","min_bytes":5000,"why":"提案文件"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-production-workflow/output/cowos-chipcat/assembly/final.mp4","min_bytes":10000000,"why":"runner 重跑的 CoWoS 成片（chipcat、mock 配音；output/ 不 commit）"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-production-workflow/output/cowos-chipcat/upload/youtube_meta.json","min_bytes":2000,"why":"package 步驟產出：final.mp4、章節、credits、AI 揭露、publish_at"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-production-workflow/output/cowos-chipcat/qc/qc_report.json","min_bytes":500,"why":"QC 抓到 3 張 AI 佔位（1 error），其餘通過"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-production-workflow/docs/examples/production-workflow/brand-switch/s09_yokai.jpg","min_bytes":20000,"why":"其他品牌渲染截圖"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-production-workflow/docs/examples/production-workflow/brand-switch/s14_cel.jpg","min_bytes":20000,"why":"其他品牌渲染截圖"}
-{"kind":"blob_equal","a":"ab84f74:src/content_farm/explainer/brands.py","b":"HEAD:src/content_farm/explainer/brands.py","why":"品牌註冊表原樣併入"}
-{"kind":"blob_equal","a":"ab84f74:tests/unit/test_explainer_brands.py","b":"HEAD:tests/unit/test_explainer_brands.py","why":"品牌測試原樣併入"}
-{"kind":"blob_equal","a":"ab84f74:src/content_farm/explainer/templates/themes/brands/chipcat.css","b":"HEAD:src/content_farm/explainer/templates/themes/brands/chipcat.css","why":"品牌 CSS 原樣併入"}
-{"kind":"blob_equal","a":"ab84f74:src/content_farm/explainer/templates/brands/endcard.html.j2","b":"HEAD:src/content_farm/explainer/templates/brands/endcard.html.j2","why":"templates/brands 併入"}
-{"kind":"blob_equal","a":"8907817:src/content_farm/explainer/mascot/overlay.py","b":"HEAD:src/content_farm/explainer/mascot/overlay.py","why":"沒有改 mascot/（另一支 worker 的範圍）"}
-{"kind":"blob_equal","a":"8907817:src/content_farm/explainer/mascot/run.py","b":"HEAD:src/content_farm/explainer/mascot/run.py","why":"沒有改 mascot/"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-production-workflow/channels","pattern":"1//0","why":"頻道設定檔沒有 refresh token 值，只有變數名"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-production-workflow/src/content_farm/production","pattern":"TODO","why":"沒有留暫時碼"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ch-yokai-ep1/REPORT-ch-yokai-ep1.md","min_bytes":6000,"why":"派工指定的預期產物"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ch-yokai-ep1/output/yokai-kyubi/assembly/draft.mp4","min_bytes":50000000,"why":"成片（rig_ready=false，無 mascot 疊加，所以是 draft.mp4），9:06、61.3 MB"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ch-yokai-ep1/output/yokai-kyubi/qc/qc_report.json","min_bytes":500,"why":"QC 0 error 0 warn"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ch-yokai-ep1/output/yokai-kyubi/credits.json","min_bytes":5000,"why":"12 筆 artwork credit、pending 為空"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ch-yokai-ep1/output/yokai-kyubi/review/final.html","min_bytes":1000,"why":"成片閘門審核頁，等 Leon"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ch-yokai-ep1/output/yokai-kyubi/upload/manual/preview.html","min_bytes":5000,"why":"orchestrator 追加 2：離線預覽頁"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ch-yokai-ep1/output/yokai-kyubi/upload/manual/README.md","min_bytes":1000,"why":"orchestrator 追加 1：手動上傳清單"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ch-yokai-ep1/channels/backlog/yokai.yaml","min_bytes":1000,"why":"yokai 選題池 7 題"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ch-yokai-ep1/output/yokai-kyubi/credits.json","pattern":"BM 20","why":"沒有用到大英博物館（NC）來源件"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ch-yokai-ep1/output/yokai-kyubi/upload/manual/description.txt","pattern":"部分插圖為合成內容","why":"本片無 AI 圖，揭露文字不再宣稱有"}
