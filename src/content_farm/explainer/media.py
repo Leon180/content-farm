@@ -1,0 +1,161 @@
+"""Build one timeline clip per slide according to ``slide.media.kind``.
+
+Each builder returns a :class:`ClipResult` whose file is exactly as long as
+the slide's slot (mp4) or a PNG still (plain ``slide`` with transitions off,
+which keeps v1 output byte-identical). Stock and AI image problems never stop
+the run: the slide falls back (to an animated slide / a placeholder) and the
+reason is recorded.
+"""
+
+from __future__ import annotations
+
+import logging
+import time
+from dataclasses import dataclass, field, replace
+from pathlib import Path
+
+from content_farm.explainer import ffmpeg_ops
+from content_farm.explainer.ai_images import AI_IMAGE_DIR, find_image
+from content_farm.explainer.capture import PageCapturer
+from content_farm.explainer.cards import overlay_html, placeholder_html, title_card_html
+from content_farm.explainer.deck import Deck, MediaKind, Section, Slide
+from content_farm.explainer.pages import SlidePage
+from content_farm.explainer.stock import StockClient, StockUnavailable, credit_entry
+
+logger = logging.getLogger(__name__)
+
+USED_PLACEHOLDER = "ai_placeholder"
+
+
+@dataclass(frozen=True)
+class ClipResult:
+    index: int
+    slide_id: str
+    requested: str
+    used: str            # slide | animated | stock | ai_image | ai_placeholder | title_card
+    path: Path
+    seconds: float       # slot length
+    note: str = ""       # why a fallback happened, or stock fit mode, etc.
+    credit: dict | None = None
+    build_seconds: float = 0.0
+    problems: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class SlideJob:
+    index: int
+    section: Section
+    slide: Slide
+    seconds: float
+    animated_page: SlidePage
+
+
+@dataclass
+class MediaContext:
+    deck: Deck
+    run_dir: Path
+    work_dir: Path
+    capturer: PageCapturer
+    stock: StockClient | None
+    static_png_ok: bool  # True when transitions are off: plain slides stay PNG
+    ai_image_dir: Path = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.ai_image_dir = self.run_dir / AI_IMAGE_DIR
+
+    def html(self, name: str, content: str) -> Path:
+        path = self.work_dir / "html" / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+        return path
+
+    def clip_path(self, job: SlideJob, suffix: str) -> Path:
+        return self.work_dir / "clips" / f"clip_{job.index:03d}{suffix}"
+
+
+def build_clip(ctx: MediaContext, job: SlideJob) -> ClipResult:
+    started = time.monotonic()
+    kind = job.slide.media_kind
+    builder = {
+        MediaKind.SLIDE: _plain_slide,
+        MediaKind.ANIMATED: _animated,
+        MediaKind.STOCK: _stock,
+        MediaKind.AI_IMAGE: _ai_image,
+        MediaKind.TITLE_CARD: _title_card,
+    }[kind]
+    result = builder(ctx, job)
+    elapsed = round(time.monotonic() - started, 2)
+    logger.info("clip %02d %s → %s (%.1fs) %s", job.index, kind.value, result.used, elapsed, result.note)
+    return replace(result, build_seconds=elapsed)
+
+
+def _result(job: SlideJob, used: str, path: Path, **extra: object) -> ClipResult:
+    return ClipResult(index=job.index, slide_id=job.slide.id, requested=job.slide.media_kind.value,
+                      used=used, path=path, seconds=job.seconds, **extra)  # type: ignore[arg-type]
+
+
+def _plain_slide(ctx: MediaContext, job: SlideJob) -> ClipResult:
+    png = ctx.run_dir / "slides" / f"slide_{job.index:03d}.png"
+    if not png.is_file():
+        raise FileNotFoundError(f"missing rendered slide {png}; run render_slides first")
+    if ctx.static_png_ok:
+        return _result(job, "slide", png)
+    return _result(job, "slide", ffmpeg_ops.still_to_clip(png, ctx.clip_path(job, ".mp4"), job.seconds))
+
+
+def _animated(ctx: MediaContext, job: SlideJob, note: str = "") -> ClipResult:
+    html = ctx.html(f"{job.animated_page.stem}_anim.html", job.animated_page.html)
+    capture = ctx.capturer.animate(html, ctx.clip_path(job, ".mp4"), job.seconds)
+    detail = f"{job.slide.animation.value} {capture.animation_seconds:.1f}s/{capture.frames_captured}f"
+    return _result(job, "animated", capture.clip, note=f"{note}{detail}".strip(),
+                   problems=capture.problems)
+
+
+def _overlay_png(ctx: MediaContext, job: SlideJob) -> Path:
+    html = ctx.html(f"overlay_{job.index:03d}.html",
+                    overlay_html(ctx.deck, job.section, job.slide, job.index))
+    return ctx.capturer.still(html, ctx.work_dir / "overlays" / f"overlay_{job.index:03d}.png",
+                              transparent=True)
+
+
+def _stock(ctx: MediaContext, job: SlideJob) -> ClipResult:
+    query = job.slide.media.query if job.slide.media else ""
+    try:
+        if ctx.stock is None:
+            raise StockUnavailable("stock disabled (--no-stock)")
+        asset = ctx.stock.fetch(query, job.seconds)
+        source_seconds = ffmpeg_ops.probe(asset.path)["duration"]
+        clip, mode = ffmpeg_ops.stock_to_clip(
+            asset.path, _overlay_png(ctx, job), ctx.clip_path(job, ".mp4"), job.seconds, source_seconds,
+        )
+    except (StockUnavailable, ffmpeg_ops.FFmpegError) as exc:
+        logger.warning("slide %s: stock fallback → animated: %s", job.slide.id, exc)
+        return _animated(ctx, job, note=f"FALLBACK stock→animated: {exc} | ")
+    cache = "cache" if asset.from_cache else "download"
+    note = f"{asset.candidate.provider}:{asset.candidate.provider_id} {mode} ({cache})"
+    return _result(job, "stock", clip, note=note, credit=credit_entry(asset, job.slide.id, job.index))
+
+
+def _ai_image(ctx: MediaContext, job: SlideJob) -> ClipResult:
+    image = find_image(ctx.ai_image_dir, job.slide.id)
+    out = ctx.clip_path(job, ".mp4")
+    if image is not None:
+        clip = ffmpeg_ops.ken_burns(image, _overlay_png(ctx, job), out, job.seconds)
+        return _result(job, "ai_image", clip, note=f"ken burns on {image.name}",
+                       credit={"slide_id": job.slide.id, "slide_index": job.index, "kind": "ai_image",
+                               "file": image.name, "license": "AI-generated (Gemini) for this channel",
+                               "prompt": job.slide.media.prompt if job.slide.media else ""})
+    expected = (AI_IMAGE_DIR / f"{job.slide.id}.png").as_posix()
+    html = ctx.html(f"placeholder_{job.index:03d}.html",
+                    placeholder_html(ctx.deck, job.section, job.slide, job.index, expected))
+    png = ctx.capturer.still(html, ctx.work_dir / "placeholders" / f"{job.slide.id}.png")
+    clip = ffmpeg_ops.still_to_clip(png, out, job.seconds)
+    return _result(job, USED_PLACEHOLDER, clip, note=f"PLACEHOLDER: {expected} not found")
+
+
+def _title_card(ctx: MediaContext, job: SlideJob) -> ClipResult:
+    html = ctx.html(f"title_card_{job.index:03d}.html",
+                    title_card_html(ctx.deck, job.section, job.slide, job.index))
+    capture = ctx.capturer.animate(html, ctx.clip_path(job, ".mp4"), job.seconds)
+    source_id = job.slide.media.source_id if job.slide.media else ""
+    return _result(job, "title_card", capture.clip, note=f"source_id={source_id}")

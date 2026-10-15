@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from content_farm.explainer.deck import Deck, Layout
+from content_farm.explainer.deck import Deck, Layout, MediaKind
 
 MIN_SLIDES = 15
 MAX_SLIDES = 30
@@ -19,6 +19,8 @@ MAX_TOTAL_SECONDS = 10 * 60
 MAX_SLIDES_WITHOUT_BEAT = 3  # "about one light beat every 2-3 slides"
 MIN_DISTINCT_LAYOUTS = 3
 MAX_BULLETS_SHARE = 0.5
+MAX_PLAIN_SLIDE_RUN = 2  # 3+ static slides in a row reads as a slideshow
+MIN_FOOTAGE_SHARE = 0.2  # stock + ai_image share of all slides
 
 # Wording that reads as buy/sell advice — the channel never gives it.
 _ADVICE = re.compile(r"(買進|賣出|加碼|減碼|目標價|進場|出場|抄底|停損|值得買|推薦買)")
@@ -40,6 +42,7 @@ def lint_deck(deck: Deck) -> tuple[LintIssue, ...]:
         *_check_sourcing(deck),
         *_check_advice(deck),
         *_check_draft(deck),
+        *_check_media(deck),
     )
 
 
@@ -121,3 +124,33 @@ def _check_draft(deck: Deck) -> list[LintIssue]:
     if not deck.draft_data:
         return []
     return [LintIssue("draft-data", "draft_data=true: numbers are placeholders, not publishable")]
+
+
+def _check_media(deck: Deck) -> list[LintIssue]:
+    issues: list[LintIssue] = []
+    run = 0
+    for slide in deck.slides:
+        run = run + 1 if slide.media_kind == MediaKind.SLIDE else 0
+        if run == MAX_PLAIN_SLIDE_RUN + 1:
+            issues.append(LintIssue(
+                "plain-slide-run",
+                f"slide {slide.id!r}: {run} static slides in a row; animate one or add footage",
+            ))
+    kinds = [s.media_kind for s in deck.slides]
+    footage = sum(k in (MediaKind.STOCK, MediaKind.AI_IMAGE) for k in kinds)
+    if kinds and footage / len(kinds) < MIN_FOOTAGE_SHARE:
+        issues.append(LintIssue(
+            "footage-share",
+            f"{footage}/{len(kinds)} slides are stock/ai_image; target >= "
+            f"{MIN_FOOTAGE_SHARE:.0%}",
+        ))
+    for slide in deck.slides:
+        if slide.media_kind != MediaKind.TITLE_CARD or slide.media is None:
+            continue
+        source = deck.source_by_id(slide.media.source_id)
+        if not (source.publisher and source.published):
+            issues.append(LintIssue(
+                "title-card-meta",
+                f"slide {slide.id!r}: source {source.id!r} needs publisher and published date",
+            ))
+    return issues

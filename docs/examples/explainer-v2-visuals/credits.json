@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "title": "台積電到底賺什麼錢",
+  "generated_at": "2026-10-14T17:20:23+00:00",
+  "entries": [
+    {
+      "slide_id": "s01",
+      "slide_index": 1,
+      "kind": "stock",
+      "query": "semiconductor wafer",
+      "provider": "pexels",
+      "provider_id": "6754834",
+      "source_url": "https://www.pexels.com/video/close-up-of-a-motherboard-components-6754834/",
+      "download_url": "https://videos.pexels.com/video-files/6754834/6754834-hd_1920_1080_25fps.mp4",
+      "author": "Tima Miroshnichenko",
+      "author_url": "https://www.pexels.com/@tima-miroshnichenko",
+      "license": "Pexels License",
+      "license_url": "https://www.pexels.com/license/",
+      "resolution": "1920x1080"
+    },
+    {
+      "slide_id": "s03",
+      "slide_index": 3,
+      "kind": "stock",
+      "query": "factory production line",
+      "provider": "pexels",
+      "provider_id": "30288953",
+      "source_url": "https://www.pexels.com/video/motorcycle-factory-production-line-overview-30288953/",
+      "download_url": "https://videos.pexels.com/video-files/30288953/12984266_1920_1080_25fps.mp4",
+      "author": "Emrul Kausar Emon",
+      "author_url": "https://www.pexels.com/@emrulkausar",
+      "license": "Pexels License",
+      "license_url": "https://www.pexels.com/license/",
+      "resolution": "1920x1080"
+    }
+  ],
+  "description_text": "影片素材 / Stock footage:\n- Tima Miroshnichenko on Pexels: https://www.pexels.com/video/close-up-of-a-motherboard-components-6754834/ (Pexels License)\n- Emrul Kausar Emon on Pexels: https://www.pexels.com/video/motorcycle-factory-production-line-overview-30288953/ (Pexels License)\nVideos provided by Pexels — https://www.pexels.com"
+}

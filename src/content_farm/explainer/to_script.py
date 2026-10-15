@@ -7,7 +7,7 @@ until voice runs ``sync_script_durations`` and overwrites them.
 
 from __future__ import annotations
 
-from content_farm.explainer.deck import Deck, Source
+from content_farm.explainer.deck import Deck, MediaKind, Slide, Source
 from content_farm.script_gen.schemas import ChapterOutline, Scene, Script, VisualHint
 from content_farm.types import GenreTemplate, Orientation, Tone, VideoLength
 
@@ -27,10 +27,7 @@ def deck_to_script(deck: Deck) -> Script:
                 scene_number=len(scenes) + 1,
                 title=slide.heading,
                 narration=slide.narration,
-                visual_hint=VisualHint(
-                    description=f"{slide.layout.value}:{slide.id}",
-                    style=SLIDE_VISUAL_STYLE,
-                ),
+                visual_hint=_visual_hint(slide),
                 duration_seconds=duration,
                 chapter_number=chapter_number,
             ))
@@ -57,6 +54,37 @@ def deck_to_script(deck: Deck) -> Script:
         orientation=Orientation.LANDSCAPE,
         genre=GenreTemplate.KNOWLEDGE,
         chapters=tuple(chapters),
+    )
+
+
+_SOURCE_PREFERENCE = {MediaKind.STOCK: "stock", MediaKind.AI_IMAGE: "ai"}
+
+
+def _visual_hint(slide: Slide) -> VisualHint:
+    """Carry ``media`` into the scene so timeline tools can see what goes on screen.
+
+    ``style`` is the media kind (``slide`` when absent, as in v1); ``description``
+    stays ``<layout>:<slide id>`` and gains ``|<detail>`` for animated/ai/title cards.
+    """
+    kind = slide.media_kind
+    media = slide.media
+    detail = ""
+    keywords: tuple[str, ...] = ()
+    if media is not None:
+        if kind == MediaKind.STOCK:
+            keywords = (media.query,)
+        elif kind == MediaKind.ANIMATED:
+            detail = slide.animation.value
+        elif kind == MediaKind.AI_IMAGE:
+            detail = media.prompt
+        elif kind == MediaKind.TITLE_CARD:
+            detail = f"source:{media.source_id}"
+    description = f"{slide.layout.value}:{slide.id}" + (f"|{detail}" if detail else "")
+    return VisualHint(
+        description=description,
+        style=SLIDE_VISUAL_STYLE if kind == MediaKind.SLIDE else kind.value,
+        keywords=keywords,
+        source_preference=_SOURCE_PREFERENCE.get(kind, "auto"),
     )
 
 

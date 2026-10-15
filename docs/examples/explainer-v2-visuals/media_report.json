@@ -1,0 +1,84 @@
+{
+  "transition": "crossfade",
+  "transition_seconds": 0.4,
+  "slides": [
+    {
+      "index": 1,
+      "slide_id": "s01",
+      "requested": "stock",
+      "used": "stock",
+      "fallback": null,
+      "placeholder": null,
+      "seconds": 15.391,
+      "build_seconds": 8.7,
+      "note": "pexels:6754834 trim (cache)",
+      "problems": [],
+      "file": "output/v2-visuals-accept/media/final/clip_001.mp4"
+    },
+    {
+      "index": 2,
+      "slide_id": "s02",
+      "requested": "animated",
+      "used": "animated",
+      "fallback": null,
+      "placeholder": null,
+      "seconds": 20.03,
+      "build_seconds": 7.76,
+      "note": "count_up 2.0s/62f",
+      "problems": [],
+      "file": "output/v2-visuals-accept/media/final/clip_002.mp4"
+    },
+    {
+      "index": 3,
+      "slide_id": "s03",
+      "requested": "stock",
+      "used": "stock",
+      "fallback": null,
+      "placeholder": null,
+      "seconds": 23.144,
+      "build_seconds": 12.85,
+      "note": "pexels:30288953 trim (cache)",
+      "problems": [],
+      "file": "output/v2-visuals-accept/media/final/clip_003.mp4"
+    },
+    {
+      "index": 4,
+      "slide_id": "s04",
+      "requested": "ai_image",
+      "used": "ai_placeholder",
+      "fallback": null,
+      "placeholder": true,
+      "seconds": 25.337,
+      "build_seconds": 6.92,
+      "note": "PLACEHOLDER: assets/ai_images/s04.png not found",
+      "problems": [],
+      "file": "output/v2-visuals-accept/media/final/clip_004.mp4"
+    },
+    {
+      "index": 5,
+      "slide_id": "s05",
+      "requested": "animated",
+      "used": "animated",
+      "fallback": null,
+      "placeholder": null,
+      "seconds": 22.888,
+      "build_seconds": 11.61,
+      "note": "draw_line 2.7s/81f",
+      "problems": [],
+      "file": "output/v2-visuals-accept/media/final/clip_005.mp4"
+    },
+    {
+      "index": 6,
+      "slide_id": "s06",
+      "requested": "title_card",
+      "used": "title_card",
+      "fallback": null,
+      "placeholder": null,
+      "seconds": 16.959,
+      "build_seconds": 8.0,
+      "note": "source_id=pledge",
+      "problems": [],
+      "file": "output/v2-visuals-accept/media/final/clip_006.mp4"
+    }
+  ]
+}
