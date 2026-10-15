@@ -19,7 +19,8 @@ _DIGIT_MAP = {
 
 # Matches 4-digit years followed by a year-related suffix (年, 年代, 年間, etc.)
 # or preceded by common context like 西元, 公元, 民國 is typically 3-digit so excluded.
-_YEAR_PATTERN = re.compile(r"(?<!\d)(\d{4})(年)")
+# A single space before 年 is allowed: decks space Latin/digits from CJK ("2016 年").
+_YEAR_PATTERN = re.compile(r"(?<!\d)(\d{4}) ?(年)")
 
 
 def _digits_to_chinese(match: re.Match) -> str:
