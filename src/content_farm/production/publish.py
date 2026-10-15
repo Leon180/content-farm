@@ -5,8 +5,10 @@ unchanged), plus what that stage leaves to hand-editing:
 - ``video_path`` points at the mascot-composited ``assembly/final.mp4``;
 - chapter timestamps come from the measured scene durations, not estimates;
 - ``credits.json``'s attribution block is appended to the description;
-- ``contains_synthetic_media`` (AI disclosure) and ``publish_at`` (scheduled
-  release, which YouTube only accepts on private videos).
+- the description's AI disclosure line (channel ``ai_disclosure``), separate from
+  ``contains_synthetic_media`` = Studio's 「變造或合成內容」 checkbox (channel
+  ``altered_content_label``, off by default);
+- ``publish_at`` (scheduled release, which YouTube only accepts on private videos).
 """
 
 from __future__ import annotations
@@ -23,9 +25,10 @@ from content_farm.script_gen.schemas import Script
 from content_farm.youtube.meta import _find_relative, _format_timestamp
 
 META_PATH = Path("upload") / "youtube_meta.json"
-AI_DISCLOSURE_LINE = "本影片由 AI 輔助製作（配音為合成語音；部分插圖為 AI 生成）。"
-AI_DISCLOSURE_VOICE_LINE = "本影片由 AI 輔助製作（配音為合成語音；畫面無 AI 生成圖像）。"
-AI_DISCLOSURE_IMAGE_LINE = "本影片由 AI 輔助製作（部分插圖為 AI 生成；旁白非合成語音）。"
+DISCLOSURE_MARK = "本影片由 AI 輔助製作"
+AI_DISCLOSURE_LINE = f"{DISCLOSURE_MARK}（配音為合成語音；部分插圖為 AI 生成）。"
+AI_DISCLOSURE_VOICE_LINE = f"{DISCLOSURE_MARK}（配音為合成語音；畫面無 AI 生成圖像）。"
+AI_DISCLOSURE_IMAGE_LINE = f"{DISCLOSURE_MARK}（部分插圖為 AI 生成；旁白非合成語音）。"
 MIN_CHAPTERS = 3
 MIN_CHAPTER_SECONDS = 10  # YouTube ignores chapter lists with shorter chapters
 
@@ -139,7 +142,7 @@ def build_meta(
         "tags": list(script.tags),
         "privacy_status": "private" if publish_at else channel.youtube.default_privacy,
         "publish_at": publish_at.isoformat() if publish_at else None,
-        "contains_synthetic_media": channel.youtube.ai_disclosure and content.any,
+        "contains_synthetic_media": channel.youtube.altered_content_label and content.any,
         "category_id": "27" if channel.pipeline.value == "explainer" else "23",  # Education / Comedy
         "made_for_kids": False,
         "default_language": script.language,

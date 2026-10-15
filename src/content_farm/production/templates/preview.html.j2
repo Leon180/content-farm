@@ -67,7 +67,8 @@ dt { color: var(--muted); } dd { margin: 0; overflow-wrap: anywhere; }
     <div class="box"><h2>上傳設定</h2><dl>
       <dt>目標頻道</dt><dd>{{ kit.channel.name }}（{{ kit.channel.code }}）</dd>
       <dt>可見度</dt><dd>{{ meta.privacy_status }}{% if meta.publish_at %}（排程 {{ meta.publish_at }}）{% endif %}</dd>
-      <dt>AI 揭露</dt><dd>{{ "是" if meta.contains_synthetic_media else "否" }}（contains_synthetic_media）</dd>
+      <dt>變造或合成內容</dt><dd>{{ "勾選" if meta.contains_synthetic_media else "不勾" }}（Studio；contains_synthetic_media）</dd>
+      <dt>說明欄揭露</dt><dd>{{ "有" if "本影片由 AI 輔助製作" in meta.description else "無" }}</dd>
       <dt>兒童內容</dt><dd>{{ "是" if meta.made_for_kids else "否" }}</dd>
       <dt>類別</dt><dd>{{ kit.category }}</dd>
       <dt>語言</dt><dd>{{ meta.default_language }}</dd>

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from content_farm.production import voice_source
 from content_farm.production.manual_kit import TAGS_MAX_CHARS, TITLE_MAX, Kit, human_duration, human_size
+from content_farm.production.publish import DISCLOSURE_MARK
 
 MACHINE_VOICE_BANNER = "> ⚠️ **暫用機器聲（macOS say），待換 Fish Audio 後重出。這一版不要公開。**\n"
 PREVIEW_BANNER = ("> ⚠️ **成片閘門尚未核可**：以下是預覽資料。Leon `produce.py approve --gate final` "
@@ -49,12 +50,12 @@ def _visibility(meta: dict) -> str:
 
 def synthetic_advice(meta: dict) -> str:
     """Studio's 「變造或合成內容」 answer; the description's disclosure line is separate."""
-    if not meta.get("contains_synthetic_media"):
-        return "選 **「否」**（頻道設定沒要求揭露，或本片沒有合成語音／AI 圖）。"
-    return ("頻道設定 `ai_disclosure: true`，建議選 **「是」**。理由：本片含合成內容（說明欄最後一行寫明是哪些）。"
-            "嚴格說 YouTube 只要求「看起來像真實」的變造內容（真人說沒說過的話、真實事件、寫實場景）揭露；"
-            "本片是解說畫面，沒有冒充真人或真實事件，不勾應該也不違規（🟡 未重新對照官方條文）。"
-            "要不要勾由 Leon 決定；說明欄的揭露文字不受影響。")
+    if meta.get("contains_synthetic_media"):
+        return "選 **「是」**（頻道設定 `altered_content_label: true`）。說明欄最後一行另有文字揭露。"
+    if DISCLOSURE_MARK in meta.get("description", ""):
+        return ("選 **「否」**，不勾（Leon 2026-10-16 決策 916c2864e31f）。合成內容改在說明欄最後一行用文字揭露，"
+                "已寫在 `description.txt`。AI 圖依規則只用插畫／水墨，不做擬真畫面。")
+    return "選 **「否」**（本片沒有合成語音或 AI 圖，說明欄也沒有揭露句）。"
 
 
 def _elements(kit: Kit) -> list[str]:
@@ -116,7 +117,8 @@ def build_readme(kit: Kit) -> str:
         "",
         *([f"- {c['timestamp']} {c['title']}" for c in chapters] or ["- （無）"]),
         "",
-        f"AI 揭露旗標 `contains_synthetic_media={kit.meta.get('contains_synthetic_media')}`。",
+        f"AI 揭露：Studio 勾選 `contains_synthetic_media={kit.meta.get('contains_synthetic_media')}`；"
+        f"說明欄文字揭露{'有' if DISCLOSURE_MARK in kit.meta.get('description', '') else '無'}。",
         "",
         "## 檔案",
         "",

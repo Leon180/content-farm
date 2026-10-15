@@ -117,7 +117,11 @@ class YouTube(_Strict):
     client_secret_env: str = "CF_YOUTUBE_CLIENT_SECRET"
     refresh_token_env: str
     channel_id_env: str
-    ai_disclosure: bool = True          # containsSyntheticMedia (TTS voice + AI images)
+    ai_disclosure: bool = True          # description-text disclosure line (TTS voice / AI images)
+    # Studio's 「變造或合成內容」 checkbox = API status.containsSyntheticMedia. Off by Leon's
+    # 2026-10-16 decision (916c2864e31f): disclose in the description only. YouTube asks for the
+    # label on realistic altered content; our AI images are illustration/ink-wash by rule.
+    altered_content_label: bool = False
     default_privacy: str = Field(default="private", pattern="^(private|unlisted|public)$")
 
     @field_validator("client_id_env", "client_secret_env", "refresh_token_env", "channel_id_env")

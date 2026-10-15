@@ -101,7 +101,7 @@ def test_full_walk_stops_at_each_gate_and_packages(run_dir: Path) -> None:
     assert result.outcome is Outcome.COMPLETE
     meta = json.loads((run_dir / "upload" / "youtube_meta.json").read_text(encoding="utf-8"))
     assert meta["video_path"] == "assembly/final.mp4"
-    assert meta["contains_synthetic_media"] is True
+    assert meta["contains_synthetic_media"] is False  # Studio label off; description discloses
     assert meta["credentials_env"]["refresh_token"] == "CF_YT_CHIPCAT_REFRESH_TOKEN"
     state = load_state(run_dir, "chipcat")
     assert "OVERRIDE QC" in state.decisions["final"].note

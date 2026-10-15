@@ -106,7 +106,7 @@ def test_meta_uses_final_video_credits_chapters_and_schedule(tmp_path: Path) -> 
     meta = publish.build_meta(load_channel("chipcat"), run, publish_at=when)
     assert meta["video_path"] == "assembly/final.mp4"
     assert meta["privacy_status"] == "private" and meta["publish_at"] == "2026-10-22T19:00:00+08:00"
-    assert meta["contains_synthetic_media"] is True
+    assert meta["contains_synthetic_media"] is False  # Studio checkbox off (916c2864e31f)
     assert meta["description"].startswith("章節：\n0:00 ")
     assert "影片素材 / Stock footage:" in meta["description"]
     assert publish.AI_DISCLOSURE_VOICE_LINE in meta["description"]  # no AI illustration credited
@@ -155,10 +155,26 @@ def test_meta_disclosure_for_a_stock_only_run_without_tts(tmp_path: Path) -> Non
         "x content_farm.voice.macos_say INFO macOS say TTS: 1 bytes -> a.mp3\n", encoding="utf-8")
     meta = publish.build_meta(load_channel("cel"), run)
     assert publish.AI_DISCLOSURE_VOICE_LINE in meta["description"] and "部分插圖" not in meta["description"]
-    assert meta["contains_synthetic_media"] is True
+    assert meta["contains_synthetic_media"] is False
     (run / "logs" / "voice.log").write_text("$ voice\n", encoding="utf-8")
     meta = publish.build_meta(load_channel("cel"), run)
     assert "AI 輔助製作" not in meta["description"] and meta["contains_synthetic_media"] is False
+
+
+def test_studio_label_and_description_disclosure_are_separate_switches(tmp_path: Path) -> None:
+    """916c2864e31f: Studio 「變造或合成內容」 unchecked, the description still discloses."""
+    run = _script_run(tmp_path)
+    chipcat = load_channel("chipcat")
+    assert chipcat.youtube.ai_disclosure and not chipcat.youtube.altered_content_label
+    meta = publish.build_meta(chipcat, run)
+    assert meta["contains_synthetic_media"] is False and publish.DISCLOSURE_MARK in meta["description"]
+    labelled = chipcat.model_copy(update={"youtube": chipcat.youtube.model_copy(
+        update={"altered_content_label": True})})
+    assert publish.build_meta(labelled, run)["contains_synthetic_media"] is True
+    silent = chipcat.model_copy(update={"youtube": chipcat.youtube.model_copy(
+        update={"ai_disclosure": False, "altered_content_label": True})})
+    meta = publish.build_meta(silent, run)
+    assert publish.DISCLOSURE_MARK not in meta["description"] and meta["contains_synthetic_media"] is True
 
 
 def test_chapters_follow_measured_durations(tmp_path: Path) -> None:

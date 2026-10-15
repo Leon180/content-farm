@@ -114,9 +114,11 @@ def test_short_cut_reads_the_voice_of_its_long_run(tmp_path: Path) -> None:
 
 
 def test_synthetic_advice_follows_the_flag() -> None:
-    """chipcat."""
-    assert "「否」" in synthetic_advice({"contains_synthetic_media": False})
-    assert "建議選 **「是」**" in synthetic_advice({"contains_synthetic_media": True})
+    """chipcat; 916c2864e31f: unchecked, the description line carries the disclosure."""
+    disclosed = {"contains_synthetic_media": False, "description": "…\n本影片由 AI 輔助製作（配音為合成語音）。"}
+    assert "不勾" in synthetic_advice(disclosed) and "description.txt" in synthetic_advice(disclosed)
+    assert "沒有合成語音" in synthetic_advice({"contains_synthetic_media": False, "description": "x"})
+    assert "「是」" in synthetic_advice({"contains_synthetic_media": True})
 
 
 # --- whole kit ------------------------------------------------------------------------------
