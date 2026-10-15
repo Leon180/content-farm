@@ -133,6 +133,18 @@ class TestPoses:
         assert all(b.slow for b in blinks)
         assert [round(b.start, 2) for b in blinks] == [1.1, 2.2]
 
+    def test_effects_belong_to_their_pose(self) -> None:
+        for pose in POSES:
+            v = pose_vector(pose)
+            assert v["Sweat"] == (1.0 if pose == "deadpan" else 0.0), pose
+            assert v["Burst"] == (1.0 if pose == "shocked" else 0.0), pose
+
+    def test_effects_cross_fade_at_scene_change(self) -> None:
+        frames = compose_frames(_cues("idle", "deadpan"), np.zeros(120), FPS, 120, seed=1)
+        sweat = [f.params["ParamSweat"] for f in frames]
+        assert sweat[30] == 0.0 and sweat[-1] == 1.0
+        assert 0.0 < sweat[int((2.0 + TRANSITION_S / 2) * FPS)] < 1.0
+
     def test_bubble_fades_in_and_out(self) -> None:
         cue = SceneCue(1, 0.0, 10.0, "idle", "這個數字其實是…")
         assert bubble_level(cue, 0.1) == 0.0

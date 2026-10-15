@@ -147,6 +147,8 @@ def _base_frame(
         "ParamArmR": pose["ArmR"],
         "ParamArmRWave": pose["WaveAmp"] * math.sin(2 * math.pi * WAVE_HZ * t),
         "ParamBubble": bubble_level(cue, t),
+        "ParamSweat": pose["Sweat"],
+        "ParamBurst": pose["Burst"],
         "_EarBase": pose["EarBase"],
     }
 

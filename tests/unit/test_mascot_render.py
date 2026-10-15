@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import json
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -18,8 +19,10 @@ if shutil.which("ffmpeg") is None:
 
 from content_farm.explainer.mascot.motion import Frame  # noqa: E402
 from content_farm.explainer.mascot.overlay import FORBIDDEN, ORIGIN, Rect  # noqa: E402
-from content_farm.explainer.mascot.params import PARAM_DEFAULTS, POSES, pose_vector  # noqa: E402
-from content_farm.explainer.mascot.render import CANVAS_H, CANVAS_W, capture_pngs  # noqa: E402
+from content_farm.explainer.mascot.params import (  # noqa: E402
+    PARAM_DEFAULTS, PARAM_NAMES, POSES, pose_vector,
+)
+from content_farm.explainer.mascot.render import CANVAS_H, CANVAS_W, RIG_PATH, capture_pngs  # noqa: E402
 from content_farm.explainer.mascot.run import probe_video, run_overlay  # noqa: E402
 
 
@@ -51,7 +54,7 @@ def test_cat_never_covers_subtitles_or_meta_row() -> None:
         assert alpha.shape == (CANVAS_H, CANVAS_W)
         assert alpha.max() == 255  # something was drawn
         # control: the same mapping does find the cat's own body (frame coords)
-        body = Rect(1700, 950, 1800, 1050).to_canvas(ORIGIN)
+        body = Rect(1720, 930, 1820, 1030).to_canvas(ORIGIN)
         assert alpha[body.y0:body.y1, body.x0:body.x1].min() == 255
         for name, rect in FORBIDDEN.items():
             r = rect.to_canvas(ORIGIN).clip(CANVAS_W, CANVAS_H)
@@ -63,6 +66,27 @@ def test_cat_height_is_30_to_40_percent_of_frame() -> None:
     png = list(capture_pngs([Frame(params=dict(PARAM_DEFAULTS), say=None)]))[0]
     rows = np.nonzero(_alpha(png).max(axis=1) > 128)[0]
     assert 0.30 <= (rows[-1] - rows[0]) / 1080 <= 0.40
+
+
+def test_rig_reads_exactly_the_declared_params() -> None:
+    """Every ``p.ParamX`` the page reads is declared, and every declared param is read."""
+    used = set(re.findall(r"\bp\.(Param\w+)", RIG_PATH.read_text(encoding="utf-8")))
+    assert used == set(PARAM_NAMES)
+
+
+@pytest.mark.parametrize("param, at", [("ParamSweat", (581, 268)), ("ParamBurst", (338, 199))])
+def test_effects_appear_only_when_driven(param: str, at: tuple[int, int]) -> None:
+    off = Frame(params=dict(PARAM_DEFAULTS), say=None)
+    on = Frame(params={**PARAM_DEFAULTS, param: 1.0}, say=None)
+    x, y = at
+    a_off, a_on = (_alpha(png)[y - 2:y + 3, x - 2:x + 3] for png in capture_pngs([off, on]))
+    assert a_off.max() == 0 and a_on.min() == 255
+
+
+def test_point_paw_reaches_left_of_resting_body() -> None:
+    rest, point = (Frame(params={**PARAM_DEFAULTS, "ParamArmR": v}, say=None) for v in (0.0, 1.1))
+    lefts = [np.nonzero(_alpha(png)[240:420].max(axis=0) > 128)[0].min() for png in capture_pngs([rest, point])]
+    assert lefts[1] < lefts[0] - 20
 
 
 def test_same_params_same_pixels() -> None:

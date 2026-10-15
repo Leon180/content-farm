@@ -42,6 +42,8 @@ PARAM_DEFAULTS: Mapping[str, float] = MappingProxyType({
     "ParamArmRWave": 0.0,     # deg added to the raised arm
     "ParamChip": 0.0,         # deg, pendant swing (physics output)
     "ParamBubble": 0.0,       # 0..1 speech bubble visibility
+    "ParamSweat": 0.0,        # 0..1 sweat drop beside the head (deadpan)
+    "ParamBurst": 0.0,        # 0..1 gold emphasis strokes above the ears (shocked)
 })
 PARAM_NAMES: tuple[str, ...] = tuple(PARAM_DEFAULTS)
 
@@ -51,14 +53,14 @@ PARAM_NAMES: tuple[str, ...] = tuple(PARAM_DEFAULTS)
 POSE_KEYS: tuple[str, ...] = (
     "AngleX", "AngleY", "AngleZ", "BodyAngleX", "BodyY", "EyeOpen", "EyeSmile",
     "EyeBallX", "EyeBallY", "Pupil", "MouthForm", "MouthO", "EarBase", "TailPuff",
-    "ArmR", "WaveAmp", "Sway", "BlinkMul",
+    "ArmR", "WaveAmp", "Sway", "BlinkMul", "Sweat", "Burst",
 )
 
 _NEUTRAL: dict[str, float] = {
     "AngleX": 0.0, "AngleY": 0.0, "AngleZ": 0.0, "BodyAngleX": 0.0, "BodyY": 0.0,
     "EyeOpen": 1.0, "EyeSmile": 0.0, "EyeBallX": 0.0, "EyeBallY": 0.0, "Pupil": 0.15,
     "MouthForm": 0.0, "MouthO": 0.0, "EarBase": 0.0, "TailPuff": 0.0,
-    "ArmR": 0.0, "WaveAmp": 0.0, "Sway": 1.0, "BlinkMul": 1.0,
+    "ArmR": 0.0, "WaveAmp": 0.0, "Sway": 1.0, "BlinkMul": 1.0, "Sweat": 0.0, "Burst": 0.0,
 }
 
 
@@ -77,12 +79,12 @@ POSE_TARGETS: Mapping[str, Mapping[str, float]] = MappingProxyType({
     "think": _pose(AngleX=6, AngleY=-3, AngleZ=11, EyeBallX=0.55, EyeBallY=-0.7,
                    EyeOpen=0.85, EarBase=6, Sway=0.5, MouthForm=-0.2),
     "shocked": _pose(AngleY=-4, BodyY=-8, EyeOpen=1.2, Pupil=1.0, MouthO=1.0,
-                     EarBase=-10, TailPuff=1.0, Sway=0.3, BlinkMul=0.0),
+                     EarBase=-10, TailPuff=1.0, Sway=0.3, BlinkMul=0.0, Burst=1.0),
     "smug": _pose(AngleX=4, AngleY=-6, AngleZ=-6, EyeOpen=0.78, EyeSmile=0.45,
                   EyeBallX=0.3, MouthForm=1.0, EarBase=-2, Sway=0.7),
     # Cold-joke face: half-lidded stare, flat mouth, ears sagging, no drift.
     "deadpan": _pose(EyeOpen=0.42, EyeBallY=0.1, Pupil=0.0, MouthForm=-1.0,
-                     EarBase=16, Sway=0.0, BlinkMul=0.0),
+                     EarBase=16, Sway=0.0, BlinkMul=0.0, Sweat=1.0),
     "wave": _pose(AngleZ=-6, EyeOpen=0.9, EyeSmile=0.35, ArmR=1.0, WaveAmp=14,
                   Sway=0.8, EarBase=-3),
 })
