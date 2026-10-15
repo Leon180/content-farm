@@ -131,11 +131,15 @@ def credits_text(entries: Sequence[dict]) -> str:
 
 def write_credits(deck: Deck, results: Sequence[ClipResult], path: Path) -> Path:
     entries = [r.credit for r in results if r.credit]
+    # Slots with no asset yet: not credited, but listed so "complete" is checkable.
+    pending = [{"slide_id": r.slide_id, "slide_index": r.index, "kind": r.requested,
+                "reason": r.note} for r in results if r.used == USED_PLACEHOLDER]
     payload = {
         "version": 1,
         "title": deck.title,
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "entries": entries,
+        "pending": pending,
         "description_text": credits_text(entries),
     }
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")

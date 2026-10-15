@@ -81,7 +81,9 @@ def test_media_to_visual_end_to_end_offline(tmp_path: Path) -> None:
 
     report = json.loads(run.report_path.read_text())
     assert report["slides"][0]["fallback"] is True and report["slides"][2]["placeholder"] is True
-    assert json.loads(run.credits_path.read_text())["entries"] == []
+    credits = json.loads(run.credits_path.read_text())
+    assert credits["entries"] == []
+    assert [(p["slide_index"], p["kind"]) for p in credits["pending"]] == [(3, "ai_image")]
     assert (run_dir / "ai_image_prompts.md").is_file()
     assert run.contact_sheet.is_file()
 
@@ -97,7 +99,8 @@ def test_ai_image_present_gets_ken_burns_and_credit(tmp_path: Path) -> None:
                           options=MediaOptions(transition="none"))
     ai = run.results[2]
     assert ai.used == "ai_image" and "b2_01.png" in ai.note
-    assert json.loads(run.credits_path.read_text())["entries"][0]["kind"] == "ai_image"
+    credits = json.loads(run.credits_path.read_text())
+    assert credits["entries"][0]["kind"] == "ai_image" and credits["pending"] == []
 
 
 def test_transition_none_keeps_plain_slides_as_png(tmp_path: Path) -> None:
