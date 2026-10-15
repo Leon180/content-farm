@@ -6,7 +6,8 @@
 - 成片：`/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/output/explainer-cowos-v2/assembly/final.mp4`，1920×1080、影像 503.2 s（8:23）、音訊 504.6 s；blackdetect **0 段**（對照組 1 s 純黑可偵測）。🟢
 - 已知問題 1（B-roll 不切題）：stock 加了關鍵字相關性篩選＋人工確認標記，查詢詞規則寫進 deck skill。實跑時篩選擋掉機車／不相關片，但「cleanroom」放行了藥廠無塵室、唯一的晶圓廠片上有真實公司名 → 兩支都換掉。**結論：篩選擋得住離題，擋不住「有品牌」，人工審 B-roll 仍是上線前必要步驟。** 🟢
 - 已知問題 2（字幕壓到貓）：實測最長字幕 28 字、右緣 x=1634，越過貓的欄位（x≥1600）。解法是講解片字幕每行上限改 20（含標點容差最多 24 字，右緣 ≤1587），mascot_overlay 加量測守門，太寬就拒絕疊加。**沒有動貓的位置或字幕模板。** 🟢
-- media 分布：slide 6、animated 8、title_card 4、stock 3、ai_image 3（全為佔位圖）。stock+ai_image = 25%（以槽位計），連續純 slide 最長 1 張。實際有畫面的 footage 只有 stock 3 張＝12.5%，要等 AI 插圖補上才到 25%。pytest `1 failed, 886 passed, 1 skipped`（失敗的是基準既有那一個）。🟢
+- **追加（Leon 11:26，經 orchestrator 轉達）字幕斷行**：數字＋單位、百分比、年份、英數詞不再被拆開（行內與字幕段之間都修）。CoWoS 字幕從 **6 處拆開 → 0**，片子已重跑字幕與合成（配音沿用、其他素材未重產）。見第 11 節。🟢
+- media 分布：slide 6、animated 8、title_card 4、stock 3、ai_image 3（全為佔位圖）。stock+ai_image = 25%（以槽位計），連續純 slide 最長 1 張。實際有畫面的 footage 只有 stock 3 張＝12.5%，要等 AI 插圖補上才到 25%。pytest `1 failed, 940 passed, 1 skipped`（失敗的是基準既有那一個）。🟢
 
 等級：🟢 本機實測可重跑；🟡 只驗到存在或推論；🔴 未驗證的判斷。
 
@@ -59,11 +60,11 @@
 - **量測**（第一次 voice，landscape 預設每行 24 字）：170 行字幕裡最長 28 字。用燒字幕同一支字型（STHeiti Medium，52 pt、外框 3）量寬度，最寬 1349 px、右緣 x=1634；有 2 行越過 x=1600（`mascot/overlay.py` 的字幕禁區右緣，貓的像素都在 x≥1600）。🟢
 - **原因**：`subtitle/line_wrap.py` 為了斷在標點，允許超出上限 4 字；24 字上限實際會出 28 字的行。mascot worker 推算字幕寬度時用的是「≤24 字」。🟢
 - **選擇：縮字幕寬度，不動貓。**
-  - 講解片的 voice 改用 `CF_SUBTITLE_MAX_CHARS_PER_LINE_LANDSCAPE=20`（含容差最多 24 字 ≈ 1254 px，右緣 ≤1587）。只是環境變數，**`line_wrap.py`、`config.py` 預設值、`timeline_assembly.py` 都沒改**，所以 Shorts（13 字）和其他橫式長片不受影響（符合短／長片並存規則）。
+  - 講解片的 voice 改用 `CF_SUBTITLE_MAX_CHARS_PER_LINE_LANDSCAPE=20`（含容差最多 24 字 ≈ 1254 px，右緣 ≤1587）。只是環境變數，**`config.py` 預設值、`timeline_assembly.py` 都沒改**，所以 Shorts（13 字）和其他橫式長片的行寬不受影響（符合短／長片並存規則）。（`line_wrap.py` 之後因第 11 節的斷行修正而改動，那是共用的改善，不是為了避開貓。）
   - 不移貓的理由：左下角會壓到 meta 列（mascot 報告已說明）；把貓縮小或往右推會讓牠出框或太小；把字幕整體左移要改 `timeline_assembly.py` 的共用樣式。
   - **守門**：新增 `explainer/mascot/clearance.py`，`mascot_overlay.py` 疊加前量測 `subtitles/subtitles.srt` 每一行，任何一行右緣超過 x=1600 就報錯並拒絕執行（`--allow-subtitle-overlap` 可強制）。測試 4 個，含「24 字上限會產生超寬行（對照組，偵測器會響）／20 字上限不會」與「字型大小與 LANDSCAPE_PRESET 一致」。另外在 CLI 層用假 run-dir 實測失敗路徑：exit 1，訊息 `subtitle line 1349px wide reaches x=1635 …`。🟢
 - **改後實測**：第二次 voice（20 字）170 行、最長 24 字、最寬 1254 px、右緣 x=1587，0 行越界；mascot_overlay 守門通過。截圖可見字幕與貓之間有空隙。🟢
-- 副作用 🟡：20 字的硬斷點有時落在「2025 / 年」這種數字與單位之間（例如 s16、s18 的兩行字幕）。數字本身沒有被切斷，但讀起來不順。要根治得改 `line_wrap.py` 的斷點規則（共用模組，影響 Shorts），本輪沒動，列在下一步。
+- 副作用（已修，見第 11 節）：20 字的斷點曾落在「2025 / 年」這種數字與單位之間。
 - 補充 🟡：Pillow 的字級是 em 大小，libass 依 ascender+descender 定字級，CJK 字型通常 ≥1 em，所以量測應該偏寬（保守）。截圖上字幕右端都離貓有一段空隙，但我沒有逐像素量實際燒入的寬度。
 
 ## 4. 成片
@@ -159,7 +160,7 @@ PYTHONPATH=$PWD/src .venv/bin/python scripts/mascot_overlay.py --run-dir output/
 PYTHONPATH=<wt>/src /Users/lileon/project/content-farm/.venv/bin/python -m pytest tests -q -p no:cacheprovider
 ```
 
-結果：**`1 failed, 886 passed, 1 skipped`**（41.5 s）。🟢
+結果（第 11 節修正後重跑）：**`1 failed, 940 passed, 1 skipped`**（83.9 s）＝下面的 886 ＋ `test_subtitle_atoms.py` 54 個。修正前一輪：`1 failed, 886 passed, 1 skipped`（41.5 s）。🟢
 - 唯一失敗是基準既有的 `test_multi_provider.py::TestMultiSearch::test_returns_first_provider_results`，沒有新增失敗。skipped 是 Pexels 實連測試（環境沒有 key 時跳過）。
 - 數量核對：visuals 分支 827 passed → ＋mascot 36 ＋research `test_check_article` 11（research 的 media schema 測試 16 個隨被丟棄的 schema 一起移除）＋本輪 12 ＝ 886。
 
@@ -171,7 +172,7 @@ PYTHONPATH=<wt>/src /Users/lileon/project/content-farm/.venv/bin/python -m pytes
 1. **真配音**：目前是 macOS `say`。正式版要 Fish Audio（付費，需要 Leon 放行）；換配音後所有時長會變，media→assembly→mascot 要重跑。research 標的「扣窩斯」發音也還沒驗。
 2. **AI 插圖 3 張**（s01、s04、s20）：照 visuals 報告第 8 節的步驟走 Chrome＋Gemini（共同限制不准我開 Chrome）。補上後 footage 實際占比才到 25%。Gemini 圖用在營利頻道的條款沒查。
 3. **人工審 B-roll**：3 支都標了 `review`。我逐張看過一幀、沒看到品牌，但只看了代表幀，**整支片段沒有逐秒看**。另外題材都是「電子零件特寫」，和 CoWoS 的關係只到氛圍等級。
-4. 字幕斷行：數字和單位分在兩行（「2025 / 年」），要改共用的 `line_wrap.py`，需評估對 Shorts 的影響。
+4. ~~字幕斷行：數字和單位分在兩行~~ → 已修（第 11 節）。仍未處理的：投影片 lower-third 的重點句是 `…` 截斷（例如 s16「先進封裝占 2025 營收約 …」），那是畫面模板，不是字幕。
 5. 研究報告留下的 🟡：Q2 2026 法說只有二手報導、產能數字全是估計（講稿已口播）。2026 Q3 法說（10 月中）出來後要更新。
 6. 主觀檢查（🔴，需要人看）：晶片貓像不像 VTuber、point 姿勢、整片節奏；`grow_bars` 文字壓扁要不要改。
 7. `draft_data: false`、strict lint 0 警告，但標題卡的標題與摘要是人寫的，程式不會檢查是否忠於原報導（visuals 報告已提）。
@@ -184,3 +185,45 @@ PYTHONPATH=<wt>/src /Users/lileon/project/content-farm/.venv/bin/python -m pytes
 - `PROGRESS-explainer-v2.md`：進度紀錄，**未 commit**，可刪（`rm` 在 deny）。
 - job tmp（`/Users/lileon/.claude/jobs/9aa249bd/tmp/`）：輔助腳本（lift_source_meta、set_stock_media、probe_pexels、subtitle_widths、grab、media_dist、add_pending）、log、候選截圖、`guardrun/` 假 run-dir；job 刪除時一起清掉。
 - 沒有 push；沒有動 main、`chore/wip-baseline-2026-10`、`feat/explainer-mvp` 及其 worktree、三條來源分支；沒有 commit `.env`、`output/`、`data/curriculum_map/`。
+
+## 11. 追加：字幕斷行不拆數字＋單位、英數詞
+
+來源：Leon 11:26 打在本 session 輸入框但沒送出，由 orchestrator（orch-personal）轉達。要求：數字與單位、百分比、年份同一行（「3 奈米」「59%」「2026 年」「CoWoS-L」「HBM3E」），英數詞不從中間斷；補測試；只重跑字幕與合成；確認沒有新增違規。
+
+### 原因 🟢
+
+字幕有兩個地方會切字：
+- **行內**（`subtitle/line_wrap.py`）：在空白處斷行時會斷在「2025␣年」的空白；硬斷點會切在「CoWoS」中間。
+- **字幕段之間**（`subtitle/estimation.py::_split_text`，whisper 對齊也用它）：斷點集合包含 `,` 和 `.`，所以「7,722」會在千分位逗號被切、「3.2」會在小數點被切。
+
+### 修法（`fix(subtitle): never split a number from its unit or a Latin word`）
+
+- 新模組 `subtitle/atoms.py`：定義「不可拆的原子」＝英數詞（含 `-`、`.`、`,`、`–`、`/` 連接，如 `CoWoS-L`、`HBM3E`、`3.2–3.5`、`1,000`、`59%`），數字後面再黏上可選空白＋單位（年、月、奈米、平方毫米、萬片、億元、%、倍、片…約 50 個，長的優先），可選前綴 `US$`／`NT$`／`第`。
+- `is_safe_break(text, i)`：切點落在任何原子內部就不安全。`line_wrap` 的四種候選（強標點、弱標點、空白、硬斷）和 `_split_text` 的三種候選全部先問它；硬斷點往回移到原子前面。比一整行還長的原子保持完整（那一行會超長，比拆字好）。
+- 沒有原子的純中文文字，斷點選擇和舊演算法**完全相同**（每個切點都安全時邏輯等價）。
+- **Shorts 的影響**：`line_wrap` 和 `_split_text` 是共用的，Shorts（每行 13 字）同樣受惠；行寬上限與容差都沒變。測試涵蓋 13／20／24 三種寬度。
+
+### 測試 🟢
+
+- `tests/unit/test_subtitle_atoms.py`，54 個：Leon 列的例子都被認成一個原子；純中文沒有原子；單位只黏在數字後面；真實的 CoWoS 句子在 13／20／24 字下行內與字幕段都不拆；行長仍在 max+4 內；硬斷點會退到「CoWoS」前；千分位逗號與小數點不當斷點；`broken_atoms` 偵測器本身的正反例。
+- **對照組**：把 `3332fa4` 版的 `line_wrap.py` 載進來跑同樣的句子，舊版拆了 4 處（`2025 年`@13、`CoWoS`@13、`2025 年`@20、`2026 年`@20），新版 0 處。證明測試抓得到原本的錯。
+- 全套：`1 failed, 940 passed, 1 skipped`，失敗的是基準既有那個。
+
+### 重跑 CoWoS 片 🟢
+
+| 步驟 | 耗時 | 備註 |
+|---|---|---|
+| voice（macos_say，`CF_SUBTITLE_MAX_CHARS_PER_LINE_LANDSCAPE=20`） | 11.4 s | `scene_*.mp3` 修改時間不變（沿用，沒重新合成語音）；只重做 whisper 對齊與字幕 |
+| assembly_timeline | 172.5 s | 重新燒字幕；`visual/` 片段沒有重產 |
+| mascot_overlay（2 workers，負載 42） | 399.8 s | 參數 1.4 s、渲染 332.0 s、疊加 66.0 s |
+
+- **違規數：修正前 6 → 修正後 0。** 量法：把 SRT 的每一行依序對回 script.json 的旁白，檢查每個原子是否被行界或字幕段界切開（共 140 個原子、171 行）。修正前被拆的 6 個：`7,722 平方毫米`、`2025 年`、`2026 年`×2、`171.4 億元`、`4.5 萬片`。
+- 字幕寬度守門仍通過：最長 24 字、右緣 x=1587（<1600），0 行越界。
+- final.mp4 規格不變：1920×1080、影像 503.17 s、音訊 504.63 s；blackdetect 0 段。
+- 截圖：`docs/examples/explainer-cowos/frames/subtitle_fix_2025_year_s16.png`（「先進封裝在 2025 年大約占台積電營收／的 10%。」）、`subtitle_fix_7722_mm2_s09.png`（「可用面積 7,722 平方毫米。」）。其他 7 張截圖是修正前擷取的，字幕斷行可能不同，畫面其餘部分相同。
+- 檢查腳本（job tmp，未 commit）：`audit_srt_atoms.py`（run 級稽核）、`old_wrap_control.py`（對照組）。
+
+### 還沒做的
+
+- 「2028 年月產能 4 萬到 / 4.5 萬片」這類範圍會在兩個原子之間換行（「4 萬到」與「4.5 萬片」各自完整），符合規則但讀起來仍斷。要把「X 到 Y 單位」當成一個原子，會讓很多行超長，沒做。🟡
+- 單位表是列舉的；表外的量詞（例如「架」「艘」）不會被黏住。🟡

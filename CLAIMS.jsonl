@@ -9,7 +9,8 @@
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/docs/examples/explainer-cowos/frames/title_card_s02.png","min_bytes":10000}
 {"kind":"blob_equal","a":"feat/explainer-v2-mascot:src/content_farm/explainer/mascot/overlay.py","b":"HEAD:src/content_farm/explainer/mascot/overlay.py","why":"沒有移動貓的位置或禁區，只縮字幕"}
 {"kind":"blob_equal","a":"3332fa4:src/content_farm/assembly/timeline_assembly.py","b":"HEAD:src/content_farm/assembly/timeline_assembly.py","why":"assembly 一行未改"}
-{"kind":"blob_equal","a":"3332fa4:src/content_farm/subtitle/line_wrap.py","b":"HEAD:src/content_farm/subtitle/line_wrap.py","why":"共用斷行未改，Shorts 不受影響"}
-{"kind":"blob_equal","a":"feat/explainer-v2-visuals:src/content_farm/explainer/media.py","b":"3423b2b:src/content_farm/explainer/media.py","why":"media schema/分派以 visuals 為準（合併當下）"}
+{"kind":"blob_equal","a":"3332fa4:src/content_farm/config.py","b":"HEAD:src/content_farm/config.py","why":"字幕行寬預設值沒改；講解片用環境變數 20"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/tests/unit/test_subtitle_atoms.py","min_bytes":2000,"why":"斷行修正的測試（54 個）"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/docs/examples/explainer-cowos/frames/subtitle_fix_2025_year_s16.png","min_bytes":10000,"why":"修正後 2025 年同行"}{"kind":"blob_equal","a":"feat/explainer-v2-visuals:src/content_farm/explainer/media.py","b":"3423b2b:src/content_farm/explainer/media.py","why":"media schema/分派以 visuals 為準（合併當下）"}
 {"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/src/content_farm/explainer/deck.py","pattern":"from content_farm.explainer.media import Media","why":"research 的 media schema import 已丟掉"}
 {"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/.claude/skills/deck/SKILL.md","pattern":"<<<<<<<","why":"skill 衝突已解"}
