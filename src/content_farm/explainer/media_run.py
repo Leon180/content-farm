@@ -22,6 +22,7 @@ from PIL import Image, ImageDraw
 
 from content_farm.explainer import ffmpeg_ops
 from content_farm.explainer.ai_images import write_prompt_files
+from content_farm.explainer.artwork import artwork_credits_text
 from content_farm.explainer.capture import PageCapturer
 from content_farm.explainer.deck import Deck
 from content_farm.explainer.media import USED_PLACEHOLDER, ClipResult, MediaContext, SlideJob, build_clip
@@ -117,10 +118,12 @@ def apply_transitions(
 
 def credits_text(entries: Sequence[dict]) -> str:
     """Ready-to-paste block for the YouTube description."""
+    artwork = artwork_credits_text(entries)
     stock = [e for e in entries if e.get("kind") == "stock"]
     if not stock:
-        return ""
-    lines = ["影片素材 / Stock footage:"]
+        return artwork
+    lines = [artwork, ""] if artwork else []
+    lines.append("影片素材 / Stock footage:")
     for e in stock:
         provider = e["provider"].capitalize()
         lines.append(f"- {e['author'] or 'Unknown'} on {provider}: {e['source_url']} ({e['license']})")

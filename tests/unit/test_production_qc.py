@@ -11,7 +11,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from content_farm.explainer.deck import load_deck
+from content_farm.explainer.deck import Deck, load_deck
 from content_farm.explainer.to_script import deck_to_script
 from content_farm.production import publish, qc
 from content_farm.production.channels import load_channel
@@ -25,6 +25,20 @@ def test_policy_blocks_stock_on_yokai_but_not_chipcat() -> None:
     assert qc.policy_findings(load_channel("chipcat"), deck)[0].level == "ok"
     finding = qc.policy_findings(load_channel("yokai"), deck)[0]
     assert finding.level == "error" and "stock" in finding.message
+
+
+def test_policy_allows_artwork_only_where_the_channel_does() -> None:
+    data = json.loads((EXAMPLE / "deck.json").read_text(encoding="utf-8"))
+    slide = data["sections"][0]["slides"][0]
+    slide["media"] = {"kind": "artwork", "artwork": "tamamo"}
+    for section in data["sections"]:
+        for other in section["slides"]:
+            if other is not slide and (other.get("media") or {}).get("kind") == "stock":
+                other["media"] = None
+    deck = Deck.model_validate(data)
+    assert qc.policy_findings(load_channel("yokai"), deck)[0].level == "ok"
+    finding = qc.policy_findings(load_channel("chipcat"), deck)[0]
+    assert finding.level == "error" and "artwork" in finding.message
 
 
 def test_credits_pending_and_missing_fields_are_errors() -> None:

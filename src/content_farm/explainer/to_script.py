@@ -79,6 +79,8 @@ def _visual_hint(slide: Slide) -> VisualHint:
             detail = media.prompt
         elif kind == MediaKind.TITLE_CARD:
             detail = f"source:{media.source_id}"
+        elif kind == MediaKind.ARTWORK:
+            detail = f"artwork:{media.artwork}"
     description = f"{slide.layout.value}:{slide.id}" + (f"|{detail}" if detail else "")
     return VisualHint(
         description=description,

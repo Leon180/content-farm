@@ -137,11 +137,11 @@ def _check_media(deck: Deck) -> list[LintIssue]:
                 f"slide {slide.id!r}: {run} static slides in a row; animate one or add footage",
             ))
     kinds = [s.media_kind for s in deck.slides]
-    footage = sum(k in (MediaKind.STOCK, MediaKind.AI_IMAGE) for k in kinds)
+    footage = sum(k in (MediaKind.STOCK, MediaKind.AI_IMAGE, MediaKind.ARTWORK) for k in kinds)
     if kinds and footage / len(kinds) < MIN_FOOTAGE_SHARE:
         issues.append(LintIssue(
             "footage-share",
-            f"{footage}/{len(kinds)} slides are stock/ai_image; target >= "
+            f"{footage}/{len(kinds)} slides are stock/ai_image/artwork; target >= "
             f"{MIN_FOOTAGE_SHARE:.0%}",
         ))
     for slide in deck.slides:

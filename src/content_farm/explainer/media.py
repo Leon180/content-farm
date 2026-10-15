@@ -16,6 +16,7 @@ from pathlib import Path
 
 from content_farm.explainer import ffmpeg_ops
 from content_farm.explainer.ai_images import AI_IMAGE_DIR, find_image
+from content_farm.explainer.artwork import ARTWORK_DIR, ARTWORK_MANIFEST, ArtworkEntry, credit_for, load_manifest
 from content_farm.explainer.capture import PageCapturer
 from content_farm.explainer.cards import overlay_html, placeholder_html, title_card_html
 from content_farm.explainer.deck import Deck, MediaKind, Section, Slide
@@ -32,7 +33,7 @@ class ClipResult:
     index: int
     slide_id: str
     requested: str
-    used: str            # slide | animated | stock | ai_image | ai_placeholder | title_card
+    used: str            # slide | animated | stock | ai_image | ai_placeholder | title_card | artwork
     path: Path
     seconds: float       # slot length
     note: str = ""       # why a fallback happened, or stock fit mode, etc.
@@ -61,9 +62,11 @@ class MediaContext:
     static_png_ok: bool  # True when transitions are off: plain slides stay PNG
     brand: str | None = None  # channel brand stylesheet (None = deck category theme)
     ai_image_dir: Path = field(init=False)
+    artwork: dict[str, ArtworkEntry] = field(init=False)
 
     def __post_init__(self) -> None:
         self.ai_image_dir = self.run_dir / AI_IMAGE_DIR
+        self.artwork = load_manifest(self.run_dir)
 
     def html(self, name: str, content: str) -> Path:
         path = self.work_dir / "html" / name
@@ -84,6 +87,7 @@ def build_clip(ctx: MediaContext, job: SlideJob) -> ClipResult:
         MediaKind.STOCK: _stock,
         MediaKind.AI_IMAGE: _ai_image,
         MediaKind.TITLE_CARD: _title_card,
+        MediaKind.ARTWORK: _artwork,
     }[kind]
     result = builder(ctx, job)
     elapsed = round(time.monotonic() - started, 2)
@@ -158,6 +162,29 @@ def _ai_image(ctx: MediaContext, job: SlideJob) -> ClipResult:
     png = ctx.capturer.still(html, ctx.work_dir / "placeholders" / f"{job.slide.id}.png")
     clip = ffmpeg_ops.still_to_clip(png, out, job.seconds)
     return _result(job, USED_PLACEHOLDER, clip, note=f"PLACEHOLDER: {expected} not found")
+
+
+def _artwork(ctx: MediaContext, job: SlideJob) -> ClipResult:
+    artwork_id = job.slide.media.artwork if job.slide.media else ""
+    entry = ctx.artwork.get(artwork_id)
+    image = entry.path(ctx.run_dir) if entry else None
+    out = ctx.clip_path(job, ".mp4")
+    if entry is not None and image is not None and image.is_file():
+        html = ctx.html(f"overlay_{job.index:03d}.html",
+                        overlay_html(ctx.deck, job.section, job.slide, job.index, brand=ctx.brand,
+                                     artwork_caption=entry.caption))
+        overlay = ctx.capturer.still(html, ctx.work_dir / "overlays" / f"overlay_{job.index:03d}.png",
+                                     transparent=True)
+        clip = ffmpeg_ops.artwork_plate(image, overlay, out, job.seconds)
+        return _result(job, "artwork", clip, note=f"artwork {artwork_id} ({image.name})",
+                       credit=credit_for(entry, artwork_id, slide_id=job.slide.id, index=job.index))
+    expected = f"{(ARTWORK_DIR / ARTWORK_MANIFEST).as_posix()} → {artwork_id!r}"
+    html = ctx.html(f"placeholder_{job.index:03d}.html",
+                    placeholder_html(ctx.deck, job.section, job.slide, job.index, expected,
+                                     brand=ctx.brand, tag="畫作待補"))
+    png = ctx.capturer.still(html, ctx.work_dir / "placeholders" / f"{job.slide.id}.png")
+    clip = ffmpeg_ops.still_to_clip(png, out, job.seconds)
+    return _result(job, USED_PLACEHOLDER, clip, note=f"PLACEHOLDER: artwork {artwork_id!r} missing")
 
 
 def _title_card(ctx: MediaContext, job: SlideJob) -> ClipResult:

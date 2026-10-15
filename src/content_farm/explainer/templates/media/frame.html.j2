@@ -23,6 +23,7 @@
     <div class="lt-heading">{{ slide.heading }}</div>
     {% if key_line %}<div class="lt-key">{{ key_line }}</div>{% endif %}
   </section>
+  {% if artwork_caption %}<div class="art-caption">圖｜{{ artwork_caption }}・公共領域</div>{% endif %}
 {% elif kind == "title_card" %}
   <main class="news-wrap">
     <article class="news-card">
@@ -41,7 +42,7 @@
   </main>
 {% elif kind == "placeholder" %}
   <main class="ph-wrap">
-    <div class="ph-tag">AI 插圖待補</div>
+    <div class="ph-tag">{{ placeholder_tag or "AI 插圖待補" }}</div>
     <div class="ph-heading">{{ slide.heading }}</div>
     <div class="ph-file">放這裡：{{ expected_path }}</div>
     <div class="ph-prompt">{{ prompt }}</div>
