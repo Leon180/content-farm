@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import re
 
+from content_farm.subtitle.atoms import is_safe_break, protected_spans
 from content_farm.subtitle.line_wrap import wrap_text
 from content_farm.subtitle.schemas import SubtitleSegment
 
@@ -135,12 +136,18 @@ class EstimationProvider:
                     chunks.append(remaining.strip())
                 break
 
+            # Never cut an atom: "3.2" at its ".", "1,000" at its ",", "2026 年".
+            spans = protected_spans(remaining)
+
+            def is_break(pos: int) -> bool:
+                return bool(_BREAK_PUNCT.match(remaining[pos])) and is_safe_break(remaining, pos + 1, spans)
+
             # 1) Search backward from max_chars for a punctuation break.
             window_end = min(self._max_chars, len(remaining))
             best_break = -1
 
             for pos in range(window_end, self._min_chars - 1, -1):
-                if pos < len(remaining) and _BREAK_PUNCT.match(remaining[pos]):
+                if pos < len(remaining) and is_break(pos):
                     best_break = pos + 1  # Include the punctuation char
                     break
 
@@ -150,13 +157,17 @@ class EstimationProvider:
             if best_break < 0:
                 forward_limit = min(self._max_chars * 2, len(remaining))
                 for pos in range(window_end + 1, forward_limit):
-                    if _BREAK_PUNCT.match(remaining[pos]):
+                    if is_break(pos):
                         best_break = pos + 1
                         break
 
-            # 3) If still no punctuation found (text has none), cut at max_chars.
+            # 3) If still no punctuation found (text has none), cut at max_chars,
+            #    moved back to before any atom the cut would split.
             if best_break < 0:
-                best_break = min(self._max_chars, len(remaining))
+                limit = min(self._max_chars, len(remaining))
+                best_break = next(
+                    (i for i in range(limit, 0, -1) if is_safe_break(remaining, i, spans)), limit,
+                )
 
             chunk = remaining[:best_break]
             remaining = remaining[best_break:].lstrip()

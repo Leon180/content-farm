@@ -13,6 +13,9 @@ backend.
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
+
+from content_farm.subtitle.atoms import is_safe_break, protected_spans
 
 # Preferred break characters (zh + latin punctuation).
 # Order matters: stronger separators first.
@@ -79,27 +82,42 @@ def _find_break_point(text: str, max_chars: int) -> int:
     - Chinese punctuation marks are visually narrower than full chars
     - A natural break beats a hard cut, even if line is 14-15 chars
     - Avoids ugly mid-word/mid-clause breaks
+
+    No candidate may split an atom (``subtitle.atoms``): a number and its
+    unit, a percentage, or a Latin/number word such as ``CoWoS-L``.
     """
     window_start = max(1, max_chars // 2)
     # +4 tolerance: punctuation like 「，。」 are visually narrower than CJK
     # characters and the overall line still feels balanced.
     soft_window_end = min(max_chars + 4, len(text))
     hard_window_end = min(max_chars, len(text))
+    spans = protected_spans(text)
+
+    def safe(index: int) -> bool:
+        return is_safe_break(text, index, spans)
 
     # 1. Strong punctuation (allow up to max + 3)
     for pos in range(soft_window_end - 1, window_start - 1, -1):
-        if _STRONG_BREAK.match(text[pos]):
+        if _STRONG_BREAK.match(text[pos]) and safe(pos + 1):
             return pos + 1  # include punctuation on preceding line
 
-    # 2. Medium punctuation (allow up to max + 3)
+    # 2. Medium punctuation (allow up to max + 3) — never the comma in "1,000"
     for pos in range(soft_window_end - 1, window_start - 1, -1):
-        if _MEDIUM_BREAK.match(text[pos]):
+        if _MEDIUM_BREAK.match(text[pos]) and safe(pos + 1):
             return pos + 1
 
-    # 3. Whitespace (only within hard limit)
+    # 3. Whitespace (only within hard limit) — never the space in "2026 年"
     for pos in range(hard_window_end - 1, window_start - 1, -1):
-        if _WEAK_BREAK.match(text[pos]):
+        if _WEAK_BREAK.match(text[pos]) and safe(pos + 1):
             return pos + 1
 
-    # 4. Hard break at max window
-    return hard_window_end
+    # 4. Hard break at the max window, moved back to before any atom it would cut;
+    #    an atom longer than the whole line stays whole (the line runs long).
+    return _hard_break(text, hard_window_end, safe)
+
+
+def _hard_break(text: str, limit: int, safe: Callable[[int], bool]) -> int:
+    for index in range(limit, 0, -1):
+        if safe(index):
+            return index
+    return next((i for i in range(limit + 1, len(text)) if safe(i)), len(text))
