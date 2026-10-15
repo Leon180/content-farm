@@ -1,15 +1,13 @@
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/REPORT-explainer-v2.md","min_bytes":2000,"why":"派工時宣告的預期產物"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/output/explainer-cowos-v2/assembly/final.mp4","min_bytes":10000000,"why":"CoWoS 成片（output/ 不 commit）"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/output/explainer-cowos-v2/credits.json","min_bytes":1000,"why":"3 筆 stock credit + 3 筆 pending"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/docs/examples/explainer-cowos/frames/mascot_talking_s01.png","min_bytes":10000}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/docs/examples/explainer-cowos/frames/mascot_point_s06.png","min_bytes":10000}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/docs/examples/explainer-cowos/frames/mascot_deadpan_s19.png","min_bytes":10000}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/docs/examples/explainer-cowos/frames/stock_s22.png","min_bytes":10000}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/docs/examples/explainer-cowos/frames/animated_s12_grow_bars.png","min_bytes":10000}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/docs/examples/explainer-cowos/frames/title_card_s02.png","min_bytes":10000}
-{"kind":"blob_equal","a":"feat/explainer-v2-mascot:src/content_farm/explainer/mascot/overlay.py","b":"HEAD:src/content_farm/explainer/mascot/overlay.py","why":"沒有移動貓的位置或禁區，只縮字幕"}
-{"kind":"blob_equal","a":"3332fa4:src/content_farm/assembly/timeline_assembly.py","b":"HEAD:src/content_farm/assembly/timeline_assembly.py","why":"assembly 一行未改"}
-{"kind":"blob_equal","a":"3332fa4:src/content_farm/subtitle/line_wrap.py","b":"HEAD:src/content_farm/subtitle/line_wrap.py","why":"共用斷行未改，Shorts 不受影響"}
-{"kind":"blob_equal","a":"feat/explainer-v2-visuals:src/content_farm/explainer/media.py","b":"3423b2b:src/content_farm/explainer/media.py","why":"media schema/分派以 visuals 為準（合併當下）"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/src/content_farm/explainer/deck.py","pattern":"from content_farm.explainer.media import Media","why":"research 的 media schema import 已丟掉"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/.claude/skills/deck/SKILL.md","pattern":"<<<<<<<","why":"skill 衝突已解"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channel-brands/REPORT-channel-brands.md","min_bytes":2000,"why":"派工時宣告的預期產物"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channel-brands/docs/design/channel-brands/index.html","min_bytes":20000,"why":"選稿頁"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channel-brands/docs/design/channel-brands/overview.png","min_bytes":100000,"why":"四品牌並排總覽圖"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channel-brands/docs/design/channel-brands/measurements.json","min_bytes":2000,"why":"版面檢查 problems 全空 + WCAG 對比"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channel-brands/docs/design/channel-brands/name-check-control.json","min_bytes":200,"why":"撞名查詢對照組（老高與小茉命中 @laogao）"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channel-brands/tests/unit/test_explainer_brands.py","min_bytes":2000,"why":"19 項品牌測試"}
+{"kind":"blob_equal","a":"feat/explainer-v2:src/content_farm/explainer/render.py","b":"HEAD:src/content_farm/explainer/render.py","why":"版面檢查器沒被改動，所以 0 problems 不是改了檢查器換來的"}
+{"kind":"blob_equal","a":"feat/explainer-v2:src/content_farm/explainer/templates/base.css","b":"HEAD:src/content_farm/explainer/templates/base.css","why":"共用版框（字幕安全區、角色槽）沒動"}
+{"kind":"blob_equal","a":"feat/explainer-v2:src/content_farm/visual/multi_provider.py","b":"HEAD:src/content_farm/visual/multi_provider.py","why":"唯一的 pytest 失敗在這個模組，本分支沒改它"}
+{"kind":"blob_equal","a":"feat/explainer-v2:tests/unit/test_multi_provider.py","b":"HEAD:tests/unit/test_multi_provider.py","why":"同上，測試本身也沒改"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channel-brands/src/content_farm/explainer/templates/themes/brands","pattern":"SF Mono","why":"宣告的字型＝實際渲染的字型（SF Mono 在 Chromium 不可見）"}
+{"kind":"clean_worktree","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channel-brands","why":"全部已 commit；注意 graft/ 是派工前就存在的未追蹤目錄，可能讓這條判不符"}
+{"kind":"no_unpushed","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channel-brands","why":"預期不符：v3 共同背景規定不 push，所以分支只在本機"}
