@@ -1,0 +1,74 @@
+{
+  "size": [1024, 576],
+  "seed": 42,
+  "style_rule": "插畫／水墨，不擬真照片、不模仿在世畫家；只用在沒有公有領域畫作可用的段落",
+  "segments": [
+    {
+      "id": "s05-qingqiu",
+      "slide": "s05",
+      "use": "場景重建",
+      "why": "山海經南山經的青丘之獸；現行是 reveal_list 動畫，沒有對應古畫",
+      "prompt": "Traditional Chinese ink wash painting on aged rice paper: a wild fox-like beast with nine bushy tails stands on a misty mountain ridge, ancient bestiary illustration, sparse expressive brush strokes, muted grey ink with light ochre wash, wide landscape composition, empty sky, illustration, not a photograph, no text, no seal"
+    },
+    {
+      "id": "s09-tushan",
+      "slide": "s09",
+      "use": "場景重建",
+      "why": "吳越春秋：大禹在塗山遇九尾白狐；沒有公有領域畫作",
+      "prompt": "Chinese ink and light colour illustration: a white nine-tailed fox appears before a lone traveller in simple ancient hemp robes at the foot of a mountain at dawn, the traveller small and seen from behind, misty river valley, calm auspicious mood, loose xieyi brushwork, illustration, not a photograph, no text, no seal"
+    },
+    {
+      "id": "s12-transform",
+      "slide": "s12",
+      "use": "氣氛",
+      "why": "玄中記：狐狸五十歲變婦人；概念畫面，沒有古畫",
+      "prompt": "Ink wash illustration at night: on a paper window lit from inside, the shadow of a fox turns into the silhouette of a woman, full moon, bamboo grove outside, soft grey ink with a single touch of vermilion, mysterious quiet mood, no facial detail, illustration, not a photograph, no text"
+    },
+    {
+      "id": "s13-shrine",
+      "slide": "s13",
+      "use": "場景重建",
+      "why": "朝野僉載：唐代百姓家家拜狐神；沒有對應古畫",
+      "prompt": "Ink and watercolour storybook illustration: a small roadside village shrine to a fox spirit at dusk in ancient China, simple offerings of steamed buns and incense, warm lantern glow, a small fox figurine on the altar, villagers only as distant small figures, hand-drawn lines, illustration, not a photograph, no text"
+    },
+    {
+      "id": "s24a-fields",
+      "slide": "s24a",
+      "use": "轉場",
+      "why": "為什麼偏偏是狐狸：田邊、墳地、夜晚；氣氛轉場",
+      "prompt": "Moody ink wash scene: a red fox at the edge of a rice field beside old grass-covered grave mounds at night, crescent moon, tall reeds, the fox glancing back over its shoulder, loose expressive brush strokes, mostly monochrome with a touch of rust orange, illustration, not a photograph, no text"
+    }
+  ],
+  "models": [
+    {
+      "id": "zimage",
+      "name": "Z-Image-Turbo (4-bit, mflux)",
+      "command": "mflux-generate-z-image-turbo",
+      "repo": "filipstrand/Z-Image-Turbo-mflux-4bit",
+      "base_model": "z-image-turbo",
+      "origin_repo": "Tongyi-MAI/Z-Image-Turbo",
+      "steps": 9,
+      "hf_home": "/Users/lileon/.claude/jobs/d3bbd556/tmp/hf"
+    },
+    {
+      "id": "klein4b",
+      "name": "FLUX.2 [klein] 4B (q4, mflux)",
+      "command": "mflux-generate-flux2",
+      "repo": "mflux-community/flux2-klein-4b-mflux-q4",
+      "base_model": "flux2-klein-4b",
+      "origin_repo": "black-forest-labs/FLUX.2-klein-4B",
+      "steps": 4,
+      "hf_home": "/Users/lileon/.claude/jobs/f9ab0177/tmp/hf"
+    },
+    {
+      "id": "schnell",
+      "name": "FLUX.1 [schnell] (q4, mflux)",
+      "command": "mflux-generate",
+      "repo": "mflux-community/flux-1-schnell-mflux-q4",
+      "base_model": "schnell",
+      "origin_repo": "black-forest-labs/FLUX.1-schnell",
+      "steps": 4,
+      "hf_home": "/Users/lileon/.claude/jobs/f9ab0177/tmp/hf"
+    }
+  ]
+}
