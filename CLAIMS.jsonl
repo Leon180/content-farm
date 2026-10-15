@@ -1,8 +1,15 @@
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-visuals/REPORT-v2-visuals.md","min_bytes":2000,"why":"派工宣告的預期產物"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-visuals/scripts/media_to_visual.py","min_bytes":1000,"why":"新的 media_to_visual 入口"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-visuals/output/v2-visuals-accept/assembly/draft.mp4","min_bytes":1000000,"why":"驗收 draft.mp4（gitignored，本機）"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-visuals/output/v2-visuals-accept/credits.json","min_bytes":500,"why":"授權紀錄"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-visuals/docs/examples/explainer-v2-visuals/frame_title_card_s06.png","min_bytes":10000,"why":"驗收截圖之一"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-visuals/src/content_farm/assembly","pattern":"explainer","why":"assembly 沒被改去依賴 explainer"}
-{"kind":"clean_worktree","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-visuals","why":"會失敗：PROGRESS-v2-visuals.md 未 commit 也刪不掉（rm 禁止）；照列"}
-{"kind":"no_unpushed","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-visuals","why":"會失敗：依共同限制不 push；照列"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/REPORT-explainer-v2.md","min_bytes":2000,"why":"派工時宣告的預期產物"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/output/explainer-cowos-v2/assembly/final.mp4","min_bytes":10000000,"why":"CoWoS 成片（output/ 不 commit）"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/output/explainer-cowos-v2/credits.json","min_bytes":1000,"why":"3 筆 stock credit + 3 筆 pending"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/docs/examples/explainer-cowos/frames/mascot_talking_s01.png","min_bytes":10000}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/docs/examples/explainer-cowos/frames/mascot_point_s06.png","min_bytes":10000}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/docs/examples/explainer-cowos/frames/mascot_deadpan_s19.png","min_bytes":10000}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/docs/examples/explainer-cowos/frames/stock_s22.png","min_bytes":10000}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/docs/examples/explainer-cowos/frames/animated_s12_grow_bars.png","min_bytes":10000}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/docs/examples/explainer-cowos/frames/title_card_s02.png","min_bytes":10000}
+{"kind":"blob_equal","a":"feat/explainer-v2-mascot:src/content_farm/explainer/mascot/overlay.py","b":"HEAD:src/content_farm/explainer/mascot/overlay.py","why":"沒有移動貓的位置或禁區，只縮字幕"}
+{"kind":"blob_equal","a":"3332fa4:src/content_farm/assembly/timeline_assembly.py","b":"HEAD:src/content_farm/assembly/timeline_assembly.py","why":"assembly 一行未改"}
+{"kind":"blob_equal","a":"3332fa4:src/content_farm/subtitle/line_wrap.py","b":"HEAD:src/content_farm/subtitle/line_wrap.py","why":"共用斷行未改，Shorts 不受影響"}
+{"kind":"blob_equal","a":"feat/explainer-v2-visuals:src/content_farm/explainer/media.py","b":"3423b2b:src/content_farm/explainer/media.py","why":"media schema/分派以 visuals 為準（合併當下）"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/src/content_farm/explainer/deck.py","pattern":"from content_farm.explainer.media import Media","why":"research 的 media schema import 已丟掉"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-v2-integrate/.claude/skills/deck/SKILL.md","pattern":"<<<<<<<","why":"skill 衝突已解"}
