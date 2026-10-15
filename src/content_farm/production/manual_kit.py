@@ -19,8 +19,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from content_farm.production import publish, shorts_cut
-from content_farm.production.channels import Channel
-from content_farm.production.runner import scheduled_publish_at
+from content_farm.production.channels import Channel, Gate
+from content_farm.production.runner import gate_fingerprint, scheduled_publish_at
+from content_farm.production.state import load_state
+from content_farm.production.steps import steps_for
 
 KIT_DIR = Path("upload") / "manual"
 THUMB_SIZE = (1280, 720)
@@ -40,9 +42,17 @@ class Kit:
     is_short: bool
 
 
+def final_approved(run_dir: Path, channel: Channel) -> bool:
+    """The final gate is approved for the video as it is now (not an older render)."""
+    step = next(s for s in steps_for(channel, run_dir) if s.gate is Gate.FINAL)
+    return load_state(run_dir, channel.code).approved(Gate.FINAL.value, gate_fingerprint(run_dir, step))
+
+
 def load_or_preview_meta(run_dir: Path, channel: Channel) -> tuple[dict, bool]:
+    """Packaged meta only counts once the current render is approved; anything else is a preview
+    (an old youtube_meta.json can outlive a re-render)."""
     path = run_dir / publish.META_PATH
-    if path.is_file():
+    if path.is_file() and final_approved(run_dir, channel):
         return json.loads(path.read_text(encoding="utf-8")), False
     return publish.build_meta(channel, run_dir, publish_at=scheduled_publish_at(run_dir)), True
 

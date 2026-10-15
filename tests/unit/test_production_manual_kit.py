@@ -13,7 +13,8 @@ from content_farm.explainer.deck import load_deck
 from content_farm.explainer.to_script import deck_to_script
 from content_farm.production import manual_kit as mk
 from content_farm.production import publish
-from content_farm.production.channels import load_channel
+from content_farm.production.channels import Gate, load_channel
+from content_farm.production.runner import decide
 
 EXAMPLE = Path(__file__).resolve().parents[2] / "docs" / "examples" / "explainer-cowos"
 needs_ffmpeg = pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="ffmpeg not installed")
@@ -93,10 +94,15 @@ def test_write_kit_builds_every_file_and_flags_preview_and_machine_voice(tmp_pat
 
 
 @needs_ffmpeg
-def test_kit_prefers_the_packaged_meta(tmp_path: Path) -> None:
-    run = _long_run(tmp_path)
-    meta = publish.build_meta(load_channel("chipcat"), run)
+def test_packaged_meta_counts_only_while_the_final_approval_matches(tmp_path: Path) -> None:
+    run, chipcat = _long_run(tmp_path), load_channel("chipcat")
+    meta = publish.build_meta(chipcat, run)
     publish.write_meta(run, {**meta, "title": "核可後的標題"})
-    kit = mk.write_kit(run, load_channel("chipcat"))
+    # Regression (2026-10-15): a youtube_meta.json left from an older render was used as final.
+    assert mk.write_kit(run, chipcat).preview
+    decide(run, chipcat, Gate.FINAL, "approved", by="test")
+    kit = mk.write_kit(run, chipcat)
     assert not kit.preview
     assert (run / "upload" / "manual" / "title.txt").read_text(encoding="utf-8") == "核可後的標題\n"
+    (run / "qc" / "qc_report.json").write_text(json.dumps({"errors": 0, "warnings": 0, "findings": []}))
+    assert mk.write_kit(run, chipcat).preview  # reviewed artifacts changed → approval no longer matches
