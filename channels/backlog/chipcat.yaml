@@ -12,10 +12,10 @@ topics:
   - id: cowos-number
     title: 一個數字：7,722 平方毫米
     kind: short
-    status: ready
+    status: in_production
     priority: 4
     category: 半導體
-    notes: 從 CoWoS 長片 s09 切出
+    notes: 從 CoWoS 長片 s09 切出。2026-10-15 依派工做成 offwork 頻道的 Shorts（offwork backlog cowos-7722）；歸屬哪個頻道待 Leon 決定
   - id: hbm
     title: HBM 為什麼比 GPU 還難買
     kind: long

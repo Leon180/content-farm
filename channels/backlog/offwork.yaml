@@ -1,0 +1,54 @@
+# 晶片貓下班了 選題池。status: idea → researching → ready → in_production → published（或 dropped）
+# priority 5 最急。冷笑話題目（kind: short）要等 shorts_skit 渲染器（roadmap R4）才跑得出片；
+# 在那之前能出片的只有「從長片切」的 Shorts（produce.py short-from-long，R5）。
+# 笑話全部原創：不改編別人的段子、不做合集（channels/offwork.yaml notes）。
+channel: offwork
+topics:
+  - id: cowos-7722
+    title: 一個數字：7,722 平方毫米
+    kind: short
+    status: in_production
+    priority: 5
+    category: 科技業冷笑話
+    notes: 從 CoWoS 長片 s09 切出（R5），output/offwork-7722；成片閘門等 Leon
+  - id: pm-yidiandian
+    title: 需求只改一點點
+    kind: short
+    status: idea
+    priority: 4
+    category: 上班族日常
+    notes: PM 狗「只改一點點」→ 下班貓「一點點是幾個點？」（品牌 Shorts 樣張那則）；需 PM 狗 rig（R11）
+  - id: box-packaging
+    title: 貓為什麼最懂封裝
+    kind: short
+    status: idea
+    priority: 4
+    category: 工程師梗
+    notes: 接 CoWoS s04 紙箱梗：裝進紙箱才肯安靜＝封裝；可導流晶片貓長片
+  - id: friday-deploy
+    title: 週五下午五點的部署
+    kind: short
+    status: idea
+    priority: 3
+    category: 工程師梗
+    notes: 鋪陳「只是小改動」→ 停 0.6 秒 → 笑點落在週一早上；避免真實公司事故
+  - id: meeting-email
+    title: 這個會其實一封信就夠
+    kind: short
+    status: idea
+    priority: 3
+    category: 上班族日常
+  - id: yield-offwork
+    title: 下班貓的良率
+    kind: short
+    status: idea
+    priority: 2
+    category: 科技業冷笑話
+    notes: 用「良率」講準時下班；良率定義要對（晶片貓長片的用法）
+  - id: hbm-stack
+    title: 一個數字：HBM 疊幾層
+    kind: short
+    status: idea
+    priority: 2
+    category: 科技業冷笑話
+    notes: 等 HBM 長片（chipcat backlog 的 hbm）完成後用 short-from-long 切
