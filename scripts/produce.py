@@ -10,6 +10,7 @@ Usage:
     python scripts/produce.py inbox   --root output                 # every run waiting on a person
     python scripts/produce.py plan    --week 2026-W43               # publish calendar + topic picks
     python scripts/produce.py channels                               # validate channels/*.yaml
+    python scripts/produce.py manual-kit --run-dir output/cowos      # upload/manual/ for YouTube Studio
 
 Exit codes for ``run``: 0 all steps done, 1 a step failed, 3 waiting (gate, agent
 step, or paid step without --allow-paid). Each stop prints the next command.
@@ -27,6 +28,7 @@ from pathlib import Path
 from pydantic import ValidationError
 
 from content_farm.production.channels import Gate, load_all, load_channel
+from content_farm.production.manual_kit import write_kit
 from content_farm.production.runner import SCHEDULE_FILE, Outcome, Runner, decide
 from content_farm.production.schedule import load_backlog, plan_week
 from content_farm.production.state import STATE_FILE, load_state, read_channel_code
@@ -68,6 +70,10 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     plan.add_argument("--week", required=True, help="ISO week, e.g. 2026-W43")
     plan.add_argument("--today", type=date.fromisoformat, default=date.today())
     sub.add_parser("channels")
+    kit = sub.add_parser("manual-kit", help="upload/manual/: YouTube Studio checklist + preview.html")
+    kit.add_argument("--run-dir", type=Path, required=True)
+    kit.add_argument("--voice", choices=("auto", "machine", "fish"), default="auto",
+                     help="voice source for the banner; auto reads logs/voice.log")
     return parser.parse_args(argv)
 
 
@@ -164,10 +170,18 @@ def cmd_channels(_: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_manual_kit(args: argparse.Namespace) -> int:
+    channel = _channel_for(args.run_dir, None)
+    voice = {"auto": None, "machine": True, "fish": False}[args.voice]
+    for path in write_kit(channel, args.run_dir, machine_voice=voice):
+        print(path)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
     handlers = {"run": cmd_run, "status": cmd_status, "inbox": cmd_inbox, "plan": cmd_plan,
-                "channels": cmd_channels,
+                "channels": cmd_channels, "manual-kit": cmd_manual_kit,
                 "approve": lambda a: cmd_decide(a, "approved"),
                 "reject": lambda a: cmd_decide(a, "rejected")}
     try:
