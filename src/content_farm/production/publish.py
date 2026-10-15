@@ -22,6 +22,15 @@ from content_farm.youtube.meta import _find_relative, _format_timestamp
 
 META_PATH = Path("upload") / "youtube_meta.json"
 AI_DISCLOSURE_LINE = "本影片由 AI 輔助製作（配音與部分插圖為合成內容）。"
+AI_VOICE_ONLY_LINE = "本影片由 AI 輔助製作（配音為合成語音；畫面無 AI 生成圖像）。"
+
+
+def ai_disclosure_line(credits: dict | None) -> str:
+    """Only claim AI illustrations when the credits list one; otherwise say the voice alone is synthetic."""
+    entries = (credits or {}).get("entries", [])
+    pending = (credits or {}).get("pending", [])
+    has_ai_image = any(e.get("kind") == "ai_image" for e in [*entries, *pending])
+    return AI_DISCLOSURE_LINE if has_ai_image or credits is None else AI_VOICE_ONLY_LINE
 MIN_CHAPTERS = 3
 MIN_CHAPTER_SECONDS = 10  # YouTube ignores chapter lists with shorter chapters
 
@@ -56,7 +65,7 @@ def build_description(channel: Channel, script: Script, credits: dict | None) ->
     if credit_text:
         parts += [credit_text, ""]
     if channel.youtube.ai_disclosure:
-        parts.append(AI_DISCLOSURE_LINE)
+        parts.append(ai_disclosure_line(credits))
     parts.append(f"— {channel.name}")
     return "\n".join(parts).strip() + "\n"
 

@@ -109,7 +109,7 @@ def test_meta_uses_final_video_credits_chapters_and_schedule(tmp_path: Path) -> 
     assert meta["contains_synthetic_media"] is True
     assert meta["description"].startswith("章節：\n0:00 ")
     assert "影片素材 / Stock footage:" in meta["description"]
-    assert publish.AI_DISCLOSURE_LINE in meta["description"]
+    assert publish.AI_VOICE_ONLY_LINE in meta["description"]  # credits list no AI image
     assert len(meta["chapters"]) == 6 and meta["chapters"][0]["timestamp"] == "0:00"
 
 
@@ -130,6 +130,16 @@ def test_chapter_block_rejects_short_or_few_chapters() -> None:
     assert publish.chapter_block([(0, "a"), (5, "b"), (60, "c")], 120) == []
     assert publish.chapter_block([(1, "a"), (60, "b"), (90, "c")], 120) == []
     assert publish.chapter_block([(0, "a"), (60, "b"), (90, "c")], 120)[1] == "0:00 a"
+
+
+def test_ai_disclosure_matches_credits() -> None:
+    assert publish.ai_disclosure_line(None) == publish.AI_DISCLOSURE_LINE
+    ai = {"entries": [{"kind": "ai_image"}], "pending": []}
+    assert publish.ai_disclosure_line(ai) == publish.AI_DISCLOSURE_LINE
+    placeholder = {"entries": [], "pending": [{"kind": "ai_image"}]}
+    assert publish.ai_disclosure_line(placeholder) == publish.AI_DISCLOSURE_LINE
+    artwork_only = {"entries": [{"kind": "artwork"}, {"kind": "stock"}], "pending": []}
+    assert publish.ai_disclosure_line(artwork_only) == publish.AI_VOICE_ONLY_LINE
 
 
 def test_naive_publish_time_rejected(tmp_path: Path) -> None:
