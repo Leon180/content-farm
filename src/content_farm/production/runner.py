@@ -5,6 +5,7 @@ steps whose inputs did not change are skipped."""
 from __future__ import annotations
 
 import fcntl
+import hashlib
 import json
 import os
 import subprocess
@@ -191,18 +192,29 @@ class Runner:
         record = StepRecord("waiting", now_iso(), inputs=current, note=message)
         return state.with_step(step.name, record), RunResult(Outcome.GATE, step.name, message, page)
 
+    def _cmd_inputs(self, step: Step) -> str:
+        files = fingerprint(self.run_dir, step.inputs)
+        if step.identity is None:
+            return files
+        identity = hashlib.sha256(step.identity(self.ctx).encode("utf-8")).hexdigest()[:16]
+        return f"{files}+{identity}"
+
     def _cmd(self, state: RunState, step: Step, forced: bool) -> tuple[RunState, RunResult | None]:
         assert step.command is not None
-        if self._fresh(state, step, fingerprint(self.run_dir, step.inputs), forced):
+        if self._fresh(state, step, self._cmd_inputs(step), forced):
             return state, None
         if step.paid(self.ctx) and not self.ctx.options.allow_paid:
             message = f"{step.title} 會呼叫付費 API；加 --allow-paid 或 --mock-voice"
             return state, RunResult(Outcome.PAID, step.name, message)
+        if step.identity is not None:
+            identity = step.identity(self.ctx)
+            self.log(f"{step.name}: {identity}")
+            _event(self.run_dir, step=step.name, identity=identity)
         command = step.command(self.ctx)
         if not step.heavy:
-            return self._execute(state, step, command, lambda: fingerprint(self.run_dir, step.inputs))
+            return self._execute(state, step, command, lambda: self._cmd_inputs(step))
         with render_lock(self.max_load, self.log):
-            return self._execute(state, step, command, lambda: fingerprint(self.run_dir, step.inputs))
+            return self._execute(state, step, command, lambda: self._cmd_inputs(step))
 
     def _execute(
         self, state: RunState, step: Step, command: Command, inputs_after: Callable[[], str],

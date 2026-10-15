@@ -21,6 +21,7 @@ from pathlib import Path
 from content_farm.production.channels import Channel, Gate, Pipeline
 from content_farm.production.shorts_cut import SOURCE_FILE as SHORT_SOURCE_FILE
 from content_farm.production.shorts_cut import is_short_cut
+from content_farm.production.voice_choice import VoiceChoice, choose_voice, env_file_defaults
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 EXPLAINER_SUBTITLE_MAX = "20"  # keeps landscape subtitles clear of the mascot (REPORT-explainer-v2 §3)
@@ -69,6 +70,9 @@ class Step:
     paid: Callable[[Context], bool] = lambda ctx: False
     heavy: bool = False                         # takes the machine-wide render lock
     applies: Callable[[Channel], bool] = lambda channel: True
+    # Settings that change the output without touching any input file (e.g. the TTS
+    # voice); folded into the fingerprint and logged when the step runs.
+    identity: Callable[[Context], str] | None = None
 
 
 def _py(ctx: Context, script: str, *args: str, env: dict[str, str] | None = None) -> Command:
@@ -79,11 +83,20 @@ def _run_dir(ctx: Context) -> str:
     return str(ctx.run_dir)
 
 
+def voice_choice(ctx: Context) -> VoiceChoice:
+    return choose_voice(ctx.channel, ctx.options.env_file, mock=ctx.options.mock_voice)
+
+
 def _voice_env(ctx: Context) -> dict[str, str]:
     env = {"CF_SUBTITLE_MAX_CHARS_PER_LINE_LANDSCAPE": EXPLAINER_SUBTITLE_MAX}
     if ctx.options.mock_voice:
         env["CF_TTS_PROVIDER"] = "macos_say"
         env.setdefault("CF_ANTHROPIC_API_KEY", os.environ.get("CF_ANTHROPIC_API_KEY", "dummy-unused"))
+        return env
+    choice = voice_choice(ctx)
+    env = {**env_file_defaults(ctx.options.env_file), **env, "CF_TTS_PROVIDER": choice.provider}
+    if choice.from_channel:
+        env["CF_TTS_VOICE_ID"] = choice.voice_id
     return env
 
 
@@ -118,7 +131,7 @@ EXPLAINER_STEPS: tuple[Step, ...] = (
          inputs=("deck.json", "script.json"),
          command=lambda c: _py(c, "run_stage.py", "--stage", "voice", "--run-dir", _run_dir(c),
                                env=_voice_env(c)),
-         paid=lambda c: not c.options.mock_voice),
+         paid=lambda c: not c.options.mock_voice, identity=lambda c: voice_choice(c).describe()),
     Step("media", "cmd", "B-roll／動態投影片／AI 圖", outputs=("credits.json", "media/contact_sheet.png"),
          inputs=("deck.json", "audio/scene_*.mp3", "slides/slide_*.png", "assets/ai_images/*",
                  "assets/artwork/*"),
@@ -155,7 +168,7 @@ SHORTS_SKIT_STEPS: tuple[Step, ...] = (
          inputs=("script.json",),
          command=lambda c: _py(c, "run_stage.py", "--stage", "voice", "--run-dir", _run_dir(c),
                                env=_voice_env(c) | {"CF_SUBTITLE_MAX_CHARS_PER_LINE_LANDSCAPE": "24"}),
-         paid=lambda c: not c.options.mock_voice),
+         paid=lambda c: not c.options.mock_voice, identity=lambda c: voice_choice(c).describe()),
     Step("skit_render", "agent", "角色小劇場渲染", outputs=("assembly/final.mp4",),
          hint="直式角色小劇場渲染器尚未實作（roadmap R4）；先手動放 assembly/final.mp4"),
     Step("qc", "internal", "自動品質檢查", outputs=("qc/qc_report.json",),

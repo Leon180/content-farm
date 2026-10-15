@@ -6,6 +6,19 @@ from content_farm.config import Settings
 from content_farm.voice.protocol import TTSProvider
 
 
+_DEFAULT_VOICE = {
+    "fish_audio": lambda s: s.fish_audio_reference_id,
+    "elevenlabs": lambda s: s.elevenlabs_voice_id,
+    "macos_say": lambda s: s.macos_say_voice,
+}
+
+
+def effective_voice_id(settings: Settings) -> str:
+    """The voice the provider will actually use: the per-run override, else its default."""
+    default = _DEFAULT_VOICE.get(settings.tts_provider)
+    return settings.tts_voice_id or (default(settings) if default else "")
+
+
 def create_tts_provider(settings: Settings) -> TTSProvider:
     """Create the appropriate TTS provider based on settings."""
     provider = settings.tts_provider

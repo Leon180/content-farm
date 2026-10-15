@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import logging
 from pathlib import Path
 
 from content_farm.config import Settings
 from content_farm.script_gen.schemas import Script
+from content_farm.voice.factory import effective_voice_id
 from content_farm.voice.protocol import TTSProvider
 from content_farm.voice.schemas import AudioSegment, VoiceArtifact
 from content_farm.voice.text_normalize import normalize_for_tts
@@ -40,10 +42,22 @@ async def _get_audio_duration(file_path: Path) -> float:
     return round((byte_count * 8) / 128000, 2)
 
 
+IDENTITY_FILE = "voice_identity.json"
+
+
+def _identity(provider: str, voice_id: str, tts_text: str) -> dict[str, str]:
+    text_sha = hashlib.sha256(tts_text.encode("utf-8")).hexdigest()[:16]
+    return {"provider": provider, "voice_id": voice_id, "text_sha": text_sha}
+
+
 class VoiceGenerator:
     """Generates audio narration for each scene in a script.
 
     Accepts any TTSProvider implementation (ElevenLabs, Fish Audio, etc.).
+
+    Existing scene audio is reused only when ``audio/voice_identity.json`` says it
+    was made by the same provider, voice and TTS text; otherwise (voice changed,
+    pronunciation fixed, or audio from before this record existed) it is redone.
     """
 
     def __init__(
@@ -56,9 +70,31 @@ class VoiceGenerator:
         self._settings = settings
         self._output_dir = output_dir or Path("output/audio")
         self._semaphore = asyncio.Semaphore(settings.max_concurrent_scenes)
+        self._voice_id = effective_voice_id(settings)
+
+    def _load_identities(self) -> dict[str, dict[str, str]]:
+        path = self._output_dir / IDENTITY_FILE
+        if not path.is_file():
+            return {}
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            logger.warning("Ignoring unreadable %s; all scenes will be re-synthesized", path)
+            return {}
+        return data if isinstance(data, dict) else {}
+
+    def _record_identity(self, filename: str, identity: dict[str, str]) -> None:
+        # Written after every scene, so a run that dies midway keeps what it paid for.
+        path = self._output_dir / IDENTITY_FILE
+        path.parent.mkdir(parents=True, exist_ok=True)
+        updated = {**self._load_identities(), filename: identity}
+        path.write_text(json.dumps(updated, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
 
     async def generate(self, script: Script) -> VoiceArtifact:
         """Generate audio for all scenes in the script."""
+        logger.info("TTS voice: provider=%s voice_id=%s (%s)", self._settings.tts_provider,
+                    self._voice_id or "(provider default)",
+                    "CF_TTS_VOICE_ID" if self._settings.tts_voice_id else "provider default setting")
         narrations = [scene.narration for scene in script.scenes]
         tasks = []
 
@@ -142,9 +178,11 @@ class VoiceGenerator:
             output_path = self._output_dir / f"scene_{scene_number:03d}.mp3"
 
             tts_text = normalize_for_tts(narration, pronunciation_map)
+            identity = _identity(self._settings.tts_provider, self._voice_id, tts_text)
+            exists = output_path.exists() and output_path.stat().st_size > 0
 
-            # Skip API call if file already exists (I-1: file-exists guard)
-            if output_path.exists() and output_path.stat().st_size > 0:
+            # Skip the API call only for audio made by this voice from this text (I-1)
+            if exists and self._load_identities().get(output_path.name) == identity:
                 logger.info("Reusing existing audio: %s", output_path)
                 duration = await _get_audio_duration(output_path)
                 return AudioSegment(
@@ -155,12 +193,17 @@ class VoiceGenerator:
                     tts_text=tts_text,
                 )
 
+            if exists:
+                logger.info("Re-synthesizing %s: voice or text differs from the recorded audio",
+                            output_path)
             await self._tts.generate_speech_with_context(
                 text=tts_text,
                 output_path=output_path,
                 previous_text=previous_text,
                 next_text=next_text,
+                voice_id=self._settings.tts_voice_id or None,
             )
+            self._record_identity(output_path.name, identity)
 
             # Use ffprobe for accurate duration (C-2)
             duration = await _get_audio_duration(output_path)

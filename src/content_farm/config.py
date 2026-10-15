@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     # "fish_audio" | "elevenlabs" | "macos_say"
     # macos_say: free local macOS `say` voice, for development/testing only — do not publish with it.
     tts_provider: str = "fish_audio"
+    # Per-run voice override (the production runner sets it from channels/<code>.yaml
+    # voice.voice_id_env). Empty = the provider's own default below.
+    tts_voice_id: str = ""
     elevenlabs_api_key: SecretStr = SecretStr("")
     elevenlabs_voice_id: str = "JBFqnCBsd6RMkjVDRZzb"
     elevenlabs_model_id: str = "eleven_v3"
