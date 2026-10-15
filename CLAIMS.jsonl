@@ -1,20 +1,17 @@
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channels-integrate/REPORT-channels-integrate.md","min_bytes":6000,"why":"派工時宣告的預期產物"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channels-integrate/REPORT-ch-chipcat-ep1.md","min_bytes":2000,"why":"chipcat 報告隨 merge 保留"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channels-integrate/REPORT-ch-yokai-ep1.md","min_bytes":2000,"why":"yokai 報告隨 merge 保留"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channels-integrate/REPORT-ch-cel-ep1.md","min_bytes":2000,"why":"cel 報告隨 merge 保留"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channels-integrate/output/kit-check/cowos-chipcat/preview.html","min_bytes":20000,"why":"合併後 manual-kit 重產（output/ 不 commit）"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channels-integrate/output/kit-check/offwork-7722/preview.html","min_bytes":3000,"why":"合併後 manual-kit 重產，9:16"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channels-integrate/output/kit-check/yokai-kyubi/preview.html","min_bytes":20000,"why":"合併後 manual-kit 重產"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channels-integrate/output/kit-check/cel-ep1/preview.html","min_bytes":20000,"why":"合併後 manual-kit 重產"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channels-integrate/output/kit-check/cel-ep1/README.md","min_bytes":2000,"why":"cel 上傳清單"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channels-integrate/output/kit-check/cel-ep1/description.txt","pattern":"部分插圖","why":"cel 沒有 AI 圖，揭露不再寫插圖"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channels-integrate/output/kit-check/yokai-kyubi/description.txt","pattern":"部分插圖","why":"yokai 只有 artwork，揭露不寫插圖"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channels-integrate/src","pattern":"<<<<<<<","why":"沒有殘留衝突標記"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channels-integrate/src/content_farm/production","pattern":"createObjectURL","why":"字幕只走 addTextTrack 一種實作（不再有 Blob URL 版）"}
-{"kind":"blob_equal","a":"d9749c1:src/content_farm/explainer/mascot/overlay.py","b":"HEAD:src/content_farm/explainer/mascot/overlay.py","why":"沒有改 mascot/"}
-{"kind":"blob_equal","a":"d9749c1:src/content_farm/explainer/mascot/params.py","b":"HEAD:src/content_farm/explainer/mascot/params.py","why":"沒有改 mascot/（a2 在改這支）"}
-{"kind":"blob_equal","a":"d9749c1:src/content_farm/explainer/mascot/motion.py","b":"HEAD:src/content_farm/explainer/mascot/motion.py","why":"沒有改 mascot/（a2 在改這支）"}
-{"kind":"blob_equal","a":"feat/ch-yokai-ep1:src/content_farm/explainer/artwork.py","b":"HEAD:src/content_farm/explainer/artwork.py","why":"yokai artwork 原樣進來"}
-{"kind":"blob_equal","a":"feat/ch-chipcat-ep1:src/content_farm/production/shorts_cut.py","b":"HEAD:src/content_farm/production/shorts_cut.py","why":"chipcat short-from-long 原樣進來"}
-{"kind":"blob_equal","a":"feat/ch-cel-ep1:channels/backlog/cel.yaml","b":"HEAD:channels/backlog/cel.yaml","why":"cel 選題池原樣進來"}
-{"kind":"clean_worktree","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channels-integrate","why":"全部 commit（CLAIMS 本身除外會在最後一個 commit 內）"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-real-voice/REPORT-real-voice.md","min_bytes":2000,"why":"派工時宣告的預期產物"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-real-voice/output/cowos-chipcat/upload/manual/preview.html","min_bytes":20000,"why":"CoWoS 真配音上傳包（output/ 不 commit）"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-real-voice/output/yokai-kyubi/upload/manual/preview.html","min_bytes":20000,"why":"九尾狐真配音上傳包"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-real-voice/output/cel-ep1/upload/manual/preview.html","min_bytes":20000,"why":"動畫產業真配音上傳包"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-real-voice/output/chipcat-7722/upload/manual/preview.html","min_bytes":3000,"why":"7,722 Short（晶片貓）上傳包"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-real-voice/output/cowos-chipcat/assembly/final.mp4","min_bytes":10000000,"why":"CoWoS 新成片（含晶片貓疊加）"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-real-voice/output/cowos-chipcat/audio/voice_identity.json","min_bytes":200,"why":"generator 的聲音身分紀錄有寫出"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-real-voice/output/cowos-chipcat/upload/manual","pattern":"暫用機器聲","why":"README/preview 不再標機器聲"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-real-voice/output/yokai-kyubi/upload/manual","pattern":"暫用機器聲","why":"同上"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-real-voice/output/cel-ep1/upload/manual","pattern":"暫用機器聲","why":"同上"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-real-voice/output/chipcat-7722/upload/manual","pattern":"暫用機器聲","why":"同上"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-real-voice/output/cowos-chipcat/logs/voice.log","pattern":"macos_say","why":"CoWoS 這次的配音全是 Fish Audio"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-real-voice/output/chipcat-7722/qc/qc_report.json","pattern":"expected 1920x1080","why":"Short 在 16:9 頻道不再被判解析度錯誤"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-real-voice/src/content_farm/production/manual_readme.py","pattern":"建議選","why":"Studio 合成內容建議已改為否（Leon 決策）"}
+{"kind":"blob_equal","a":"2c37454:src/content_farm/explainer/mascot/overlay.py","b":"HEAD:src/content_farm/explainer/mascot/overlay.py","why":"沒有改 mascot/"}
+{"kind":"blob_equal","a":"2c37454:src/content_farm/explainer/mascot/params.py","b":"HEAD:src/content_farm/explainer/mascot/params.py","why":"沒有改 mascot/"}
+{"kind":"blob_equal","a":"2c37454:channels/chipcat.yaml","b":"HEAD:channels/chipcat.yaml","why":"頻道設定沒改，只是開始讀 voice_id_env"}
