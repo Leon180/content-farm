@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import date
+from pathlib import Path
 
 from content_farm.production.channels import load_channel
 from content_farm.production.schedule import Backlog, Topic, _count, load_backlog, plan_week, slots_for_week
@@ -64,7 +65,8 @@ def test_expired_deadline_is_skipped() -> None:
     assert all(a.topic is None for a in plan)
 
 
-def test_repo_backlog_loads() -> None:
+def test_repo_backlog_loads(tmp_path: Path) -> None:
     backlog = load_backlog("chipcat")
     assert any(t.id == "cowos" for t in backlog.topics)
-    assert load_backlog("cel").topics == ()
+    assert any(t.id == "committee-money" for t in load_backlog("cel").topics)
+    assert load_backlog("cel", channels_dir=tmp_path).topics == ()  # no file → empty backlog

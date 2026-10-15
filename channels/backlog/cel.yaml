@@ -1,0 +1,52 @@
+# 賽璐璐研究室 選題池。status: idea → researching → ready → in_production → published（或 dropped）
+# priority 5 最急；deadline 只給有新聞時效的題目。`produce.py plan --week` 依此排片。
+# 來源：新頻道調查 newchannel-anime-2026-10.md §4 做法①。全部只講產業結構，不用原片、截圖或近似官方角色的圖。
+channel: cel
+topics:
+  - id: committee-money
+    title: 動畫市場創新高，為什麼動畫公司還是窮：製作委員會的錢怎麼流
+    kind: long
+    status: in_production
+    priority: 5
+    category: 製作委員會與錢
+    notes: 開台第一支；ep1 run-dir output/cel-ep1（mock 配音）
+  - id: committee-number
+    title: 一個數字：動畫市場的錢，製作公司拿到幾成
+    kind: short
+    status: idea
+    priority: 4
+    category: 製作委員會與錢
+    notes: 從 ep1 的業界市場 vs 製作業規模比較切出
+  - id: animator-pay
+    title: 日本動畫師的收入，用數字看
+    kind: long
+    status: researching
+    priority: 4
+    category: 動畫師勞動與薪資
+    notes: JAniCA 調查、2024-11 自由工作者保護法；只講制度與統計，不點名個人
+  - id: outsourcing-chain
+    title: 一年三百部新番，產能從哪裡來：外包到韓國、中國、越南與台灣
+    kind: long
+    status: idea
+    priority: 3
+    category: 外包與海外產線
+  - id: streaming-buyout
+    title: 串流平台買斷怎麼改變日本動畫的錢流
+    kind: long
+    status: idea
+    priority: 3
+    category: 串流與授權生意
+  - id: ln-season-one
+    title: 為什麼輕小說改編常常只做到第一季
+    kind: long
+    status: idea
+    priority: 3
+    category: 製作委員會與錢
+    notes: 講「動畫是原作廣告」的商業邏輯；不複述任何作品劇情
+  - id: studio-bankruptcy
+    title: 動畫公司倒閉史：為什麼做出名作也會倒
+    kind: long
+    status: idea
+    priority: 2
+    category: 業界歷史事件
+    notes: 只用公開的破產與信用調查紀錄
