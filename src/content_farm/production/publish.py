@@ -12,17 +12,20 @@ unchanged), plus what that stage leaves to hand-editing:
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
+from content_farm.production import voice_source
 from content_farm.production.channels import Channel
 from content_farm.production.qc import final_video
 from content_farm.script_gen.schemas import Script
 from content_farm.youtube.meta import _find_relative, _format_timestamp
 
 META_PATH = Path("upload") / "youtube_meta.json"
-AI_DISCLOSURE_LINE = "本影片由 AI 輔助製作（配音與部分插圖為合成內容）。"
-AI_DISCLOSURE_VOICE_LINE = "本影片由 AI 輔助製作（配音為合成語音）。"
+AI_DISCLOSURE_LINE = "本影片由 AI 輔助製作（配音為合成語音；部分插圖為 AI 生成）。"
+AI_DISCLOSURE_VOICE_LINE = "本影片由 AI 輔助製作（配音為合成語音；畫面無 AI 生成圖像）。"
+AI_DISCLOSURE_IMAGE_LINE = "本影片由 AI 輔助製作（部分插圖為 AI 生成；旁白非合成語音）。"
 MIN_CHAPTERS = 3
 MIN_CHAPTER_SECONDS = 10  # YouTube ignores chapter lists with shorter chapters
 
@@ -48,13 +51,61 @@ def chapter_block(chapters: list[tuple[float, str]], total_seconds: float) -> li
     return ["章節：", *(f"{_format_timestamp(start)} {title}" for start, title in chapters), ""]
 
 
-def ai_disclosure_line(credits: dict | None) -> str:
-    """Only claim synthetic illustrations when the video actually has some."""
-    items = [*(credits or {}).get("entries", []), *(credits or {}).get("pending", [])]
-    return AI_DISCLOSURE_LINE if any(i.get("kind") == "ai_image" for i in items) else AI_DISCLOSURE_VOICE_LINE
+@dataclass(frozen=True)
+class SyntheticContent:
+    """What in this video is AI-made, as far as the run's own records show."""
+
+    voice: bool
+    images: bool
+
+    @property
+    def any(self) -> bool:
+        return self.voice or self.images
 
 
-def build_description(channel: Channel, script: Script, credits: dict | None) -> str:
+def _deck_media_kinds(run_dir: Path) -> set[str] | None:
+    path = run_dir / "deck.json"
+    if not path.is_file():
+        return None
+    deck = json.loads(path.read_text(encoding="utf-8"))
+    return {(slide.get("media") or {}).get("kind", "") for section in deck.get("sections", [])
+            for slide in section.get("slides", [])}
+
+
+def uses_ai_images(run_dir: Path, credits: dict | None) -> bool:
+    """credits.json lists what the media step actually used (placeholders count); without it the
+    deck's plan decides; with neither, assume yes rather than under-disclose."""
+    if credits is not None:
+        items = [*credits.get("entries", []), *credits.get("pending", [])]
+        return any(item.get("kind") == "ai_image" for item in items)
+    kinds = _deck_media_kinds(run_dir)
+    return True if kinds is None else "ai_image" in kinds
+
+
+def uses_synthetic_voice(run_dir: Path) -> bool:
+    """Every voice provider is TTS. Only a voice log that exists and never records a synthesis
+    (audio supplied by hand) counts as a non-synthetic voice; no log at all is assumed synthetic."""
+    log = voice_source.voice_run_dir(run_dir) / "logs" / "voice.log"
+    return voice_source.last_tts_provider(run_dir) is not None or not log.is_file()
+
+
+def synthetic_content(run_dir: Path, credits: dict | None) -> SyntheticContent:
+    return SyntheticContent(voice=uses_synthetic_voice(run_dir), images=uses_ai_images(run_dir, credits))
+
+
+def ai_disclosure_line(content: SyntheticContent) -> str | None:
+    """The description's disclosure sentence, naming only what the video really contains."""
+    if content.voice and content.images:
+        return AI_DISCLOSURE_LINE
+    if content.voice:
+        return AI_DISCLOSURE_VOICE_LINE
+    if content.images:
+        return AI_DISCLOSURE_IMAGE_LINE
+    return None
+
+
+def build_description(channel: Channel, script: Script, credits: dict | None,
+                      content: SyntheticContent | None = None) -> str:
     total = sum(scene.duration_seconds for scene in script.scenes)
     parts = [*chapter_block(measured_chapters(script), total), script.description, ""]
     if script.sources:
@@ -62,8 +113,9 @@ def build_description(channel: Channel, script: Script, credits: dict | None) ->
     credit_text = (credits or {}).get("description_text", "").strip()
     if credit_text:
         parts += [credit_text, ""]
-    if channel.youtube.ai_disclosure:
-        parts.append(ai_disclosure_line(credits))
+    line = ai_disclosure_line(content or SyntheticContent(voice=True, images=True))
+    if channel.youtube.ai_disclosure and line:
+        parts.append(line)
     parts.append(f"— {channel.name}")
     return "\n".join(parts).strip() + "\n"
 
@@ -80,13 +132,14 @@ def build_meta(
     if publish_at is not None and publish_at.tzinfo is None:
         raise ValueError("publish_at must be timezone-aware")
     total = sum(scene.duration_seconds for scene in script.scenes)
+    content = synthetic_content(run_dir, credits)
     return {
         "title": script.video_title,
-        "description": build_description(channel, script, credits),
+        "description": build_description(channel, script, credits, content),
         "tags": list(script.tags),
         "privacy_status": "private" if publish_at else channel.youtube.default_privacy,
         "publish_at": publish_at.isoformat() if publish_at else None,
-        "contains_synthetic_media": channel.youtube.ai_disclosure,
+        "contains_synthetic_media": channel.youtube.ai_disclosure and content.any,
         "category_id": "27" if channel.pipeline.value == "explainer" else "23",  # Education / Comedy
         "made_for_kids": False,
         "default_language": script.language,

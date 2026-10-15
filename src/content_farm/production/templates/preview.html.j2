@@ -1,78 +1,94 @@
 <!doctype html>
-{# Offline pre-upload preview (manual-kit). No external requests: video/thumbnail are
-   relative files; subtitles are embedded and attached as a Blob URL because Chrome
-   refuses <track src> over file://. #}
-<html lang="zh-Hant">
+{# Offline pre-upload preview (manual-kit). No external requests: the video and
+   thumbnail are files; subtitles are embedded cues added with addTextTrack
+   because Chrome refuses <track src> over file://. #}
+<html lang="zh-Hant-TW">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>預覽｜{{ meta.title }}</title>
 <style>
-:root { --bg: #ffffff; --fg: #0f0f0f; --muted: #606060; --panel: #f2f2f2; --brand: {{ brand_color }}; --warn: #b3261e; --ok: #1e7b34; }
-@media (prefers-color-scheme: dark) { :root { --bg: #0f0f0f; --fg: #f1f1f1; --muted: #aaaaaa; --panel: #272727; } }
+:root { --bg: #ffffff; --fg: #0f0f0f; --muted: #606060; --panel: #f2f2f2; --brand: {{ brand_color }}; --warn: #b3261e; --caution: #9a6700; --ok: #1e7b34; --link: #065fd4; }
+@media (prefers-color-scheme: dark) { :root { --bg: #0f0f0f; --fg: #f1f1f1; --muted: #aaaaaa; --panel: #272727; --warn: #ff6b6b; --caution: #ffd166; --ok: #6ee7a8; --link: #3ea6ff; } }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 -apple-system, "PingFang TC", "Noto Sans TC", sans-serif; }
 .status { display: flex; flex-wrap: wrap; gap: 8px 20px; padding: 10px 16px; background: var(--panel); border-bottom: 3px solid var(--brand); font-size: 14px; }
-.status b { font-weight: 700; }
 .bad { color: var(--warn); font-weight: 700; }
+.caution { color: var(--caution); font-weight: 700; }
 .good { color: var(--ok); font-weight: 700; }
-main { max-width: {{ "480px" if is_short else "1100px" }}; margin: 0 auto; padding: 16px; }
-.player { background: #000; border-radius: 12px; overflow: hidden; {{ "aspect-ratio: 9 / 16;" if is_short else "aspect-ratio: 16 / 9;" }} }
+main { max-width: 1280px; margin: 0 auto; padding: 16px; }
+.player { background: #000; border-radius: 12px; overflow: hidden; aspect-ratio: {{ "9 / 16" if kit.is_short else "16 / 9" }};{% if kit.is_short %} max-width: 405px; margin: 0 auto;{% endif %} }
 video { width: 100%; height: 100%; display: block; }
 h1 { font-size: 20px; margin: 14px 0 6px; }
 .channel { display: flex; align-items: center; gap: 10px; margin: 8px 0 12px; }
-.avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--brand); }
+.avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--brand); color: #fff; display: grid; place-items: center; font-weight: 700; }
 .channel .name { font-weight: 700; color: var(--brand); }
-.box { background: var(--panel); border-radius: 12px; padding: 12px 14px; margin: 12px 0; }
+.grid { display: grid; grid-template-columns: 1fr; gap: 0 14px; }
+@media (min-width: 900px) { .grid { grid-template-columns: 2fr 1fr; } }
+.box { background: var(--panel); border-radius: 12px; padding: 12px 14px; margin: 0 0 12px; }
+.box h2 { font-size: 14px; margin: 0 0 8px; color: var(--muted); }
 .desc { white-space: pre-wrap; word-break: break-word; }
-.desc a, .chapters a { color: #3ea6ff; cursor: pointer; text-decoration: none; }
+.box a[data-t] { color: var(--link); text-decoration: none; font-variant-numeric: tabular-nums; }
+.chapters ul { margin: 0; padding: 0; list-style: none; }
 .tags span { display: inline-block; margin: 2px 6px 2px 0; color: var(--muted); }
 .thumb img { max-width: 100%; max-height: 320px; border-radius: 8px; display: block; }
+.note { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
 dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 0; }
-dt { color: var(--muted); }
+dt { color: var(--muted); } dd { margin: 0; overflow-wrap: anywhere; }
 </style>
 </head>
 <body>
 <div class="status">
-  <span>配音：<b class="{{ 'bad' if machine_voice else 'good' }}">{{ "macos_say 暫用（待換 Fish Audio）" if machine_voice else "正式配音" }}</b></span>
-  <span>QC：{% if qc_errors is none %}<b class="bad">未跑</b>{% else %}<b class="{{ 'bad' if qc_errors else 'good' }}">{{ qc_errors }} error</b> / {{ qc_warnings }} warn{% endif %}</span>
-  <span>片長：<b>{{ "%.1f"|format(seconds) }} 秒</b></span>
-  <span>檔案：<b>{{ "%.1f"|format(size_mb) }} MB</b></span>
-  {% if preview %}<span class="bad">成片閘門未核可（預覽資料）</span>{% endif %}
+  <span><b>上傳前預覽</b></span>
+  <span>配音：<b class="{{ 'bad' if kit.machine_voice else 'good' }}">{{ voice }}{{ "（暫用，待換 Fish Audio）" if kit.machine_voice else "" }}</b></span>
+  <span>QC：{% if kit.qc_errors is none %}<b class="caution">未跑</b>{% else %}<b class="{{ 'bad' if kit.qc_errors else ('caution' if kit.qc_warnings else 'good') }}">{{ kit.qc_errors }} error / {{ kit.qc_warnings }} warn</b>{% endif %}</span>
+  <span>片長：<b>{{ length }}</b>（{{ "%.1f"|format(kit.seconds) }} 秒）</span>
+  <span>檔案：<b>{{ size }}</b></span>
+  {% if kit.preview %}<span class="bad">成片閘門未核可（metadata 為預覽資料）</span>{% endif %}
 </div>
 <main>
   <div class="player">
-    <video id="video" controls preload="metadata" playsinline src="{{ video_src }}" poster="thumbnail.png"></video>
+    <video id="video" controls preload="metadata" playsinline poster="{{ thumbnail }}">
+      <source src="{{ kit.video_rel }}" type="video/mp4">
+      <source src="{{ video_uri }}" type="video/mp4">
+    </video>
   </div>
   <h1>{{ meta.title }}</h1>
-  <div class="channel"><div class="avatar"></div><span class="name">{{ channel_name }}</span>
-    <span style="color:var(--muted)">{{ "Shorts" if is_short else "" }}</span></div>
-  <div class="box desc" id="desc">{{ description_html | safe }}</div>
-  {% if meta.chapters %}<div class="box chapters"><b>章節</b><br>
-    {% for ch in meta.chapters %}<a data-t="{{ ch.seconds }}">{{ ch.timestamp }}</a> {{ ch.title }}<br>{% endfor %}
-  </div>{% endif %}
-  <div class="box tags"><b>標籤</b><br>{% for tag in meta.tags %}<span>#{{ tag }}</span>{% endfor %}</div>
-  <div class="box"><dl>
-    <dt>可見度</dt><dd>{{ meta.privacy_status }}{% if meta.publish_at %}（排程 {{ meta.publish_at }}）{% endif %}</dd>
-    <dt>AI 揭露</dt><dd>contains_synthetic_media = {{ meta.contains_synthetic_media }}</dd>
-    <dt>兒童內容</dt><dd>{{ "是" if meta.made_for_kids else "否" }}</dd>
-    <dt>類別</dt><dd>{{ category }}</dd>
-    <dt>語言</dt><dd>{{ meta.default_language }}</dd>
-  </dl></div>
-  <div class="box thumb"><b>縮圖</b><img src="thumbnail.png" alt="縮圖"></div>
+  <div class="channel"><div class="avatar">{{ kit.channel.name[:1] }}</div><span class="name">{{ kit.channel.name }}</span>
+    <span style="color:var(--muted)">{{ "Shorts" if kit.is_short else "" }}</span></div>
+  <div class="grid"><div>
+    <div class="box"><h2>說明</h2><div class="desc">{{ description_html | safe }}</div></div>
+  </div><div>
+    <div class="box chapters"><h2>章節（點擊跳轉）</h2><ul>
+      {% for ch in meta.chapters %}<li><a href="#" data-t="{{ ch.seconds }}">{{ ch.timestamp }}</a> {{ ch.title }}</li>{% else %}<li>（無）</li>{% endfor %}
+    </ul></div>
+    <div class="box thumb"><h2>縮圖</h2><img src="{{ thumbnail }}" alt="縮圖"><p class="note">{{ kit.thumbnail_note }}</p></div>
+    <div class="box tags"><h2>標籤</h2>{% for tag in meta.tags %}<span>#{{ tag }}</span>{% else %}（無）{% endfor %}</div>
+    <div class="box"><h2>上傳設定</h2><dl>
+      <dt>目標頻道</dt><dd>{{ kit.channel.name }}（{{ kit.channel.code }}）</dd>
+      <dt>可見度</dt><dd>{{ meta.privacy_status }}{% if meta.publish_at %}（排程 {{ meta.publish_at }}）{% endif %}</dd>
+      <dt>AI 揭露</dt><dd>{{ "是" if meta.contains_synthetic_media else "否" }}（contains_synthetic_media）</dd>
+      <dt>兒童內容</dt><dd>{{ "是" if meta.made_for_kids else "否" }}</dd>
+      <dt>類別</dt><dd>{{ kit.category }}</dd>
+      <dt>語言</dt><dd>{{ meta.default_language }}</dd>
+      <dt>播放清單</dt><dd>{{ kit.playlist }}</dd>
+      <dt>影片檔</dt><dd>{{ kit.video }}</dd>
+    </dl></div>
+  </div></div>
 </main>
-<script id="vtt" type="text/plain">{{ vtt | safe }}</script>
 <script>
 (function () {
+  const CUES = {{ cues | safe }};
   const video = document.getElementById("video");
-  const vtt = document.getElementById("vtt").textContent;
-  const track = document.createElement("track");
-  track.kind = "subtitles"; track.srclang = "zh-TW"; track.label = "中文（台灣）"; track.default = true;
-  track.src = URL.createObjectURL(new Blob([vtt], { type: "text/vtt" }));
-  video.appendChild(track);
-  video.textTracks[0] && (video.textTracks[0].mode = "showing");
-  document.querySelectorAll("[data-t]").forEach((a) => a.addEventListener("click", () => {
+  if (CUES.length) {
+    const track = video.addTextTrack("subtitles", "中文（台灣）", "zh-TW");
+    for (const [start, end, text] of CUES) track.addCue(new VTTCue(start, end, text));
+    track.mode = "showing";
+  }
+  document.querySelectorAll("a[data-t]").forEach((a) => a.addEventListener("click", (event) => {
+    event.preventDefault();
     video.currentTime = Number(a.dataset.t); video.play();
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }));
 })();
 </script>

@@ -2,108 +2,125 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
-from content_farm.production.manual_kit import (
-    CATEGORY_NAMES,
-    TAGS_MAX_CHARS,
-    TITLE_MAX,
-    KitInfo,
-    human_duration,
-    human_size,
-)
+from content_farm.production import voice_source
+from content_farm.production.manual_kit import TAGS_MAX_CHARS, TITLE_MAX, Kit, human_duration, human_size
 
 MACHINE_VOICE_BANNER = "> ⚠️ **暫用機器聲（macOS say），待換 Fish Audio 後重出。這一版不要公開。**\n"
+PREVIEW_BANNER = ("> ⚠️ **成片閘門尚未核可**：以下是預覽資料。Leon `produce.py approve --gate final` "
+                  "並跑完 package 後，重跑 `produce.py manual-kit` 才是正式版。\n")
+PRIVACY_NAMES = {"private": "私人", "unlisted": "不公開", "public": "公開"}
 
 
-def _status_lines(info: KitInfo) -> list[str]:
-    qc = ("未跑" if info.qc_errors is None
-          else f"{info.qc_errors} error / {info.qc_warnings} warn")
-    meta_src = ("`upload/youtube_meta.json`" if info.meta_from_package
-                else "manual-kit 臨時生成（成片閘門尚未核可，package 未跑）")
+def _status_lines(kit: Kit) -> list[str]:
+    qc = "未跑" if kit.qc_errors is None else f"{kit.qc_errors} error / {kit.qc_warnings} warn"
+    meta_src = ("manual-kit 臨時產生（成片閘門未核可目前成片）" if kit.preview
+                else "`upload/youtube_meta.json`（gate_final 已核可目前成片）")
+    voice = voice_source.provider_name(kit.voice_provider) + ("（暫用）" if kit.machine_voice else "")
     return [
-        f"- 目標頻道：**{info.channel_name}**（`{info.channel_code}`，{info.channel_line}）",
-        f"- 影片檔：`{info.video_abs}`",
-        f"- 片長 {human_duration(info.duration_seconds)}・檔案 {human_size(info.size_bytes)}",
-        f"- 配音：{'macOS say（暫用）' if info.machine_voice else 'Fish Audio'}・QC：{qc}",
+        f"- 目標頻道：**{kit.channel.name}**（`{kit.channel.code}`，{kit.channel.line}）"
+        + ("— Shorts（直式，Studio 會自動判定）" if kit.is_short else ""),
+        f"- 影片檔：`{kit.video}`",
+        f"- 片長 {human_duration(kit.seconds)}（{kit.seconds:.1f} 秒）・檔案 {human_size(kit.size_bytes)}",
+        f"- 配音：{voice}・QC：{qc}",
         f"- metadata 來源：{meta_src}",
-        "- 本機預覽：`preview.html`（上傳前先用瀏覽器開一次）",
+        "- 本機預覽：`preview.html`（上傳前先用瀏覽器開一次：字幕、章節、說明欄）",
     ]
 
 
-def _warnings(info: KitInfo) -> list[str]:
-    meta = info.meta
-    notes = []
-    if len(meta["title"]) > TITLE_MAX:
-        notes.append(f"- 標題 {len(meta['title'])} 字，超過 {TITLE_MAX}，要先縮短。")
+def warnings(kit: Kit) -> list[str]:
+    meta, notes = kit.meta, []
     tags_len = len(",".join(meta.get("tags") or []))
     if tags_len > TAGS_MAX_CHARS:
         notes.append(f"- 標籤合計 {tags_len} 字元，超過 {TAGS_MAX_CHARS}，要刪幾個。")
-    if info.qc_errors:
-        notes.append(f"- QC 有 {info.qc_errors} 個 error，見 `qc/qc_report.json`。")
+    if kit.qc_errors:
+        notes.append(f"- QC 有 {kit.qc_errors} 個 error，見 `qc/qc_report.json`。")
+    if kit.is_short and kit.seconds > 60:
+        notes.append(f"- 直式影片 {kit.seconds:.0f} 秒，超過 60 秒不一定被判成 Shorts。")
+    if not kit.subtitles:
+        notes.append("- 找不到 `subtitles/subtitles.srt`，字幕這步跳過。")
     return notes
 
 
 def _visibility(meta: dict) -> str:
     if meta.get("publish_at"):
-        return f"「排定時間」：{meta['publish_at']}（先設私人，排程到點自動公開）"
-    return f"「{ {'private': '私人', 'unlisted': '不公開', 'public': '公開'}.get(meta.get('privacy_status'), '私人') }」"
+        return f"「排定時間」：{meta['publish_at']}（先選私人再設排程，到點自動公開）"
+    return f"「{PRIVACY_NAMES.get(meta.get('privacy_status'), '私人')}」（Leon 看過成片再改）"
 
 
-def _synthetic(meta: dict, machine_voice: bool) -> str:
-    if meta.get("contains_synthetic_media"):
-        voice = "macOS 合成語音" if machine_voice else "Fish Audio 合成語音"
-        return (f"勾 **「是」**。理由：旁白是{voice}，頻道設定 `ai_disclosure: true`，"
-                "與 youtube_meta.json 的 `contains_synthetic_media: true` 一致。"
-                "本片畫面是投影片與 stock，沒有冒充真人或真實事件；"
-                "YouTube 是否要求這類內容一定要揭露，未對照官方條文（🟡），目前採保守做法。")
-    return "勾 **「否」**（頻道設定 `ai_disclosure: false`）。"
+def synthetic_advice(meta: dict) -> str:
+    """Studio's 「變造或合成內容」 answer; the description's disclosure line is separate."""
+    if not meta.get("contains_synthetic_media"):
+        return "選 **「否」**（頻道設定沒要求揭露，或本片沒有合成語音／AI 圖）。"
+    return ("頻道設定 `ai_disclosure: true`，建議選 **「是」**。理由：本片含合成內容（說明欄最後一行寫明是哪些）。"
+            "嚴格說 YouTube 只要求「看起來像真實」的變造內容（真人說沒說過的話、真實事件、寫實場景）揭露；"
+            "本片是解說畫面，沒有冒充真人或真實事件，不勾應該也不違規（🟡 未重新對照官方條文）。"
+            "要不要勾由 Leon 決定；說明欄的揭露文字不受影響。")
 
 
-def build_readme(info: KitInfo, kit_abs: Path, has_subs: bool) -> str:
-    meta = info.meta
-    category = CATEGORY_NAMES.get(str(meta.get("category_id")), str(meta.get("category_id")))
-    chapters = meta.get("chapters") or []
-    lines = [
-        *([MACHINE_VOICE_BANNER] if info.machine_voice else []),
-        f"# 手動上傳包：{meta['title']}",
-        "",
-        *_status_lines(info),
-        "",
-        *(["## 先處理", *_warnings(info), ""] if _warnings(info) else []),
+def _elements(kit: Kit) -> list[str]:
+    subs = ("   - 字幕：新增語言 **中文（台灣）**→「上傳檔案」→「含時間碼」→ `subtitles.srt`。"
+            "畫面已燒入字幕，CC 預設關閉，觀眾自行開啟才會疊兩層。" if kit.subtitles
+            else "   - 字幕：這支片沒有 srt。")
+    if kit.is_short:
+        spec = kit.short_spec
+        related = (f"改在「相關影片」連到「{spec.long_channel}」的《{spec.long_title}》（長片上線後再設）"
+                   if spec else "需要的話在「相關影片」連到同頻道的長片")
+        return [subs, f"   - Shorts 沒有片尾畫面／資訊卡；{related}"]
+    return [subs,
+            "   - 片尾畫面：最後 20 秒放「訂閱」＋「最新上傳的影片」",
+            "   - 資訊卡：在章節轉折點放同頻道相關影片或播放清單（同頻道還沒有其他影片前先不加）"]
+
+
+def _studio_steps(kit: Kit) -> list[str]:
+    meta = kit.meta
+    return [
         "## YouTube Studio 步驟",
         "",
-        f"1. 右上角切換到頻道 **{info.channel_name}**（不是其他三個品牌頻道）。",
-        "2. 「建立」→「上傳影片」，選檔：",
-        f"   `{info.video_abs}`",
+        f"1. 右上角切換到頻道 **{kit.channel.name}**（不是其他品牌頻道）。",
+        "2. 「建立」→「上傳影片」→ 選上面的影片檔。",
         "3. **詳細資訊**",
-        f"   - 標題：貼 `title.txt`（{len(meta['title'])} 字）",
-        "   - 說明：貼 `description.txt`（含章節、參考資料、素材授權、AI 揭露）",
-        f"   - 縮圖：上傳 `thumbnail.png`（1280×720）。{info.thumbnail_note}",
-        f"   - 播放清單：「{info.channel_line}」（沒有就新建）",
+        f"   - 標題：貼 `title.txt`（{len(meta['title'])}/{TITLE_MAX} 字）",
+        "   - 說明：貼 `description.txt`（章節、參考資料、素材授權、AI 揭露都在裡面）",
+        f"   - 縮圖：上傳 `{kit.thumbnail.name if kit.thumbnail else 'thumbnail.png'}`。{kit.thumbnail_note}",
+        f"   - 播放清單：「{kit.playlist}」（沒有就新建）",
         "   - 觀眾：**「否，這不是為兒童打造的內容」**",
         "   - 展開「顯示更多」：",
-        f"     - 變造或合成內容：{_synthetic(meta, info.machine_voice)}",
+        f"     - 變造或合成內容：{synthetic_advice(meta)}",
         "     - 標籤：貼 `tags.txt`",
-        "     - 語言與字幕認證：影片語言 **中文（台灣）**",
-        f"     - 類別：**{category}**",
+        "     - 影片語言：**中文（台灣）**；字幕認證：無",
+        f"     - 類別：**{kit.category}**",
+        "     - 授權：標準 YouTube 授權；允許嵌入",
         "4. **影片元素**",
-        ("   - 字幕：上傳 `subtitles.srt`，語言 **中文（台灣）**。"
-         "注意畫面已燒入字幕，CC 預設關閉，觀眾自行開啟才會疊兩層。" if has_subs
-         else "   - 字幕：這支片沒有 srt。"),
-        "   - 片尾畫面：最後 20 秒放「訂閱」＋「最新上傳的影片」。",
-        "   - 資訊卡：在下方章節的轉折點各放一張，指向本頻道相關影片或播放清單。",
-        "5. **檢查**：等版權與廣告適合度檢查跑完，有 Content ID 聲明就先停，回報 orchestrator。",
+        *_elements(kit),
+        "5. **檢查**：等版權與廣告適合度檢查跑完；有 Content ID 聲明就先停，回報 orchestrator。",
         f"6. **瀏覽權限**：{_visibility(meta)}",
+    ]
+
+
+def build_readme(kit: Kit) -> str:
+    chapters = kit.meta.get("chapters") or []
+    notes = warnings(kit)
+    files = ["title.txt", "description.txt", "tags.txt", kit.thumbnail.name if kit.thumbnail else "thumbnail.png",
+             *(["subtitles.srt", "subtitles.vtt"] if kit.subtitles else []), "preview.html"]
+    lines = [
+        *([MACHINE_VOICE_BANNER] if kit.machine_voice else []),
+        *([PREVIEW_BANNER] if kit.preview else []),
+        f"# 手動上傳：{kit.meta['title']}",
+        "",
+        *_status_lines(kit),
+        "",
+        *(["## 先處理", *notes, ""] if notes else []),
+        *_studio_steps(kit),
         "",
         "## 章節（已在說明欄內）",
         "",
         *([f"- {c['timestamp']} {c['title']}" for c in chapters] or ["- （無）"]),
         "",
+        f"AI 揭露旗標 `contains_synthetic_media={kit.meta.get('contains_synthetic_media')}`。",
+        "",
         "## 檔案",
         "",
-        f"`{kit_abs}/`：title.txt、description.txt、tags.txt、thumbnail.png、"
-        + ("subtitles.srt、subtitles.vtt、" if has_subs else "") + "preview.html",
+        f"`{kit.directory}/`：" + "、".join(files),
         "",
     ]
     return "\n".join(lines)

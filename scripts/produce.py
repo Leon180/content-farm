@@ -12,7 +12,7 @@ Usage:
     python scripts/produce.py channels                               # validate channels/*.yaml
     python scripts/produce.py short-from-long --from output/cowos --slide s09 --channel offwork \
         --run-dir output/offwork-7722 --title "…" --number 7,722 --unit mm²   # 9:16 Short (R5)
-    python scripts/produce.py manual-kit --run-dir output/cowos     # Studio upload kit + preview.html
+    python scripts/produce.py manual-kit --run-dir output/cowos [--out DIR]  # Studio upload kit + preview.html
 
 Exit codes for ``run``: 0 all steps done, 1 a step failed, 3 waiting (gate, agent
 step, or paid step without --allow-paid). Each stop prints the next command.
@@ -32,7 +32,7 @@ import yaml
 from pydantic import ValidationError
 
 from content_farm.production.channels import Gate, load_all, load_channel
-from content_farm.production.manual_kit import write_kit
+from content_farm.production.manual_kit import KitOptions, write_kit
 from content_farm.production.runner import SCHEDULE_FILE, Outcome, Runner, decide
 from content_farm.production.schedule import load_backlog, plan_week
 from content_farm.production.shorts_cut import short_spec_from_long, write_spec
@@ -85,6 +85,11 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
 
     kit = sub.add_parser("manual-kit", help="upload/manual/: YouTube Studio checklist, texts, preview.html")
     kit.add_argument("--run-dir", type=Path, required=True)
+    kit.add_argument("--out", type=Path, help="write the kit here instead of <run-dir>/upload/manual")
+    kit.add_argument("--voice", choices=("auto", "machine", "fish"), default="auto",
+                     help="voice for the banner; auto reads logs/voice.log")
+    kit.add_argument("--playlist", default="", help="default: the channel's playlist name")
+    kit.add_argument("--thumbnail-at", type=float, help="use the video frame at this second as thumbnail")
 
     status = sub.add_parser("status")
     status.add_argument("--run-dir", type=Path, required=True)
@@ -155,7 +160,9 @@ def cmd_short_from_long(args: argparse.Namespace) -> int:
 
 
 def cmd_manual_kit(args: argparse.Namespace) -> int:
-    kit = write_kit(args.run_dir.resolve(), load_channel(read_channel_code(args.run_dir)))
+    options = KitOptions(out_dir=args.out, playlist=args.playlist, thumbnail_at=args.thumbnail_at,
+                         machine_voice={"auto": None, "machine": True, "fish": False}[args.voice])
+    kit = write_kit(args.run_dir.resolve(), load_channel(read_channel_code(args.run_dir)), options)
     flags = [*(["成片閘門未核可：預覽版"] if kit.preview else []), *(["暫用機器聲"] if kit.machine_voice else [])]
     print(f"{kit.directory}/README.md, preview.html{'  ⚠ ' + '、'.join(flags) if flags else ''}")
     return 0

@@ -113,12 +113,52 @@ def test_meta_uses_final_video_credits_chapters_and_schedule(tmp_path: Path) -> 
     assert len(meta["chapters"]) == 6 and meta["chapters"][0]["timestamp"] == "0:00"
 
 
-def test_ai_disclosure_mentions_illustrations_only_when_present() -> None:
-    assert publish.ai_disclosure_line(None) == publish.AI_DISCLOSURE_VOICE_LINE
-    assert publish.ai_disclosure_line({"entries": [{"kind": "stock"}], "pending": []}) == \
-        publish.AI_DISCLOSURE_VOICE_LINE
-    assert publish.ai_disclosure_line({"entries": [{"kind": "ai_image"}]}) == publish.AI_DISCLOSURE_LINE
-    assert publish.ai_disclosure_line({"pending": [{"kind": "ai_image"}]}) == publish.AI_DISCLOSURE_LINE
+def test_ai_images_follow_credits_then_deck_then_assume_yes(tmp_path: Path) -> None:
+    # chipcat + yokai regression: the line claimed 「部分插圖」 on videos with no AI image.
+    assert not publish.uses_ai_images(tmp_path, {"entries": [{"kind": "stock"}], "pending": []})
+    assert not publish.uses_ai_images(tmp_path, {"entries": [{"kind": "artwork"}], "pending": []})
+    assert publish.uses_ai_images(tmp_path, {"entries": [{"kind": "ai_image"}]})
+    assert publish.uses_ai_images(tmp_path, {"pending": [{"kind": "ai_image"}]})  # placeholder still counts
+    assert publish.uses_ai_images(tmp_path, None)  # nothing recorded → do not under-disclose
+    deck = {"sections": [{"slides": [{"media": {"kind": "stock"}}, {"media": None}]}]}
+    (tmp_path / "deck.json").write_text(json.dumps(deck), encoding="utf-8")
+    assert not publish.uses_ai_images(tmp_path, None)
+    deck["sections"][0]["slides"][1]["media"] = {"kind": "ai_image"}
+    (tmp_path / "deck.json").write_text(json.dumps(deck), encoding="utf-8")
+    assert publish.uses_ai_images(tmp_path, None)
+
+
+def test_synthetic_voice_follows_the_voice_log(tmp_path: Path) -> None:
+    assert publish.uses_synthetic_voice(tmp_path)  # no log → assumed TTS
+    (tmp_path / "logs").mkdir()
+    log = tmp_path / "logs" / "voice.log"
+    log.write_text("x content_farm.voice.fish_audio INFO Fish Audio TTS: 1 bytes -> a.mp3\n", encoding="utf-8")
+    assert publish.uses_synthetic_voice(tmp_path)
+    log.write_text("$ voice\n(audio supplied by hand)\n", encoding="utf-8")
+    assert not publish.uses_synthetic_voice(tmp_path)
+
+
+def test_ai_disclosure_line_names_only_what_is_there() -> None:
+    line = publish.ai_disclosure_line
+    assert line(publish.SyntheticContent(voice=True, images=True)) == publish.AI_DISCLOSURE_LINE
+    assert line(publish.SyntheticContent(voice=True, images=False)) == publish.AI_DISCLOSURE_VOICE_LINE
+    assert line(publish.SyntheticContent(voice=False, images=True)) == publish.AI_DISCLOSURE_IMAGE_LINE
+    assert line(publish.SyntheticContent(voice=False, images=False)) is None
+    assert "插圖" not in publish.AI_DISCLOSURE_VOICE_LINE
+
+
+def test_meta_disclosure_for_a_stock_only_run_without_tts(tmp_path: Path) -> None:
+    """The cel EP1 case: stock B-roll only. With TTS → voice-only line; without → no line, flag off."""
+    run = _script_run(tmp_path)
+    (run / "logs").mkdir()
+    (run / "logs" / "voice.log").write_text(
+        "x content_farm.voice.macos_say INFO macOS say TTS: 1 bytes -> a.mp3\n", encoding="utf-8")
+    meta = publish.build_meta(load_channel("cel"), run)
+    assert publish.AI_DISCLOSURE_VOICE_LINE in meta["description"] and "部分插圖" not in meta["description"]
+    assert meta["contains_synthetic_media"] is True
+    (run / "logs" / "voice.log").write_text("$ voice\n", encoding="utf-8")
+    meta = publish.build_meta(load_channel("cel"), run)
+    assert "AI 輔助製作" not in meta["description"] and meta["contains_synthetic_media"] is False
 
 
 def test_chapters_follow_measured_durations(tmp_path: Path) -> None:
@@ -138,16 +178,6 @@ def test_chapter_block_rejects_short_or_few_chapters() -> None:
     assert publish.chapter_block([(0, "a"), (5, "b"), (60, "c")], 120) == []
     assert publish.chapter_block([(1, "a"), (60, "b"), (90, "c")], 120) == []
     assert publish.chapter_block([(0, "a"), (60, "b"), (90, "c")], 120)[1] == "0:00 a"
-
-
-def test_ai_disclosure_matches_credits() -> None:
-    assert publish.ai_disclosure_line(None) == publish.AI_DISCLOSURE_LINE
-    ai = {"entries": [{"kind": "ai_image"}], "pending": []}
-    assert publish.ai_disclosure_line(ai) == publish.AI_DISCLOSURE_LINE
-    placeholder = {"entries": [], "pending": [{"kind": "ai_image"}]}
-    assert publish.ai_disclosure_line(placeholder) == publish.AI_DISCLOSURE_LINE
-    artwork_only = {"entries": [{"kind": "artwork"}, {"kind": "stock"}], "pending": []}
-    assert publish.ai_disclosure_line(artwork_only) == publish.AI_VOICE_ONLY_LINE
 
 
 def test_naive_publish_time_rejected(tmp_path: Path) -> None:
