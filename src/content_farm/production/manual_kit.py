@@ -47,14 +47,21 @@ def load_or_preview_meta(run_dir: Path, channel: Channel) -> tuple[dict, bool]:
     return publish.build_meta(channel, run_dir, publish_at=scheduled_publish_at(run_dir)), True
 
 
+_TTS_LINE = re.compile(r"content_farm\.voice\.(?!generator\b)(\w+) INFO .*TTS", re.IGNORECASE)
+
+
 def uses_machine_voice(run_dir: Path) -> bool:
-    """The last voice run logged macOS ``say`` (for a Short: the long run it was cut from)."""
+    """The audio was last synthesized by macOS ``say`` (for a Short: the long run it was cut from).
+
+    Looks at the last provider that actually synthesized, not the last run: a re-run that only
+    logs "Reusing existing audio" keeps whatever voice was there before.
+    """
     source = Path(shorts_cut.load_spec(run_dir).long_run_dir) if shorts_cut.is_short_cut(run_dir) else run_dir
     log = source / "logs" / "voice.log"
     if not log.is_file():
         return False
-    last_run = log.read_text(encoding="utf-8", errors="replace").rsplit("\n$ ", 1)[-1]
-    return "macos_say" in last_run
+    providers = _TTS_LINE.findall(log.read_text(encoding="utf-8", errors="replace"))
+    return bool(providers) and providers[-1] == "macos_say"
 
 
 def _ffmpeg_still(source: Path, out: Path, *, at: float | None = None, size: tuple[int, int] = THUMB_SIZE) -> Path:

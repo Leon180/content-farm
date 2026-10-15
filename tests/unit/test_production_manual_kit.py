@@ -31,13 +31,21 @@ def test_description_html_escapes_and_links_chapter_stamps() -> None:
     assert 'data-t="639"' not in out  # only line-leading stamps are chapters
 
 
-def test_machine_voice_reads_the_last_voice_run(tmp_path: Path) -> None:
+SAY = "2026-10-15 17:59:58,398 content_farm.voice.macos_say INFO macOS say TTS: 231174 bytes -> a.mp3\n"
+REUSE = "2026-10-15 23:14:16,953 content_farm.voice.generator INFO Reusing existing audio: a.mp3\n"
+FISH = "2026-10-16 09:00:00,000 content_farm.voice.fish_audio INFO Fish Audio TTS: 1 bytes -> a.mp3\n"
+
+
+def test_machine_voice_follows_the_last_synthesis_not_the_last_run(tmp_path: Path) -> None:
     (tmp_path / "logs").mkdir()
     log = tmp_path / "logs" / "voice.log"
     assert not mk.uses_machine_voice(tmp_path)  # no log → unknown, not claimed
-    log.write_text("\n$ run voice\nINFO content_farm.voice.macos_say TTS\n", encoding="utf-8")
+    log.write_text(f"$ voice\n{SAY}", encoding="utf-8")
     assert mk.uses_machine_voice(tmp_path)
-    log.write_text(log.read_text() + "\n$ run voice\nINFO content_farm.voice.fish_audio TTS\n", encoding="utf-8")
+    # Regression (2026-10-15): a cached re-run logs only "Reusing existing audio" — still `say`.
+    log.write_text(f"$ voice\n{SAY}\n$ voice\n{REUSE}", encoding="utf-8")
+    assert mk.uses_machine_voice(tmp_path)
+    log.write_text(f"$ voice\n{SAY}\n$ voice\n{FISH}\n$ voice\n{REUSE}", encoding="utf-8")
     assert not mk.uses_machine_voice(tmp_path)
 
 
@@ -59,7 +67,7 @@ def _long_run(tmp_path: Path) -> Path:
     (run / "subtitles" / "subtitles.srt").write_text("1\n00:00:00,000 --> 00:00:01,000\n句子</b>\n")
     (run / "credits.json").write_text(json.dumps({"entries": [], "pending": [], "description_text": ""}))
     (run / "qc" / "qc_report.json").write_text(json.dumps({"errors": 0, "warnings": 1, "findings": []}))
-    (run / "logs" / "voice.log").write_text("\n$ voice\ncontent_farm.voice.macos_say\n")
+    (run / "logs" / "voice.log").write_text(f"$ voice\n{SAY}")
     return run
 
 
