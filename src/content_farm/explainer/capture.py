@@ -29,8 +29,9 @@ class AnimationCapture:
 class PageCapturer:
     """``with PageCapturer() as cap: cap.animate(html, out, seconds)``."""
 
-    def __init__(self, fps: int = ffmpeg_ops.FPS) -> None:
+    def __init__(self, fps: int = ffmpeg_ops.FPS, size: ffmpeg_ops.Size = (WIDTH, HEIGHT)) -> None:
         self._fps = fps
+        self._size = size
         self._pw = None
         self._browser = None
         self._page = None
@@ -40,7 +41,8 @@ class PageCapturer:
 
         self._pw = sync_playwright().start()
         self._browser = self._pw.chromium.launch()
-        self._page = self._browser.new_page(viewport={"width": WIDTH, "height": HEIGHT})
+        width, height = self._size
+        self._page = self._browser.new_page(viewport={"width": width, "height": height})
         return self
 
     def __exit__(
@@ -88,7 +90,8 @@ class PageCapturer:
             problems = (
                 page.evaluate(_LAYOUT_CHECK_JS, [SAFE_TOP, WIDTH, HEIGHT]) if has_content else []
             )
-            ffmpeg_ops.frames_to_clip(str(Path(tmp) / "frame_%05d.png"), out_clip, clip_seconds)
+            ffmpeg_ops.frames_to_clip(str(Path(tmp) / "frame_%05d.png"), out_clip, clip_seconds,
+                                      size=self._size)
         return AnimationCapture(
             clip=out_clip,
             animation_seconds=anim_seconds,

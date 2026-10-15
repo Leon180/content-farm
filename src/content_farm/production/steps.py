@@ -19,6 +19,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from content_farm.production.channels import Channel, Gate, Pipeline
+from content_farm.production.shorts_cut import SOURCE_FILE as SHORT_SOURCE_FILE
+from content_farm.production.shorts_cut import is_short_cut
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 EXPLAINER_SUBTITLE_MAX = "20"  # keeps landscape subtitles clear of the mascot (REPORT-explainer-v2 §3)
@@ -164,10 +166,31 @@ SHORTS_SKIT_STEPS: tuple[Step, ...] = (
 )
 
 
-def steps_for(channel: Channel) -> tuple[Step, ...]:
+# A Short cut from an approved long run (roadmap R5): any channel, chosen by the
+# run-dir holding ``short_source.json`` (written by ``produce.py short-from-long``).
+# The long run's article/deck/media gates already covered every spoken word and
+# asset, so only the final gate remains. The long run lives outside this
+# run-dir, so the runner cannot see it change: re-cut with ``--force cut``.
+SHORTS_CUT_STEPS: tuple[Step, ...] = (
+    Step("cut", "cmd", "從長片切直式 Shorts（字幕重排、片頭片尾）",
+         outputs=("assembly/final.mp4", "script.json", "subtitles/subtitles.srt"),
+         inputs=(SHORT_SOURCE_FILE,),
+         command=lambda c: _py(c, "short_from_long.py", "--run-dir", _run_dir(c)), heavy=True),
+    Step("qc", "internal", "自動品質檢查", outputs=("qc/qc_report.json",),
+         inputs=("assembly/*.mp4", "subtitles/subtitles.srt")),
+    Step("gate_final", "gate", "成片審看", gate=Gate.FINAL,
+         artifacts=("assembly/final.mp4", "qc/qc_report.json")),
+    Step("package", "internal", "上傳資料（#Shorts）", outputs=("upload/youtube_meta.json",),
+         inputs=("script.json", "assembly/*.mp4", "production.schedule.json")),
+)
+
+
+def steps_for(channel: Channel, run_dir: Path | None = None) -> tuple[Step, ...]:
+    if is_short_cut(run_dir):
+        return SHORTS_CUT_STEPS
     steps = {Pipeline.EXPLAINER: EXPLAINER_STEPS, Pipeline.SHORTS_SKIT: SHORTS_SKIT_STEPS}[channel.pipeline]
     return tuple(step for step in steps if step.applies(channel))
 
 
-def step_names(channel: Channel) -> tuple[str, ...]:
-    return tuple(step.name for step in steps_for(channel))
+def step_names(channel: Channel, run_dir: Path | None = None) -> tuple[str, ...]:
+    return tuple(step.name for step in steps_for(channel, run_dir))

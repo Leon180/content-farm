@@ -137,8 +137,10 @@ def subtitle_findings(run_dir: Path, channel: Channel) -> list[Finding]:
     srt = run_dir / "subtitles" / "subtitles.srt"
     if not srt.is_file():
         return [Finding("subtitle_safe_zone", "error", f"{srt.relative_to(run_dir)} missing")]
+    if channel.format.aspect == "9:16":
+        return portrait_subtitle_findings(srt)
     if channel.format.aspect != "16:9":
-        return [Finding("subtitle_safe_zone", "warn", "safe-zone measurement only covers 16:9")]
+        return [Finding("subtitle_safe_zone", "warn", f"no safe-zone measurement for {channel.format.aspect}")]
     from content_farm.assembly.drawtext import find_cjk_font
     from content_farm.explainer.mascot.clearance import wide_lines
 
@@ -149,6 +151,35 @@ def subtitle_findings(run_dir: Path, channel: Channel) -> list[Finding]:
                         f"{len(wide)} line(s) reach the mascot column; widest x={worst.right_edge}: "
                         f"{worst.text}")]
     return [Finding("subtitle_safe_zone", "ok", "every subtitle line clears the mascot column")]
+
+
+def portrait_subtitle_findings(srt: Path, font_path: str | None = None) -> list[Finding]:
+    """9:16: every line fits between the side margins and no cue is taller than the subtitle band."""
+    from PIL import ImageFont
+
+    from content_farm.assembly.drawtext import find_cjk_font
+    from content_farm.production import shorts_cut as cut
+
+    font_path = font_path or find_cjk_font()
+    if font_path is None:
+        return [Finding("subtitle_safe_zone", "error", "no CJK font found to measure subtitles")]
+    font = ImageFont.truetype(font_path, cut.SUB_FONT_SIZE)
+    limit = cut.FRAME_W - 2 * cut.SUB_MARGIN_X
+    cues = cut.parse_cues(srt.read_text(encoding="utf-8"))
+    wide, tall = [], []
+    for cue in cues:
+        lines = cue.text.split("\n")
+        if len(lines) > cut.SUB_MAX_LINES:
+            tall.append(cue.text.replace("\n", "／"))
+        for line in lines:
+            x0, _, x1, _ = font.getbbox(line)
+            if (x1 - x0) + 2 * cut.SUB_OUTLINE > limit:
+                wide.append(line)
+    if wide or tall:
+        parts = ([f"{len(wide)} line(s) wider than {limit}px: {wide[0]}"] if wide else []) + \
+                ([f"{len(tall)} cue(s) over {cut.SUB_MAX_LINES} lines: {tall[0]}"] if tall else [])
+        return [Finding("subtitle_safe_zone", "error", "; ".join(parts))]
+    return [Finding("subtitle_safe_zone", "ok", f"{len(cues)} cues fit the 9:16 subtitle band")]
 
 
 def run_qc(run_dir: Path, channel: Channel, deck: Deck | None) -> dict:

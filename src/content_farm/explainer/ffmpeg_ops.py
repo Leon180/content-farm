@@ -14,10 +14,15 @@ from pathlib import Path
 WIDTH, HEIGHT, FPS = 1920, 1080, 30
 MAX_SLOWDOWN = 1.5  # stretch footage up to 1.5x slower before looping it instead
 _ENCODE = ("-an", "-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p")
-_COVER = (
-    f"scale={WIDTH}:{HEIGHT}:force_original_aspect_ratio=increase,"
-    f"crop={WIDTH}:{HEIGHT},setsar=1"
-)
+Size = tuple[int, int]
+
+
+def _cover_filter(size: Size) -> str:
+    width, height = size
+    return f"scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height},setsar=1"
+
+
+_COVER = _cover_filter((WIDTH, HEIGHT))
 
 TRANSITIONS = {"crossfade": "fade", "fadeblack": "fadeblack", "push": "slideleft"}
 
@@ -65,18 +70,18 @@ def _out(path: Path, frames: int) -> list[str]:
     return ["-frames:v", str(frames), "-r", str(FPS), *_ENCODE, str(path)]
 
 
-def still_to_clip(image: Path, out: Path, duration: float) -> Path:
+def still_to_clip(image: Path, out: Path, duration: float, *, size: Size = (WIDTH, HEIGHT)) -> Path:
     """Hold one image for ``duration`` seconds."""
     run(["ffmpeg", "-y", "-loop", "1", "-framerate", str(FPS), "-i", str(image),
-         "-vf", _COVER, *_out(out, frame_count(duration))])
+         "-vf", _cover_filter(size), *_out(out, frame_count(duration))])
     return out
 
 
-def frames_to_clip(pattern: str, out: Path, duration: float) -> Path:
+def frames_to_clip(pattern: str, out: Path, duration: float, *, size: Size = (WIDTH, HEIGHT)) -> Path:
     """Image sequence (``frame_%05d.png``) → clip; the last frame is held to ``duration``."""
     total = frame_count(duration)
     run(["ffmpeg", "-y", "-framerate", str(FPS), "-i", pattern,
-         "-vf", f"{_COVER},tpad=stop_mode=clone:stop={total}", *_out(out, total)])
+         "-vf", f"{_cover_filter(size)},tpad=stop_mode=clone:stop={total}", *_out(out, total)])
     return out
 
 

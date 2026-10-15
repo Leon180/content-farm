@@ -137,7 +137,7 @@ class Runner:
         self.run_dir.mkdir(parents=True, exist_ok=True)
         state = load_state(self.run_dir, self.ctx.channel.code)
         save_state(self.run_dir, state)
-        for step in steps_for(self.ctx.channel):
+        for step in steps_for(self.ctx.channel, self.run_dir):
             state, result = self._step(state, step, step.name in force)
             save_state(self.run_dir, state)
             if result is not None:
@@ -241,7 +241,7 @@ def decide(
     by: str = "leon",
 ) -> Decision:
     """Record approve/reject for a gate against the artifacts as they are now."""
-    step = next((s for s in steps_for(channel) if s.gate is gate), None)
+    step = next((s for s in steps_for(channel, run_dir) if s.gate is gate), None)
     if step is None:
         raise ValueError(f"channel {channel.code} has no gate {gate.value!r}")
     if verdict == "approved" and gate is Gate.FINAL:

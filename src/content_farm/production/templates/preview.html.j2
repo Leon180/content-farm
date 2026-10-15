@@ -1,0 +1,80 @@
+<!doctype html>
+{# Offline pre-upload preview (manual-kit). No external requests: video/thumbnail are
+   relative files; subtitles are embedded and attached as a Blob URL because Chrome
+   refuses <track src> over file://. #}
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>預覽｜{{ meta.title }}</title>
+<style>
+:root { --bg: #ffffff; --fg: #0f0f0f; --muted: #606060; --panel: #f2f2f2; --brand: {{ brand_color }}; --warn: #b3261e; --ok: #1e7b34; }
+@media (prefers-color-scheme: dark) { :root { --bg: #0f0f0f; --fg: #f1f1f1; --muted: #aaaaaa; --panel: #272727; } }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 -apple-system, "PingFang TC", "Noto Sans TC", sans-serif; }
+.status { display: flex; flex-wrap: wrap; gap: 8px 20px; padding: 10px 16px; background: var(--panel); border-bottom: 3px solid var(--brand); font-size: 14px; }
+.status b { font-weight: 700; }
+.bad { color: var(--warn); font-weight: 700; }
+.good { color: var(--ok); font-weight: 700; }
+main { max-width: {{ "480px" if is_short else "1100px" }}; margin: 0 auto; padding: 16px; }
+.player { background: #000; border-radius: 12px; overflow: hidden; {{ "aspect-ratio: 9 / 16;" if is_short else "aspect-ratio: 16 / 9;" }} }
+video { width: 100%; height: 100%; display: block; }
+h1 { font-size: 20px; margin: 14px 0 6px; }
+.channel { display: flex; align-items: center; gap: 10px; margin: 8px 0 12px; }
+.avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--brand); }
+.channel .name { font-weight: 700; color: var(--brand); }
+.box { background: var(--panel); border-radius: 12px; padding: 12px 14px; margin: 12px 0; }
+.desc { white-space: pre-wrap; word-break: break-word; }
+.desc a, .chapters a { color: #3ea6ff; cursor: pointer; text-decoration: none; }
+.tags span { display: inline-block; margin: 2px 6px 2px 0; color: var(--muted); }
+.thumb img { max-width: 100%; max-height: 320px; border-radius: 8px; display: block; }
+dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 0; }
+dt { color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="status">
+  <span>配音：<b class="{{ 'bad' if machine_voice else 'good' }}">{{ "macos_say 暫用（待換 Fish Audio）" if machine_voice else "正式配音" }}</b></span>
+  <span>QC：{% if qc_errors is none %}<b class="bad">未跑</b>{% else %}<b class="{{ 'bad' if qc_errors else 'good' }}">{{ qc_errors }} error</b> / {{ qc_warnings }} warn{% endif %}</span>
+  <span>片長：<b>{{ "%.1f"|format(seconds) }} 秒</b></span>
+  <span>檔案：<b>{{ "%.1f"|format(size_mb) }} MB</b></span>
+  {% if preview %}<span class="bad">成片閘門未核可（預覽資料）</span>{% endif %}
+</div>
+<main>
+  <div class="player">
+    <video id="video" controls preload="metadata" playsinline src="{{ video_src }}" poster="thumbnail.png"></video>
+  </div>
+  <h1>{{ meta.title }}</h1>
+  <div class="channel"><div class="avatar"></div><span class="name">{{ channel_name }}</span>
+    <span style="color:var(--muted)">{{ "Shorts" if is_short else "" }}</span></div>
+  <div class="box desc" id="desc">{{ description_html | safe }}</div>
+  {% if meta.chapters %}<div class="box chapters"><b>章節</b><br>
+    {% for ch in meta.chapters %}<a data-t="{{ ch.seconds }}">{{ ch.timestamp }}</a> {{ ch.title }}<br>{% endfor %}
+  </div>{% endif %}
+  <div class="box tags"><b>標籤</b><br>{% for tag in meta.tags %}<span>#{{ tag }}</span>{% endfor %}</div>
+  <div class="box"><dl>
+    <dt>可見度</dt><dd>{{ meta.privacy_status }}{% if meta.publish_at %}（排程 {{ meta.publish_at }}）{% endif %}</dd>
+    <dt>AI 揭露</dt><dd>contains_synthetic_media = {{ meta.contains_synthetic_media }}</dd>
+    <dt>兒童內容</dt><dd>{{ "是" if meta.made_for_kids else "否" }}</dd>
+    <dt>類別</dt><dd>{{ category }}</dd>
+    <dt>語言</dt><dd>{{ meta.default_language }}</dd>
+  </dl></div>
+  <div class="box thumb"><b>縮圖</b><img src="thumbnail.png" alt="縮圖"></div>
+</main>
+<script id="vtt" type="text/plain">{{ vtt | safe }}</script>
+<script>
+(function () {
+  const video = document.getElementById("video");
+  const vtt = document.getElementById("vtt").textContent;
+  const track = document.createElement("track");
+  track.kind = "subtitles"; track.srclang = "zh-TW"; track.label = "中文（台灣）"; track.default = true;
+  track.src = URL.createObjectURL(new Blob([vtt], { type: "text/vtt" }));
+  video.appendChild(track);
+  video.textTracks[0] && (video.textTracks[0].mode = "showing");
+  document.querySelectorAll("[data-t]").forEach((a) => a.addEventListener("click", () => {
+    video.currentTime = Number(a.dataset.t); video.play();
+  }));
+})();
+</script>
+</body>
+</html>

@@ -223,10 +223,11 @@
             "pose": "wave"
           },
           "media": {
-            "kind": "ai_image",
-            "prompt": "flat illustration, a calm grey cat in a lab coat standing beside a giant glowing chip package on a conveyor belt that is jammed, dark grey background with orange accents, no text, no logos"
+            "kind": "stock",
+            "query": "computer processor chip",
+            "keywords": ["processor", "microprocessor", "cpu"]
           },
-          "notes": "article §a-hook。開場固定句型。"
+          "notes": "article §a-hook。開場固定句型。2026-10-15：AI 圖佔位改 stock；先前兩次查詢離題（藥廠無塵室、LED 燈串），改用 processor 關鍵字。footage 比例需 ≥20%（lint）。"
         },
         {
           "id": "s02",
@@ -287,10 +288,10 @@
             "pose": "smug"
           },
           "media": {
-            "kind": "ai_image",
-            "prompt": "flat illustration, a tiny chip character putting on a suit of armor while a stack of bookshelves stands next to it, a cat sitting inside a cardboard box watching, dark grey background, orange accents, no text"
+            "kind": "animated",
+            "animation": "reveal_list"
           },
-          "notes": "article §a-terms（封裝、HBM）。附錄 B 紙箱笑話。"
+          "notes": "article §a-terms（封裝、HBM）。附錄 B 紙箱笑話。2026-10-15：AI 圖佔位改動態投影片。"
         },
         {
           "id": "s05",
@@ -754,10 +755,11 @@
             "pose": "smug"
           },
           "media": {
-            "kind": "ai_image",
-            "prompt": "flat illustration of a construction site with cranes where workers carefully brush ancient pottery shards out of the ground, a cat in a hard hat waiting patiently with a clipboard, dark grey background, orange accents, no text, no logos"
+            "kind": "stock",
+            "query": "construction site crane",
+            "keywords": ["construction", "crane", "building"]
           },
-          "notes": "article §a-taiwan、附錄 A 第 1 則、附錄 B 古蹟笑話。ai_image 為插畫，不是實景。"
+          "notes": "article §a-taiwan、附錄 A 第 1 則、附錄 B 古蹟笑話。2026-10-15：AI 圖佔位改 stock；通用工地畫面，不是 AP7 實景（疊字已標地名，B-roll 只當氣氛）。"
         }
       ]
     },
