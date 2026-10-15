@@ -184,7 +184,20 @@ def portrait_subtitle_findings(srt: Path, font_path: str | None = None) -> list[
     return [Finding("subtitle_safe_zone", "ok", f"{len(cues)} cues fit the 9:16 subtitle band")]
 
 
+def qc_channel(run_dir: Path, channel: Channel) -> Channel:
+    """A Short cut is checked as a Short (9:16, Shorts length) whatever channel publishes it;
+    e.g. the 7,722 Short on the 16:9 chipcat channel."""
+    from content_farm.production import shorts_cut
+
+    if not shorts_cut.is_short_cut(run_dir):
+        return channel
+    short_format = channel.format.model_copy(update={
+        "length": "short", "aspect": "9:16", "target_seconds": (1, int(shorts_cut.MAX_SHORT_SECONDS))})
+    return channel.model_copy(update={"format": short_format})
+
+
 def run_qc(run_dir: Path, channel: Channel, deck: Deck | None) -> dict:
+    channel = qc_channel(run_dir, channel)
     findings: list[Finding] = []
     if deck is not None:
         findings += policy_findings(channel, deck)
