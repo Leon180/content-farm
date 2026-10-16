@@ -1,14 +1,14 @@
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-motion/REPORT-ai-motion.md","min_bytes":4000,"why":"派工宣告的預期產物"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-motion/output/yokai-kyubi/assembly/draft.mp4","min_bytes":50000000,"why":"九尾狐動態版成片"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-motion/output/yokai-kyubi/upload/manual/preview.html","min_bytes":20000,"why":"九尾狐新 preview"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-motion/output/yokai-kyubi/assets/ai_motion/s06.wan.mp4","min_bytes":1000000,"why":"s06 Wan 片段已 bake 進快取"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-motion/output/yokai-kyubi/assets/ai_motion/s24a.parallax.json","min_bytes":500,"why":"視差 sidecar（含緩解參數與統計）"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-motion/output/yokai-kyubi/qc/qc_report.json","pattern":"\"level\": \"error\"","why":"QC 0 error"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-motion/output/yokai-kyubi/qc/qc_report.json","pattern":"\"level\": \"warn\"","why":"QC 0 warn（沒有動態退回）"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-motion/output/yokai-kyubi/media/media_report.json","pattern":"ken burns on","why":"四張 AI 圖都沒有退回 Ken Burns"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-motion/docs/design/ai-motion/kyubi_before_after.jpg","min_bytes":100000,"why":"前後對照截圖"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-motion/docs/design/ai-motion/s24a_thin_mitigation.png","min_bytes":100000,"why":"細長物緩解對照"}
-{"kind":"blob_equal","a":"c51ed65:docs/design/ai-video-trial/requirements-lock.txt","b":"HEAD:docs/design/ai-video-trial/requirements-lock.txt","why":"trial 分支原樣 merge 進來"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-motion/src/content_farm/explainer","pattern":"/Users/lileon","why":"模型/venv 路徑沒有寫死在程式裡"}
-{"kind":"clean_worktree","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-motion","why":"全部 commit；graft/ 是開工前就存在的未追蹤目錄，若判不符就是它"}
-{"kind":"no_unpushed","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-motion","why":"預期不符：v3 共同限制是不 push，commit 只在本機分支 feat/ai-motion"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-hn-daily/REPORT-hn-daily.md","min_bytes":10000,"why":"派工宣告的產物"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-hn-daily/src/content_farm/production/news/fetch.py","min_bytes":5000,"why":"抓取模組（HN/Lobsters/arXiv，PoliteHttp）"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-hn-daily/src/content_farm/production/news/script.py","min_bytes":5000,"why":"五段稿 schema + lint"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-hn-daily/tests/unit/test_news_flow.py","min_bytes":3000,"why":"新增測試之一（共 41 個，全過）"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-hn-daily/output/hn-2026-10-16/candidates.html","min_bytes":5000,"why":"試做：今天 HN 的手機候選審核頁（output/ 不 commit，本機產物）"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-hn-daily/output/hn-2026-10-16-hn-50117451/assembly/final.mp4","min_bytes":1000000,"why":"試做 Short 1（高通 vs Arm）成片"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-hn-daily/output/hn-2026-10-16-hn-50117451/upload/manual/preview.html","min_bytes":3000,"why":"Short 1 preview"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-hn-daily/output/hn-2026-10-16-hn-50112330/assembly/final.mp4","min_bytes":1000000,"why":"試做 Short 2（RPKI 70%）成片"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-hn-daily/output/hn-2026-10-16-hn-50112330/upload/manual/preview.html","min_bytes":3000,"why":"Short 2 preview"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-hn-daily/output/hn-weekly-2026-W42/deck.json","min_bytes":10000,"why":"週長片稿（deck，strict lint 過）"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-hn-daily/output/hn-weekly-2026-W42/slides/contact_sheet.png","min_bytes":100000,"why":"週長片投影片 contact sheet"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-hn-daily/src/content_farm/production/news","pattern":"api.twitter.com","why":"不接 X API"}
+{"kind":"clean_worktree","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-hn-daily","why":"所有程式與報告已 commit（output/ 在 gitignore）"}
+{"kind":"no_unpushed","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-hn-daily","why":"預期不符：v3-common 規定不 push，分支只在本機"}
