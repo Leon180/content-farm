@@ -80,6 +80,8 @@ Mix: about a third `slide`, ≥ 1 `title_card`, no more than 3 `stock` in a row.
 2. **Only where no public-domain artwork fits**: mood, scene reconstruction, transitions. A historical claim that a real painting can show uses the painting (`artwork`), never an AI picture of it.
 3. **Illustration or ink wash, never photo-real, never a named artist's style.** Do not write "photorealistic", "photograph of", "DSLR", "35mm", "in the style of …", "by artist …" — policy and QC reject them. Never draw a real, identifiable person, product or logo; on yokai never a deity statue (channel notes).
 
+4. **When the picture cannot match the text, say so on screen.** Set `media.ai_note` (≤ 24 chars), shown beside the badge, e.g. `"尾數為示意，原典記載九尾"`. The kyubi s06 fox was meant to have nine tails; seven Z-Image seeds drew 5–7. A caption that disagrees with the picture is exactly the "AI 垃圾" viewers call out.
+
 Models: FLUX.2 [klein] 4B by default, Z-Image-Turbo (ink wash) on yokai (decision cc801e14fbc2). Local, free, one image at a time; the step waits while macOS memory pressure is warn or worse. Generated images can get details wrong (tail counts, gravestones): write prompts that do not hinge on a countable detail, and look at every image at gate_media.
 
 #### AI image motion (Leon 2026-10-16, decision 2bacb8a2b8b0)
@@ -106,13 +108,38 @@ Stock footage cannot prove anything about a specific company, so it is mood B-ro
 3. **Optional `keywords`** (`["semiconductor", "wafer", "cleanroom", "chip"]`): words of which at least one must appear in the clip's Pexels URL slug / Pixabay tags. Default: the query's non-generic words. Pick words only *this* industry uses — `cleanroom` alone matched a pharmaceutical cleanroom; `semiconductor` / `wafer` / `microchip` did not. Pexels has almost no wafer footage (2026-10): chip / PCB close-ups and a few fab interiors are what exists. A clip with none of them is rejected; if no clip passes, the slide falls back to `animated` (marked in the contact sheet), never to an off-topic clip.
 4. Keyword match is evidence, not proof. The CoWoS run's only on-topic fab clip (`modern-semiconductor-manufacturing-facility`) showed a real equipment maker's name on the tools, so it was replaced. Reject any clip with a readable company name, logo or product mark. Every accepted clip is flagged `review: true` in `media/media_report.json` and gets an orange "B-roll 待人工確認" tag on `media/contact_sheet.png`. Watch them before publishing.
 
+### Channel identity, own view, news cards (policy review 2026-10)
+
+YouTube's YPP "inauthentic content" rule names templated, mass-produced-looking channels. One studio runs four channels, so the policy step and QC enforce these per channel (`production/channel_rules.py`):
+
+1. **Open and sign off the channel's own way.** Read `channels/<code>.yaml` → `identity`. The first 3 slides must speak `identity.opening.signature` (chipcat 「我是晶片貓」, cel 「這裡是賽璐璐研究室」, yokai 「最早的原典」); the last slide must speak `identity.outro.signature`. Follow `identity.opening.format` for the shape of the first 15 s.
+2. **No studio-template wording, no other channel's lines.** Never 「用二十四張圖」「我先把結論放在這裡」「所有數字附來源」 (narration or `description`), never another channel's opening or sign-off. Do not count slides out loud; do not put a disclaimer inside the hook — put 「媒體轉述」 notes on the card (`media.summary`) or later.
+3. **At least one `take: true` slide** with ≥ 80 chars of the channel's own argued view: a judgment, our own calculation or comparison, labelled as ours (「晶片貓的判斷」「研究室的看法」「溯源所的解讀」, see `identity.take_label`). Summaries of sources do not count.
+4. **Mascot channels (rig ready): `mascot` on ≥ 80 % of slides** — the character is the channel's constant.
+5. **News cards (`title_card`) keep the outlet's words apart from ours.** Put the outlet's headline verbatim in the source's `headline` (shown as 「媒體原標題」); `media.headline` is our summary (shown as 「本頻道摘要」). Lint flags a card source without `headline`.
+6. **Self-computed numbers say so on screen** (caption: 「本頻道依…估算」/「本頻道幾何粗估」), not only in narration.
+
+### Thumbnail (`thumbnail.json`, roadmap R2)
+
+Write `<run_dir>/thumbnail.json` together with the deck; `scripts/make_thumbnail.py` renders `thumbnails/thumbnail.png` (+ a phone-size copy shown on preview.html):
+
+```json
+{"lines": ["CoWoS", "卡住 AI？"], "highlight": "CoWoS", "sub": "只能滿足八成需求",
+ "visual": {"kind": "mascot", "pose": "shocked"},
+ "promise": ["卡住出貨", "只能滿足 80% 的 CoWoS 需求"]}
+```
+
+- Never the title slide. `visual`: `mascot` (required on mascot channels), `image` (`path` = a public-domain artwork / AI image in the run-dir, `credit`), or `brand` (the channel key visual).
+- Big text ≤ 10 characters over 1–2 lines; one optional `number` (+ `number_note`) on cel.
+- `promise`: narration excerpts that pay the thumbnail off; QC errors unless each is spoken in the first 60 s, and unless every number on the thumbnail is in the narration (no misleading thumbnails).
+
 ### Narration rules
 
 - One slide = one narration segment ≈ 7–50 s (≈ 4.5 chars/s). The slide shows the skeleton; the narration carries the explanation. Never just read the bullets aloud.
 - Apply writing rules 1–4 literally: analogy before definition, a light beat every 2–3 slides (alternate gossip / joke, gossip sourced), thesis-driven structure, no trading advice.
 - Spoken Chinese: short sentences, commas where a breath goes. Write numbers the way they should be read; add tricky English terms (CoWoS, HBM, TSMC…) to `pronunciation_map`.
 - Slide text and narration must agree; any number on the slide appears in that slide's narration and has `source_ids`.
-- Length: 8–10 min means ≈ 2,300–2,700 narration characters in total (lint estimates 4.5 chars/s and fails above 10 min; macOS `say` measured ≈ 4.75 chars/s). Average ≈ 100–120 chars per slide over 22–26 slides.
+- Length: long channels target 7–10 min and aim for ≥ 8:00 when the content holds up (Leon 2026-10-16; mid-roll needs 8 min; QC warns below `format.goal_seconds`). Never pad: add a case, a comparison or our own calculation. Fish voices measured 5.1–6.7 chars/s (lint estimates 5.5), so 8–10 min ≈ 2,800–3,600 narration characters.
 - Name the chain stage, not the stock: companies appear for what they do; no 概念股 lists.
 
 ## Validate and derive script.json

@@ -204,6 +204,9 @@ class Media(_Frozen):
     artwork: str = Field(default="", max_length=40)      # artwork: id in assets/artwork/artwork.json
     motion: Motion | None = None                         # ai_image: None = parallax
     motion_prompt: str = Field(default="", max_length=600)  # ai_image + wan: what moves (English)
+    # ai_image: a correction shown beside the 「AI 示意圖」 badge when the picture cannot match the
+    # text (e.g. the model draws 6 tails for 「九尾」): say so on screen rather than let it mislead.
+    ai_note: str = Field(default="", max_length=24)
 
     @model_validator(mode="after")
     def _required_for_kind(self) -> Media:
@@ -212,6 +215,8 @@ class Media(_Frozen):
             raise ValueError(f"media kind {self.kind.value!r} requires {field!r}")
         if (self.motion is not None or self.motion_prompt) and self.kind != MediaKind.AI_IMAGE:
             raise ValueError("motion / motion_prompt only apply to media kind 'ai_image'")
+        if self.ai_note and self.kind != MediaKind.AI_IMAGE:
+            raise ValueError("ai_note only applies to media kind 'ai_image'")
         return self
 
     @property

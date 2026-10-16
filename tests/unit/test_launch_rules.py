@@ -200,3 +200,19 @@ def test_render_writes_full_and_phone_size_pngs(tmp_path: Path) -> None:
         pytest.skip(f"browser unavailable: {exc}")
     assert Image.open(out).size == thumbnail.SIZE
     assert Image.open(tmp_path / thumbnail.SMALL_FILE).size == thumbnail.PHONE_SIZE
+
+
+def test_ai_note_shows_beside_the_ai_badge_and_only_on_ai_images() -> None:
+    from content_farm.explainer.cards import overlay_html
+
+    data = _deck_data()
+    slide = _slides(data)[5]
+    slide["media"] = {"kind": "ai_image", "prompt": "a fox", "ai_note": "尾巴數量為示意"}
+    deck = Deck.model_validate(data)
+    target = next(s for s in deck.slides if s.id == slide["id"])
+    section = next(sec for sec in deck.sections if target in sec.slides)
+    html = overlay_html(deck, section, target, 6, brand="yokai", ai_label="AI 示意圖")
+    assert 'AI 示意圖<span class="ai-note">｜尾巴數量為示意</span>' in html
+    slide["media"] = {"kind": "stock", "query": "fox", "ai_note": "x"}
+    with pytest.raises(ValidationError, match="ai_note"):
+        Deck.model_validate(data)

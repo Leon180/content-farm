@@ -80,6 +80,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     short.add_argument("--hook", default="這是多大？")
     short.add_argument("--label", default="一個數字")
     short.add_argument("--long-title", help="default: the long deck's title")
+    short.add_argument("--beats", type=Path, help="JSON {answer, beats:[...]} → scripted Short with its own narration")
     short.add_argument("--publish-at", help="ISO datetime with offset")
     short.add_argument("--max-load", type=float, default=None)
 
@@ -145,6 +146,10 @@ def cmd_short_from_long(args: argparse.Namespace) -> int:
     long_dir = args.long_run_dir.resolve()
     long_channel = load_channel(read_channel_code(long_dir))
     spec = short_spec_from_long(long_dir, long_channel, vars(args))
+    if args.beats:
+        scripted = json.loads(args.beats.read_text(encoding="utf-8"))
+        spec = spec.model_validate({**spec.model_dump(), "answer": scripted.get("answer", ""),
+                                    "beats": scripted["beats"]})
     channel = _channel_for(args.run_dir, args.channel)
     write_spec(args.run_dir, spec)
     if args.publish_at:
@@ -155,7 +160,8 @@ def cmd_short_from_long(args: argparse.Namespace) -> int:
     if result.review_page:
         print(f"審核頁：{result.review_page}")
     if result.outcome is Outcome.GATE:
-        print(f"核可：python scripts/produce.py approve --run-dir {args.run_dir} --gate final")
+        gate = result.step.removeprefix("gate_")
+        print(f"核可：python scripts/produce.py approve --run-dir {args.run_dir} --gate {gate}")
     return result.exit_code
 
 

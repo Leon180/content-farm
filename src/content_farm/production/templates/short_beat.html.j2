@@ -1,0 +1,109 @@
+<!doctype html>
+{# One beat of a scripted Short (1080x1920). The stage (y 260–1180) changes at least every
+   few seconds; y 1220–1420 is the burned-in subtitle band; the mascot fills the lower part
+   (y > 1400) so the frame never has an empty bottom. Seek-driven: window.__anim.seek(t). #}
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<style>
+{{ brand_css | safe }}
+html, body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; }
+body { background-color: var(--bg); color: var(--fg); font-family: var(--font-heading); position: relative; }
+.channel { position: absolute; left: 60px; top: 150px; padding: 8px 26px; background: var(--fg); color: var(--bg);
+  font: 900 40px var(--font-heading); border-radius: 12px; transform: rotate(-2deg); }
+.label { position: absolute; right: 150px; top: 150px; padding: 6px 22px; background: var(--accent); color: var(--card);
+  border: 5px solid var(--fg); border-radius: 14px; font: 900 40px var(--font-heading); box-shadow: 5px 5px 0 var(--fg); }
+.beat-stage { position: absolute; left: 100px; top: 250px; width: 880px; height: 940px; }
+.punch { font-weight: 900; color: var(--card); -webkit-text-stroke: 14px var(--fg); paint-order: stroke fill;
+  text-shadow: 9px 9px 0 var(--fg); line-height: 1.02; white-space: nowrap; }
+.pk { color: var(--accent); }
+.bubble { position: absolute; background: var(--card); border: var(--ink); border-radius: 44px; box-shadow: var(--pop);
+  font: 900 70px var(--font-heading); padding: 18px 44px; }
+.cap { position: absolute; left: 0; right: 0; font: 900 64px var(--font-heading); text-align: center; }
+.small { position: absolute; left: 0; right: 0; font: 700 34px var(--font-heading); color: var(--muted); text-align: center; }
+.block { position: absolute; border: 8px solid var(--fg); background: var(--accent); box-sizing: border-box;
+  box-shadow: 10px 10px 0 var(--fg); }
+.ghost { position: absolute; border: 4px dashed var(--muted); box-sizing: border-box; }
+.wafer { position: absolute; border-radius: 50%; border: 10px solid var(--fg); background: #dfe8f1; box-sizing: border-box; }
+.cat { position: absolute; left: 20px; top: 1390px; height: 520px; }
+.anim { opacity: 0; }
+</style>
+</head>
+<body>
+<div class="channel">{{ channel_name }}</div>
+<div class="label">{{ label }}</div>
+<div class="beat-stage">
+{% if beat.visual == "number" %}
+  <div class="punch" style="position:absolute;left:0;top:120px;font-size:260px"><span id="num" data-target="{{ beat.value }}">{{ beat.value }}</span></div>
+  {% if beat.unit %}<div class="punch anim" data-at="{{ number_at[0] }}" style="position:absolute;left:10px;top:420px;font-size:170px"><span class="pk">{{ beat.unit }}</span></div>{% endif %}
+  {% if beat.note %}<div class="bubble anim" data-at="{{ number_at[1] }}" style="left:40px;top:700px">{{ beat.note }}</div>{% endif %}
+{% elif beat.visual == "grow" %}
+  {% for item in beat.items %}
+  <div class="anim step" data-at="{{ step_at[loop.index0] }}" data-until="{{ step_at[loop.index] if not loop.last else 999 }}">
+    <div class="block" style="left:{{ 440 - grow_px[loop.index0] // 2 }}px;top:{{ 520 - grow_px[loop.index0] // 2 }}px;width:{{ grow_px[loop.index0] }}px;height:{{ grow_px[loop.index0] }}px"></div>
+    <div class="punch" style="position:absolute;left:0;right:0;top:20px;text-align:center;font-size:150px">{{ item }}</div>
+  </div>
+  {% endfor %}
+  <div class="ghost" style="left:{{ 440 - grow_px[0] // 2 }}px;top:{{ 520 - grow_px[0] // 2 }}px;width:{{ grow_px[0] }}px;height:{{ grow_px[0] }}px"></div>
+  {% if beat.note %}<div class="small" style="top:900px">{{ beat.note }}</div>{% endif %}
+{% elif beat.visual == "scale" %}
+  <div class="anim" data-at="0.2" style="position:absolute;left:{{ 440 - scale_px // 2 }}px;top:120px">
+    <div class="block" style="position:relative;width:{{ scale_px }}px;height:{{ scale_px }}px"></div>
+    <div class="punch" style="position:absolute;left:0;right:0;top:-20px;text-align:center;font-size:110px">{{ beat.value }}</div>
+  </div>
+  <div class="anim" data-at="{{ (beat_seconds * 0.45) | round(2) }}" style="position:absolute;left:{{ 440 + scale_px // 2 - card_w + 90 }}px;top:{{ 120 + scale_px - card_h + 120 }}px;width:{{ card_w }}px;height:{{ card_h }}px;
+    border-radius:30px;background:#2f9e6e;border:6px solid var(--fg);box-sizing:border-box;transform:rotate(-6deg);
+    display:flex;align-items:center;justify-content:center;font-weight:900;font-size:58px;color:#fff">悠遊卡大小</div>
+  {% if beat.note %}<div class="cap anim" data-at="{{ (beat_seconds * 0.7) | round(2) }}" style="top:{{ 120 + scale_px + 150 }}px">{{ beat.note }}</div>{% endif %}
+{% elif beat.visual == "wafer" %}
+  <div class="wafer" style="left:{{ 440 - wafer_px // 2 }}px;top:40px;width:{{ wafer_px }}px;height:{{ wafer_px }}px"></div>
+  {% for x, y in wafer_slots %}
+  <div class="block anim" data-at="{{ step_at[loop.index0] }}" style="left:{{ 440 + x - wafer_side // 2 }}px;top:{{ 40 + wafer_px // 2 + y - wafer_side // 2 }}px;width:{{ wafer_side }}px;height:{{ wafer_side }}px;box-shadow:none;border-width:5px"></div>
+  {% endfor %}
+  <div class="punch anim" data-at="{{ step_at[-1] }}" style="position:absolute;left:0;right:0;top:{{ wafer_px + 60 }}px;text-align:center;font-size:120px">{{ beat.value }}<span class="pk">{{ beat.unit }}</span></div>
+  {% if beat.note %}<div class="small" style="top:{{ wafer_px + 220 }}px">{{ beat.note }}</div>{% endif %}
+{% else %}
+  <div class="punch" style="position:absolute;left:0;top:120px;font-size:130px">想看<span class="pk">完整</span>的？</div>
+  <div class="bubble anim" data-at="0.4" style="left:0;right:0;top:420px;text-align:center;font-size:52px;line-height:1.4">
+    「{{ long_channel }}」頻道<br><span style="word-break:keep-all">《{{ long_title }}》</span></div>
+  {% if beat.note %}<div class="small" style="top:780px">{{ beat.note }}</div>{% endif %}
+{% endif %}
+</div>
+<img class="cat" id="cat" src="{{ cat_uri }}">
+<script>
+(function () {
+  const el = document.getElementById("num");
+  const target = el ? el.dataset.target : "";
+  const plain = target.replace(/,/g, "");
+  const num = Number(plain);
+  const decimals = (plain.split(".")[1] || "").length;
+  function fmt(v) {
+    const s = v.toFixed(decimals);
+    if (!target.includes(",")) return s;
+    const [i, f] = s.split(".");
+    return i.replace(/\B(?=(\d{3})+(?!\d))/g, ",") + (f ? "." + f : "");
+  }
+  const cat = document.getElementById("cat");
+  window.__anim = {
+    duration: {{ beat_seconds }},
+    seek(t) {
+      if (el && Number.isFinite(num) && plain !== "") {
+        const p = Math.min(1, Math.max(0, t / 1.1));
+        el.textContent = p >= 1 ? target : fmt(num * (1 - Math.pow(1 - p, 3)));
+      }
+      document.querySelectorAll(".anim").forEach((node) => {
+        const at = Number(node.dataset.at || 0);
+        const until = Number(node.dataset.until || 999);
+        const fadeIn = Math.min(1, Math.max(0, (t - at) / 0.25));
+        node.style.opacity = String(t < until ? fadeIn : 0);
+        node.style.transform = (node.style.transform || "").replace(/scale\([^)]*\)/, "") +
+          ` scale(${0.85 + 0.15 * fadeIn})`;
+      });
+      cat.style.transform = `translateY(${Math.sin(t * 2.2) * 8}px) rotate(${Math.sin(t * 1.3) * 1.5}deg)`;
+    },
+  };
+  window.__anim.seek(0);
+})();
+</script>
+</body>
+</html>

@@ -28,6 +28,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from content_farm.explainer.deck import Deck, Slide
 from content_farm.production.channels import Channel
+from content_farm.production.shorts_scripted import ShortBeat
 from content_farm.script_gen.schemas import Script
 from content_farm.subtitle.line_wrap import wrap_text
 from content_farm.types import Orientation, VideoLength
@@ -65,6 +66,14 @@ class ShortSpec(BaseModel):
     long_title: str = Field(min_length=1, max_length=40)
     intro_seconds: float = Field(default=1.5, ge=0.5, le=4)
     outro_seconds: float = Field(default=2.5, ge=1, le=5)
+    # Scripted Short (shorts_scripted): its own narration, one page per beat. Empty = the
+    # classic cut of the slide's narration.
+    beats: tuple[ShortBeat, ...] = ()
+    answer: str = Field(default="", max_length=24)   # the title's answer, must be spoken
+
+    @property
+    def scripted(self) -> bool:
+        return bool(self.beats)
 
     @field_validator("long_run_dir")
     @classmethod
@@ -286,4 +295,34 @@ def write_credits(run_dir: Path, spec: ShortSpec) -> Path:
                "description_text": "", "derived_from": {"run_dir": spec.long_run_dir, "slide_id": spec.slide_id}}
     path = run_dir / "credits.json"
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    return path
+
+
+def write_scripted_script(run_dir: Path) -> Path:
+    """``script.json`` for a scripted Short: beats as scenes, metadata like a cut Short."""
+    from content_farm.explainer.deck import load_deck
+    from content_farm.production.shorts_scripted import check_beats, scripted_script
+
+    spec = load_spec(run_dir)
+    problems = check_beats(spec.beats, spec.answer)
+    if problems:
+        raise ValueError("; ".join(problems))
+    long_dir = Path(spec.long_run_dir)
+    deck = load_deck(long_dir / "deck.json")
+    slide = deck.slides[slide_index(deck, spec.slide_id) - 1]
+    long_script = Script.model_validate_json((long_dir / "script.json").read_text(encoding="utf-8"))
+    description = "\n".join([
+        spec.beats[0].narration,
+        f"{spec.number} {spec.unit}：{spec.caption}。".replace(" ：", "："),
+        f"完整拆解在「{spec.long_channel}」頻道：《{spec.long_title}》",
+        "", "#Shorts",
+    ])
+    script = scripted_script(
+        long_script.model_copy(update={"pronunciation_map": deck.pronunciation_map or long_script.pronunciation_map}),
+        spec.beats, title=shorts_title(spec.title), description=description,
+        tags=tuple(dict.fromkeys(("Shorts", spec.label, *long_script.tags))),
+        sources=tuple(source_lines(deck, slide)))
+    path = run_dir / "script.json"
+    path.write_text(script.model_dump_json(indent=2), encoding="utf-8")
+    write_credits(run_dir, spec)
     return path

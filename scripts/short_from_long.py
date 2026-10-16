@@ -14,7 +14,9 @@ from pydantic import ValidationError
 
 from content_farm.explainer.ffmpeg_ops import FFmpegError
 from content_farm.production.channels import load_channel
+from content_farm.production.shorts_cut import load_spec
 from content_farm.production.shorts_render import render_short
+from content_farm.production.shorts_scripted_render import render_scripted
 from content_farm.production.state import read_channel_code
 
 
@@ -24,6 +26,10 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         channel = load_channel(read_channel_code(args.run_dir))
+        if load_spec(args.run_dir).scripted:
+            done = render_scripted(args.run_dir, channel)
+            print(f"{done.video}: {done.seconds:.1f}s, {done.beats} beats, longest still stage {done.longest_hold:.1f}s")
+            return 0
         result = render_short(args.run_dir, channel)
     except (OSError, ValueError, ValidationError, FFmpegError, RuntimeError) as exc:
         print(f"Error: {exc}", file=sys.stderr)

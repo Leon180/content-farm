@@ -283,6 +283,21 @@ def portrait_subtitle_findings(srt: Path, font_path: str | None = None) -> list[
     return [Finding("subtitle_safe_zone", "ok", f"{len(cues)} cues fit the 9:16 subtitle band")]
 
 
+def short_motion_findings(run_dir: Path) -> list[Finding]:
+    """Scripted Short: no stage may hold still longer than MAX_STEP_SECONDS (review: 13 s card)."""
+    path = run_dir / "short" / "beat_report.json"
+    if not path.is_file():
+        return []
+    report = json.loads(path.read_text(encoding="utf-8"))
+    limit = float(report["max_step_seconds"])
+    slow = [f"beat {b['beat']} {b['visual']} {b['longest_hold']:.1f}s" for b in report["beats"]
+            if b["longest_hold"] > limit]
+    if slow:
+        return [Finding("short_motion", "error", f"stage holds longer than {limit:.0f}s: {', '.join(slow)}")]
+    worst = max(b["longest_hold"] for b in report["beats"])
+    return [Finding("short_motion", "ok", f"{len(report['beats'])} beats, longest still stage {worst:.1f}s")]
+
+
 def qc_channel(run_dir: Path, channel: Channel) -> Channel:
     """A Short cut is checked as a Short (9:16, Shorts length) whatever channel publishes it;
     e.g. the 7,722 Short on the 16:9 chipcat channel."""
@@ -306,6 +321,7 @@ def run_qc(run_dir: Path, channel: Channel, deck: Deck | None) -> dict:
     if channel.media.stock or channel.media.ai_image or channel.media.artwork:
         findings += credits_findings(channel, credits)
     findings += subtitle_findings(run_dir, channel)
+    findings += short_motion_findings(run_dir)
     if deck is not None and channel.format.length == "long":
         from content_farm.production.thumbnail import thumbnail_findings
 

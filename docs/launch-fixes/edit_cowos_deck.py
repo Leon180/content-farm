@@ -91,8 +91,8 @@ NEW = [
                    "三個數字一起鬆下來，這一關才算真的開了。"),
      "source_ids": ["techtimes-2026-07", "trendforce-2026-08", "tvbs-2026-04"],
      "mascot": {"pose": "smug"},
-     "media": {"kind": "stock", "query": "person reading news on smartphone",
-               "keywords": ["news", "smartphone", "phone", "reading"]}},
+     # stock without readable text: a phone showing a real article (Pexels 854765) was rejected at gate_media
+     "media": {"kind": "stock", "query": "stopwatch close up", "keywords": ["stopwatch", "timer"]}},
 ]
 
 sections = deck["sections"]

@@ -1,0 +1,14 @@
+{
+  "answer": "8.8 乘 8.8 公分",
+  "beats": [
+    {"narration": "台積電規劃的 AI 晶片中介層，有 7,722 平方毫米。", "visual": "number", "pose": "shocked",
+     "value": "7,722", "unit": "mm²", "note": "這是多大？"},
+    {"narration": "曝光機一次只能印 26 乘 33 毫米，所以要拼：3.3 倍、5.5 倍，最後拼到 9 倍。", "visual": "grow",
+     "pose": "think", "items": ["1 張光罩", "3.3 倍", "5.5 倍", "9 倍"], "note": "一張光罩 ≈ 26 × 33 mm"},
+    {"narration": "拼起來大約 8.8 乘 8.8 公分，比一張悠遊卡還寬，也高出一大截。", "visual": "scale", "pose": "point",
+     "value": "8.8 cm", "side_cm": 8.8, "note": "≈ 8.8 × 8.8 公分"},
+    {"narration": "一片 12 吋晶圓，這種尺寸大約只排得下 5 片。", "visual": "wafer", "pose": "shocked",
+     "value": "≈5", "unit": "片", "count": 5, "side_cm": 8.79, "note": "本頻道幾何粗估（以正方形計，扣邊 3 mm）"},
+    {"narration": "完整的 CoWoS 拆解，在晶片貓頻道。", "visual": "outro", "pose": "wave"}
+  ]
+}

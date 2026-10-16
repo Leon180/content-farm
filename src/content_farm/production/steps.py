@@ -208,9 +208,35 @@ SHORTS_CUT_STEPS: tuple[Step, ...] = (
 )
 
 
+# A scripted Short (short_source.json has ``beats``): its own narration, voiced with the
+# channel voice, one animated page per beat (policy review 2026-10, C2). New spoken words
+# need their own review, so it stops at the script gate before paying for TTS.
+SHORTS_SCRIPTED_STEPS: tuple[Step, ...] = (
+    Step("short_script", "internal", "Short 講稿（beats → script.json）", outputs=("script.json",),
+         inputs=(SHORT_SOURCE_FILE,)),
+    Step("gate_script", "gate", "Short 講稿審稿", gate=Gate.SCRIPT, artifacts=(SHORT_SOURCE_FILE, "script.json")),
+    Step("voice", "cmd", "配音＋字幕對齊", outputs=("audio/scene_*.mp3", "subtitles/subtitles.srt"),
+         inputs=("script.json",),
+         command=lambda c: _py(c, "run_stage.py", "--stage", "voice", "--run-dir", _run_dir(c),
+                               env=_voice_env(c)),
+         paid=lambda c: not c.options.mock_voice, identity=lambda c: voice_choice(c).describe()),
+    Step("cut", "cmd", "直式 Short（每拍一頁動畫＋角色＋字幕）", outputs=("assembly/final.mp4",),
+         inputs=(SHORT_SOURCE_FILE, "audio/scene_*.mp3"),
+         command=lambda c: _py(c, "short_from_long.py", "--run-dir", _run_dir(c)), heavy=True),
+    Step("qc", "internal", "自動品質檢查", outputs=("qc/qc_report.json",),
+         inputs=("assembly/*.mp4", "subtitles/subtitles.srt")),
+    Step("gate_final", "gate", "成片審看", gate=Gate.FINAL,
+         artifacts=("assembly/final.mp4", "qc/qc_report.json")),
+    Step("package", "internal", "上傳資料（#Shorts）", outputs=("upload/youtube_meta.json",),
+         inputs=("script.json", "assembly/*.mp4", "production.schedule.json")),
+)
+
+
 def steps_for(channel: Channel, run_dir: Path | None = None) -> tuple[Step, ...]:
     if is_short_cut(run_dir):
-        return SHORTS_CUT_STEPS
+        from content_farm.production.shorts_cut import load_spec
+
+        return SHORTS_SCRIPTED_STEPS if load_spec(run_dir).scripted else SHORTS_CUT_STEPS
     steps = {Pipeline.EXPLAINER: EXPLAINER_STEPS, Pipeline.SHORTS_SKIT: SHORTS_SKIT_STEPS}[channel.pipeline]
     return tuple(step for step in steps if step.applies(channel))
 

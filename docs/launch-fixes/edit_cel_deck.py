@@ -48,6 +48,13 @@ NEW_SOURCES = [
      "note": "publisher=Anime News Network; published=2023-05-18; accessed=2026-10-16; type=press; "
              "does not plan to invest 100% in all future titles",
      "publisher": "Anime News Network", "published": "2023-05-18"},
+    {"id": "ann-2026-chainsawman-film",
+     "title": "Chainsaw Man Anime Film Drops to #8, Demon Slayer: Infinity Castle Drops to #10",
+     "url": "https://www.animenewsnetwork.com/cms/.232625",
+     "note": "publisher=Anime News Network; published=2026-01-01; accessed=2026-10-16; type=press; "
+             "6.55M tickets, over ¥10 billion after 103 days (citing the franchise's official X); "
+             "film credited © 2025 MAPPA/CHAINSAW MAN PROJECT — 100% MAPPA funding of the film unverified",
+     "publisher": "Anime News Network", "published": "2026-01-01"},
 ]
 deck["sources"] = [*deck["sources"], *NEW_SOURCES]
 
@@ -75,7 +82,7 @@ slides["s24"]["narration"] = ("所以，動畫市場創新高和動畫公司很�
 
 NEW = [
     {"id": "c1", "layout": "quote", "heading": "有人真的不組委員會",
-     "body": {"text": "不組委員會，這部 100% 由 MAPPA 來做。", "who": "MAPPA 製作人 Makoto Kimura（2022，中譯）"},
+     "body": {"text": "不組委員會，這部 100% 由 MAPPA 來做。", "who": "MAPPA 製作人 Makoto Kimura（中譯）"},
      "narration": ("真的有公司試過繞開委員會。2022 年的電視動畫鏈鋸人，MAPPA 的製作人在美國動漫展上說，"
                    "他們提案時就表明不組委員會，百分之百由 MAPPA 出資製作，也因此拿到了原作的動畫化授權。"
                    "動畫裡換老闆通常是劇情轉折，這次是製作公司自己當老闆。"),
@@ -87,9 +94,17 @@ NEW = [
               "right": {"label": "100% 自己出資", "items": ["收益自己拿", "虧損也自己扛"]}},
      "narration": ("差別在風險。委員會模式，製作公司領固定的製作費，大賣不會追加，賠了也不用扛；"
                    "百分之百自己出資，賺了自己拿，賠了也自己扛。東洋經濟訪問 MAPPA 社長大塚學，"
-                   "他說收支上可以說是完全成功；但藍光這類實體商品，坦白說，他希望能賣到更多觀眾手上。"),
-     "source_ids": ["toyokeizai-2023-mappa", "production-committee-nlab"],
+                   "他說收支上可以說是完全成功；但藍光這類實體商品，坦白說，他希望能賣到更多觀眾手上。"
+                   "據 Oricon 統計，藍光第一卷的首週銷量大約 1,700 多套。"),
+     "source_ids": ["toyokeizai-2023-mappa", "production-committee-nlab", "ann-2023-otsuka"],
      "media": {"kind": "animated", "animation": "reveal_list"}},
+    {"id": "c2b", "layout": "big_number", "heading": "劇場版之後",
+     "body": {"value": "100", "unit": "億日圓", "caption": "《鏈鋸人》劇場版票房，上映 103 天（ANN 引官方帳號）"},
+     "narration": ("故事還有後續。2025 年的鏈鋸人劇場版，上映 103 天票房突破 100 億日圓。"
+                   "不過要注意，電影的版權標示是 MAPPA 和鏈鋸人製作專案，電影是不是也由 MAPPA 百分之百出資，"
+                   "我們查不到公開資料，所以這筆票房不能直接算成 MAPPA 一家的收入。"),
+     "source_ids": ["ann-2026-chainsawman-film"],
+     "media": {"kind": "animated", "animation": "count_up"}},
     {"id": "c3", "layout": "bullets", "heading": "研究室的看法",
      "body": {"items": ["出資，就是買回版權", "前提是扛得住虧損", "專門工作室難複製"]},
      "narration": ("研究室的看法是：鏈鋸人證明了製作公司也拿得回版權，但前提是口袋夠深。"

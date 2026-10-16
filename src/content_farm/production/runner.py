@@ -111,6 +111,11 @@ def _internal(ctx: Context, step: Step) -> tuple[bool, str]:
         findings = qc.deck_findings(channel, load_deck(run_dir / "deck.json"))
         bad = [f.message for f in findings if f.level == "error"]
         return (not bad, "; ".join(bad) or findings[0].message)
+    if step.name == "short_script":
+        from content_farm.production.shorts_cut import write_scripted_script
+
+        path = write_scripted_script(run_dir)
+        return True, f"{path.relative_to(run_dir)} from short_source.json beats"
     if step.name == "qc":
         deck_path = run_dir / "deck.json"
         report = qc.run_qc(run_dir, channel, load_deck(deck_path) if deck_path.is_file() else None)
