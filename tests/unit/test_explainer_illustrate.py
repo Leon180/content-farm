@@ -79,12 +79,22 @@ def test_local_mflux_needs_its_paths_and_builds_one_image_argv(tmp_path: Path) -
 
 
 def test_waits_while_memory_pressure_is_warn_or_worse() -> None:
+    idle = lambda: None  # noqa: E731
     levels, slept = iter([4, 2, 1]), []
-    assert il.wait_for_memory(lambda: next(levels), slept.append) == 2 * il.PRESSURE_WAIT_SECONDS
+    assert il.wait_for_memory(lambda: next(levels), slept.append, busy=idle) == 2 * il.PRESSURE_WAIT_SECONDS
     assert len(slept) == 2
     with pytest.raises(TimeoutError):
-        il.wait_for_memory(lambda: 2, lambda _: None, max_wait=60)
-    assert il.wait_for_memory(lambda: 1, slept.append) == 0  # normal: no wait
+        il.wait_for_memory(lambda: 2, lambda _: None, max_wait=60, busy=idle)
+    assert il.wait_for_memory(lambda: 1, slept.append, busy=idle) == 0  # normal: no wait
+
+
+def test_waits_while_another_local_model_runs() -> None:
+    """orchestrator 2026-10-16: never overlap with the AI-video worker's mlx_video (swap at 92%)."""
+    running, slept = iter(["mlx_video", "mlx_video", None]), []
+    assert il.wait_for_memory(lambda: 1, slept.append, busy=lambda: next(running)) == 60
+    with pytest.raises(TimeoutError, match="mlx_video is running"):
+        il.wait_for_memory(lambda: 1, lambda _: None, max_wait=30, busy=lambda: "mlx_video")
+    assert il.other_model_running(("no-such-process-zz9",)) is None  # pgrep miss → free
 
 
 def test_channels_pick_their_model_and_reject_bad_settings() -> None:

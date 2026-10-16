@@ -39,6 +39,8 @@ AI_LABEL = "AI 示意圖"
 SIDECAR_SUFFIX = ".json"
 PRESSURE_WAIT_SECONDS = 30
 PRESSURE_MAX_WAIT_SECONDS = 1800
+# Other local generators that must not overlap with ours (e.g. the AI-video trial's Wan).
+OTHER_MODEL_PROCESSES = ("mlx_video", "mflux-generate")
 # Prompts asking for photo-realism or a named artist's style break the channel rules.
 _FORBIDDEN_PROMPT = re.compile(
     r"photo-?real|hyper-?real|realistic photo|photograph of|\bdslr\b|\b35 ?mm\b|"
@@ -111,15 +113,26 @@ def memory_pressure_level() -> int:
     return int(value)
 
 
+def other_model_running(patterns: tuple[str, ...] = OTHER_MODEL_PROCESSES) -> str | None:
+    """The first ``pgrep -f`` pattern with a live process (another local model on this machine)."""
+    for pattern in patterns:
+        if subprocess.run(["pgrep", "-f", pattern], capture_output=True).returncode == 0:
+            return pattern
+    return None
+
+
 def wait_for_memory(level: Callable[[], int] = memory_pressure_level,
                     sleep: Callable[[float], None] = time.sleep,
-                    max_wait: float = PRESSURE_MAX_WAIT_SECONDS) -> float:
-    """Block while pressure is warn or worse (another model may be running). Returns seconds waited."""
+                    max_wait: float = PRESSURE_MAX_WAIT_SECONDS,
+                    busy: Callable[[], str | None] = other_model_running) -> float:
+    """Block while pressure is warn or worse, or while another local model process runs
+    (never overlap two models: swap). Returns seconds waited."""
     waited = 0.0
-    while level() >= 2:
+    while (pressure := level()) >= 2 or (running := busy()) is not None:
+        reason = f"memory pressure level {pressure}" if pressure >= 2 else f"{running} is running"
         if waited >= max_wait:
-            raise TimeoutError(f"memory pressure stayed at warn+ for {waited:.0f}s; not loading a model")
-        logger.info("memory pressure warn+; waiting %ss before loading the model", PRESSURE_WAIT_SECONDS)
+            raise TimeoutError(f"{reason} for {waited:.0f}s; not loading a model")
+        logger.info("%s; waiting %ss before loading the model", reason, PRESSURE_WAIT_SECONDS)
         sleep(PRESSURE_WAIT_SECONDS)
         waited += PRESSURE_WAIT_SECONDS
     return waited
