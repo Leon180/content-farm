@@ -1,0 +1,108 @@
+<!doctype html>
+{# One 1080x1920 page of an HN 快報 Short. mode = beat | end | thumb.
+   Layout (y): 0–120 series bar · 150–1190 beat card · 1240–1420 burned subtitles
+   (kept empty here) · 1430–1920 mascot + bubble + source strip, so the lower half
+   is never blank (policy review C2). Brand tokens come from the chipcat CSS. #}
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<style>
+{{ brand_css | safe }}
+html, body { margin:0; width:1080px; height:1920px; overflow:hidden; }
+body { background-color:var(--bg); color:var(--fg); font-family:var(--font-heading); position:relative; }
+.bar { position:absolute; left:0; right:0; top:0; height:120px; background:var(--fg); color:#fff;
+  display:flex; align-items:center; padding:0 48px; gap:22px; font:900 44px var(--font-heading); }
+.bar .date { font:600 30px var(--font-number); color:#8fa3b8; margin-left:auto; }
+.dots { position:absolute; top:138px; left:48px; display:flex; gap:12px; }
+.dots i { width:58px; height:12px; border-radius:6px; background:var(--rule); display:block; }
+.dots i.on { background:var(--accent); } .dots i.done { background:var(--fg); }
+.label { position:absolute; left:48px; top:180px; background:var(--accent); color:#fff; font:900 50px var(--font-heading);
+  padding:8px 28px; border-radius:12px; transform:rotate(-2deg); box-shadow:6px 6px 0 var(--fg); }
+.card { position:absolute; left:40px; right:40px; top:270px; height:910px; display:flex; flex-direction:column; justify-content:center; gap:10px; box-sizing:border-box; background:var(--card);
+  border:6px solid var(--fg); border-radius:22px; box-shadow:14px 14px 0 var(--fg); padding:70px 56px; overflow:hidden; }
+.headline { font:900 120px/1.12 var(--font-heading); letter-spacing:-1px; word-break:keep-all; overflow-wrap:anywhere; }
+.number { font:900 250px/1 var(--font-number); color:var(--accent); margin-top:20px; white-space:nowrap; }
+.points { margin:40px 0 0; padding:0; list-style:none; display:grid; gap:34px; }
+.points li { font:800 70px/1.25 var(--font-heading); padding-left:66px; position:relative; }
+.points li::before { content:""; position:absolute; left:0; top:30px; width:32px; height:32px; background:var(--accent);
+  border-radius:4px; transform:rotate(45deg); }
+.term { display:inline-block; align-self:flex-start; margin-top:40px; font:900 60px var(--font-heading); color:#fff; background:var(--accent-2);
+  padding:8px 26px; border-radius:12px; }
+.take .card { background:var(--fg); color:#fff; border-color:var(--accent); box-shadow:14px 14px 0 var(--accent); }
+.take .points li::before { background:var(--amber); }
+.foot { position:absolute; left:0; right:0; top:1430px; bottom:0; background:var(--fg); }
+.foot::before { content:""; position:absolute; left:0; right:0; top:0; height:14px;
+  background:repeating-linear-gradient(90deg, var(--amber) 0 36px, transparent 36px 72px); }
+.cat { position:absolute; left:-360px; top:1200px; width:900px; height:783px; }
+.cat img { position:absolute; inset:0; width:100%; height:100%; }
+.bubble { position:absolute; left:560px; right:40px; top:1480px; background:#fff; color:var(--fg); border-radius:30px;
+  padding:22px 30px; font:800 48px/1.3 var(--font-heading); border:5px solid var(--accent); }
+.bubble::before { content:""; position:absolute; left:-30px; top:50px; border:16px solid transparent;
+  border-right:22px solid var(--accent); }
+.source { position:absolute; left:560px; right:40px; top:1650px; color:#c9d4df; font:600 30px/1.4 var(--font-heading); }
+.reveal { opacity:0; }
+.end .card { display:flex; flex-direction:column; justify-content:center; }
+.thumb .headline { font-size:132px; }
+.end .headline { font-size:100px; }
+</style>
+</head>
+<body class="{{ mode }} {{ beat.kind if beat else '' }}">
+<div class="bar"><span>晶片貓 HN 快報</span><span class="date">{{ day }}</span></div>
+{% if mode == "beat" %}
+  <div class="dots">{% for k in kinds %}<i class="{{ 'on' if k == beat.kind else ('done' if loop.index0 < index else '') }}"></i>{% endfor %}</div>
+  <div class="label">{{ label }}</div>
+  <div class="card">
+    <div class="headline">{{ beat.screen.headline }}</div>
+    {% if beat.screen.number %}<div class="number reveal" data-at="0.5">{{ beat.screen.number }}</div>{% endif %}
+    {% if beat.kind == "analogy" and beat.term %}<div class="term reveal" data-at="0.4">{{ beat.term }}</div>{% endif %}
+    {% if beat.screen.points %}
+    <ul class="points">{% for p in beat.screen.points %}<li class="reveal" data-at="{{ reveal_at[loop.index0] }}">{{ p }}</li>{% endfor %}</ul>
+    {% endif %}
+  </div>
+{% elif mode == "end" %}
+  <div class="label">每週六・長片整理</div>
+  <div class="card"><div class="headline">這週最重要的幾則<br>週六講深一點</div>
+    <ul class="points"><li>原文連結都在說明欄</li><li>本片是摘要＋評論，不是翻譯</li></ul></div>
+{% else %}
+  <div class="label">{{ label }}</div>
+  <div class="card"><div class="headline">{{ beat.screen.headline }}</div>
+    {% if beat.screen.number %}<div class="number">{{ beat.screen.number }}</div>{% endif %}</div>
+{% endif %}
+<div class="foot"></div>
+<div class="cat">
+  <img id="cat-closed" src="{{ mascot.closed }}" alt="">
+  {% if mascot.open %}<img id="cat-open" src="{{ mascot.open }}" alt="" style="opacity:0">{% endif %}
+</div>
+<div class="bubble">{{ bubble }}</div>
+<div class="source">{{ source }}</div>
+<script>
+// Frame-exact runtime for PageCapturer: seek(t) sets the page state at time t.
+(function () {
+  const DURATION = {{ duration }};
+  const open = document.getElementById("cat-open"), closed = document.getElementById("cat-closed");
+  const card = document.querySelector(".card");
+  window.__anim = {
+    duration: DURATION,
+    seek(t) {
+      document.querySelectorAll(".reveal").forEach((node) => {
+        const at = Number(node.dataset.at);
+        const p = Math.min(1, Math.max(0, (t - at) / 0.3));
+        node.style.opacity = String(p);
+        node.style.transform = "translateY(" + (1 - p) * 24 + "px)";
+      });
+      if (card) card.style.transform = "scale(" + (1 + 0.025 * Math.min(1, t / Math.max(DURATION, 0.1))) + ")";
+      if (open) {  // mouth flap while talking: ~5.5 syllables/s, closed in the last 0.3 s
+        const talking = {{ 'true' if talking else 'false' }} && t < DURATION - 0.3;
+        const on = talking && Math.floor(t * 5.5) % 2 === 0;
+        open.style.opacity = on ? "1" : "0";
+        closed.style.opacity = on ? "0" : "1";
+      }
+      const cat = document.querySelector(".cat");
+      cat.style.transform = "translateY(" + Math.sin(t * 2.4) * 6 + "px)";
+    },
+  };
+  window.__anim.seek(0);
+})();
+</script>
+</body>
+</html>

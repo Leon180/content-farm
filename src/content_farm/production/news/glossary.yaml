@@ -1,0 +1,62 @@
+# HN 中文版名詞表：每個名詞先給國高中程度的比喻，再給精確定義（既定規則）。
+# say: 給 TTS 的念法（併入 script.json 的 pronunciation_map）；不填就照字念。
+# 新名詞由 /news-short 寫稿時補進來；lint 會擋「比喻段用了表裡沒有的名詞」。
+# 種子來源：docs 研究報告 hn-chinese-2026-10 §6–7 的比喻、deck skill 的 pronunciation_map 範例。
+terms:
+  RPKI:
+    say: R P K I
+    analogy: 像給網路的「路線地圖」蓋上官方印章，假冒的路標一眼就被認出來。
+    definition: Resource Public Key Infrastructure，用數位簽章證明某個 IP 位址區段該由哪個網路（AS）宣告，防止 BGP 路由劫持。
+  BGP:
+    say: B G P
+    analogy: 網路世界的郵局之間互相轉告「寄到哪一區要走我這條路」的口頭約定。
+    definition: Border Gateway Protocol，網際網路上各自治網路（AS）交換路由資訊的協定。
+  MoE:
+    say: M O E
+    analogy: 像一間有很多科任老師的學校，每題只請最懂的幾位老師來答，不必全校一起上。
+    definition: Mixture of Experts，模型內有多組「專家」子網路，每個 token 只啟用其中少數幾組，總參數大但每次計算量小。
+  開源權重:
+    analogy: 像把整本解答本公開讓大家影印，但沒附上老師當初怎麼出題、用了哪些參考書。
+    definition: open weights，公開訓練好的模型參數供下載使用；不一定包含訓練資料與訓練程式碼，授權條款各家不同。
+  推論:
+    analogy: 模型考完試之後真正上場答題的階段；訓練是讀書，推論是寫考卷。
+    definition: inference，用訓練好的模型對新輸入產生輸出，是 AI 服務上線後主要的算力開銷。
+  零時差漏洞:
+    analogy: 小偷已經知道你家後門鎖壞了，但你和鎖匠都還不知道。
+    definition: zero-day，廠商尚未得知或尚未釋出修補的安全漏洞；攻擊者可在修補前利用。
+  零點擊攻擊:
+    analogy: 不用你開門，信從門縫塞進來的那一刻屋子就被闖了。
+    definition: zero-click exploit，受害者不需點擊或操作，裝置收到訊息、廣告或檔案時就被入侵。
+  核心:
+    analogy: 作業系統的「校長室」，所有程式要用硬體都得經過它批准。
+    definition: kernel，作業系統中直接管理 CPU、記憶體與裝置、權限最高的部分。
+  授權費:
+    analogy: 像用別人的食譜開店，每賣一碗麵就要付一點錢給寫食譜的人。
+    definition: royalty／license fee，使用他人智慧財產（如 Arm 指令集架構、晶片設計）所支付的費用，常按出貨量計。
+  指令集架構:
+    analogy: CPU 聽得懂的「語言文法」；同一套文法，不同廠商可以各自寫出不同的作文。
+    definition: ISA（Instruction Set Architecture），軟體與處理器之間的約定，例如 x86、Arm、RISC-V。
+  爬取:
+    analogy: 派機器人到圖書館把每本書都影印一份帶回家。
+    definition: scraping／crawling，用程式自動大量下載網頁內容；是否合法取決於網站條款、著作權與用途。
+  訂閱制:
+    analogy: 從「買一次用到壞」變成「每個月繳月費才能繼續用」。
+    definition: subscription，以定期付費換取持續使用權的商業模式；功能可能隨付費狀態被開啟或關閉。
+  端側 AI:
+    analogy: 把家教請到你家，而不是每題都打電話問補習班。
+    definition: on-device AI，在手機、筆電等裝置本機執行模型推論，不必把資料傳到雲端。
+  統一記憶體:
+    analogy: CPU 和 GPU 共用同一張大書桌，不用把資料在兩張桌子之間搬來搬去。
+    definition: unified memory，CPU、GPU 等共用同一塊記憶體位址空間（如 Apple Silicon），大模型可直接放進記憶體推論。
+  TSMC:
+    say: T S M C
+    analogy: 全世界晶片設計公司的「代工廚房」，菜單是別人寫的，菜是它煮的。
+    definition: 台積電（Taiwan Semiconductor Manufacturing Company），全球最大的晶圓代工廠。
+  CoWoS:
+    say: CoWoS
+    analogy: 把好幾顆晶片並排黏在同一塊「超大中介層」上，讓它們像同一顆一樣快速溝通。
+    definition: Chip-on-Wafer-on-Substrate，台積電的 2.5D 先進封裝，將 GPU 與 HBM 置於矽中介層上。
+  HBM:
+    say: H B M
+    analogy: 把記憶體疊成高樓直接蓋在晶片旁邊，搬資料不用跑遠路。
+    definition: High Bandwidth Memory，垂直堆疊的 DRAM，透過中介層與處理器高頻寬連接，AI 加速器的關鍵元件。

@@ -275,8 +275,9 @@ def qc_channel(run_dir: Path, channel: Channel) -> Channel:
     """A Short cut is checked as a Short (9:16, Shorts length) whatever channel publishes it;
     e.g. the 7,722 Short on the 16:9 chipcat channel."""
     from content_farm.production import shorts_cut
+    from content_farm.production.steps import NEWS_ITEM_FILE
 
-    if not shorts_cut.is_short_cut(run_dir):
+    if not (shorts_cut.is_short_cut(run_dir) or (run_dir / NEWS_ITEM_FILE).is_file()):  # HN 快報 Short
         return channel
     short_format = channel.format.model_copy(update={
         "length": "short", "aspect": "9:16", "target_seconds": (1, int(shorts_cut.MAX_SHORT_SECONDS))})

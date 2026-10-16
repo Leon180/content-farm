@@ -183,6 +183,8 @@ class Channel(_Strict):
     gates: tuple[Gate, ...]
     youtube: YouTube
     notes: tuple[str, ...] = ()
+    # Recurring series run by their own modules (e.g. ``hn`` → production/news), validated there.
+    series: dict[str, dict] = Field(default_factory=dict)
 
     @field_validator("brand")
     @classmethod

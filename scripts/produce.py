@@ -13,6 +13,8 @@ Usage:
     python scripts/produce.py short-from-long --from output/cowos --slide s09 --channel offwork \
         --run-dir output/offwork-7722 --title "…" --number 7,722 --unit mm²   # 9:16 Short (R5)
     python scripts/produce.py manual-kit --run-dir output/cowos [--out DIR]  # Studio upload kit + preview.html
+    python scripts/produce.py news daily [--date D] [--pick 2,5] --allow-paid  # HN 快報 Shorts (production/news)
+    python scripts/produce.py news weekly [--week 2026-W42]                     # HN 快報 weekly long video
 
 Exit codes for ``run``: 0 all steps done, 1 a step failed, 3 waiting (gate, agent
 step, or paid step without --allow-paid). Each stop prints the next command.
@@ -33,6 +35,7 @@ from pydantic import ValidationError
 
 from content_farm.production.channels import Gate, load_all, load_channel
 from content_farm.production.manual_kit import KitOptions, write_kit
+from content_farm.production.news import cli as news_cli
 from content_farm.production.runner import SCHEDULE_FILE, Outcome, Runner, decide
 from content_farm.production.schedule import load_backlog, plan_week
 from content_farm.production.shorts_cut import short_spec_from_long, write_spec
@@ -99,6 +102,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     plan.add_argument("--week", required=True, help="ISO week, e.g. 2026-W43")
     plan.add_argument("--today", type=date.fromisoformat, default=date.today())
     sub.add_parser("channels")
+    news_cli.add_parser(sub)
     return parser.parse_args(argv)
 
 
@@ -226,7 +230,7 @@ def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
     handlers = {"run": cmd_run, "status": cmd_status, "inbox": cmd_inbox, "plan": cmd_plan,
                 "channels": cmd_channels, "short-from-long": cmd_short_from_long,
-                "manual-kit": cmd_manual_kit,
+                "manual-kit": cmd_manual_kit, "news": news_cli.run,
                 "approve": lambda a: cmd_decide(a, "approved"),
                 "reject": lambda a: cmd_decide(a, "rejected")}
     try:

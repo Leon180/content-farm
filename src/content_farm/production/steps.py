@@ -24,6 +24,10 @@ from content_farm.production.shorts_cut import is_short_cut
 from content_farm.production.voice_choice import VoiceChoice, choose_voice, env_file_defaults
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
+# production/news file names (kept literal here: news imports steps-adjacent modules, not the reverse)
+NEWS_ITEM_FILE = "news_short.json"
+NEWS_SCRIPT_FILE = "news_script.json"
+NEWS_WEEKLY_FILE = "news_weekly.json"
 EXPLAINER_SUBTITLE_MAX = "20"  # keeps landscape subtitles clear of the mascot (REPORT-explainer-v2 §3)
 
 
@@ -205,9 +209,56 @@ SHORTS_CUT_STEPS: tuple[Step, ...] = (
 )
 
 
+# An HN 快報 Short (production/news; ``produce.py news daily --pick``): any channel with a
+# ``series.hn`` block, chosen by the run-dir holding ``news_short.json``. The script is
+# written by /news-short after reading the original page; lint enforces the five beats,
+# sources with read time, and the original-commentary beat. One gate: the final watch.
+NEWS_SHORT_STEPS: tuple[Step, ...] = (
+    Step("news_script", "agent", "HN 快報稿（讀原文後寫五段）", outputs=(NEWS_SCRIPT_FILE,),
+         verify=lambda c: _py(c, "news.py", "lint", "--run-dir", _run_dir(c)),
+         hint="跑 /news-short（讀 news_short.json 的原文快取 → 寫 news_script.json）"),
+    Step("news_prepare", "cmd", "稿 → script.json（五段＝五個場景）", outputs=("script.json", "voice_text.json"),
+         inputs=(NEWS_SCRIPT_FILE,),
+         command=lambda c: _py(c, "news.py", "prepare", "--run-dir", _run_dir(c))),
+    Step("voice", "cmd", "配音＋字幕對齊", outputs=("audio/scene_*.mp3", "subtitles/subtitles.srt"),
+         inputs=("voice_text.json",),  # spoken words only: screen edits never re-voice
+         command=lambda c: _py(c, "run_stage.py", "--stage", "voice", "--run-dir", _run_dir(c),
+                               env=_voice_env(c)),
+         paid=lambda c: not c.options.mock_voice, identity=lambda c: voice_choice(c).describe()),
+    Step("news_render", "cmd", "直式頁面＋晶片貓＋字幕燒入",
+         outputs=("assembly/final.mp4", "thumbnails/thumbnail.png", "credits.json"),
+         inputs=(NEWS_SCRIPT_FILE, "script.json", "audio/scene_*.mp3", "subtitles/subtitles.srt"),
+         command=lambda c: _py(c, "news.py", "render", "--run-dir", _run_dir(c)), heavy=True),
+    Step("qc", "internal", "自動品質檢查", outputs=("qc/qc_report.json",),
+         inputs=("assembly/*.mp4", "credits.json", "subtitles/subtitles.srt")),
+    Step("gate_final", "gate", "成片審看", gate=Gate.FINAL,
+         artifacts=("assembly/final.mp4", NEWS_SCRIPT_FILE, "qc/qc_report.json")),
+    Step("package", "internal", "上傳資料（#Shorts、來源、排程）", outputs=("upload/youtube_meta.json",),
+         inputs=("script.json", "credits.json", "assembly/*.mp4", "production.schedule.json")),
+)
+
+
+def news_weekly_steps(channel: Channel) -> tuple[Step, ...]:
+    """The weekly HN roll-up: /news-weekly writes deck.json from weekly_plan.md (no article
+    stage — each story was read and approved as a Short), then the explainer steps."""
+    head = (
+        Step("deck", "agent", "週整理簡報與講稿（每則一章）", outputs=("deck.json",),
+             verify=lambda c: _py(c, "deck_to_script.py", "--run-dir", _run_dir(c), "--strict"),
+             hint="跑 /news-weekly（讀 weekly_plan.md → 寫 deck.json）"),
+        Step("weekly_check", "cmd", "每則一章＋引用讀過的原文", inputs=("deck.json", NEWS_WEEKLY_FILE),
+             command=lambda c: _py(c, "news.py", "weekly-check", "--run-dir", _run_dir(c))),
+    )
+    tail = tuple(s for s in EXPLAINER_STEPS if s.name not in ("article", "gate_article", "deck"))
+    return tuple(step for step in (*head, *tail) if step.applies(channel))
+
+
 def steps_for(channel: Channel, run_dir: Path | None = None) -> tuple[Step, ...]:
     if is_short_cut(run_dir):
         return SHORTS_CUT_STEPS
+    if run_dir is not None and (run_dir / NEWS_ITEM_FILE).is_file():
+        return NEWS_SHORT_STEPS
+    if run_dir is not None and (run_dir / NEWS_WEEKLY_FILE).is_file():
+        return news_weekly_steps(channel)
     steps = {Pipeline.EXPLAINER: EXPLAINER_STEPS, Pipeline.SHORTS_SKIT: SHORTS_SKIT_STEPS}[channel.pipeline]
     return tuple(step for step in steps if step.applies(channel))
 

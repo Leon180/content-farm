@@ -52,3 +52,18 @@ youtube:
 notes:
   - 不給投資建議；財報數字一律附來源
   - 八卦必須有來源
+series:
+  hn:                     # HN 中文版（production/news；produce.py news daily|weekly）
+    name: 晶片貓 HN 快報
+    playlist: 晶片貓｜HN 快報
+    sources: [hn, lobsters, arxiv]   # 免費來源；不接 X、不爬網頁轉貼
+    max_age_hours: 48
+    review_candidates: 15            # 審核頁列幾則（每則都先讀過原文）
+    daily_shorts: [1, 2]             # 每天挑 1–2 則
+    shorts_time: "12:30"             # 每日 Short 預設排程
+    weekly:
+      items: [3, 5]                  # 當週 Shorts 中最重要的 3–5 則，一則一章
+      target_seconds: [420, 660]     # 6–11 分；內容撐得起就 ≥ 480（8:00，可插 mid-roll）
+      publish_day: sat
+      publish_time: "10:00"
+    rank_weights: {popularity: 0.55, relevance: 0.45, comments: 0.6}
