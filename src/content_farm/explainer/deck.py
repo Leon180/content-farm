@@ -136,9 +136,17 @@ class MediaKind(str, Enum):
     SLIDE = "slide"            # the rendered static slide PNG (v1 behaviour)
     ANIMATED = "animated"      # the same slide with an entrance animation (mp4)
     STOCK = "stock"            # Pexels/Pixabay B-roll + key-text overlay
-    AI_IMAGE = "ai_image"      # user-generated illustration + Ken Burns
+    AI_IMAGE = "ai_image"      # generated illustration, moved by ``media.motion`` (default parallax)
     TITLE_CARD = "title_card"  # self-made news headline card (never a screenshot)
     ARTWORK = "artwork"        # public-domain / CC0 museum image (assets/artwork/artwork.json)
+
+
+class Motion(str, Enum):
+    """How an ``ai_image`` still moves (Leon 2026-10-16, decision 2bacb8a2b8b0)."""
+
+    PARALLAX = "parallax"    # default: 2.5D depth parallax, ≤3 s, ping-ponged over the slot
+    WAN = "wan"              # key shot: Wan2.2 I2V clip baked overnight (≤2 per video)
+    KEN_BURNS = "ken_burns"  # flat push-in (the pre-motion behaviour)
 
 
 class Animation(str, Enum):
@@ -192,13 +200,21 @@ class Media(_Frozen):
     summary: str = Field(default="", max_length=80)      # title_card: one-line summary
     source_id: str = Field(default="", max_length=32)    # title_card: must be in deck.sources
     artwork: str = Field(default="", max_length=40)      # artwork: id in assets/artwork/artwork.json
+    motion: Motion | None = None                         # ai_image: None = parallax
+    motion_prompt: str = Field(default="", max_length=600)  # ai_image + wan: what moves (English)
 
     @model_validator(mode="after")
     def _required_for_kind(self) -> Media:
         field = _MEDIA_REQUIRED.get(self.kind)
         if field and not getattr(self, field):
             raise ValueError(f"media kind {self.kind.value!r} requires {field!r}")
+        if (self.motion is not None or self.motion_prompt) and self.kind != MediaKind.AI_IMAGE:
+            raise ValueError("motion / motion_prompt only apply to media kind 'ai_image'")
         return self
+
+    @property
+    def motion_kind(self) -> Motion:
+        return self.motion or Motion.PARALLAX
 
 
 class Source(_Frozen):

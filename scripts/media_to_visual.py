@@ -11,6 +11,10 @@ Usage:
     python scripts/media_to_visual.py --run-dir <dir> --no-stock             # offline
     python scripts/media_to_visual.py --run-dir <dir> --brand chipcat        # channel brand
 
+ai_image slides move (2.5D parallax by default, baked Wan clips for ``motion: wan``) when
+CF_MLX_VIDEO_HOME (or its per-path overrides, see explainer/motion_cache.py) is set in the
+environment or ``--env-file``; otherwise they fall back to Ken Burns.
+
 Needs ``<run-dir>/deck.json``, ``script.json``, ``slides/slide_NNN.png`` (render_slides)
 and voice output. Stock keys come from CF_PEXELS_API_KEY / CF_PIXABAY_API_KEY
 (environment, else ``--env-file``, default ``.env``). Downloads are cached in
@@ -37,6 +41,7 @@ from content_farm.explainer.brands import brand_codes
 from content_farm.explainer.deck import load_deck
 from content_farm.explainer.ffmpeg_ops import FFmpegError
 from content_farm.explainer.media_run import TRANSITION_CHOICES, MediaOptions, media_to_visual
+from content_farm.explainer.motion_cache import MotionPaths, motion_env
 from content_farm.explainer.stock import StockClient
 from content_farm.explainer.timeline import (
     DURATION_SOURCES,
@@ -80,9 +85,10 @@ def main(argv: list[str] | None = None) -> int:
     run_dir: Path = args.run_dir
     started = time.monotonic()
     try:
+        motion_paths = MotionPaths.from_env(motion_env(args.env_file))
         options = MediaOptions(transition=args.transition,
                                transition_seconds=args.transition_seconds, replace=args.replace,
-                               brand=args.brand)
+                               brand=args.brand, motion_paths=motion_paths)
         deck = load_deck(run_dir / "deck.json")
         script = Script.model_validate_json((run_dir / "script.json").read_text(encoding="utf-8"))
         used, durations = resolve_durations(run_dir, script, args.source)
