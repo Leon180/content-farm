@@ -19,6 +19,16 @@ def effective_voice_id(settings: Settings) -> str:
     return settings.tts_voice_id or (default(settings) if default else "")
 
 
+# Model each provider used before its model became a setting: audio recorded without a
+# ``model`` in voice_identity.json was made with this one.
+LEGACY_MODEL = {"fish_audio": "speech-1.5"}
+
+
+def effective_tts_model(settings: Settings) -> str:
+    """The model that is part of a voice's identity ("" = not tracked for this provider)."""
+    return settings.fish_audio_model if settings.tts_provider == "fish_audio" else ""
+
+
 def create_tts_provider(settings: Settings) -> TTSProvider:
     """Create the appropriate TTS provider based on settings."""
     provider = settings.tts_provider
@@ -44,6 +54,7 @@ def create_tts_provider(settings: Settings) -> TTSProvider:
         return FishAudioProvider(
             api_key=api_key,
             reference_id=settings.fish_audio_reference_id,
+            model=settings.fish_audio_model,
         )
 
     if provider == "macos_say":

@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     elevenlabs_model_id: str = "eleven_v3"
     fish_audio_api_key: SecretStr = SecretStr("")
     fish_audio_reference_id: str = ""
+    # Fish TTS model (sent as the `model` header). Original-voice auditions were made with
+    # s2.1-pro; audio from before this setting used the SDK default (see voice.generator).
+    fish_audio_model: str = "s2.1-pro"
     macos_say_voice: str = "Flo (Chinese (Taiwan))"  # list installed voices: say -v '?'
     macos_say_rate: int | None = Field(default=None, gt=0)  # words per minute (say -r); None = voice default
 

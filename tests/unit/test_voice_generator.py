@@ -161,6 +161,49 @@ async def test_existing_audio_is_reused_only_for_the_same_voice_and_text(
 
 
 @pytest.mark.asyncio
+async def test_changing_the_fish_model_redoes_the_audio(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, sample_script: Script,
+) -> None:
+    monkeypatch.setenv("CF_FISH_AUDIO_MODEL", "s2.1-pro")
+    gen, _ = _fish_generator(monkeypatch, tmp_path, "voice-a")
+    await gen.generate(sample_script)
+    identities = json.loads((tmp_path / "audio" / "voice_identity.json").read_text(encoding="utf-8"))
+    assert identities["scene_001.mp3"]["model"] == "s2.1-pro"
+
+    same, same_tts = _fish_generator(monkeypatch, tmp_path, "voice-a")
+    await same.generate(sample_script)
+    assert same_tts.generate_speech_with_context.call_count == 0  # control: same model reuses
+
+    monkeypatch.setenv("CF_FISH_AUDIO_MODEL", "speech-1.5")
+    other, other_tts = _fish_generator(monkeypatch, tmp_path, "voice-a")
+    await other.generate(sample_script)
+    assert other_tts.generate_speech_with_context.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_records_without_a_model_count_as_the_old_sdk_default(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, sample_script: Script,
+) -> None:
+    """Audio voiced before the model was tracked was made with speech-1.5 (SDK default)."""
+    gen, _ = _fish_generator(monkeypatch, tmp_path, "voice-a")
+    await gen.generate(sample_script)
+    path = tmp_path / "audio" / "voice_identity.json"
+    legacy = {name: {k: v for k, v in rec.items() if k != "model"}
+              for name, rec in json.loads(path.read_text(encoding="utf-8")).items()}
+    path.write_text(json.dumps(legacy), encoding="utf-8")
+
+    monkeypatch.setenv("CF_FISH_AUDIO_MODEL", "speech-1.5")
+    pinned, pinned_tts = _fish_generator(monkeypatch, tmp_path, "voice-a")
+    await pinned.generate(sample_script)
+    assert pinned_tts.generate_speech_with_context.call_count == 0
+
+    monkeypatch.setenv("CF_FISH_AUDIO_MODEL", "s2.1-pro")
+    new, new_tts = _fish_generator(monkeypatch, tmp_path, "voice-a")
+    await new.generate(sample_script)
+    assert new_tts.generate_speech_with_context.call_count == 2
+
+
+@pytest.mark.asyncio
 async def test_audio_without_an_identity_record_is_redone(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, sample_script: Script,
 ) -> None:

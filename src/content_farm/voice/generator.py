@@ -10,7 +10,7 @@ from pathlib import Path
 
 from content_farm.config import Settings
 from content_farm.script_gen.schemas import Script
-from content_farm.voice.factory import effective_voice_id
+from content_farm.voice.factory import LEGACY_MODEL, effective_tts_model, effective_voice_id
 from content_farm.voice.protocol import TTSProvider
 from content_farm.voice.schemas import AudioSegment, VoiceArtifact
 from content_farm.voice.text_normalize import normalize_for_tts
@@ -45,9 +45,18 @@ async def _get_audio_duration(file_path: Path) -> float:
 IDENTITY_FILE = "voice_identity.json"
 
 
-def _identity(provider: str, voice_id: str, tts_text: str) -> dict[str, str]:
+def _identity(provider: str, voice_id: str, tts_text: str, model: str = "") -> dict[str, str]:
     text_sha = hashlib.sha256(tts_text.encode("utf-8")).hexdigest()[:16]
-    return {"provider": provider, "voice_id": voice_id, "text_sha": text_sha}
+    identity = {"provider": provider, "voice_id": voice_id, "text_sha": text_sha}
+    return {**identity, "model": model} if model else identity
+
+
+def _with_legacy_model(record: object) -> object:
+    """Records written before the model was tracked name no model: they used the old default."""
+    if not isinstance(record, dict) or "model" in record:
+        return record
+    legacy = LEGACY_MODEL.get(str(record.get("provider")), "")
+    return {**record, "model": legacy} if legacy else record
 
 
 class VoiceGenerator:
@@ -71,6 +80,7 @@ class VoiceGenerator:
         self._output_dir = output_dir or Path("output/audio")
         self._semaphore = asyncio.Semaphore(settings.max_concurrent_scenes)
         self._voice_id = effective_voice_id(settings)
+        self._model = effective_tts_model(settings)
 
     def _load_identities(self) -> dict[str, dict[str, str]]:
         path = self._output_dir / IDENTITY_FILE
@@ -92,8 +102,8 @@ class VoiceGenerator:
 
     async def generate(self, script: Script) -> VoiceArtifact:
         """Generate audio for all scenes in the script."""
-        logger.info("TTS voice: provider=%s voice_id=%s (%s)", self._settings.tts_provider,
-                    self._voice_id or "(provider default)",
+        logger.info("TTS voice: provider=%s model=%s voice_id=%s (%s)", self._settings.tts_provider,
+                    self._model or "-", self._voice_id or "(provider default)",
                     "CF_TTS_VOICE_ID" if self._settings.tts_voice_id else "provider default setting")
         narrations = [scene.narration for scene in script.scenes]
         tasks = []
@@ -178,11 +188,11 @@ class VoiceGenerator:
             output_path = self._output_dir / f"scene_{scene_number:03d}.mp3"
 
             tts_text = normalize_for_tts(narration, pronunciation_map)
-            identity = _identity(self._settings.tts_provider, self._voice_id, tts_text)
+            identity = _identity(self._settings.tts_provider, self._voice_id, tts_text, self._model)
             exists = output_path.exists() and output_path.stat().st_size > 0
 
             # Skip the API call only for audio made by this voice from this text (I-1)
-            if exists and self._load_identities().get(output_path.name) == identity:
+            if exists and _with_legacy_model(self._load_identities().get(output_path.name)) == identity:
                 logger.info("Reusing existing audio: %s", output_path)
                 duration = await _get_audio_duration(output_path)
                 return AudioSegment(

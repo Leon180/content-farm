@@ -94,10 +94,7 @@ def _voice_env(ctx: Context) -> dict[str, str]:
         env.setdefault("CF_ANTHROPIC_API_KEY", os.environ.get("CF_ANTHROPIC_API_KEY", "dummy-unused"))
         return env
     choice = voice_choice(ctx)
-    env = {**env_file_defaults(ctx.options.env_file), **env, "CF_TTS_PROVIDER": choice.provider}
-    if choice.from_channel:
-        env["CF_TTS_VOICE_ID"] = choice.voice_id
-    return env
+    return {**env_file_defaults(ctx.options.env_file), **env, **choice.env()}
 
 
 def _media_args(ctx: Context) -> tuple[str, ...]:

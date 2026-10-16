@@ -57,6 +57,9 @@ class Mascot(_Strict):
 class Voice(_Strict):
     provider: str = "fish_audio"
     voice_id_env: str = Field(description="env var holding the TTS voice/model id")
+    # TTS model for this channel (Fish: sent as the `model` header). None = CF_FISH_AUDIO_MODEL,
+    # else the provider default. Changing voice id or model re-voices the whole video.
+    model: str | None = Field(default=None, min_length=1, max_length=40)
 
     @field_validator("voice_id_env")
     @classmethod

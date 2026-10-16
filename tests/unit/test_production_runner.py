@@ -147,7 +147,7 @@ def test_paid_voice_needs_consent(run_dir: Path) -> None:
 def voice_env_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """An env file standing in for .env; the process environment has none of these keys."""
     for key in ("CF_CHIPCAT_VOICE_ID", "CF_FISH_AUDIO_REFERENCE_ID", "CF_FISH_AUDIO_API_KEY",
-                "CF_TTS_PROVIDER", "CF_TTS_VOICE_ID"):
+                "CF_TTS_PROVIDER", "CF_TTS_VOICE_ID", "CF_FISH_AUDIO_MODEL"):
         monkeypatch.delenv(key, raising=False)
     path = tmp_path / "voice.env"
     path.write_text("CF_FISH_AUDIO_API_KEY=sk-secret-key\nCF_FISH_AUDIO_REFERENCE_ID=default-ref\n"
@@ -219,6 +219,33 @@ def test_changing_the_voice_reruns_the_voice_step(run_dir: Path, voice_env_file:
     runner.run(until="voice")
     assert executor.calls == ["voice"]
     assert executor.envs["voice"]["CF_TTS_VOICE_ID"] == "new-voice"
+
+
+def test_changing_the_tts_model_reruns_the_voice_step(run_dir: Path, voice_env_file: Path) -> None:
+    """Switching voice = config only: the model (CF_FISH_AUDIO_MODEL) is part of the voice."""
+    executor = FakeExecutor(run_dir)
+    log = _run_through_voice(run_dir, executor, voice_env_file)
+    assert executor.envs["voice"]["CF_FISH_AUDIO_MODEL"] == "s2.1-pro"  # default
+    assert "model=s2.1-pro" in next(line for line in log if line.startswith("voice:"))
+    runner = _paid_runner(run_dir, executor, voice_env_file, [])
+    executor.calls.clear()
+    runner.run(until="voice")
+    assert "voice" not in executor.calls  # control: same model resumes
+    with voice_env_file.open("a", encoding="utf-8") as handle:
+        handle.write("CF_FISH_AUDIO_MODEL=speech-1.5\n")
+    runner.run(until="voice")
+    assert executor.calls == ["voice"]
+    assert executor.envs["voice"]["CF_FISH_AUDIO_MODEL"] == "speech-1.5"
+
+
+def test_channel_yaml_model_wins_over_env(voice_env_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from content_farm.production.voice_choice import choose_voice
+
+    monkeypatch.setenv("CF_FISH_AUDIO_MODEL", "speech-1.5")
+    base = load_channel("chipcat")
+    pinned = base.model_copy(update={"voice": base.voice.model_copy(update={"model": "s1"})})
+    assert choose_voice(base, voice_env_file, mock=False).model == "speech-1.5"
+    assert choose_voice(pinned, voice_env_file, mock=False).model == "s1"
 
 
 def test_failed_step_stops_and_retries(run_dir: Path) -> None:

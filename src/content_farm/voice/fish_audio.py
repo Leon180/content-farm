@@ -20,9 +20,13 @@ class FishAudioProvider:
         self,
         api_key: str,
         reference_id: str = "",
+        model: str = "s2.1-pro",
     ) -> None:
+        if not model:
+            raise ValueError("Fish Audio model must not be empty (CF_FISH_AUDIO_MODEL)")
         self._session = Session(apikey=api_key)
         self._reference_id = reference_id or None
+        self._model = model
 
     async def generate_speech(
         self,
@@ -39,7 +43,7 @@ class FishAudioProvider:
 
         request = TTSRequest(**kwargs)
         chunks: list[bytes] = []
-        for chunk in self._session.tts(request):
+        for chunk in self._session.tts(request, backend=self._model):
             chunks.append(chunk)
         audio = b"".join(chunks)
 
@@ -47,7 +51,8 @@ class FishAudioProvider:
         output_path.write_bytes(audio)
 
         byte_count = len(audio)
-        logger.info("Fish Audio TTS: %d bytes, %d chars -> %s", byte_count, len(text), output_path)
+        logger.info("Fish Audio TTS (%s): %d bytes, %d chars -> %s", self._model, byte_count, len(text),
+                    output_path)
         return byte_count
 
     async def generate_speech_with_context(
