@@ -116,9 +116,25 @@ def apply_transitions(
     return finals
 
 
+def ai_credits_text(entries: Sequence[dict]) -> str:
+    """Which models drew the 「AI 示意圖」 frames, one line per model."""
+    models: dict[str, dict] = {}
+    for entry in entries:
+        if entry.get("kind") == "ai_image":
+            models.setdefault(entry.get("model_name") or entry.get("model") or "未記錄", entry)
+    if not models:
+        return ""
+    lines = ["AI 示意圖 / AI illustrations（非史料，僅示意）:"]
+    for name, entry in models.items():
+        origin = entry.get("origin_repo")
+        lines.append(f"- {name}" + (f"（{origin}, {entry.get('license_url', '')}）" if origin else ""))
+    return "\n".join(lines)
+
+
 def credits_text(entries: Sequence[dict]) -> str:
     """Ready-to-paste block for the YouTube description."""
-    artwork = artwork_credits_text(entries)
+    blocks = [block for block in (artwork_credits_text(entries), ai_credits_text(entries)) if block]
+    artwork = "\n\n".join(blocks)
     stock = [e for e in entries if e.get("kind") == "stock"]
     if not stock:
         return artwork

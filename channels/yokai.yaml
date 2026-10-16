@@ -32,6 +32,15 @@ media:
   artwork: true           # Met／AIC／Rijksmuseum 等 CC0；大英博物館 NC 不可用
   artwork_license_required: true
   source_footage: false
+ai_illustration:          # Leon 2026-10-16 cc801e14fbc2：妖怪溯源所用 Z-Image 水墨風
+  provider: local_mflux
+  model: z-image-turbo
+  style_prefix: >-
+    Traditional East Asian ink wash painting on aged rice paper, loose expressive brush strokes,
+    muted grey ink with light colour washes, illustration, not a photograph, no text, no seal.
+  seed: 42
+  width: 1280
+  height: 720
 gates: [article, deck, media, final]
 youtube:
   refresh_token_env: CF_YT_YOKAI_REFRESH_TOKEN

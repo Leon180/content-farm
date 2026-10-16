@@ -27,6 +27,12 @@ html:has(body.media-overlay), body.media-overlay { background: transparent !impo
   padding: 8px 18px; font-size: 24px; line-height: 1.3; color: #eee;
   background: rgba(16, 18, 22, .72); border-right: 6px solid var(--accent);
 }
+/* AI illustration: fixed badge, top-left under the top bar (clear of mascot and lower third) */
+.ai-label {
+  position: absolute; left: var(--pad-x); top: 96px;
+  padding: 6px 16px; font-size: 26px; line-height: 1.3; font-weight: 700; color: #fff;
+  background: rgba(16, 18, 22, .72); border-radius: 8px; letter-spacing: .04em;
+}
 
 /* ---- news title card ---------------------------------------------------- */
 .news-wrap {

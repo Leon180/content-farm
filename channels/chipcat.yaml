@@ -32,6 +32,15 @@ media:
   ai_image: true
   artwork: false
   source_footage: false
+ai_illustration:          # Leon 2026-10-16 cc801e14fbc2：預設 FLUX.2 klein 4B
+  provider: local_mflux
+  model: flux2-klein-4b
+  style_prefix: >-
+    Clean flat editorial illustration of technology and industry, simple shapes, navy and gold accents,
+    illustration, not a photograph, no text, no logos.
+  seed: 42
+  width: 1280
+  height: 720
 gates: [article, deck, media, final]
 youtube:
   client_id_env: CF_YOUTUBE_CLIENT_ID          # 共用 OAuth client

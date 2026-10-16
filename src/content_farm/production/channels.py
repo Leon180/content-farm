@@ -110,6 +110,41 @@ class MediaPolicy(_Strict):
         return value
 
 
+DEFAULT_STYLE_PREFIX = ("Hand-drawn editorial illustration, flat colours and clean ink lines, "
+                        "illustration, not a photograph, no text, no logos.")
+
+
+class AiIllustration(_Strict):
+    """How ``ai_image`` slides are generated (Leon 2026-10-16 cc801e14fbc2: klein by default,
+    Z-Image ink wash for yokai). Machine paths come from CF_MFLUX_BIN_DIR / CF_MFLUX_HF_HOME."""
+
+    provider: str = Field(default="local_mflux", pattern="^local_mflux$")  # api / browser later
+    model: str = "flux2-klein-4b"
+    style_prefix: str = Field(default=DEFAULT_STYLE_PREFIX, min_length=1, max_length=400)
+    seed: int = Field(default=42, ge=0)
+    width: int = Field(default=1280, ge=256, le=2048, multiple_of=16)
+    height: int = Field(default=720, ge=256, le=2048, multiple_of=16)
+
+    @field_validator("model")
+    @classmethod
+    def _known_model(cls, value: str) -> str:
+        from content_farm.explainer.illustrate import MODELS
+
+        if value not in MODELS:
+            raise ValueError(f"unknown ai_illustration model {value!r}; known: {', '.join(MODELS)}")
+        return value
+
+    @field_validator("style_prefix")
+    @classmethod
+    def _non_photoreal(cls, value: str) -> str:
+        from content_farm.explainer.illustrate import forbidden_prompt_terms
+
+        bad = forbidden_prompt_terms(value)
+        if bad:
+            raise ValueError(f"style_prefix asks for {bad} (rule: 非擬真、不模仿畫家)")
+        return value
+
+
 class YouTube(_Strict):
     # One OAuth client (shared, CF_YOUTUBE_CLIENT_ID/SECRET as today); one refresh token per
     # channel, minted by scripts/get_youtube_token.py while signed in as that channel.
@@ -144,6 +179,7 @@ class Channel(_Strict):
     cadence: Cadence
     shorts_strategy: str
     media: MediaPolicy = MediaPolicy()
+    ai_illustration: AiIllustration = AiIllustration()
     gates: tuple[Gate, ...]
     youtube: YouTube
     notes: tuple[str, ...] = ()

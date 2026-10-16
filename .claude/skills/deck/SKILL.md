@@ -69,10 +69,18 @@ Body per layout (limits are enforced; the renderer fails on overflow anyway):
 | `slide` (default; omit `media`) | dense comparisons, tables, anything the viewer must read | — | static slide PNG |
 | `animated` | the slide whose point is a change | `animation` | same slide with an entrance animation, held on the final frame. `count_up` (big_number) · `grow_bars` (big_number/compare/bullets) · `reveal_list` (bullets/compare/timeline) · `draw_line` (timeline) · `fade_in` (any) |
 | `stock` | generic B-roll while narration explains | `query` (English, rules below) | Pexels → Pixabay B-roll, 1920×1080, lower-third with heading + key line. Falls back to `animated` when nothing relevant is found |
-| `ai_image` | an analogy that has no footage (e.g. "a cat assembling LEGO on a silicon plate") — illustration only, never a fake photo of a real place/person/product | `prompt` | Ken Burns on `assets/ai_images/<slide id>.png`; a red "AI 插圖待補" placeholder until it exists |
+| `ai_image` | an analogy, a mood, a scene reconstruction or a transition that has no footage and **no public-domain artwork** (e.g. "a cat assembling LEGO on a silicon plate") — rules below | `prompt` (English, content only: the channel adds its style prefix) | the `illustrate` step draws it with the channel's local model (`channels/<code>.yaml` → `ai_illustration`), then Ken Burns with the fixed 「AI 示意圖」 badge; a red "AI 插圖待補" placeholder until it exists |
 | `title_card` | a dated news event from the article timeline | `source_id` (must be in `sources`; `headline` recommended) | self-made news card (publisher, date, headline, `summary`); give that source `publisher` and `published` (YYYY-MM[-DD]). Never a screenshot |
 
 Mix: about a third `slide`, ≥ 1 `title_card`, no more than 3 `stock` in a row. Lint (`--strict`) wants no 3 plain `slide`s in a row and `stock` + `ai_image` ≥ 20 % of slides.
+
+#### AI image rules (Leon 2026-10-16)
+
+1. **Every AI frame carries the 「AI 示意圖」 badge** (top-left). The media step adds it; QC errors on an `ai_image` credit without it, or without model / prompt / seed.
+2. **Only where no public-domain artwork fits**: mood, scene reconstruction, transitions. A historical claim that a real painting can show uses the painting (`artwork`), never an AI picture of it.
+3. **Illustration or ink wash, never photo-real, never a named artist's style.** Do not write "photorealistic", "photograph of", "DSLR", "35mm", "in the style of …", "by artist …" — policy and QC reject them. Never draw a real, identifiable person, product or logo; on yokai never a deity statue (channel notes).
+
+Models: FLUX.2 [klein] 4B by default, Z-Image-Turbo (ink wash) on yokai (decision cc801e14fbc2). Local, free, one image at a time; the step waits while macOS memory pressure is warn or worse. Generated images can get details wrong (tail counts, gravestones): write prompts that do not hinge on a countable detail, and look at every image at gate_media.
 
 #### Stock query rules
 
@@ -143,7 +151,7 @@ python scripts/run_stage.py --stage assembly_timeline --run-dir <run_dir>
 ```
 
 - `media_to_visual.py` (free: Pexels/Pixabay free keys, local Chromium + ffmpeg) replaces `slides_to_visual.py`, which still works for PNG-only decks. Transitions: `--transition crossfade|push|fadeblack|none`, `--transition-seconds 0.3–0.5`. Show the user `media/contact_sheet.png`: red frames mark AI placeholders and stock fallbacks (`media/media_report.json` says why).
-- AI images: the run writes `ai_image_prompts.md`. The user runs `/generate-visuals` with `--storyboard ai_image_prompts.md --out-dir assets/ai_images --variant 0`, then rerun `media_to_visual.py --replace` and assembly.
+- AI images: `python scripts/illustrate.py --run-dir <run_dir> --channel <code>` (the runner's `illustrate` step) writes `assets/ai_images/<slide id>.png` plus a `.json` sidecar (model, prompt, seed, steps, licence) that media copies into `credits.json`. Needs `CF_MFLUX_BIN_DIR` and `CF_MFLUX_HF_HOME`. `--replace` regenerates. A hand-placed image still works but has no parameters, so QC flags it.
 - `credits.json` → `description_text` goes into the YouTube description (stock author + licence links).
 
 - Landscape scripts get `CF_SUBTITLE_MAX_CHARS_PER_LINE_LANDSCAPE` (default 24) per subtitle line; Shorts keep 13. Explainers use **20**: the wrapper allows +4 chars to reach a comma, and at 24 that makes 28-char lines (≈ 1,350 px) that run under the cat (its column starts at x = 1600). `mascot_overlay.py` measures every line and refuses to overlay when one is too wide.

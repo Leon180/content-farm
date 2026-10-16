@@ -55,6 +55,14 @@ def policy_findings(channel: Channel, deck: Deck) -> list[Finding]:
     if bad:
         return [Finding("media_policy", "error",
                         f"channel {channel.code} does not allow: {', '.join(bad)}")]
+    from content_farm.explainer.illustrate import forbidden_prompt_terms
+
+    styled = [f"{slide.id}:{','.join(terms)}" for slide in deck.slides
+              if slide.media_kind == MediaKind.AI_IMAGE and slide.media is not None
+              and (terms := forbidden_prompt_terms(slide.media.prompt))]
+    if styled:
+        return [Finding("ai_style", "error", f"ai_image prompts ask for photo-realism or an artist's "
+                                             f"style (rule: 非擬真、不模仿畫家): {'; '.join(styled)}")]
     return [Finding("media_policy", "ok", f"{len(deck.slides)} slides within channel media policy")]
 
 
@@ -79,9 +87,41 @@ def credits_findings(channel: Channel, credits: dict | None) -> list[Finding]:
                 findings.append(Finding("artwork_license", "error",
                                         f"{entry.get('slide_id')}: licence {licence!r} not usable "
                                         "for a monetised channel (need CC0/PD + licence URL)"))
-    if not findings:
+    findings += ai_image_findings(credits.get("entries", []))
+    if not any(f.level == "error" for f in findings):
         findings.append(Finding("credits", "ok",
                                 f"{len(credits.get('entries', []))} credited assets, none pending"))
+    return findings
+
+
+AI_PARAMS = ("model", "prompt", "seed")
+
+
+def ai_image_findings(entries: list[dict]) -> list[Finding]:
+    """Leon 2026-10-16 rules: every AI frame carries 「AI 示意圖」; generation parameters are
+    recorded; prompts never ask for photo-realism or an artist's style."""
+    from content_farm.explainer.illustrate import AI_LABEL, forbidden_prompt_terms
+
+    ai = [e for e in entries if e.get("kind") == "ai_image"]
+    if not ai:
+        return []
+    findings: list[Finding] = []
+    unlabelled = [e.get("slide_id", "?") for e in ai if e.get("ai_label") != AI_LABEL]
+    if unlabelled:
+        findings.append(Finding("ai_label", "error", f"AI image without the 「{AI_LABEL}」 badge: "
+                                                     f"{', '.join(unlabelled)}"))
+    unrecorded = [f"{e.get('slide_id', '?')}({'/'.join(k for k in AI_PARAMS if e.get(k) in (None, ''))})"
+                  for e in ai if any(e.get(k) in (None, "") for k in AI_PARAMS)]
+    if unrecorded:
+        findings.append(Finding("ai_params", "error",
+                                f"AI image without model/prompt/seed in credits: {', '.join(unrecorded)}"))
+    styled = [f"{e.get('slide_id', '?')}:{','.join(bad)}" for e in ai
+              if (bad := forbidden_prompt_terms(str(e.get("prompt", ""))))]
+    if styled:
+        findings.append(Finding("ai_style", "error", f"photo-real / artist-style prompt: {'; '.join(styled)}"))
+    if not findings:
+        findings.append(Finding("ai_image", "ok", f"{len(ai)} AI image(s) labelled 「{AI_LABEL}」 "
+                                                  "with model/prompt/seed recorded"))
     return findings
 
 

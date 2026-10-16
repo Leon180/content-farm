@@ -20,6 +20,7 @@ from content_farm.explainer.artwork import ARTWORK_DIR, ARTWORK_MANIFEST, Artwor
 from content_farm.explainer.capture import PageCapturer
 from content_farm.explainer.cards import overlay_html, placeholder_html, title_card_html
 from content_farm.explainer.deck import Deck, MediaKind, Section, Slide
+from content_farm.explainer.illustrate import AI_LABEL, load_record
 from content_farm.explainer.pages import SlidePage
 from content_farm.explainer.stock import StockClient, StockUnavailable, candidate_text, credit_entry
 
@@ -117,9 +118,10 @@ def _animated(ctx: MediaContext, job: SlideJob, note: str = "") -> ClipResult:
                    problems=capture.problems)
 
 
-def _overlay_png(ctx: MediaContext, job: SlideJob) -> Path:
+def _overlay_png(ctx: MediaContext, job: SlideJob, ai_label: str = "") -> Path:
     html = ctx.html(f"overlay_{job.index:03d}.html",
-                    overlay_html(ctx.deck, job.section, job.slide, job.index, brand=ctx.brand))
+                    overlay_html(ctx.deck, job.section, job.slide, job.index, brand=ctx.brand,
+                                 ai_label=ai_label))
     return ctx.capturer.still(html, ctx.work_dir / "overlays" / f"overlay_{job.index:03d}.png",
                               transparent=True)
 
@@ -150,11 +152,9 @@ def _ai_image(ctx: MediaContext, job: SlideJob) -> ClipResult:
     image = find_image(ctx.ai_image_dir, job.slide.id)
     out = ctx.clip_path(job, ".mp4")
     if image is not None:
-        clip = ffmpeg_ops.ken_burns(image, _overlay_png(ctx, job), out, job.seconds)
-        return _result(job, "ai_image", clip, note=f"ken burns on {image.name}",
-                       credit={"slide_id": job.slide.id, "slide_index": job.index, "kind": "ai_image",
-                               "file": image.name, "license": "AI-generated (Gemini) for this channel",
-                               "prompt": job.slide.media.prompt if job.slide.media else ""})
+        clip = ffmpeg_ops.ken_burns(image, _overlay_png(ctx, job, ai_label=AI_LABEL), out, job.seconds)
+        return _result(job, "ai_image", clip, note=f"ken burns on {image.name} [{AI_LABEL}]",
+                       credit=_ai_credit(job, image))
     expected = (AI_IMAGE_DIR / f"{job.slide.id}.png").as_posix()
     html = ctx.html(f"placeholder_{job.index:03d}.html",
                     placeholder_html(ctx.deck, job.section, job.slide, job.index, expected,
@@ -162,6 +162,20 @@ def _ai_image(ctx: MediaContext, job: SlideJob) -> ClipResult:
     png = ctx.capturer.still(html, ctx.work_dir / "placeholders" / f"{job.slide.id}.png")
     clip = ffmpeg_ops.still_to_clip(png, out, job.seconds)
     return _result(job, USED_PLACEHOLDER, clip, note=f"PLACEHOLDER: {expected} not found")
+
+
+def _ai_credit(job: SlideJob, image: Path) -> dict:
+    """Generation parameters from the illustrate sidecar; a hand-placed image has none
+    (QC then flags the missing model / seed)."""
+    record = load_record(image) or {}
+    model = record.get("model_name") or record.get("model")
+    licence = (f"AI-generated ({model}; model licence {record['license']}) for this channel"
+               if model and record.get("license") else "AI-generated for this channel (generator unrecorded)")
+    keep = ("provider", "model", "model_name", "repo", "origin_repo", "license_url", "seed", "steps", "size")
+    return {"slide_id": job.slide.id, "slide_index": job.index, "kind": "ai_image", "file": image.name,
+            "license": licence, "ai_generated": True, "ai_label": AI_LABEL,
+            "prompt": record.get("prompt") or (job.slide.media.prompt if job.slide.media else ""),
+            **{key: record[key] for key in keep if key in record}}
 
 
 def _artwork(ctx: MediaContext, job: SlideJob) -> ClipResult:
