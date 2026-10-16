@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 短影片試做</title>
+<style>
+:root { --bg:#f5f3ee; --fg:#222; --muted:#666; --line:#ddd; }
+@media (prefers-color-scheme: dark) { :root { --bg:#1b1b1b; --fg:#eee; --muted:#aaa; --line:#333; } }
+body { background:var(--bg); color:var(--fg); font-family:-apple-system,"PingFang TC",sans-serif; margin:16px; }
+.wrap { overflow-x:auto; }
+table { border-collapse:collapse; }
+th, td { border:1px solid var(--line); padding:6px; vertical-align:top; }
+th.row { text-align:left; min-width:120px; }
+video { width:384px; max-width:80vw; display:block; background:#000; }
+.meta, small { color:var(--muted); font-size:12px; }
+td.empty { color:var(--muted); text-align:center; min-width:200px; }
+</style></head><body>
+<h1>AI 短影片試做：九尾狐 × 模型對照（≤3 秒）</h1>
+<p>起始畫面：FLUX.2 [klein] 4B 試作圖。AI 欄是 832×480、69 影格（2.9 秒 @24fps）；視差欄是 1280×720、72 影格（3 秒）。
+每段左上角已燒入「AI 示意圖」。耗時含模型載入；一次只跑一段，生完卸載。詳見 REPORT-ai-video-trial.md。</p>
+<div class="wrap"><table><tr><th></th><th>2.5D 視差（Depth Anything V2 Small＋ffmpeg）<br><small>Apache-2.0（Small 才是；Base/Large 為 CC-BY-NC-4.0）</small></th><th>Wan2.2-TI2V-5B（MLX q8，20 步）<br><small>Apache-2.0</small></th><th>FastWan2.2-TI2V-5B（MLX bf16，DMD 3 步）<br><small>Apache-2.0（繼承 Wan2.2；衍生 repo card）</small></th></tr><tr><th class='row'>s05-tails<br><small>霧中擺尾</small></th><td><video src="clips/parallax-s05-tails.mp4" autoplay loop muted playsinline></video><div class="meta">2.9 s 生成 · swap 6919→6919→6919 MB</div></td><td class="empty">未跑</td><td class="empty">未跑</td></tr><tr><th class='row'>s09-push<br><small>鏡頭緩推</small></th><td><video src="clips/parallax-s09-push.mp4" autoplay loop muted playsinline></video><div class="meta">2.4 s 生成 · swap 6919→6919→6919 MB</div></td><td class="empty">未跑</td><td class="empty">未跑</td></tr><tr><th class='row'>s13-lantern<br><small>燈籠搖曳</small></th><td><video src="clips/parallax-s13-lantern.mp4" autoplay loop muted playsinline></video><div class="meta">2.4 s 生成 · swap 6919→6919→6919 MB</div></td><td class="empty">未跑</td><td class="empty">未跑</td></tr><tr><th class='row'>s24a-reeds<br><small>蘆葦擺動、狐狸回頭</small></th><td><video src="clips/parallax-s24a-reeds.mp4" autoplay loop muted playsinline></video><div class="meta">2.3 s 生成 · swap 6919→6919→6919 MB</div></td><td class="empty">未跑</td><td class="empty">未跑</td></tr><tr><th class='row'>t2v-fox-fields<br><small>純文字生成對照（同 s24a 題材）</small></th><td class="empty">未跑</td><td class="empty">未跑</td><td class="empty">未跑</td></tr></table></div>
+</body></html>

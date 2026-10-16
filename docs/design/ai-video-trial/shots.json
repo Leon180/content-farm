@@ -1,0 +1,40 @@
+{
+  "source": "起始畫面＝feat/ai-illustration 的 FLUX.2 [klein] 4B 試作圖（output/ai-trial/klein4b/*.png，1024×576，seed 42）",
+  "seconds": 3,
+  "seed": 42,
+  "shots": [
+    {
+      "id": "s05-tails",
+      "image": "s05-qingqiu.png",
+      "use": "霧中擺尾",
+      "prompt": "Traditional Chinese ink wash painting comes to life: the nine-tailed fox-like beast on the misty mountain ridge slowly sways its bushy tails, thin mist drifts across the mountains behind it, the camera stays still, gentle subtle motion, ink wash style, illustration",
+      "parallax": {"zoom": 0.06, "pan_x": 0.03}
+    },
+    {
+      "id": "s09-push",
+      "image": "s09-tushan.png",
+      "use": "鏡頭緩推",
+      "prompt": "Chinese ink and light colour illustration, slow cinematic push-in toward the white fox and the lone traveller, river mist drifting slowly through the valley at dawn, calm, subtle motion, ink wash style, illustration",
+      "parallax": {"zoom": 0.12}
+    },
+    {
+      "id": "s13-lantern",
+      "image": "s13-shrine.png",
+      "use": "燈籠搖曳",
+      "prompt": "Ink and watercolour storybook illustration comes to life: the lantern at the village fox shrine sways gently in the evening breeze, warm light flickers, incense smoke curls upward, the small fox figure stays still, static camera, subtle motion, illustration",
+      "parallax": {"zoom": 0.05, "pan_x": -0.04}
+    },
+    {
+      "id": "s24a-reeds",
+      "image": "s24a-fields.png",
+      "use": "蘆葦擺動、狐狸回頭",
+      "prompt": "Moody ink wash night scene comes to life: tall reeds sway in the wind beside grass-covered grave mounds, the red fox slowly turns its head and blinks, crescent moon, slow lateral camera drift, subtle motion, ink wash style, illustration",
+      "parallax": {"pan_x": 0.035, "zoom": 0.04}
+    }
+  ],
+  "t2v": {
+    "id": "t2v-fox-fields",
+    "use": "純文字生成對照（同 s24a 題材）",
+    "prompt": "Moody traditional Chinese ink wash painting animated: a red fox walks at the edge of a rice field beside old grass-covered grave mounds at night, crescent moon, tall reeds swaying, loose expressive brush strokes, mostly monochrome with a touch of rust orange, illustration, not a photograph, no text"
+  }
+}
