@@ -17,6 +17,10 @@ class TestNormalizeForTTS:
         # 年代 starts with 年 so the pattern matches the 年 part
         assert normalize_for_tts("1950年代") == "一九五零年代"
 
+    def test_year_with_space_before_suffix(self):
+        # Decks write "2016 年" (space between Latin and CJK); TTS still gets 二零一六年
+        assert normalize_for_tts("2016 年，輝達") == "二零一六年，輝達"
+
     def test_no_year_suffix_untouched(self):
         # 4 digits without 年 should NOT be converted
         assert normalize_for_tts("有1974個人") == "有1974個人"

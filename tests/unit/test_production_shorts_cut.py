@@ -174,6 +174,21 @@ def test_short_run_dir_uses_the_cut_steps_and_only_the_final_gate(tmp_path: Path
 
 # --- QC & rendering helpers -------------------------------------------------------------------
 
+def test_short_on_a_landscape_channel_is_checked_as_a_short(tmp_path: Path) -> None:
+    chipcat = load_channel("chipcat")  # 16:9, 420-660 s
+    run_dir = tmp_path / "short"
+    assert qc.qc_channel(run_dir, chipcat) is chipcat  # not a cut: the channel's own format
+    cut.write_spec(run_dir, _spec(tmp_path))
+    checked = qc.qc_channel(run_dir, chipcat)
+    assert (checked.format.aspect, checked.format.target_seconds) == ("9:16", (1, 60))
+    assert checked.media == chipcat.media and chipcat.format.aspect == "16:9"  # copy, original untouched
+    streams = {"streams": [{"codec_type": "video", "width": 1080, "height": 1920, "duration": "21.1"},
+                           {"codec_type": "audio", "duration": "21.1"}]}
+    levels = {f.check: f.level for f in qc.format_findings(checked, streams)}
+    assert levels == {"resolution": "ok", "duration": "ok", "av_drift": "ok"}
+    assert {f.check: f.level for f in qc.format_findings(chipcat, streams)}["resolution"] == "error"
+
+
 @needs_font
 def test_portrait_subtitle_check_flags_wide_and_tall_cues(tmp_path: Path) -> None:
     srt = tmp_path / "s.srt"

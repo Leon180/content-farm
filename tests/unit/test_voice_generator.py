@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
@@ -95,6 +96,81 @@ async def test_generate_calls_tts_with_context(
     second_call = mock_tts.generate_speech_with_context.call_args_list[1]
     assert second_call.kwargs["previous_text"] is not None
     assert second_call.kwargs["next_text"] is None
+
+
+def _fish_generator(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, voice_id: str) -> tuple[VoiceGenerator, AsyncMock]:
+    monkeypatch.setenv("CF_ANTHROPIC_API_KEY", "test-key")
+    monkeypatch.setenv("CF_TTS_PROVIDER", "fish_audio")
+    monkeypatch.setenv("CF_FISH_AUDIO_REFERENCE_ID", "default-ref")
+    monkeypatch.setenv("CF_TTS_VOICE_ID", voice_id)
+    settings = Settings(_env_file=None)  # type: ignore[call-arg]
+
+    async def fake_tts(*, text: str, output_path: Path, **_: object) -> int:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_bytes(b"\xff" * 16000)
+        return 16000
+
+    mock_tts = AsyncMock()
+    mock_tts.generate_speech_with_context.side_effect = fake_tts
+    gen = VoiceGenerator(tts=mock_tts, settings=settings, output_dir=tmp_path / "audio")
+    gen._concat_full_audio = AsyncMock(return_value=tmp_path / "audio" / "full.mp3")  # type: ignore[method-assign]
+    gen._generate_subtitles = AsyncMock(return_value=tmp_path / "subtitles.srt")  # type: ignore[method-assign]
+    return gen, mock_tts
+
+
+@pytest.mark.asyncio
+async def test_channel_voice_id_reaches_the_provider(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, sample_script: Script,
+) -> None:
+    gen, mock_tts = _fish_generator(monkeypatch, tmp_path, "chipcat-voice")
+    await gen.generate(sample_script)
+    assert {c.kwargs["voice_id"] for c in mock_tts.generate_speech_with_context.call_args_list} == {"chipcat-voice"}
+
+
+@pytest.mark.asyncio
+async def test_no_override_lets_the_provider_use_its_default(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, sample_script: Script,
+) -> None:
+    gen, mock_tts = _fish_generator(monkeypatch, tmp_path, "")
+    await gen.generate(sample_script)
+    assert {c.kwargs["voice_id"] for c in mock_tts.generate_speech_with_context.call_args_list} == {None}
+    identities = json.loads((tmp_path / "audio" / "voice_identity.json").read_text(encoding="utf-8"))
+    assert identities["scene_001.mp3"]["voice_id"] == "default-ref"
+
+
+@pytest.mark.asyncio
+async def test_existing_audio_is_reused_only_for_the_same_voice_and_text(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, sample_script: Script,
+) -> None:
+    gen, mock_tts = _fish_generator(monkeypatch, tmp_path, "voice-a")
+    await gen.generate(sample_script)
+    assert mock_tts.generate_speech_with_context.call_count == 2
+
+    same, same_tts = _fish_generator(monkeypatch, tmp_path, "voice-a")
+    await same.generate(sample_script)
+    assert same_tts.generate_speech_with_context.call_count == 0  # Reusing existing audio
+
+    other, other_tts = _fish_generator(monkeypatch, tmp_path, "voice-b")
+    await other.generate(sample_script)
+    assert other_tts.generate_speech_with_context.call_count == 2  # new voice: redone
+
+    fixed = sample_script.model_copy(update={"pronunciation_map": {"比特幣": "逼特幣"}})
+    again, again_tts = _fish_generator(monkeypatch, tmp_path, "voice-b")
+    await again.generate(fixed)
+    assert again_tts.generate_speech_with_context.call_count == 2  # TTS text changed in both scenes
+
+
+@pytest.mark.asyncio
+async def test_audio_without_an_identity_record_is_redone(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, sample_script: Script,
+) -> None:
+    audio = tmp_path / "audio"
+    audio.mkdir()
+    for n in (1, 2):
+        (audio / f"scene_{n:03d}.mp3").write_bytes(b"old machine voice")
+    gen, mock_tts = _fish_generator(monkeypatch, tmp_path, "voice-a")
+    await gen.generate(sample_script)
+    assert mock_tts.generate_speech_with_context.call_count == 2
 
 
 @pytest.mark.asyncio

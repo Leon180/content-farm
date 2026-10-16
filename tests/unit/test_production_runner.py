@@ -26,12 +26,14 @@ class FakeExecutor:
         self.run_dir = run_dir
         self.fail = fail or set()
         self.calls: list[str] = []
+        self.envs: dict[str, dict[str, str]] = {}
 
     def __call__(self, command: Command, log_path: Path) -> int:
         script = Path(command.argv[1]).name
         stage = command.argv[command.argv.index("--stage") + 1] if "--stage" in command.argv else ""
         key = stage or script
         self.calls.append(key)
+        self.envs[key] = dict(command.env)
         if key in self.fail:
             return 2
         d = self.run_dir
@@ -139,6 +141,84 @@ def test_paid_voice_needs_consent(run_dir: Path) -> None:
     result = runner.run()
     assert result.outcome is Outcome.PAID and result.step == "voice"
     assert "voice" not in executor.calls and result.exit_code == 3
+
+
+@pytest.fixture()
+def voice_env_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """An env file standing in for .env; the process environment has none of these keys."""
+    for key in ("CF_CHIPCAT_VOICE_ID", "CF_FISH_AUDIO_REFERENCE_ID", "CF_FISH_AUDIO_API_KEY",
+                "CF_TTS_PROVIDER", "CF_TTS_VOICE_ID"):
+        monkeypatch.delenv(key, raising=False)
+    path = tmp_path / "voice.env"
+    path.write_text("CF_FISH_AUDIO_API_KEY=sk-secret-key\nCF_FISH_AUDIO_REFERENCE_ID=default-ref\n"
+                    "CF_TTS_PROVIDER=macos_say\n", encoding="utf-8")
+    return path
+
+
+def _paid_runner(run_dir: Path, executor: FakeExecutor, env_file: Path, log: list[str]) -> Runner:
+    ctx = Context(load_channel("chipcat"), run_dir, RunOptions(allow_paid=True, env_file=env_file))
+    return Runner(ctx, executor=executor, log=log.append)
+
+
+def _run_through_voice(run_dir: Path, executor: FakeExecutor, env_file: Path) -> list[str]:
+    log: list[str] = []
+    runner = _paid_runner(run_dir, executor, env_file, log)
+    runner.run()
+    _approve(run_dir, Gate.ARTICLE)
+    runner.run()
+    _approve(run_dir, Gate.DECK)
+    assert runner.run(until="voice").outcome is Outcome.COMPLETE
+    return log
+
+
+def test_voice_uses_the_channel_voice_id(run_dir: Path, voice_env_file: Path) -> None:
+    with voice_env_file.open("a", encoding="utf-8") as handle:
+        handle.write("CF_CHIPCAT_VOICE_ID=chipcat-voice\n")
+    executor = FakeExecutor(run_dir)
+    log = _run_through_voice(run_dir, executor, voice_env_file)
+    env = executor.envs["voice"]
+    assert env["CF_TTS_VOICE_ID"] == "chipcat-voice"
+    assert env["CF_TTS_PROVIDER"] == "fish_audio"  # the channel's provider, not the file's macos_say
+    assert env["CF_FISH_AUDIO_API_KEY"] == "sk-secret-key"  # handed to the subprocess, never logged
+    voice_line = next(line for line in log if line.startswith("voice:"))
+    assert "chipcat-voice" in voice_line and "CF_CHIPCAT_VOICE_ID" in voice_line
+    events = (run_dir / "production.log.jsonl").read_text(encoding="utf-8")
+    assert "CF_CHIPCAT_VOICE_ID" in events
+    assert all("sk-secret-key" not in line for line in log) and "sk-secret-key" not in events
+
+
+def test_voice_without_channel_id_falls_back_and_says_so(run_dir: Path, voice_env_file: Path) -> None:
+    executor = FakeExecutor(run_dir)
+    log = _run_through_voice(run_dir, executor, voice_env_file)
+    assert "CF_TTS_VOICE_ID" not in executor.envs["voice"]  # provider default applies
+    voice_line = next(line for line in log if line.startswith("voice:"))
+    assert "default-ref" in voice_line and "CF_FISH_AUDIO_REFERENCE_ID" in voice_line
+    assert "退回預設" in voice_line and "CF_CHIPCAT_VOICE_ID 未設" in voice_line
+
+
+def test_process_env_voice_id_wins_over_env_file(
+    run_dir: Path, voice_env_file: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    with voice_env_file.open("a", encoding="utf-8") as handle:
+        handle.write("CF_CHIPCAT_VOICE_ID=from-file\n")
+    monkeypatch.setenv("CF_CHIPCAT_VOICE_ID", "from-env")
+    executor = FakeExecutor(run_dir)
+    _run_through_voice(run_dir, executor, voice_env_file)
+    assert executor.envs["voice"]["CF_TTS_VOICE_ID"] == "from-env"
+
+
+def test_changing_the_voice_reruns_the_voice_step(run_dir: Path, voice_env_file: Path) -> None:
+    executor = FakeExecutor(run_dir)
+    _run_through_voice(run_dir, executor, voice_env_file)
+    runner = _paid_runner(run_dir, executor, voice_env_file, [])
+    executor.calls.clear()
+    runner.run(until="voice")
+    assert "voice" not in executor.calls  # same voice, same inputs: resumed
+    with voice_env_file.open("a", encoding="utf-8") as handle:
+        handle.write("CF_CHIPCAT_VOICE_ID=new-voice\n")
+    runner.run(until="voice")
+    assert executor.calls == ["voice"]
+    assert executor.envs["voice"]["CF_TTS_VOICE_ID"] == "new-voice"
 
 
 def test_failed_step_stops_and_retries(run_dir: Path) -> None:
