@@ -16,6 +16,7 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from content_farm.explainer.brands import brand_codes
+from content_farm.production.identity import Identity
 
 CHANNELS_DIR = Path(__file__).resolve().parents[3] / "channels"
 
@@ -71,12 +72,17 @@ class Format(_Strict):
     length: str = Field(pattern="^(long|short)$")
     aspect: str = Field(pattern="^(16:9|9:16)$")
     target_seconds: tuple[int, int]
+    # The length we aim for inside the range (Leon 2026-10-16: long videos 7–10 min, aim
+    # >= 8:00 when the content holds up — mid-roll ads need 8 min). QC warns below it.
+    goal_seconds: int | None = Field(default=None, gt=0)
 
     @model_validator(mode="after")
     def _range(self) -> Format:
         low, high = self.target_seconds
         if not 0 < low <= high:
             raise ValueError(f"target_seconds must be 0 < min <= max, got {self.target_seconds}")
+        if self.goal_seconds is not None and not low <= self.goal_seconds <= high:
+            raise ValueError(f"goal_seconds {self.goal_seconds} must lie in target_seconds {self.target_seconds}")
         return self
 
 
@@ -185,6 +191,7 @@ class Channel(_Strict):
     ai_illustration: AiIllustration = AiIllustration()
     gates: tuple[Gate, ...]
     youtube: YouTube
+    identity: Identity | None = None   # opening / sign-off / description per channel
     notes: tuple[str, ...] = ()
 
     @field_validator("brand")
@@ -205,6 +212,8 @@ class Channel(_Strict):
             raise ValueError(f"gate(s) {missing} cannot be removed")
         if self.pipeline is Pipeline.EXPLAINER and self.deck_category is None:
             raise ValueError("explainer channels need deck_category")
+        if self.pipeline is Pipeline.EXPLAINER and self.identity is None:
+            raise ValueError("explainer channels need identity (opening, outro, description template)")
         return self
 
     def gate_enabled(self, gate: Gate) -> bool:
@@ -234,3 +243,9 @@ def load_channel(code_or_path: str | Path, channels_dir: Path = CHANNELS_DIR) ->
 
 def load_all(channels_dir: Path = CHANNELS_DIR) -> tuple[Channel, ...]:
     return tuple(load_channel(path, channels_dir) for path in sorted(channels_dir.glob("*.yaml")))
+
+
+def other_identities(channel: Channel, channels_dir: Path = CHANNELS_DIR) -> tuple[Identity, ...]:
+    """Identities of every other channel in ``channels_dir`` (for cross-channel checks)."""
+    return tuple(other.identity for other in load_all(channels_dir)
+                 if other.code != channel.code and other.identity is not None)

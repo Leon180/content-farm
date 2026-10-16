@@ -153,4 +153,10 @@ def _check_media(deck: Deck) -> list[LintIssue]:
                 "title-card-meta",
                 f"slide {slide.id!r}: source {source.id!r} needs publisher and published date",
             ))
+        if not source.headline:
+            issues.append(LintIssue(
+                "title-card-headline",
+                f"slide {slide.id!r}: source {source.id!r} needs the outlet's verbatim headline "
+                f"(shown as 媒體原標題, apart from the channel summary)",
+            ))
     return issues

@@ -62,7 +62,9 @@ dt { color: var(--muted); } dd { margin: 0; overflow-wrap: anywhere; }
     <div class="box chapters"><h2>章節（點擊跳轉）</h2><ul>
       {% for ch in meta.chapters %}<li><a href="#" data-t="{{ ch.seconds }}">{{ ch.timestamp }}</a> {{ ch.title }}</li>{% else %}<li>（無）</li>{% endfor %}
     </ul></div>
-    <div class="box thumb"><h2>縮圖</h2><img src="{{ thumbnail }}" alt="縮圖"><p class="note">{{ kit.thumbnail_note }}</p></div>
+    <div class="box thumb"><h2>縮圖</h2><img src="{{ thumbnail }}" alt="縮圖">
+      <p class="note">手機動態牆實際大小：</p><img src="{{ thumbnail }}" alt="縮圖（手機大小）" style="width:168px;height:auto">
+      <p class="note">{{ kit.thumbnail_note }}</p></div>
     <div class="box tags"><h2>標籤</h2>{% for tag in meta.tags %}<span>#{{ tag }}</span>{% else %}（無）{% endfor %}</div>
     <div class="box"><h2>上傳設定</h2><dl>
       <dt>目標頻道</dt><dd>{{ kit.channel.name }}（{{ kit.channel.code }}）</dd>

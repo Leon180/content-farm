@@ -15,9 +15,11 @@ from typing import Annotated, Literal, Union
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-# Narration speed used for the pre-voice duration estimate. Empirical guess for
-# zh-TW TTS; voice overwrites every scene with the measured duration anyway.
-CHARS_PER_SECOND = 4.5
+# Narration speed used for the pre-voice duration estimate; voice overwrites every
+# scene with the measured duration anyway. Measured on the Fish Audio voices
+# (REPORT-real-voice §2): CoWoS 6.7, cel 6.3, yokai 5.1 chars/s; 5.5 is the
+# conservative middle (was 4.5 for macOS `say`, which over-estimated by ~40%).
+CHARS_PER_SECOND = 5.5
 
 NARRATION_MIN_CHARS = 30
 NARRATION_MAX_CHARS = 220
@@ -207,6 +209,9 @@ class Source(_Frozen):
     url: str = ""
     note: str = ""
     publisher: str = Field(default="", max_length=40)  # title_card: media outlet name
+    # title_card: the outlet's headline verbatim (shown as 「媒體原標題」, kept apart from the
+    # channel's own summary so viewers never mistake our wording for the outlet's).
+    headline: str = Field(default="", max_length=200)
     published: str = Field(default="", pattern=r"^$|^\d{4}-\d{2}(-\d{2})?$")  # YYYY-MM[-DD]
 
 
@@ -221,6 +226,9 @@ class Slide(_Frozen):
     narration: str
     source_ids: tuple[str, ...] = ()
     beat: Beat | None = None  # light segment: sourced gossip or an original deadpan joke
+    # The channel's own view: an argued judgment, our own calculation or comparison — not a
+    # summary of sources. Every publishable deck needs one (YPP "inauthentic content" defence).
+    take: bool = False
     mascot: Mascot | None = None
     media: Media | None = None  # None = the rendered slide (kind "slide")
     notes: str = ""

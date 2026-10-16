@@ -50,6 +50,10 @@ html:has(body.media-overlay), body.media-overlay { background: transparent !impo
   background: var(--accent); color: var(--bg);
 }
 .news-date { font-family: var(--font-mono); color: var(--muted); }
+.news-label { margin-top: 26px; font-size: 24px; font-weight: 700; letter-spacing: 0.08em; color: var(--muted); }
+.news-label-ours { color: var(--accent); }
+.news-original { margin-top: 8px; font-size: 34px; line-height: 1.35; color: var(--muted); font-style: italic; }
+.news-label + .news-headline { margin-top: 6px; }
 .news-headline { margin-top: 34px; font-size: 64px; font-weight: 900; line-height: 1.25; }
 .news-rule { width: 100%; height: 6px; margin-top: 30px; background: var(--accent); border-radius: 3px; transform-origin: left center; }
 .news-summary { margin-top: 28px; font-size: 38px; line-height: 1.45; color: var(--fg); }

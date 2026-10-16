@@ -108,7 +108,7 @@ def scheduled_publish_at(run_dir: Path) -> datetime | None:
 def _internal(ctx: Context, step: Step) -> tuple[bool, str]:
     run_dir, channel = ctx.run_dir, ctx.channel
     if step.name == "policy":
-        findings = qc.policy_findings(channel, load_deck(run_dir / "deck.json"))
+        findings = qc.deck_findings(channel, load_deck(run_dir / "deck.json"))
         bad = [f.message for f in findings if f.level == "error"]
         return (not bad, "; ".join(bad) or findings[0].message)
     if step.name == "qc":

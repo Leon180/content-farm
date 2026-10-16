@@ -1,0 +1,103 @@
+<!doctype html>
+{# 1280x720 channel thumbnail. One character/artwork + <= 10 big characters + one sub line.
+   Text sizes are chosen for a 320 px-wide phone feed: big text >= 120 px here (~30 px there).
+   Brand tokens (:root) and brand helpers (style macro) come from the channel's brand files. #}
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<style>
+{{ root | safe }}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 1280px; height: 720px; overflow: hidden; position: relative; }
+{{ brand_style | safe }}
+.big { position: absolute; font-weight: 900; line-height: 1.08; letter-spacing: -.01em; }
+.hl { color: var(--accent); }
+.visual { position: absolute; }
+/* chipcat: grid paper, wafer behind a big cat, navy text */
+.chipcat-bg { position: absolute; inset: 0; background: var(--bg);
+  background-image: linear-gradient(rgba(14,27,42,.06) 2px, transparent 2px), linear-gradient(90deg, rgba(14,27,42,.06) 2px, transparent 2px);
+  background-size: 48px 48px; }
+.chipcat-rail { position: absolute; left: 0; top: 0; bottom: 0; width: 30px; background: var(--fg); }
+.chipcat-amber { position: absolute; left: 30px; top: 0; bottom: 0; width: 10px; background: var(--amber); }
+.chipcat-wafer { position: absolute; left: 700px; top: 40px; width: 640px; height: 640px; border-radius: 50%;
+  border: 6px solid var(--fg); background: #dfe8f1;
+  background-image: linear-gradient(rgba(14,27,42,.18) 2px, transparent 2px), linear-gradient(90deg, rgba(14,27,42,.18) 2px, transparent 2px);
+  background-size: 64px 64px; }
+.chipcat-die { position: absolute; left: 960px; top: 150px; width: 96px; height: 96px; background: var(--accent); border: 6px solid var(--fg); }
+.chipcat-tag { position: absolute; left: 80px; top: 56px; background: var(--fg); color: #fff; font: 900 34px var(--font-heading); padding: 6px 18px; }
+.chipcat-sub { position: absolute; left: 84px; bottom: 70px; font: 900 50px var(--font-heading); color: #fff; background: var(--accent-2); padding: 8px 22px; }
+.stroke { -webkit-text-stroke: 4px #fff; paint-order: stroke fill; }
+.stroke .hl { -webkit-text-stroke: 0; }
+/* yokai: the artwork is the star, title in vertical brush type */
+.yokai-art { position: absolute; inset: 0; background-size: cover; filter: sepia(.15) contrast(1.05); }
+.yokai-shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(10,8,6,.15) 0%, rgba(10,8,6,.25) 45%, rgba(10,8,6,.92) 70%, rgba(10,8,6,.96) 100%); }
+.yokai-title { position: absolute; right: 150px; top: 30px; height: 670px; writing-mode: vertical-rl; color: var(--fg);
+  font-family: "Weibei TC", "Songti TC", serif; font-weight: 700; letter-spacing: .04em; line-height: 1.15;
+  text-shadow: 0 0 24px rgba(0,0,0,.9), 0 0 4px #000; }
+.yokai-title .hl { color: #ff6a4d; }
+.yokai-sub { position: absolute; right: 60px; top: 60px; writing-mode: vertical-rl; font: 700 50px "Kaiti TC", serif; color: var(--gold, #c9a45c);
+  text-shadow: 0 0 12px #000; }
+.yokai-credit { position: absolute; left: 30px; bottom: 20px; padding: 2px 10px; background: rgba(10,8,6,.7); font: 500 18px "Noto Sans CJK TC", sans-serif; color: rgba(239,228,203,.75); }
+/* cel: animation paper, film-frame key visual, red ring on one number */
+.cel-ring { position: absolute; border: 10px solid var(--accent); border-radius: 50%; transform: rotate(-5deg); }
+</style>
+</head>
+<body class="thumb {{ brand }}">
+{% if brand == "chipcat" %}
+  <div class="chipcat-bg"></div><div class="chipcat-rail"></div><div class="chipcat-amber"></div>
+  <div class="chipcat-wafer"></div><div class="chipcat-die"></div>
+  {% if visual_uri %}<img class="visual" src="{{ visual_uri }}" style="left:700px;top:150px;height:600px">{% endif %}
+  <div class="chipcat-tag">晶片貓拆解</div>
+  <div class="big stroke" style="left:80px;top:140px;width:760px;font-size:{{ 150 if spec.text|length <= 8 else 134 }}px;color:var(--fg)">
+    {% for line in spec.lines %}<div>{% if spec.highlight and spec.highlight in line %}{{ line.split(spec.highlight)[0] }}<span class="hl">{{ spec.highlight }}</span>{{ line.split(spec.highlight)[1] }}{% else %}{{ line }}{% endif %}</div>{% endfor %}
+  </div>
+  {% if spec.sub %}<div class="chipcat-sub">{{ spec.sub }}</div>{% endif %}
+{% elif brand == "yokai" %}
+  {% if visual_uri %}
+  <div class="yokai-art" style="background-image:url('{{ visual_uri }}');background-position:{{ spec.visual.focus|default('center') }} center;filter:blur(18px) brightness(.45)"></div>
+  <div class="yokai-shade"></div>
+  <img class="visual" src="{{ visual_uri }}" style="left:30px;top:20px;width:720px;height:680px;object-fit:cover;
+    object-position:50% 55%;filter:contrast(1.35);
+    box-shadow:0 0 0 3px rgba(239,228,203,.5), 0 20px 60px rgba(0,0,0,.7)">
+  {% else %}<div class="yokai-shade"></div>{% endif %}
+  {% set longest = spec.lines | map('length') | max %}
+  <div class="yokai-title" style="font-size:{{ [150, 620 // longest] | min }}px">
+    {% for line in spec.lines %}<div>{% if spec.highlight and spec.highlight in line %}{{ line.split(spec.highlight)[0] }}<span class="hl">{{ spec.highlight }}</span>{{ line.split(spec.highlight)[1] }}{% else %}{{ line }}{% endif %}</div>{% endfor %}
+  </div>
+  {% if spec.sub %}<div class="yokai-sub">{{ spec.sub }}</div>{% endif %}
+  <div class="seal" style="right:56px;bottom:56px;width:84px;height:84px;font-size:30px">溯源</div>
+  {% if spec.visual.credit %}<div class="yokai-credit">{{ spec.visual.credit }}</div>{% endif %}
+{% elif brand == "cel" %}
+  <div style="position:absolute;inset:0;background:var(--bg)"></div><div class="paper"></div>
+  <div class="pegs" style="left:440px;top:12px;width:400px"></div>
+  <div class="cut" style="right:40px;top:40px">{{ channel_name }}</div>
+  <div class="big" style="left:60px;top:96px;width:820px;font-size:{{ 128 if spec.text|length <= 8 else 116 }}px;color:var(--fg)">
+    {% for line in spec.lines %}<div>{% if spec.highlight and spec.highlight in line %}{{ line.split(spec.highlight)[0] }}<span class="hl">{{ spec.highlight }}</span>{{ line.split(spec.highlight)[1] }}{% else %}{{ line }}{% endif %}</div>{% endfor %}
+  </div>
+  {% if spec.number %}
+  <div class="din" style="position:absolute;left:110px;top:400px;font-size:250px;line-height:1;color:var(--fg)">{{ spec.number }}</div>
+  <div class="cel-ring" style="left:70px;top:380px;width:{{ 150 + 120 * spec.number|length }}px;height:270px"></div>
+  {% if spec.number_note %}<div class="hand" style="position:absolute;left:{{ 200 + 120 * spec.number|length }}px;top:520px;font-size:64px;transform:rotate(-4deg)">← {{ spec.number_note }}</div>{% endif %}
+  {% endif %}
+  {% if visual_uri %}<img class="visual" src="{{ visual_uri }}" style="right:40px;top:150px;height:520px">
+  {% else %}
+  <svg viewBox="0 0 800 800" style="position:absolute;right:10px;top:140px;width:540px;height:540px" fill-rule="evenodd">
+    <path fill="#1f2329" d="M190 170 H610 Q640 170 640 200 V600 Q640 630 610 630 H190 Q160 630 160 600 V200 Q160 170 190 170 Z
+       M180 210 h34 v44 h-34 Z M180 300 h34 v44 h-34 Z M180 390 h34 v44 h-34 Z M180 480 h34 v44 h-34 Z M180 570 h34 v30 h-34 Z
+       M586 210 h34 v44 h-34 Z M586 300 h34 v44 h-34 Z M586 390 h34 v44 h-34 Z M586 480 h34 v44 h-34 Z M586 570 h34 v30 h-34 Z
+       M250 220 H550 V580 H250 Z"/>
+    <text x="400" y="470" text-anchor="middle" font-family="DIN Condensed" font-size="260" fill="#1f2329">24</text>
+    <ellipse cx="400" cy="390" rx="200" ry="150" fill="none" stroke="#cc2f2a" stroke-width="20" transform="rotate(-6 400 390)"/>
+  </svg>
+  {% endif %}
+  {% if spec.sub %}<div class="hand" style="position:absolute;left:66px;bottom:40px;font-size:52px">{{ spec.sub }}</div>{% endif %}
+{% else %}
+  <div style="position:absolute;inset:0;background:var(--bg)"></div>
+  {% if visual_uri %}<img class="visual" src="{{ visual_uri }}" style="right:40px;top:120px;height:560px">{% endif %}
+  <div class="big" style="left:70px;top:150px;width:760px;font-size:140px;color:var(--fg)">
+    {% for line in spec.lines %}<div>{{ line }}</div>{% endfor %}
+  </div>
+  {% if spec.sub %}<div style="position:absolute;left:74px;bottom:70px;font:900 48px sans-serif;color:var(--accent)">{{ spec.sub }}</div>{% endif %}
+{% endif %}
+</body>
+</html>

@@ -2,7 +2,7 @@
   "version": 1,
   "category": "tech",
   "title": "CoWoS 先進封裝：為什麼 AI 晶片卡在這一關",
-  "description": "AI 晶片卡在 CoWoS，不是因為沒人會做，而是這門手藝被冷落多年，需求兩年內爆發，蓋廠卻要好幾年。晶片貓用 24 張圖拆解：CoWoS 是什麼、它怎麼從冷門變咽喉、誰做哪一段、台灣站在哪裡，以及還沒有人知道的事。資料截至 2026-10，所有數字附來源（見下方來源清單）。本頻道不提供投資建議。",
+  "description": "AI 晶片卡在 CoWoS，不是因為沒人會做，而是這門手藝被冷落多年，需求兩年內爆發，蓋廠卻要好幾年。這集拆解：CoWoS 是什麼、它怎麼從冷門變咽喉、誰做哪一段、台灣站在哪裡，以及還沒有人知道的事。資料截至 2026-10，數字來源見下方清單。本頻道不提供投資建議。",
   "tags": [
     "CoWoS",
     "先進封裝",
@@ -218,14 +218,18 @@
           "body": {
             "subtitle": "CoWoS 先進封裝，從冷門到咽喉"
           },
-          "narration": "全世界都在搶 AI 晶片，但真正卡住出貨的，常常不是晶片本身，而是把晶片包起來的那一步。我是晶片貓，今天用二十四張圖，把 CoWoS 這一關拆給你看。",
+          "narration": "全世界都在搶 AI 晶片，但真正卡住出貨的，常常不是晶片本身，而是把晶片包起來的那一步。我是晶片貓，今天要拆的這一關，叫 CoWoS。",
           "mascot": {
             "pose": "wave"
           },
           "media": {
             "kind": "stock",
             "query": "computer processor chip",
-            "keywords": ["processor", "microprocessor", "cpu"]
+            "keywords": [
+              "processor",
+              "microprocessor",
+              "cpu"
+            ]
           },
           "notes": "article §a-hook。開場固定句型。2026-10-15：AI 圖佔位改 stock；先前兩次查詢離題（藥廠無塵室、LED 燈串），改用 processor 關鍵字。footage 比例需 ≥20%（lint）。"
         },
@@ -260,11 +264,12 @@
             "text": "卡住全世界的是時間差，不是技術差。",
             "who": "晶片貓的論點"
           },
-          "narration": "我先把結論放在這裡。CoWoS 不是什麼沒人會的黑科技，它被冷落了很多年；等到 AI 突然需要它，蓋廠、買機台、練良率都要時間。卡住全世界的，是時間差，不是技術差。接下來，我們一張一張證明它。",
+          "narration": "晶片貓的論點先押在這裡。CoWoS 不是什麼沒人會的黑科技，它被冷落了很多年；等到 AI 突然需要它，蓋廠、買機台、練良率都要時間。卡住全世界的，是時間差，不是技術差。接下來，我們一張一張證明它。",
           "mascot": {
             "pose": "point"
           },
-          "notes": "article 開頭 > 論點、§a-conclusion。"
+          "notes": "article 開頭 > 論點、§a-conclusion。",
+          "take": true
         }
       ]
     },
@@ -757,7 +762,11 @@
           "media": {
             "kind": "stock",
             "query": "construction site crane",
-            "keywords": ["construction", "crane", "building"]
+            "keywords": [
+              "construction",
+              "crane",
+              "building"
+            ]
           },
           "notes": "article §a-taiwan、附錄 A 第 1 則、附錄 B 古蹟笑話。2026-10-15：AI 圖佔位改 stock；通用工地畫面，不是 AP7 實景（疊字已標地名，B-roll 只當氣氛）。"
         }
@@ -859,7 +868,7 @@
             "text": "一門被冷落多年的手藝，被要求兩年內長大將近四倍。",
             "who": "晶片貓"
           },
-          "narration": "所以 AI 晶片卡在這一關，真正的意思是：一門被冷落多年的手藝，被要求從 2024 年底約 3.5 萬片，兩年內長到 13 萬片以上。卡住的是蓋廠、買機台、練良率的時間，而這段時間，大部分發生在台灣。本頻道只拆產業，不報明牌。我是晶片貓，下次見。",
+          "narration": "所以 AI 晶片卡在這一關，真正的意思是：一門被冷落多年的手藝，被要求從 2024 年底約 3.5 萬片，兩年內長到 13 萬片以上。卡住的是蓋廠、買機台、練良率的時間，而這段時間，大部分發生在台灣。晶片貓只拆產業、不報明牌。我是晶片貓，我們下一關見。",
           "source_ids": [
             "trendforce-2024-03",
             "trendforce-2026-08"
@@ -867,7 +876,8 @@
           "mascot": {
             "pose": "wave"
           },
-          "notes": "article §a-conclusion。片尾固定句。"
+          "notes": "article §a-conclusion。片尾固定句。",
+          "take": true
         }
       ]
     }

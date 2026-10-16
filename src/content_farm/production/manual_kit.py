@@ -135,6 +135,8 @@ def _thumbnail_source(kit: Kit, at: float | None) -> tuple[Path | None, str]:
         return None, f"影片第 {at:.1f} 秒的畫格（--thumbnail-at）"
     own = kit.meta.get("thumbnail_path")
     if own and (kit.run_dir / own).is_file():
+        if (kit.run_dir / "thumbnail.json").is_file():
+            return kit.run_dir / own, "頻道縮圖產生器（run-dir 的 thumbnail.json → scripts/make_thumbnail.py）"
         return kit.run_dir / own, f"來自 run 的縮圖 `{own}`"
     intro = kit.run_dir / "short" / "intro.png"
     if kit.short_spec is not None and intro.is_file():

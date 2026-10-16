@@ -54,6 +54,8 @@ class FakeExecutor:
             _touch(d / "assembly" / "draft.mp4")
         elif script == "mascot_overlay.py":
             _touch(d / "assembly" / "final.mp4")
+        elif script == "make_thumbnail.py":
+            _touch(d / "thumbnails" / "thumbnail.png")
         return 0
 
 
@@ -67,7 +69,7 @@ def run_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(runner_mod, "LOCK_PATH", tmp_path / "render.lock")
     d = tmp_path / "run"
     d.mkdir()
-    for name in ("article.md", "sources.json", "deck.json"):
+    for name in ("article.md", "sources.json", "deck.json", "thumbnail.json"):
         shutil.copy(EXAMPLE / name, d / name)
     return d
 

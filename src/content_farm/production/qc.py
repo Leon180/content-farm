@@ -66,6 +66,14 @@ def policy_findings(channel: Channel, deck: Deck) -> list[Finding]:
     return [Finding("media_policy", "ok", f"{len(deck.slides)} slides within channel media policy")]
 
 
+def deck_findings(channel: Channel, deck: Deck) -> list[Finding]:
+    """Media policy plus the channel rules (identity, template wording, commentary, mascot)."""
+    from content_farm.production.channel_rules import deck_rule_findings
+    from content_farm.production.channels import other_identities
+
+    return policy_findings(channel, deck) + deck_rule_findings(channel, deck, other_identities(channel))
+
+
 def credits_findings(channel: Channel, credits: dict | None) -> list[Finding]:
     if credits is None:
         return [Finding("credits", "error", "credits.json missing (run media first)")]
@@ -148,6 +156,10 @@ def format_findings(channel: Channel, streams: dict) -> list[Finding]:
     low, high = channel.format.target_seconds
     findings.append(Finding("duration", "ok" if low <= seconds <= high else "warn",
                             f"{seconds:.1f}s (channel target {low}-{high}s)"))
+    goal = channel.format.goal_seconds
+    if goal is not None:
+        findings.append(Finding("duration_goal", "ok" if seconds >= goal else "warn",
+                                f"{seconds:.1f}s vs goal >= {goal}s (mid-roll needs 8:00)"))
     drift = abs(float(audio.get("duration", 0)) - seconds)
     findings.append(Finding("av_drift", "ok" if drift <= AV_DRIFT_SECONDS else "warn",
                             f"audio/video differ by {drift:.2f}s"))
@@ -232,7 +244,8 @@ def qc_channel(run_dir: Path, channel: Channel) -> Channel:
     if not shorts_cut.is_short_cut(run_dir):
         return channel
     short_format = channel.format.model_copy(update={
-        "length": "short", "aspect": "9:16", "target_seconds": (1, int(shorts_cut.MAX_SHORT_SECONDS))})
+        "length": "short", "aspect": "9:16", "target_seconds": (1, int(shorts_cut.MAX_SHORT_SECONDS)),
+        "goal_seconds": None})
     return channel.model_copy(update={"format": short_format})
 
 
@@ -240,12 +253,16 @@ def run_qc(run_dir: Path, channel: Channel, deck: Deck | None) -> dict:
     channel = qc_channel(run_dir, channel)
     findings: list[Finding] = []
     if deck is not None:
-        findings += policy_findings(channel, deck)
+        findings += deck_findings(channel, deck)
     credits_path = run_dir / "credits.json"
     credits = json.loads(credits_path.read_text(encoding="utf-8")) if credits_path.is_file() else None
     if channel.media.stock or channel.media.ai_image or channel.media.artwork:
         findings += credits_findings(channel, credits)
     findings += subtitle_findings(run_dir, channel)
+    if deck is not None and channel.format.length == "long":
+        from content_farm.production.thumbnail import thumbnail_findings
+
+        findings += thumbnail_findings(run_dir, channel)
     video = final_video(run_dir)
     if video is None:
         findings.append(Finding("final_video", "error", "assembly/final.mp4 and draft.mp4 missing"))

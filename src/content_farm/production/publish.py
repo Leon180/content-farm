@@ -109,18 +109,36 @@ def ai_disclosure_line(content: SyntheticContent) -> str | None:
 
 def build_description(channel: Channel, script: Script, credits: dict | None,
                       content: SyntheticContent | None = None) -> str:
+    """Description text; a channel with ``identity`` uses its own header, labels and footer
+    (no two channels share a description template — policy review 2026-10 D3)."""
+    template = channel.identity.description if channel.identity else None
     total = sum(scene.duration_seconds for scene in script.scenes)
-    parts = [*chapter_block(measured_chapters(script), total), script.description, ""]
+    parts = [template.header.replace("{title}", script.video_title), ""] if template else []
+    parts += [*chapter_block(measured_chapters(script), total), script.description, ""]
     if script.sources:
-        parts += ["參考資料：", *(f"• {src}" for src in script.sources), ""]
+        label = template.sources_label if template else "參考資料："
+        parts += [label, *(f"• {src}" for src in script.sources), ""]
     credit_text = (credits or {}).get("description_text", "").strip()
     if credit_text:
         parts += [credit_text, ""]
+    if template:
+        parts.append(template.footer)
     line = ai_disclosure_line(content or SyntheticContent(voice=True, images=True))
     if channel.youtube.ai_disclosure and line:
         parts.append(line)
     parts.append(f"— {channel.name}")
     return "\n".join(parts).strip() + "\n"
+
+
+def _thumbnail_path(run_dir: Path) -> str:
+    """The channel thumbnail (``thumbnails/thumbnail.png`` from thumbnail.json), else any image there
+    except the phone-size review copy."""
+    from content_farm.production.thumbnail import OUT_FILE, SMALL_FILE
+
+    if (run_dir / OUT_FILE).is_file():
+        return OUT_FILE.as_posix()
+    found = _find_relative(run_dir, "thumbnails", ("*.png", "*.jpg"))
+    return "" if found == SMALL_FILE.as_posix() else found
 
 
 def build_meta(
@@ -147,7 +165,7 @@ def build_meta(
         "made_for_kids": False,
         "default_language": script.language,
         "video_path": video.relative_to(run_dir).as_posix(),
-        "thumbnail_path": _find_relative(run_dir, "thumbnails", ("*.png", "*.jpg")),
+        "thumbnail_path": _thumbnail_path(run_dir),
         "subtitle_path": _find_relative(run_dir, "subtitles", ("*.srt", "*.vtt")),
         "chapters": [{"timestamp": _format_timestamp(start), "title": title}
                      for start, title in measured_chapters(script)],

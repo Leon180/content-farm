@@ -32,6 +32,11 @@
         <span class="news-outlet">{{ card.publisher }}</span>
         <span class="news-date">{{ card.date }}</span>
       </div>
+      {% if card.original %}
+      <div class="news-label">媒體原標題</div>
+      <p class="news-original" lang="{{ 'en' if card.original.isascii() else 'ja' }}">{{ card.original }}</p>
+      {% endif %}
+      <div class="news-label news-label-ours">本頻道摘要{% if not card.original %}（非媒體原標題）{% endif %}</div>
       <h1 class="news-headline">{{ card.headline }}</h1>
       <div class="news-rule"></div>
       {% if card.summary %}<p class="news-summary">{{ card.summary }}</p>{% endif %}

@@ -20,10 +20,11 @@ KEY_LINE_MAX = 40
 class TitleCard:
     publisher: str
     date: str
-    headline: str
+    headline: str      # the channel's summary line (本頻道摘要)
     summary: str
     source_id: str
     domain: str
+    original: str = ""  # the outlet's verbatim headline (媒體原標題); "" = not recorded
 
 
 def key_line(slide: Slide) -> str:
@@ -53,6 +54,7 @@ def title_card_for(deck: Deck, slide: Slide) -> TitleCard:
         summary=summary,
         source_id=source.id,
         domain=domain,
+        original=source.headline,
     )
 
 

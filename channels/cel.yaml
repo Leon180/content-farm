@@ -16,7 +16,8 @@ topic_categories: [製作委員會與錢, 動畫師勞動與薪資, 外包與海
 format:
   length: long
   aspect: "16:9"
-  target_seconds: [480, 720]
+  target_seconds: [420, 600]   # Leon 2026-10-16：長片 7–10 分鐘
+  goal_seconds: 480            # 內容撐得起就做到 8:00 以上（mid-roll 門檻），不灌水；QC 低於此值 warn
 cadence:
   long_per_week: 0.5
   shorts_per_week: 1
@@ -46,6 +47,18 @@ youtube:
   channel_id_env: CF_YT_CEL_CHANNEL_ID
   ai_disclosure: true
   default_privacy: private
+identity:   # 政策審查 2026-10 D3：不得與晶片貓共用開場句、說明欄句型、片尾（QC 會比對）
+  opening:
+    format: 場記板式開場：CUT 01 並排兩則互相矛盾的同年新聞，報上頻道名，說明這一集要對哪一筆帳；不報投影片張數
+    signature: 這裡是賽璐璐研究室
+  take_label: 研究室的看法
+  outro:
+    signature: 這卷帳本先對到這裡
+    endcard: 下一卷帳本見
+  description:
+    header: "【賽璐璐研究室・產業帳本】{title}"
+    sources_label: 帳本出處（協會報告、財報、官方調查）：
+    footer: 本片不使用任何動畫原片、PV 或截圖；作品名稱僅作產業討論，不構成投資建議。
 notes:
   - 講產業結構，不複述劇情
   - 作品名稱可提，但畫面不放官方角色、截圖或近似 AI 圖

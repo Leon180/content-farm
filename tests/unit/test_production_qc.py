@@ -70,11 +70,15 @@ def test_format_findings() -> None:
     streams = {"streams": [{"codec_type": "video", "width": 1920, "height": 1080, "duration": "503.2"},
                            {"codec_type": "audio", "duration": "504.6"}]}
     assert {f.check: f.level for f in qc.format_findings(chipcat, streams)} == {
-        "resolution": "ok", "duration": "ok", "av_drift": "ok"}
+        "resolution": "ok", "duration": "ok", "duration_goal": "ok", "av_drift": "ok"}
+    in_range_short_of_goal = {"streams": [{"codec_type": "video", "width": 1920, "height": 1080,
+                                           "duration": "451"}, {"codec_type": "audio", "duration": "451"}]}
+    levels = {f.check: f.level for f in qc.format_findings(chipcat, in_range_short_of_goal)}
+    assert levels["duration"] == "ok" and levels["duration_goal"] == "warn"  # 7:31: fine, but < 8:00
     short = {"streams": [{"codec_type": "video", "width": 1080, "height": 1920, "duration": "30"},
                          {"codec_type": "audio", "duration": "35"}]}
     levels = {f.check: f.level for f in qc.format_findings(chipcat, short)}
-    assert levels == {"resolution": "error", "duration": "warn", "av_drift": "warn"}
+    assert levels == {"resolution": "error", "duration": "warn", "duration_goal": "warn", "av_drift": "warn"}
     assert qc.format_findings(chipcat, {"streams": []})[0].level == "error"
 
 
@@ -132,7 +136,12 @@ def test_meta_uses_final_video_credits_chapters_and_schedule(tmp_path: Path) -> 
     assert meta["video_path"] == "assembly/final.mp4"
     assert meta["privacy_status"] == "private" and meta["publish_at"] == "2026-10-22T19:00:00+08:00"
     assert meta["contains_synthetic_media"] is False  # Studio checkbox off (916c2864e31f)
-    assert meta["description"].startswith("章節：\n0:00 ")
+    # chipcat's own description template (policy review 2026-10 D3), then the chapters
+    assert meta["description"].startswith("【晶片貓拆解報告】")
+    assert "\n\n章節：\n0:00 " in meta["description"]
+    assert "這集查過的資料（媒體報導、法說會、技術文件）：" in meta["description"]
+    assert "參考資料：" not in meta["description"]
+    assert meta["description"].index("晶片貓只拆產業") < meta["description"].index(publish.DISCLOSURE_MARK)
     assert "影片素材 / Stock footage:" in meta["description"]
     assert publish.AI_DISCLOSURE_VOICE_LINE in meta["description"]  # no AI illustration credited
     assert len(meta["chapters"]) == 6 and meta["chapters"][0]["timestamp"] == "0:00"
