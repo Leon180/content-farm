@@ -69,7 +69,7 @@ Body per layout (limits are enforced; the renderer fails on overflow anyway):
 | `slide` (default; omit `media`) | dense comparisons, tables, anything the viewer must read | — | static slide PNG |
 | `animated` | the slide whose point is a change | `animation` | same slide with an entrance animation, held on the final frame. `count_up` (big_number) · `grow_bars` (big_number/compare/bullets) · `reveal_list` (bullets/compare/timeline) · `draw_line` (timeline) · `fade_in` (any) |
 | `stock` | generic B-roll while narration explains | `query` (English, rules below) | Pexels → Pixabay B-roll, 1920×1080, lower-third with heading + key line. Falls back to `animated` when nothing relevant is found |
-| `ai_image` | an analogy, a mood, a scene reconstruction or a transition that has no footage and **no public-domain artwork** (e.g. "a cat assembling LEGO on a silicon plate") — rules below | `prompt` (English, content only: the channel adds its style prefix) | the `illustrate` step draws it with the channel's local model (`channels/<code>.yaml` → `ai_illustration`), then Ken Burns with the fixed 「AI 示意圖」 badge; a red "AI 插圖待補" placeholder until it exists |
+| `ai_image` | an analogy, a mood, a scene reconstruction or a transition that has no footage and **no public-domain artwork** (e.g. "a cat assembling LEGO on a silicon plate") — rules below | `prompt` (English, content only: the channel adds its style prefix) | the `illustrate` step draws it with the channel's local model (`channels/<code>.yaml` → `ai_illustration`), then moves it (2.5D parallax by default, `motion` below) under the fixed 「AI 示意圖」 badge; a red "AI 插圖待補" placeholder until it exists |
 | `title_card` | a dated news event from the article timeline | `source_id` (must be in `sources`; `headline` recommended) | self-made news card (publisher, date, headline, `summary`); give that source `publisher` and `published` (YYYY-MM[-DD]). Never a screenshot |
 
 Mix: about a third `slide`, ≥ 1 `title_card`, no more than 3 `stock` in a row. Lint (`--strict`) wants no 3 plain `slide`s in a row and `stock` + `ai_image` ≥ 20 % of slides.
@@ -81,6 +81,21 @@ Mix: about a third `slide`, ≥ 1 `title_card`, no more than 3 `stock` in a row.
 3. **Illustration or ink wash, never photo-real, never a named artist's style.** Do not write "photorealistic", "photograph of", "DSLR", "35mm", "in the style of …", "by artist …" — policy and QC reject them. Never draw a real, identifiable person, product or logo; on yokai never a deity statue (channel notes).
 
 Models: FLUX.2 [klein] 4B by default, Z-Image-Turbo (ink wash) on yokai (decision cc801e14fbc2). Local, free, one image at a time; the step waits while macOS memory pressure is warn or worse. Generated images can get details wrong (tail counts, gravestones): write prompts that do not hinge on a countable detail, and look at every image at gate_media.
+
+#### AI image motion (Leon 2026-10-16, decision 2bacb8a2b8b0)
+
+Every `ai_image` moves; `media.motion` picks how:
+
+| `motion` | What | Cost |
+|---|---|---|
+| *(absent)* / `parallax` | 2.5D depth parallax (Depth Anything V2 Small): a ≤3 s push-in with slight drift, ping-ponged over the slot. Thin near shapes (reeds, whiskers) are flattened onto their background so they do not stretch | ~3–5 s per slide in the media step |
+| `wan` | Wan2.2-TI2V-5B image-to-video, ≤3 s (832×480, upscaled). Add `motion_prompt` (English, what moves: "the tails sway slowly, mist drifts, static camera") | ~15 min and ~26 GB each, baked beforehand |
+| `ken_burns` | flat push-in (old behaviour) | ffmpeg only |
+
+- **At most 2 `wan` per video** — policy and QC error on a third. Spend them on the opening image or a turning point where something should visibly move (a tail, mist, smoke), not on a still landscape.
+- Wan clips are never made during a render. Bake them first, when the machine is idle (nightly): `python scripts/ai_motion.py status|bake --run-dir <run_dir>`; it waits for the render lock and for no other ffmpeg / mflux / mlx_video process. A `wan` slide without a baked clip falls back to parallax and QC warns.
+- `motion_prompt` follows the same rules as `prompt` (no photo-real, no artist names).
+- Paths: `CF_MLX_VIDEO_HOME` (venv + models, e.g. `~/.local/share/mlx-video`), or `CF_MLX_VIDEO_PYTHON` / `CF_DEPTH_MODEL_DIR` / `CF_WAN_MODEL_DIR`. Unset → every `ai_image` falls back to Ken Burns (QC warns).
 
 #### Stock query rules
 

@@ -15,7 +15,7 @@ import subprocess
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from content_farm.explainer.deck import Deck, MediaKind
+from content_farm.explainer.deck import Deck, MediaKind, Motion
 from content_farm.production.channels import Channel
 
 QC_REPORT = Path("qc") / "qc_report.json"
@@ -59,10 +59,13 @@ def policy_findings(channel: Channel, deck: Deck) -> list[Finding]:
 
     styled = [f"{slide.id}:{','.join(terms)}" for slide in deck.slides
               if slide.media_kind == MediaKind.AI_IMAGE and slide.media is not None
-              and (terms := forbidden_prompt_terms(slide.media.prompt))]
+              and (terms := forbidden_prompt_terms(f"{slide.media.prompt} {slide.media.motion_prompt}"))]
     if styled:
         return [Finding("ai_style", "error", f"ai_image prompts ask for photo-realism or an artist's "
                                              f"style (rule: 非擬真、不模仿畫家): {'; '.join(styled)}")]
+    wan_findings = wan_count_findings(deck)
+    if wan_findings:
+        return wan_findings
     return [Finding("media_policy", "ok", f"{len(deck.slides)} slides within channel media policy")]
 
 
@@ -105,6 +108,49 @@ def credits_findings(channel: Channel, credits: dict | None) -> list[Finding]:
 AI_PARAMS = ("model", "prompt", "seed")
 
 
+def wan_count_findings(deck: Deck) -> list[Finding]:
+    """Wan key shots cost ~15 min and ~26 GB each: at most two per video (2bacb8a2b8b0)."""
+    from content_farm.explainer.wan import MAX_WAN_PER_VIDEO
+
+    wan_slides = [slide.id for slide in deck.slides
+                  if slide.media_kind == MediaKind.AI_IMAGE and slide.media is not None
+                  and slide.media.motion_kind == Motion.WAN]
+    if len(wan_slides) > MAX_WAN_PER_VIDEO:
+        return [Finding("ai_motion", "error", f"{len(wan_slides)} slides ask for motion: wan "
+                                              f"(max {MAX_WAN_PER_VIDEO}): {', '.join(wan_slides)}")]
+    return []
+
+
+def ai_motion_findings(ai: list[dict]) -> list[Finding]:
+    """Every AI frame's motion is recorded: Wan with model/prompt/seed, parallax with its depth
+    tool; a fallback (e.g. Wan not baked) is a warning, not an error."""
+    from content_farm.explainer.wan import MAX_WAN_PER_VIDEO
+
+    if not any("motion" in e for e in ai):
+        return []  # credits written before motion existed (2026-10-16 ai-illustration runs)
+    findings: list[Finding] = []
+    moves = [(e.get("slide_id", "?"), e.get("motion") or {}) for e in ai]
+    wan = [(slide, move) for slide, move in moves if move.get("kind") == Motion.WAN.value]
+    if len(wan) > MAX_WAN_PER_VIDEO:
+        findings.append(Finding("ai_motion", "error",
+                                f"{len(wan)} Wan clips in the video (max {MAX_WAN_PER_VIDEO})"))
+    unrecorded = [slide for slide, move in wan if any(move.get(k) in (None, "") for k in AI_PARAMS)]
+    unrecorded += [slide for slide, move in moves
+                   if move.get("kind") == Motion.PARALLAX.value and not move.get("tool_repo")]
+    if unrecorded:
+        findings.append(Finding("ai_motion", "error",
+                                f"AI motion without its model/parameters: {', '.join(unrecorded)}"))
+    fallbacks = [f"{slide}({move['requested']}→{move.get('kind')}: {move.get('fallback_reason')})"
+                 for slide, move in moves if move.get("requested")]
+    if fallbacks:
+        findings.append(Finding("ai_motion", "warn", f"motion fell back: {'; '.join(fallbacks)}"))
+    if not findings:
+        kinds = sorted({move.get("kind", "none") for _, move in moves})
+        findings.append(Finding("ai_motion", "ok",
+                                f"motion recorded for {len(ai)} AI image(s): {', '.join(kinds)}"))
+    return findings
+
+
 def ai_image_findings(entries: list[dict]) -> list[Finding]:
     """Leon 2026-10-16 rules: every AI frame carries 「AI 示意圖」; generation parameters are
     recorded; prompts never ask for photo-realism or an artist's style."""
@@ -127,7 +173,8 @@ def ai_image_findings(entries: list[dict]) -> list[Finding]:
               if (bad := forbidden_prompt_terms(str(e.get("prompt", ""))))]
     if styled:
         findings.append(Finding("ai_style", "error", f"photo-real / artist-style prompt: {'; '.join(styled)}"))
-    if not findings:
+    findings += ai_motion_findings(ai)
+    if not any(f.level == "error" for f in findings):
         findings.append(Finding("ai_image", "ok", f"{len(ai)} AI image(s) labelled 「{AI_LABEL}」 "
                                                   "with model/prompt/seed recorded"))
     return findings

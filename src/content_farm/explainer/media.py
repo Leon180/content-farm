@@ -21,6 +21,8 @@ from content_farm.explainer.capture import PageCapturer
 from content_farm.explainer.cards import overlay_html, placeholder_html, title_card_html
 from content_farm.explainer.deck import Deck, MediaKind, Section, Slide
 from content_farm.explainer.illustrate import AI_LABEL, load_record
+from content_farm.explainer.motion import plan_motion
+from content_farm.explainer.motion_cache import MotionPaths
 from content_farm.explainer.pages import SlidePage
 from content_farm.explainer.stock import StockClient, StockUnavailable, candidate_text, credit_entry
 
@@ -62,6 +64,7 @@ class MediaContext:
     stock: StockClient | None
     static_png_ok: bool  # True when transitions are off: plain slides stay PNG
     brand: str | None = None  # channel brand stylesheet (None = deck category theme)
+    motion_paths: MotionPaths | None = None  # local video tools (None = ai_image falls back to Ken Burns)
     ai_image_dir: Path = field(init=False)
     artwork: dict[str, ArtworkEntry] = field(init=False)
 
@@ -152,9 +155,16 @@ def _ai_image(ctx: MediaContext, job: SlideJob) -> ClipResult:
     image = find_image(ctx.ai_image_dir, job.slide.id)
     out = ctx.clip_path(job, ".mp4")
     if image is not None:
-        clip = ffmpeg_ops.ken_burns(image, _overlay_png(ctx, job, ai_label=AI_LABEL), out, job.seconds)
-        return _result(job, "ai_image", clip, note=f"ken burns on {image.name} [{AI_LABEL}]",
-                       credit=_ai_credit(job, image))
+        record = load_record(image)
+        plan = plan_motion(ctx.motion_paths, ctx.run_dir, job.slide, job.index, image, record)
+        overlay = _overlay_png(ctx, job, ai_label=AI_LABEL)
+        if plan.clip is None:
+            clip = ffmpeg_ops.ken_burns(image, overlay, out, job.seconds)
+        else:
+            clip = ffmpeg_ops.motion_loop(plan.clip, overlay, out, job.seconds, retime_fps=plan.retime_fps)
+        return _result(job, "ai_image", clip, note=f"{plan.note} on {image.name} [{AI_LABEL}]",
+                       credit={**_ai_credit(job, image, record), "motion": plan.credit},
+                       problems=plan.problems)
     expected = (AI_IMAGE_DIR / f"{job.slide.id}.png").as_posix()
     html = ctx.html(f"placeholder_{job.index:03d}.html",
                     placeholder_html(ctx.deck, job.section, job.slide, job.index, expected,
@@ -164,10 +174,10 @@ def _ai_image(ctx: MediaContext, job: SlideJob) -> ClipResult:
     return _result(job, USED_PLACEHOLDER, clip, note=f"PLACEHOLDER: {expected} not found")
 
 
-def _ai_credit(job: SlideJob, image: Path) -> dict:
+def _ai_credit(job: SlideJob, image: Path, record: dict | None = None) -> dict:
     """Generation parameters from the illustrate sidecar; a hand-placed image has none
     (QC then flags the missing model / seed)."""
-    record = load_record(image) or {}
+    record = record if record is not None else (load_record(image) or {})
     model = record.get("model_name") or record.get("model")
     licence = (f"AI-generated ({model}; model licence {record['license']}) for this channel"
                if model and record.get("license") else "AI-generated for this channel (generator unrecorded)")

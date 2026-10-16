@@ -137,8 +137,9 @@ EXPLAINER_STEPS: tuple[Step, ...] = (
          heavy=True, applies=lambda channel: channel.media.ai_image,
          identity=lambda c: c.channel.ai_illustration.model_dump_json()),
     Step("media", "cmd", "B-roll／動態投影片／AI 圖", outputs=("credits.json", "media/contact_sheet.png"),
+         # assets/ai_motion/*: a Wan clip baked overnight (scripts/ai_motion.py bake) re-runs media.
          inputs=("deck.json", "audio/scene_*.mp3", "slides/slide_*.png", "assets/ai_images/*",
-                 "assets/artwork/*"),
+                 "assets/ai_motion/*.wan.*", "assets/artwork/*"),
          command=lambda c: _py(c, "media_to_visual.py", *_media_args(c)), heavy=True),
     Step("gate_media", "gate", "B-roll／AI 圖／授權審核", gate=Gate.MEDIA,
          artifacts=("media/media_report.json", "credits.json", "media/contact_sheet.png",

@@ -136,6 +136,30 @@ def ken_burns(
     return out
 
 
+def motion_loop(
+    clip: Path, overlay: Path | None, out: Path, duration: float, *, retime_fps: int | None = None,
+) -> Path:
+    """A ≤3 s motion clip (parallax / Wan) over a whole slot: cover-scale to 1920x1080
+    (lanczos, so a 832x480 Wan clip upscales cleanly), play forward then backward and repeat
+    (eased parallax turns without a jolt), burn the overlay on top.
+
+    ``retime_fps``: the clip's own frame rate when it should be re-timed frame for frame to
+    30 fps instead of having frames duplicated (Wan's 24 fps plays at 0.8x, no judder).
+    """
+    total = frame_count(duration)
+    retime = f"setpts=N/{FPS}/TB," if retime_fps and retime_fps != FPS else ""
+    loop = (f"[0:v]{retime}scale={WIDTH}:{HEIGHT}:force_original_aspect_ratio=increase:flags=lanczos,"
+            f"crop={WIDTH}:{HEIGHT},setsar=1,fps={FPS},split[f][b];[b]reverse[r];"
+            f"[f][r]concat=n=2:v=1:a=0,loop=loop=-1:size=32767")
+    args = ["ffmpeg", "-y", "-i", str(clip)]
+    if overlay is not None:
+        args += ["-i", str(overlay), "-filter_complex", f"{loop}[bg];[bg][1:v]overlay=0:0[v]", "-map", "[v]"]
+    else:
+        args += ["-filter_complex", f"{loop}[v]", "-map", "[v]"]
+    run([*args, *_out(out, total)])
+    return out
+
+
 def artwork_plate(
     image: Path, overlay: Path | None, out: Path, duration: float, *, zoom: float = 0.05,
 ) -> Path:

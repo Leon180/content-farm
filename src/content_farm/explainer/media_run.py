@@ -26,6 +26,7 @@ from content_farm.explainer.artwork import artwork_credits_text
 from content_farm.explainer.capture import PageCapturer
 from content_farm.explainer.deck import Deck
 from content_farm.explainer.media import USED_PLACEHOLDER, ClipResult, MediaContext, SlideJob, build_clip
+from content_farm.explainer.motion_cache import MotionPaths
 from content_farm.explainer.pages import build_pages
 from content_farm.explainer.render import _label_font
 from content_farm.explainer.stock import StockClient
@@ -43,6 +44,7 @@ class MediaOptions:
     transition_seconds: float = 0.4
     replace: bool = False
     brand: str | None = None  # channel brand (see explainer.brands); None = category theme
+    motion_paths: MotionPaths | None = None  # ai_image motion tools; None = Ken Burns
 
     def __post_init__(self) -> None:
         if self.transition not in TRANSITION_CHOICES:
@@ -82,7 +84,7 @@ def media_to_visual(
     with PageCapturer() as capturer:
         ctx = MediaContext(deck=deck, run_dir=run_dir, work_dir=work_dir, capturer=capturer,
                            stock=stock, static_png_ok=options.transition == "none",
-                           brand=options.brand)
+                           brand=options.brand, motion_paths=options.motion_paths)
         results = [build_clip(ctx, job) for job in jobs]
     finals = apply_transitions(results, work_dir, options)
     placed = place_files(clips, finals, run_dir / "visual", replace=options.replace)
@@ -117,15 +119,24 @@ def apply_transitions(
 
 
 def ai_credits_text(entries: Sequence[dict]) -> str:
-    """Which models drew the 「AI 示意圖」 frames, one line per model."""
+    """Which models drew (and moved) the 「AI 示意圖」 frames, one line per model or tool."""
     models: dict[str, dict] = {}
+    motion: dict[str, dict] = {}
     for entry in entries:
-        if entry.get("kind") == "ai_image":
-            models.setdefault(entry.get("model_name") or entry.get("model") or "未記錄", entry)
+        if entry.get("kind") != "ai_image":
+            continue
+        models.setdefault(entry.get("model_name") or entry.get("model") or "未記錄", entry)
+        move = entry.get("motion") or {}
+        if move.get("kind") == "wan":
+            motion.setdefault(f"動態 / motion: {move.get('model_name')}", {
+                "origin_repo": move.get("origin_repo"), "license_url": move.get("license_url")})
+        elif move.get("kind") == "parallax":
+            motion.setdefault(f"景深視差 / 2.5D parallax: {move.get('tool')}（工具）", {
+                "origin_repo": move.get("tool_repo"), "license_url": move.get("tool_license_url")})
     if not models:
         return ""
     lines = ["AI 示意圖 / AI illustrations（非史料，僅示意）:"]
-    for name, entry in models.items():
+    for name, entry in {**models, **motion}.items():
         origin = entry.get("origin_repo")
         lines.append(f"- {name}" + (f"（{origin}, {entry.get('license_url', '')}）" if origin else ""))
     return "\n".join(lines)
