@@ -12,7 +12,7 @@
       "model_dir": "/Users/lileon/.claude/jobs/a4c4f187/tmp/models/wan22-ti2v-5b-q8",
       "argv": ["{python}", "-m", "mlx_video.models.wan_2.generate", "--model-dir", "{model_dir}",
                "--prompt", "{prompt}", "{image_flag}", "--width", "{width}", "--height", "{height}",
-               "--num-frames", "{num_frames}", "--steps", "20", "--guide-scale", "5.0",
+               "--num-frames", "{num_frames}", "--steps", "20", "--guide-scale", "5.0", "--tiling", "aggressive",
                "--seed", "{seed}", "--output-path", "{output}"]
     },
     {

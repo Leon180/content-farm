@@ -2,16 +2,22 @@
 
 Usage: python build_gallery.py <shots.json> <out_dir> <docs_dir> [docs_model_id ...]
 - <out_dir>/gallery.html links the full-size labelled clips in <out_dir>
-- <docs_dir>/gallery.html links 640-px re-encodes in <docs_dir>/clips/ (only the listed models, default all)
+- <docs_dir>/gallery.html links 832-px re-encodes in <docs_dir>/clips/ (only the listed models, default all)
+- contact_sheet.png (out_dir) / contact_sheet.jpg (docs_dir): the middle frame of every clip
 """
 
 from __future__ import annotations
 
 import html
+import io
 import json
 import subprocess
 import sys
 from pathlib import Path
+
+from PIL import Image, ImageDraw
+
+from trial_common import font
 
 COLUMNS = [
     ("parallax", "2.5D 視差（Depth Anything V2 Small＋ffmpeg）",
@@ -19,7 +25,7 @@ COLUMNS = [
     ("wan22-5b", "Wan2.2-TI2V-5B（MLX q8，20 步）", "Apache-2.0"),
     ("fastwan-5b", "FastWan2.2-TI2V-5B（MLX bf16，DMD 3 步）", "Apache-2.0（繼承 Wan2.2；衍生 repo card）"),
 ]
-DOCS_WIDTH, DOCS_CRF = 640, 30
+DOCS_WIDTH, DOCS_CRF = 832, 24
 
 
 def latest_rows(out_dir: Path) -> dict[tuple[str, str], dict]:
@@ -39,6 +45,33 @@ def shrink(src: Path, dst: Path) -> None:
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(src), "-vf", f"scale={DOCS_WIDTH}:-2",
                     "-c:v", "libx264", "-preset", "slow", "-crf", str(DOCS_CRF), "-pix_fmt", "yuv420p",
                     "-movflags", "+faststart", "-an", str(dst)], check=True)
+
+
+def middle_frame(path: Path, width: int) -> Image.Image:
+    raw = subprocess.run(["ffmpeg", "-v", "error", "-i", str(path), "-vf", f"select='eq(n\\,34)',scale={width}:-2",
+                          "-frames:v", "1", "-f", "image2pipe", "-vcodec", "png", "-"], capture_output=True, check=True)
+    return Image.open(io.BytesIO(raw.stdout)).convert("RGB")
+
+
+def contact_sheet(shots: dict, rows: dict, out_dir: Path) -> Image.Image:
+    """Middle frame (n=34) of every clip: rows = shots, columns = COLUMNS."""
+    cell_w, cell_h, head, side = 384, 222, 40, 190
+    entries = [(s["id"], s["use"]) for s in shots["shots"]] + [(shots["t2v"]["id"], shots["t2v"]["use"])]
+    sheet = Image.new("RGB", (side + cell_w * len(COLUMNS), head + cell_h * len(entries)), (245, 243, 238))
+    draw, face = ImageDraw.Draw(sheet), font(16)
+    for c, (_, name, _) in enumerate(COLUMNS):
+        draw.text((side + c * cell_w + 6, 10), name.split("（")[0], font=face, fill=(30, 30, 30))
+    for r, (shot_id, use) in enumerate(entries):
+        top = head + r * cell_h
+        draw.text((8, top + 80), f"{shot_id}\n{use}", font=face, fill=(30, 30, 30))
+        for c, (col, _, _) in enumerate(COLUMNS):
+            row = rows.get((col, shot_id))
+            if row and row.get("ok"):
+                frame = middle_frame(out_dir / row["video"], cell_w - 6)
+                sheet.paste(frame, (side + c * cell_w + 3, top + (cell_h - frame.height) // 2))
+            else:
+                draw.text((side + c * cell_w + 150, top + 100), "—", font=face, fill=(120, 120, 120))
+    return sheet
 
 
 def cell(row: dict | None, href: str | None) -> str:
@@ -108,6 +141,9 @@ def main() -> int:
 
     (out_dir / "gallery.html").write_text(page(shots, rows, full_link), encoding="utf-8")
     (docs_dir / "gallery.html").write_text(page(shots, rows, docs_link), encoding="utf-8")
+    sheet = contact_sheet(shots, rows, out_dir)
+    sheet.save(out_dir / "contact_sheet.png")
+    sheet.save(docs_dir / "contact_sheet.jpg", quality=85)
     size = sum(p.stat().st_size for p in (docs_dir / "clips").glob("*.mp4")) if (docs_dir / "clips").is_dir() else 0
     print(f"galleries written; docs clips total {size / 1e6:.1f} MB")
     return 0

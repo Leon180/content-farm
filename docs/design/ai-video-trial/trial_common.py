@@ -14,8 +14,11 @@ LABEL = "AI 示意圖"
 FONTS = ("/System/Library/Fonts/PingFang.ttc", "/System/Library/Fonts/STHeiti Medium.ttc",
          "/Library/Fonts/Arial Unicode.ttf")
 _SWAP = re.compile(r"used = ([\d.]+)M")
-# Processes that mean another session is rendering video; we must not generate alongside them.
+# Processes that mean another session is rendering video or generating images; we must not generate
+# alongside them. RENDER_MARKERS match the executable name; BUSY_PREFIXES match the executable or the
+# script it runs (mflux runs as `python …/bin/mflux-generate…`, so its executable is just Python).
 RENDER_MARKERS = ("ffmpeg", "remotion", "assembly")
+BUSY_PREFIXES = ("mflux",)
 
 
 def font(size: int) -> ImageFont.FreeTypeFont:
@@ -81,7 +84,9 @@ def foreign_renders(own_pids: set[int]) -> list[str]:
         if not pid_text.isdigit() or int(pid_text) in own_pids:
             continue
         exe = cmd.split(" ", 1)[0].rsplit("/", 1)[-1]
-        if exe in RENDER_MARKERS:
+        # Only the executable and the script path count; prompts/messages that merely mention mflux do not.
+        heads = [token.rsplit("/", 1)[-1] for token in cmd.split()[:2]]
+        if exe in RENDER_MARKERS or any(head.startswith(BUSY_PREFIXES) for head in heads):
             hits.append(cmd[:160])
     return hits
 

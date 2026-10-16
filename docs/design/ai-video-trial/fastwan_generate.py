@@ -58,6 +58,7 @@ def main() -> int:
     parser.add_argument("--height", type=int, default=480)
     parser.add_argument("--num-frames", type=int, default=69)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--tiling", default="aggressive")
     args = parser.parse_args()
     config = json.loads((Path(args.model_dir) / "config.json").read_text(encoding="utf-8"))
     dmd = config.get("fastwan_dmd")
@@ -66,7 +67,8 @@ def main() -> int:
     wan_scheduler.FlowMatchEulerScheduler = dmd_scheduler_class([float(s) for s in dmd["sigmas"]])
     generate_video(model_dir=args.model_dir, prompt=args.prompt, image=args.image, width=args.width,
                    height=args.height, num_frames=args.num_frames, steps=len(dmd["sigmas"]) - 1,
-                   guide_scale=1.0, seed=args.seed, output_path=args.output, scheduler="euler")
+                   guide_scale=1.0, seed=args.seed, output_path=args.output, scheduler="euler",
+                   tiling=args.tiling)
     return 0
 
 
