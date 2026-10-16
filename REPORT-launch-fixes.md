@@ -133,9 +133,9 @@
 | `1dce6b3` | Fish 模型可設定（`CF_FISH_AUDIO_MODEL`、頻道 yaml 的 `voice.model`），模型納入 voice 指紋，舊紀錄視為 speech-1.5 |
 | `a12b68b` | cherry-pick Route A 第一輪 rig（`301bd21`），成片的貓和縮圖的貓是同一隻 |
 | `1f38777` | 頻道 identity、channel_rules、`Slide.take`、`goal_seconds`、新聞卡原標題、縮圖產生器（含 runner 步驟 `thumbnail_spec`／`thumbnail`、preview 手機尺寸縮圖） |
-| merge `feat/ai-motion`（9e7de1d） | 依 orchestrator 指示在渲染前合併。只有 CLAIMS.jsonl 衝突，保留本分支的版本 |
-| `shorts` commit | scripted Short：spec 的 `beats`／`answer`、`short_script` → `gate_script` → voice → cut、每拍一頁動畫、`short_motion` QC、`produce.py short-from-long --beats`；`media.ai_note`；deck skill 規則；三支 deck 的修改腳本 |
-| 本 commit | 前後對照圖、`interposer_per_wafer.py`、`before_after.py`、本報告 |
+| `99f36be` merge `feat/ai-motion`（9e7de1d） | 依 orchestrator 指示在渲染前合併。只有 CLAIMS.jsonl 衝突，保留本分支的版本 |
+| `dc342e1` | scripted Short：spec 的 `beats`／`answer`、`short_script` → `gate_script` → voice → cut、每拍一頁動畫、`short_motion` QC、`produce.py short-from-long --beats`；`media.ai_note`；deck skill 規則；三支 deck 的修改腳本 |
+| `50370b9` | 前後對照圖、`interposer_per_wafer.py`、`before_after.py`、本報告 |
 
 新增測試：
 - `test_launch_rules.py` 19 支
