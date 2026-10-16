@@ -1,19 +1,6 @@
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-illustration/REPORT-ai-illustration.md","min_bytes":4000,"why":"派工指定的產物：三項決策套用結果"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-illustration/REPORT-ai-trial.md","min_bytes":4000,"why":"改序信指定的產物：3 模型試圖報告"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-illustration/docs/design/ai-trial/gallery.html","min_bytes":3000,"why":"離線 gallery（模型 × 段落）"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-illustration/docs/design/ai-trial/contact_sheet.png","min_bytes":100000,"why":"15 張總覽圖"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-illustration/output/ai-trial/results.jsonl","min_bytes":5000,"why":"15 張的耗時、記憶體、swap 量測"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-illustration/output/chipcat-7722/assembly/final.mp4","min_bytes":500000,"why":"7,722 chipcat 版成片"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-illustration/output/chipcat-7722/upload/manual/preview.html","min_bytes":2000,"why":"7,722 chipcat 版 preview"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-illustration/output/chipcat-7722/short","pattern":"offwork","why":"片頭片尾已換成晶片貓品牌"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-illustration/output/chipcat-7722/upload/manual/README.md","pattern":"建議選 \\*\\*「是」","why":"決策 1：README 不再建議勾選"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-illustration/REPORT-ai-illustration.md","min_bytes":12000,"why":"第二輪（cc801e14fbc2）已併入同一份報告"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-illustration/output/yokai-kyubi/assembly/draft.mp4","min_bytes":50000000,"why":"九尾狐 AI 水墨版成片"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-illustration/output/yokai-kyubi/upload/manual/preview.html","min_bytes":20000,"why":"九尾狐新 preview"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-illustration/docs/design/ai-illustration/kyubi_before_after.jpg","min_bytes":100000,"why":"前後對照截圖"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-illustration/output/yokai-kyubi/assets/ai_images/s13.json","min_bytes":500,"why":"sidecar 有寫出模型／prompt／seed"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-illustration/output/yokai-kyubi/qc/qc_report.json","pattern":"\"level\": \"error\"","why":"九尾狐 QC 0 error（含 ai_image 標籤／參數檢查）"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-illustration/output/yokai-kyubi/upload/manual","pattern":"暫用機器聲","why":"沿用真配音，沒有退回機器聲"}
-{"kind":"blob_equal","a":"ec6120c:src/content_farm/production/voice_choice.py","b":"HEAD:src/content_farm/production/voice_choice.py","why":"real-voice 的聲音接線原樣 merge 進來"}
-{"kind":"blob_equal","a":"ec6120c:src/content_farm/voice/generator.py","b":"HEAD:src/content_farm/voice/generator.py","why":"同上"}
-{"kind":"clean_worktree","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-illustration","why":"全部 commit；注意 graft/ 是開工前就存在的未追蹤目錄（非本 job 產生），若判不符就是它"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-launch-fixes/REPORT-launch-fixes.md","min_bytes":2000,"why":"dispatch-declared deliverable (progress report; task NOT complete)"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-launch-fixes/src/content_farm/production/thumbnail.py","min_bytes":3000,"why":"thumbnail generator R2"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-launch-fixes/src/content_farm/production/channel_rules.py","min_bytes":2000,"why":"channel identity/commentary/mascot rules"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-launch-fixes/output/cowos-chipcat/assembly/final.mp4","min_bytes":1000,"why":"exists but is the OLD render; new four videos were NOT rendered — expect this to pass yet prove nothing"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-launch-fixes/output/chipcat-7722/short/rewrite_done.marker","min_bytes":1,"why":"Short re-cut not done — expected to FAIL"}
+{"kind":"clean_worktree","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-launch-fixes"}
