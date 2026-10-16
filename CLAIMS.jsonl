@@ -1,10 +1,9 @@
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-illustration/REPORT-ai-illustration.md","min_bytes":4000,"why":"派工指定的產物：三項決策套用結果"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-illustration/REPORT-ai-trial.md","min_bytes":4000,"why":"改序信指定的產物：3 模型試圖報告"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-illustration/docs/design/ai-trial/gallery.html","min_bytes":3000,"why":"離線 gallery（模型 × 段落）"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-illustration/docs/design/ai-trial/contact_sheet.png","min_bytes":100000,"why":"15 張總覽圖"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-illustration/output/ai-trial/results.jsonl","min_bytes":5000,"why":"15 張的耗時、記憶體、swap 量測"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-illustration/output/chipcat-7722/assembly/final.mp4","min_bytes":500000,"why":"7,722 chipcat 版成片"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-illustration/output/chipcat-7722/upload/manual/preview.html","min_bytes":2000,"why":"7,722 chipcat 版 preview"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-illustration/output/chipcat-7722/short","pattern":"offwork","why":"片頭片尾已換成晶片貓品牌"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-illustration/output/chipcat-7722/upload/manual/README.md","pattern":"建議選 \\*\\*「是」","why":"決策 1：README 不再建議勾選"}
-{"kind":"clean_worktree","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-illustration","why":"全部 commit；注意 graft/ 是開工前就存在的未追蹤目錄（非本 job 產生），若判不符就是它"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-video-trial/REPORT-ai-video-trial.md","min_bytes":2000,"why":"派工宣告的預期產物"}
+{"kind":"blob_equal","a":"HEAD:REPORT-ai-video-trial.md","b":"f8ab7f4:REPORT-ai-video-trial.md","why":"報告已 commit 在 feat/ai-video-trial（f8ab7f4）"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-video-trial/docs/design/ai-video-trial/gallery.html","min_bytes":1000,"why":"committed 離線 gallery（14 段 video）"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-video-trial/docs/design/ai-video-trial/clips/wan22-5b-s09-push.mp4","min_bytes":100000,"why":"Wan2.2 I2V 實測產物（代表）"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-video-trial/docs/design/ai-video-trial/clips/fastwan-5b-s09-push.mp4","min_bytes":100000,"why":"FastWan I2V 實測產物（代表）"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-video-trial/docs/design/ai-video-trial/clips/parallax-s09-push.mp4","min_bytes":50000,"why":"2.5D 視差對照組產物（代表）"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-video-trial/output/ai-video-trial/results.jsonl","min_bytes":5000,"why":"每段耗時／RSS／swap 原始量測（不 commit）"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-video-trial/REPORT-ai-video-trial.md","pattern":"WAN_FOOTPRINT","why":"報告裡沒有殘留的待填佔位符"}
+{"kind":"no_unpushed","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-video-trial","why":"預期不符：v3 共同限制是不 push，2 個 commit 只在本機分支 feat/ai-video-trial"}
