@@ -52,7 +52,7 @@ body { background-color:var(--bg); color:var(--fg); font-family:var(--font-headi
   <div class="dots">{% for k in kinds %}<i class="{{ 'on' if k == beat.kind else ('done' if loop.index0 < index else '') }}"></i>{% endfor %}</div>
   <div class="label">{{ label }}</div>
   <div class="card">
-    <div class="headline">{{ beat.screen.headline }}</div>
+    {% set n = beat.screen.headline|length %}<div class="headline"{% if n in [8, 9] or n > 14 %} style="font-size:96px"{% endif %}>{{ beat.screen.headline }}</div>
     {% if beat.screen.number %}<div class="number reveal" data-at="0.5">{{ beat.screen.number }}</div>{% endif %}
     {% if beat.kind == "analogy" and beat.term %}<div class="term reveal" data-at="0.4">{{ beat.term }}</div>{% endif %}
     {% if beat.screen.points %}
@@ -62,7 +62,7 @@ body { background-color:var(--bg); color:var(--fg); font-family:var(--font-headi
 {% elif mode == "end" %}
   <div class="label">每週六・長片整理</div>
   <div class="card"><div class="headline">這週最重要的幾則<br>週六講深一點</div>
-    <ul class="points"><li>原文連結都在說明欄</li><li>本片是摘要＋評論，不是翻譯</li></ul></div>
+    <ul class="points"><li>原文連結都在說明欄</li><li>摘要＋評論，非翻譯</li></ul></div>
 {% else %}
   <div class="label">{{ label }}</div>
   <div class="card"><div class="headline">{{ beat.screen.headline }}</div>
