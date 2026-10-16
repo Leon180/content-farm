@@ -162,6 +162,43 @@
 3. **權重要不要保留**：Wan q8（19.6 GB）、FastWan DiT（10 GB）和 mlx-video 的 venv 都放在本 job 的 tmp，會隨 job 刪除。要保留本機 AI 影片能力，請先把 Wan q8 和 venv 搬到持久位置（例如 `~/.local/share/mlx-video/`）。FastWan 不建議留。
 4. **夜間批次的排程權**：誰負責確保 AI 影片生成時沒有渲染在跑？目前只有 `run_video.py` 的閘門，沒有跨 session 的鎖。
 
+## 6a. Leon 的決定與落地（2026-10-16，orchestrator 轉達）
+
+Leon 的選擇：**視差當預設、Wan 只做關鍵鏡頭，保留 Wan；FastWan 不留**。已照做：
+
+| 項目 | 新位置 | 大小 |
+|---|---|---|
+| Wan2.2-TI2V-5B q8 權重 | `~/.local/share/mlx-video/models/wan22-ti2v-5b-q8/`（從 job tmp 用 `mv` 搬過來，含 LICENSE、NOTICE） | 19.6 GB |
+| Depth Anything V2 Small | `~/.local/share/mlx-video/models/depth-anything-v2-small-hf/` | 99 MB |
+| umt5-xxl tokenizer（備份） | `~/.local/share/mlx-video/models/umt5-xxl-tokenizer/` | 21 MB |
+| venv（Python 3.12.8） | `~/.local/share/mlx-video/venv/` | — |
+| 版本鎖 | `docs/design/ai-video-trial/requirements-lock.txt`（commit），另有一份副本在 `~/.local/share/mlx-video/requirements-lock.txt` | — |
+
+**tokenizer 的坑**：mlx-video 的 `generate.py` 第 336 行把 `AutoTokenizer.from_pretrained("google/umt5-xxl")` 寫死了，讀的是全域 HF cache（`~/.cache/huggingface/hub`），不是 model 目錄。第一次跑 Wan 時它已經自動下載進 cache。我另外把 tokenizer 存了一份到上表的位置當備份。如果哪天清掉 HF cache，要先在有網路時跑一次，或把備份放回 cache。
+
+**重建指令**（venv 的路徑寫死在內部，不能直接搬，只能在新位置重建）：
+
+```bash
+uv venv --python 3.12 ~/.local/share/mlx-video/venv
+uv pip install --python ~/.local/share/mlx-video/venv/bin/python -r docs/design/ai-video-trial/requirements-lock.txt
+# 權重（如需重下）
+hf download Anes1032/Wan2.2-TI2V-5B-mlx-q8 --local-dir ~/.local/share/mlx-video/models/wan22-ti2v-5b-q8
+hf download depth-anything/Depth-Anything-V2-Small-hf --local-dir ~/.local/share/mlx-video/models/depth-anything-v2-small-hf
+```
+
+**使用方式**：
+- `models.json` 的 Wan `model_dir` 已經改成新路徑。
+- `parallax.py` 新增環境變數 `DEPTH_MODEL`，指向本機深度權重。
+- 不設 `DEPTH_MODEL` 時，仍然照舊用 HF repo id 下載／讀 cache。
+
+煙霧測試（都在 `HF_HUB_OFFLINE=1` 下跑，確認不需要網路）🟢：
+- 視差：s09，新 venv＋本機深度權重 → 3.0 秒（深度 1.24 秒），OK。
+- Wan：s09，新 venv＋新權重路徑，用最短的合法設定（9 格、4 步、832×480）→ 牆鐘 118.2 秒（去噪 10.5、VAE 57.2），輸出 832×480×9 格，OK。
+  - peak memory footprint 是 **26.31 GB**，和 69 格／20 步時（25.94 GB）幾乎一樣。這證實峰值是固定成本（多半是 bf16 T5 的載入），和片長、步數無關。
+  - 所以縮短片長省不了記憶體。要壓峰值，得先處理 T5（例如量化，或換成常駐程序後提早釋放）🔴 未驗。
+
+**FastWan**：Leon 說不留。`rm` 在本 session 的 deny 清單裡，我沒有繞路刪。檔案（10 GB）還在 `~/.claude/jobs/a4c4f187/tmp/models/fastwan22-ti2v-5b/`，會隨 job 刪除。裡面指向 Wan 的 T5／VAE symlink 在搬家後已經失效。
+
 ## 7. 產物與副作用
 
 - commit（`docs/design/ai-video-trial/`，docs/ 在 .gitignore 裡，比照 ai-trial 前例用 `add -f`）：
@@ -171,7 +208,9 @@
   - `contact_sheet.jpg`
   - 大小見 CLAIMS。
 - 不 commit（`output/ai-video-trial/`）：原始與標籤版影片、`results.jsonl`、`clip_stats.json`、全尺寸 gallery 和 contact_sheet.png、`PROGRESS.md`、`src/` 起始圖複本。
-- 權重與 venv：`~/.claude/jobs/a4c4f187/tmp/{models,venv-depth,venv-mlxvideo}`，約 30 GB＋venv，會隨本 job 刪除。另有量測用的 `footprint_*.mp4`、檢查用的 `chk_*.png`、`ctl/`（閘門對照用），都在同一個 tmp。
+- 權重與 venv：
+  - Wan 權重和深度權重已經搬到 `~/.local/share/mlx-video/`（見 §6a）。
+  - 留在 job tmp、會隨本 job 刪除的有三樣：FastWan（10 GB）、兩個試做用的 venv（`venv-depth`、`venv-mlxvideo`）、`smoke/` 煙霧測試輸出。另有量測用的 `footprint_*.mp4`、檢查用的 `chk_*.png`、`ctl/`（閘門對照用），都在同一個 tmp。
 - **我造成的一次中斷**：我用 `until grep …; do sleep; done; kill` 想在 s13 寫入結果後停掉舊 runner，但 grep 在 s13 還沒寫入時就判定成立，runner 在 s13 生成途中被殺。孤兒的生成程序我隨即也殺了，s13 用新閘門重跑，數字以重跑為準。
   - 誤判原因沒查。可能是 rtk hook 改寫了 grep 🔴：同一個 session 裡另一次多檔 `grep -h` 的輸出順序也和檔案順序不同。
 - 沒有開瀏覽器、沒有上傳、沒有呼叫付費 API、沒有 push。

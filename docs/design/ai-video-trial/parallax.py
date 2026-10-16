@@ -8,6 +8,7 @@ For every shot in shots.json["shots"] with a "parallax" block, writes <out_dir>/
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import time
@@ -21,7 +22,9 @@ from transformers import AutoImageProcessor, AutoModelForDepthEstimation
 
 from trial_common import label_layer, swap_used_mb
 
-DEPTH_REPO = "depth-anything/Depth-Anything-V2-Small-hf"
+# Local copy kept at ~/.local/share/mlx-video/models/depth-anything-v2-small-hf; override with DEPTH_MODEL.
+# Only the Small checkpoint is Apache-2.0 — Base/Large are CC-BY-NC-4.0, do not swap them in.
+DEPTH_REPO = os.environ.get("DEPTH_MODEL", "depth-anything/Depth-Anything-V2-Small-hf")
 WIDTH, HEIGHT, FPS = 1280, 720, 24
 OVERSCAN = 1.10  # base zoom so warped edges never reveal the border
 

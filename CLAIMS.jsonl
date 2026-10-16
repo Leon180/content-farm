@@ -1,5 +1,11 @@
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-video-trial/REPORT-ai-video-trial.md","min_bytes":2000,"why":"派工宣告的預期產物"}
-{"kind":"blob_equal","a":"HEAD:REPORT-ai-video-trial.md","b":"f8ab7f4:REPORT-ai-video-trial.md","why":"報告已 commit 在 feat/ai-video-trial（f8ab7f4）"}
+{"kind":"file_exists","path":"/Users/lileon/.local/share/mlx-video/models/wan22-ti2v-5b-q8/model.safetensors","min_bytes":5000000000,"why":"Wan q8 DiT 已搬到持久位置"}
+{"kind":"file_exists","path":"/Users/lileon/.local/share/mlx-video/models/wan22-ti2v-5b-q8/t5_encoder.safetensors","min_bytes":11000000000,"why":"Wan T5 已搬到持久位置"}
+{"kind":"file_exists","path":"/Users/lileon/.local/share/mlx-video/models/depth-anything-v2-small-hf/model.safetensors","min_bytes":90000000,"why":"DA-V2 Small 權重持久化"}
+{"kind":"file_exists","path":"/Users/lileon/.local/share/mlx-video/venv/bin/python","min_bytes":1,"why":"venv 已在新位置重建"}
+{"kind":"file_exists","path":"/Users/lileon/.claude/jobs/a4c4f187/tmp/smoke/wan_smoke.mp4","min_bytes":10000,"why":"新位置 Wan 煙霧測試輸出（離線）"}
+{"kind":"file_exists","path":"/Users/lileon/.claude/jobs/a4c4f187/tmp/smoke/parallax/s09-push.mp4","min_bytes":10000,"why":"新位置視差煙霧測試輸出（離線）"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-video-trial/REPORT-ai-video-trial.md","pattern":"SMOKE_WAN","why":"煙霧測試結果已填入"}
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-video-trial/docs/design/ai-video-trial/gallery.html","min_bytes":1000,"why":"committed 離線 gallery（14 段 video）"}
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-video-trial/docs/design/ai-video-trial/clips/wan22-5b-s09-push.mp4","min_bytes":100000,"why":"Wan2.2 I2V 實測產物（代表）"}
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ai-video-trial/docs/design/ai-video-trial/clips/fastwan-5b-s09-push.mp4","min_bytes":100000,"why":"FastWan I2V 實測產物（代表）"}
