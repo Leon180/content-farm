@@ -98,3 +98,33 @@ class PageCapturer:
             frames_captured=frames,
             problems=tuple(problems),
         )
+
+    def animate_staged(self, html_path: Path, out_clip: Path, clip_seconds: float) -> AnimationCapture:
+        """Like :meth:`animate`, for pages whose motion is spread over the whole slot (narration-cued
+        reveals and pulses): only frames inside ``__anim.windows`` are screenshotted; every frame in
+        between is a hard link to the last one (same pixels, no browser work)."""
+        page = self._open(html_path)
+        if not page.evaluate("typeof window.__anim !== 'undefined'"):
+            raise RuntimeError(f"{html_path.name} has no animation runtime")
+        anim_seconds = float(page.evaluate("window.__anim.duration"))
+        windows = page.evaluate("window.__anim.windows || [[0, window.__anim.duration]]")
+        total = ffmpeg_ops.frame_count(clip_seconds, self._fps)
+        active = sorted({i for start, end in windows
+                         for i in range(max(0, math.floor(start * self._fps)), min(total, math.ceil(end * self._fps) + 1))})
+        active_set = set(active) | {0}
+        with tempfile.TemporaryDirectory(prefix="anim_") as tmp:
+            last: Path | None = None
+            for i in range(total):
+                frame = Path(tmp) / f"frame_{i:05d}.png"
+                if i in active_set or last is None:
+                    page.evaluate(f"window.__anim.seek({i / self._fps:.6f})")
+                    page.screenshot(path=str(frame))
+                    last = frame
+                else:
+                    frame.hardlink_to(last)
+            page.evaluate("window.__anim.seek(1e6)")
+            has_content = page.evaluate("!!document.querySelector('.content')")
+            problems = page.evaluate(_LAYOUT_CHECK_JS, [SAFE_TOP, WIDTH, HEIGHT]) if has_content else []
+            ffmpeg_ops.frames_to_clip(str(Path(tmp) / "frame_%05d.png"), out_clip, clip_seconds, size=self._size)
+        return AnimationCapture(clip=out_clip, animation_seconds=anim_seconds,
+                                frames_captured=len(active_set), problems=tuple(problems))

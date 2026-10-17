@@ -144,12 +144,77 @@
     },
   };
 
-  const effects = (recipes[kind] || recipes.fade_in)();
+  // ---- narration-cued staging (v3): body[data-cues] = reveal second per unit,
+  //      body[data-pulses] = [[second, unit index | -1], ...] emphasis while a picture would hold
+  const readJSON = (key) => {
+    try { return JSON.parse(document.body.dataset[key] || 'null'); } catch (e) { return null; }
+  };
+  const cues = readJSON('cues');
+  const pulseList = readJSON('pulses') || [];
+  const unitEls = () => {
+    const layout = document.body.className;
+    if (layout.includes('layout-bullets')) return $$('.bullets li');
+    if (layout.includes('layout-compare')) return $$('.compare .side');
+    if (layout.includes('layout-timeline')) return $$('.timeline .event');
+    return [];
+  };
+  const PULSE = 0.9;
+  const pulseTarget = (idx, units) => {
+    if (idx >= 0 && units[idx]) return units[idx];
+    return document.querySelector('.bignum .value-row, .bignum .value, .quote .text, .quote > *, .news-card, .content');
+  };
+  const pulseFx = (list, units) => {
+    const items = list.map(([t, idx]) => ({ t, el: pulseTarget(idx, units) })).filter((p) => p.el);
+    items.forEach((p) => { p.el.style.transformOrigin = p.el.style.transformOrigin || 'center center'; });
+    return {
+      duration: items.length ? Math.max(...items.map((p) => p.t + PULSE)) : 0,
+      windows: items.map((p) => [p.t, p.t + PULSE]),
+      apply(t) {
+        const bump = new Map();
+        items.forEach((p) => {
+          const x = (t - p.t) / PULSE;
+          if (x >= 0 && x <= 1) bump.set(p.el, Math.max(bump.get(p.el) || 0, Math.sin(Math.PI * x)));
+          else if (!bump.has(p.el)) bump.set(p.el, 0);
+        });
+        bump.forEach((b, el) => {
+          el.style.scale = String(1 + 0.05 * b);
+          el.style.filter = b > 0 ? `drop-shadow(0 0 ${Math.round(18 * b)}px var(--accent, #f5a524))` : '';
+        });
+      },
+    };
+  };
+  const cuedReveal = (units) => {
+    const times = units.map((_, i) => (cues[i] ?? cues[cues.length - 1] ?? 0.4));
+    return {
+      duration: Math.max(0, ...times) + ITEM,
+      windows: times.map((t) => [t, t + ITEM + 0.45]),
+      apply(t) {
+        const shown = times.filter((c) => t >= c).length;
+        units.forEach((el, i) => {
+          const p = ease((t - times[i]) / ITEM);
+          // the unit being talked about is full strength; earlier ones step back a little
+          const later = times[i + 1] !== undefined ? ease((t - times[i + 1]) / 0.45) : 0;
+          const focus = i < shown - 1 ? 1 - 0.32 * later : 1;
+          el.style.opacity = String(p * focus);
+          el.style.transform = `translateY(${(1 - p) * 30}px)`;
+        });
+      },
+    };
+  };
+
+  const baseEffects = (recipes[kind] || recipes.fade_in)();
+  const units = cues ? unitEls() : [];
+  const staged = cues && units.length ? [heading(), cuedReveal(units)] : null;
+  const effects = [...(staged || baseEffects), ...(pulseList.length ? [pulseFx(pulseList, units)] : [])];
+  if (staged && kind === 'draw_line') effects.push(baseEffects[1]);  // keep the timeline rule drawing
   const duration = Math.max(...effects.map((e) => e.duration));
+  const entrance = Math.max(...(staged || baseEffects).map((e) => (e.windows ? 0 : e.duration)), 0);
+  const windows = [[0, entrance], ...effects.flatMap((e) => e.windows || [])];
 
   window.__anim = {
     kind,
     duration,
+    windows,      // [start, end] spans where something moves; the capturer holds frames between them
     seek(t) { effects.forEach((e) => e.apply(Math.min(t, duration + 1))); return true; },
   };
 })();

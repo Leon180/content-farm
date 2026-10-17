@@ -13,4 +13,8 @@
   結果：Test & Compare 機制 🟢（最多 3 款、以觀看時間占比判勝、最長 2 週、僅桌機、Shorts 不適用）；
   **別台頻道縮圖樣式未取得**（搜尋只拿到泛用頁，表格標「未取得」，需人工截圖補）。新 3 款規格：共用淺底 #F0F4F8／深藍 #0F1B2D／橘 #D9480F，
   左上固定「台積電 · CoWoS」標籤；A「晶片不一定翻倍？」＋驚訝貓、B「卡在封裝？」＋自繪剖面圖、C「一片晶圓 70→5」。
+- orchestrator 轉達（已 ack）：db043ed0a7b81988 — pypinyin 可裝進 TTS venv（`~/.local/share/qwen3-tts/.venv`），念錯檢查升拼音層級；
+  不代核 gate_final；不動 yokai run-dir。6b6b317b40f064bb — 念錯政策：speech_check 單段 warn 只記錄，
+  只有合成觀眾點名發音問題才回配音步驟（加發音表＋重生該段）。
+- 已提交 3fd…（見 git log）：retention/、audio_mix/、QC 死區、`mix` 步驟、字幕 60px 半透明底條。
 - 已寫：`src/content_farm/retention/{timing,beats}.py`（句子時間軸、鉤子分類與節拍 lint）。下一步：畫面／聲音探測、死區、混音。

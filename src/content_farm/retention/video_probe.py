@@ -115,7 +115,11 @@ def analyse_frames(frames: np.ndarray) -> VideoReport:
     as_float = frames.astype(np.int16)
     diffs = np.abs(np.diff(as_float, axis=0)).mean(axis=(1, 2))
     duration = round(len(frames) / FPS, 2)
-    events = [round((i + 1) / FPS, 2) for i in np.flatnonzero(diffs > EVENT_DIFF)]
+    # an event = a big change, or motion starting after the picture held still (a list item
+    # fading in moves only a small part of the frame, so its mean |Δ| stays low)
+    moving = diffs >= STILL_DIFF
+    starts = [i for i in range(len(moving)) if moving[i] and (i < 2 or not moving[i - 2:i].any())]
+    events = sorted({round((i + 1) / FPS, 2) for i in [*np.flatnonzero(diffs > EVENT_DIFF), *starts]})
     # collapse an event burst (a cross-fade lasts several samples) into its first sample
     collapsed: list[float] = []
     for t in events:

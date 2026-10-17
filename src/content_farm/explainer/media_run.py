@@ -29,6 +29,7 @@ from content_farm.explainer.media import USED_PLACEHOLDER, ClipResult, MediaCont
 from content_farm.explainer.motion_cache import MotionPaths
 from content_farm.explainer.pages import build_pages
 from content_farm.explainer.render import _label_font
+from content_farm.explainer.stage_cues import plan as stage_plan
 from content_farm.explainer.stock import StockClient
 from content_farm.explainer.timeline import SlideClip, place_files
 
@@ -45,6 +46,7 @@ class MediaOptions:
     replace: bool = False
     brand: str | None = None  # channel brand (see explainer.brands); None = category theme
     motion_paths: MotionPaths | None = None  # ai_image motion tools; None = Ken Burns
+    staged: bool = True   # v3: reveal slide parts with the narration + pulses (no still > 7 s)
 
     def __post_init__(self) -> None:
         if self.transition not in TRANSITION_CHOICES:
@@ -62,16 +64,39 @@ class MediaRun:
     contact_sheet: Path
 
 
-def jobs_for(deck: Deck, clips: Sequence[SlideClip], brand: str | None = None) -> list[SlideJob]:
+def jobs_for(deck: Deck, clips: Sequence[SlideClip], brand: str | None = None,
+             narration: dict[str, list[tuple[float, str]]] | None = None) -> list[SlideJob]:
+    """``narration``: per slide id, (seconds from the slide's start, sentence) — when given,
+    animated slides and news cards are staged to it (stage_cues)."""
     if len(clips) != len(deck.slides):
         raise ValueError(f"{len(clips)} timeline slots for {len(deck.slides)} slides")
     animated_pages = build_pages(deck, animate=True, brand=brand)
     sections = [section for section in deck.sections for _ in section.slides]
-    return [
-        SlideJob(index=c.index, section=sections[c.index - 1], slide=deck.slides[c.index - 1],
-                 seconds=c.seconds, animated_page=animated_pages[c.index - 1])
-        for c in clips
-    ]
+    jobs = []
+    for c in clips:
+        slide = deck.slides[c.index - 1]
+        stage = stage_plan(slide, narration.get(slide.id, []), c.seconds) if narration is not None else None
+        jobs.append(SlideJob(index=c.index, section=sections[c.index - 1], slide=slide,
+                             seconds=c.seconds, animated_page=animated_pages[c.index - 1], stage=stage))
+    return jobs
+
+
+def narration_by_slide(run_dir: Path) -> dict[str, list[tuple[float, str]]] | None:
+    """Sentence timings from the voice step (script.json durations + aligned SRT); None before voice."""
+    from content_farm.retention.timing import load_scenes, sentence_timeline
+
+    try:
+        scenes = load_scenes(run_dir)
+        sentences = sentence_timeline(run_dir, scenes)
+    except (OSError, KeyError, ValueError) as exc:
+        logger.warning("no narration timing for staging (%s); slides keep the entrance-only animation", exc)
+        return None
+    starts = {s.slide_id: s.start for s in scenes}
+    out: dict[str, list[tuple[float, str]]] = {}
+    for sentence in sentences:
+        out.setdefault(sentence.slide_id, []).append((round(sentence.start - starts[sentence.slide_id], 2),
+                                                      sentence.text))
+    return out
 
 
 def media_to_visual(
@@ -80,7 +105,8 @@ def media_to_visual(
 ) -> MediaRun:
     work_dir = run_dir / "media"
     write_prompt_files(deck, run_dir)
-    jobs = jobs_for(deck, clips, brand=options.brand)
+    jobs = jobs_for(deck, clips, brand=options.brand,
+                    narration=narration_by_slide(run_dir) if options.staged else None)
     with PageCapturer() as capturer:
         ctx = MediaContext(deck=deck, run_dir=run_dir, work_dir=work_dir, capturer=capturer,
                            stock=stock, static_png_ok=options.transition == "none",

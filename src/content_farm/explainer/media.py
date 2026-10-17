@@ -9,7 +9,9 @@ reason is recorded.
 
 from __future__ import annotations
 
+import json
 import logging
+import re
 import time
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -24,6 +26,7 @@ from content_farm.explainer.illustrate import AI_LABEL, load_record
 from content_farm.explainer.motion import plan_motion
 from content_farm.explainer.motion_cache import MotionPaths
 from content_farm.explainer.pages import SlidePage
+from content_farm.explainer.stage_cues import StagePlan
 from content_farm.explainer.stock import StockClient, StockUnavailable, candidate_text, credit_entry
 
 logger = logging.getLogger(__name__)
@@ -53,6 +56,16 @@ class SlideJob:
     slide: Slide
     seconds: float
     animated_page: SlidePage
+    stage: StagePlan | None = None   # narration-cued reveals + pulses (None = entrance only)
+
+
+def staged_html(html: str, stage: StagePlan | None) -> str:
+    """Put the stage plan on <body> as data-cues / data-pulses for animate.js."""
+    if stage is None:
+        return html
+    attrs = (f" data-cues='{json.dumps(list(stage.reveals))}'"
+             f" data-pulses='{json.dumps([list(p) for p in stage.pulses])}'")
+    return re.sub(r"<body\b", "<body" + attrs, html, count=1)
 
 
 @dataclass
@@ -114,8 +127,13 @@ def _plain_slide(ctx: MediaContext, job: SlideJob) -> ClipResult:
 
 
 def _animated(ctx: MediaContext, job: SlideJob, note: str = "") -> ClipResult:
-    html = ctx.html(f"{job.animated_page.stem}_anim.html", job.animated_page.html)
-    capture = ctx.capturer.animate(html, ctx.clip_path(job, ".mp4"), job.seconds)
+    html = ctx.html(f"{job.animated_page.stem}_anim.html", staged_html(job.animated_page.html, job.stage))
+    if job.stage is not None:
+        capture = ctx.capturer.animate_staged(html, ctx.clip_path(job, ".mp4"), job.seconds)
+        note = f"{note}staged {len(job.stage.reveals)} reveal(s) {len(job.stage.pulses)} pulse(s) " \
+               f"hold≤{job.stage.longest_hold:.1f}s | "
+    else:
+        capture = ctx.capturer.animate(html, ctx.clip_path(job, ".mp4"), job.seconds)
     detail = f"{job.slide.animation.value} {capture.animation_seconds:.1f}s/{capture.frames_captured}f"
     return _result(job, "animated", capture.clip, note=f"{note}{detail}".strip(),
                    problems=capture.problems)
@@ -213,7 +231,12 @@ def _artwork(ctx: MediaContext, job: SlideJob) -> ClipResult:
 
 def _title_card(ctx: MediaContext, job: SlideJob) -> ClipResult:
     html = ctx.html(f"title_card_{job.index:03d}.html",
-                    title_card_html(ctx.deck, job.section, job.slide, job.index, brand=ctx.brand))
-    capture = ctx.capturer.animate(html, ctx.clip_path(job, ".mp4"), job.seconds)
+                    staged_html(title_card_html(ctx.deck, job.section, job.slide, job.index, brand=ctx.brand),
+                                job.stage))
+    if job.stage is not None:
+        capture = ctx.capturer.animate_staged(html, ctx.clip_path(job, ".mp4"), job.seconds)
+    else:
+        capture = ctx.capturer.animate(html, ctx.clip_path(job, ".mp4"), job.seconds)
     source_id = job.slide.media.source_id if job.slide.media else ""
-    return _result(job, "title_card", capture.clip, note=f"source_id={source_id}")
+    pulses = f" {len(job.stage.pulses)} pulse(s)" if job.stage else ""
+    return _result(job, "title_card", capture.clip, note=f"source_id={source_id}{pulses}")
