@@ -24,7 +24,8 @@ from dataclasses import dataclass, field
 from content_farm.voice.pronunciation import KeyTerm
 from content_farm.voice.text_normalize import normalize_for_tts
 
-VARIANTS = str.maketrans("臺裏爲着綫於糰衆峯羣啓", "台裡為著線于團眾峰群啟")
+# opencc s2t leaves these variants; whisper's output and the scripts must compare equal.
+VARIANTS = str.maketrans("臺裏爲着綫於糰衆峯羣啓纔喫", "台裡為著線于團眾峰群啟才吃")
 _DIGITS = "零一二三四五六七八九"
 _NUMBER = re.compile(r"(\d+(?:\.\d+)?)(%?)")
 _THOUSANDS = re.compile(r"(?<=\d),(?=\d{3})")

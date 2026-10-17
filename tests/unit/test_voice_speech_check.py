@@ -169,6 +169,18 @@ async def test_still_failing_keeps_best_take_and_warns(check_settings: Settings,
     assert record["regenerations"] == 3 and record["missing_terms"] == [] and record["cer"] > 0.12
 
 
+def test_reassess_rejudges_stored_transcript_without_resynthesis(check_settings: Settings) -> None:
+    fox = KeyTerm("九尾狐", ("九尾湖",))
+    worker = FakeWorker([])  # any request would pop from an empty list and fail
+    checker = CheckedSynthesizer(FakeTTS(), check_settings, (fox,), worker=worker)  # type: ignore[arg-type]
+    stale = {"status": "warn", "cer": 0.09, "missing_terms": ["九尾狐"], "seed": 5, "regenerations": 3,
+             "hypothesis": "左邊是我們熟悉的九尾湖，右邊是最早的原典"}
+    updated = checker.reassess("左邊是我們熟悉的九尾狐，右邊是最早的原典。", stale)
+    assert updated["status"] == "ok" and updated["missing_terms"] == [] and updated["cer"] == 0
+    assert updated["regenerations"] == 3  # the history of how the take was made is kept
+    assert checker.reassess("x", {"status": "ok"}) == {"status": "ok"}  # nothing to re-judge
+
+
 @pytest.mark.asyncio
 async def test_shared_worker_is_not_closed_by_checker(check_settings: Settings) -> None:
     worker = FakeWorker([])

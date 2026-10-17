@@ -83,6 +83,17 @@ class CheckedSynthesizer:
                            output_path.name, len(attempts), check.best.cer, list(check.best.missing))
         return check
 
+    def reassess(self, narration: str, record: dict) -> dict:
+        """Re-judge a kept take from its stored transcript with the current rules (e.g. a new
+        ``heard_as`` homophone). The audio is unchanged, so nothing is synthesized or re-heard."""
+        hypothesis = record.get("hypothesis")
+        if not isinstance(hypothesis, str):
+            return record
+        attempt = evaluate(narration, hypothesis, self._terms, record.get("seed"), self._aliases)
+        status = "ok" if attempt.passes(self._max_cer) else "warn"
+        return {**record, "status": status, "cer": round(attempt.cer, 3), "missing_terms": list(attempt.missing),
+                "max_cer": self._max_cer}
+
     async def aclose(self) -> None:
         if self._owns_worker:
             await self._worker.close()

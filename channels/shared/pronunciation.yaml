@@ -38,7 +38,8 @@ key_terms:
   - display: 輝達
     heard_as: [輝達, nvidia]
   - display: 中介層
-  - display: 九尾狐
+  - display: 九尾狐   # 湖／糊／胡 與 狐 同音（hú），2026-10-17 九尾狐 s02/s04 whisper 轉回「九尾湖」「九尾糊」
+    heard_as: [九尾湖, 九尾糊, 九尾胡, 九尾壺]
   - display: 員工
   - display: 蘆葦
   - display: 製作委員會

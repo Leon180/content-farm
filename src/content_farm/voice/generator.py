@@ -10,7 +10,7 @@ from pathlib import Path
 
 from content_farm.config import Settings
 from content_farm.script_gen.schemas import Script
-from content_farm.voice.checked_synthesis import CheckedSynthesizer, record_check
+from content_farm.voice.checked_synthesis import CheckedSynthesizer, load_checks, record_check
 from content_farm.voice.factory import LEGACY_MODEL, effective_tts_model, effective_voice_id
 from content_farm.voice.pronunciation import load_table, merged_map
 from content_farm.voice.protocol import TTSProvider
@@ -110,6 +110,16 @@ class VoiceGenerator:
         path.parent.mkdir(parents=True, exist_ok=True)
         updated = {**self._load_identities(), filename: identity}
         path.write_text(json.dumps(updated, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
+
+    def _reassess(self, filename: str, narration: str) -> None:
+        record = load_checks(self._output_dir).get(filename) if self._checker else None
+        if record is None or self._checker is None:
+            return
+        updated = self._checker.reassess(narration, record)
+        if updated != record:
+            logger.info("Speech check %s re-judged from its transcript: %s -> %s", filename,
+                        record.get("status"), updated["status"])
+            record_check(self._output_dir, filename, updated)
 
     async def generate(self, script: Script) -> VoiceArtifact:
         """Generate audio for all scenes in the script; local models are unloaded at the end."""
@@ -218,6 +228,7 @@ class VoiceGenerator:
             # Skip the API call only for audio made by this voice from this text (I-1)
             if exists and _with_legacy_model(self._load_identities().get(output_path.name)) == identity:
                 logger.info("Reusing existing audio: %s", output_path)
+                self._reassess(output_path.name, narration)
                 duration = await _get_audio_duration(output_path)
                 return AudioSegment(
                     scene_number=scene_number,
