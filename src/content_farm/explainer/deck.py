@@ -141,6 +141,7 @@ class MediaKind(str, Enum):
     AI_IMAGE = "ai_image"      # generated illustration, moved by ``media.motion`` (default parallax)
     TITLE_CARD = "title_card"  # self-made news headline card (never a screenshot)
     ARTWORK = "artwork"        # public-domain / CC0 museum image (assets/artwork/artwork.json)
+    DIAGRAM = "diagram"        # channel-drawn animated diagram (explainer.diagrams), timed to the narration
 
 
 class Motion(str, Enum):
@@ -184,6 +185,7 @@ _MEDIA_REQUIRED: dict[MediaKind, str] = {
     MediaKind.AI_IMAGE: "prompt",
     MediaKind.ANIMATED: "animation",
     MediaKind.ARTWORK: "artwork",
+    MediaKind.DIAGRAM: "diagram",
 }
 
 
@@ -207,12 +209,23 @@ class Media(_Frozen):
     # ai_image: a correction shown beside the 「AI 示意圖」 badge when the picture cannot match the
     # text (e.g. the model draws 6 tails for 「九尾」): say so on screen rather than let it mislead.
     ai_note: str = Field(default="", max_length=24)
+    # diagram: which built-in diagram, and its params ("values"/"labels", | separated; stage times
+    # come from the narration — each label is matched to the sentence that says it)
+    diagram: str = Field(default="", max_length=32)
+    params: dict[str, str] = {}
 
     @model_validator(mode="after")
     def _required_for_kind(self) -> Media:
         field = _MEDIA_REQUIRED.get(self.kind)
         if field and not getattr(self, field):
             raise ValueError(f"media kind {self.kind.value!r} requires {field!r}")
+        if self.kind == MediaKind.DIAGRAM:
+            from content_farm.explainer.diagrams.render import DIAGRAMS
+
+            if self.diagram not in DIAGRAMS:
+                raise ValueError(f"unknown diagram {self.diagram!r}; known: {', '.join(DIAGRAMS)}")
+        elif self.diagram or self.params:
+            raise ValueError("diagram / params only apply to media kind 'diagram'")
         if (self.motion is not None or self.motion_prompt) and self.kind != MediaKind.AI_IMAGE:
             raise ValueError("motion / motion_prompt only apply to media kind 'ai_image'")
         if self.ai_note and self.kind != MediaKind.AI_IMAGE:

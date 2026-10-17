@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from urllib.parse import urlparse
 
 from content_farm.explainer.deck import Deck, Layout, Section, Slide
-from content_farm.explainer.pages import DISCLAIMER, TEMPLATES_DIR, _css, _environment, theme_css
+from content_farm.explainer.pages import DISCLAIMER, TEMPLATES_DIR, _css, _environment, source_label, theme_css
 
 KEY_LINE_MAX = 40
 
@@ -30,15 +30,27 @@ class TitleCard:
 def key_line(slide: Slide) -> str:
     """The one line of slide text worth keeping on top of footage."""
     body = slide.body
+    if slide.layout == Layout.BULLETS:   # as many whole items as fit — never cut one with 「…」
+        kept: list[str] = []
+        for item in body.items[:3]:
+            if len(" · ".join([*kept, item])) > KEY_LINE_MAX:
+                break
+            kept.append(item)
+        return " · ".join(kept)
     text = {
         Layout.TITLE: lambda: body.subtitle,
-        Layout.BULLETS: lambda: " · ".join(body.items[:3]),
         Layout.BIG_NUMBER: lambda: f"{body.value}{body.unit}　{body.caption}".strip(),
         Layout.COMPARE: lambda: f"{body.left.label} vs {body.right.label}",
         Layout.TIMELINE: lambda: f"{body.events[0].when} → {body.events[-1].when}",
         Layout.QUOTE: lambda: f"「{body.text}」",
     }[slide.layout]()
-    return text if len(text) <= KEY_LINE_MAX else text[: KEY_LINE_MAX - 1] + "…"
+    return text if len(text) <= KEY_LINE_MAX else _cut_at_clause(text, KEY_LINE_MAX)
+
+
+def _cut_at_clause(text: str, limit: int) -> str:
+    """Longest prefix ending at a clause break (no 「…」, CoWoS v3 eval); "" if there is none."""
+    cut = max((i for i, ch in enumerate(text[:limit]) if ch in "　，。；：、 "), default=0)
+    return text[:cut].rstrip("　，。；：、 ") if cut else ""
 
 
 def title_card_for(deck: Deck, slide: Slide) -> TitleCard:
@@ -70,7 +82,7 @@ def _render(
         index=index,
         total=len(deck.slides),
         kind=kind,
-        sources=[deck.source_by_id(sid).title for sid in slide.source_ids],
+        sources=list(dict.fromkeys(source_label(deck.source_by_id(sid)) for sid in slide.source_ids)),
         disclaimer=DISCLAIMER[deck.category],
         base_css=_css("base.css"),
         theme_css=theme_css(deck, style, brand),

@@ -32,6 +32,9 @@ class StagePlan:
 
 
 def units(slide: Slide) -> list[str]:
+    media = slide.media
+    if media is not None and media.diagram:      # a diagram's stages are its labels
+        return [s.strip() for s in media.params.get("labels", "").split("|") if s.strip()]
     body = slide.body
     if slide.layout == Layout.BULLETS:
         return list(body.items)

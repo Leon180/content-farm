@@ -27,6 +27,13 @@ DISCLAIMER = {
 }
 
 
+def source_label(source) -> str:
+    """Short on-screen source 「TrendForce 2026-08」 so the meta row never ends in 「…」
+    (CoWoS v3 eval); full titles and URLs stay in the description."""
+    who = source.publisher or source.title.split("|")[0].split("—")[0].strip()[:18]
+    return f"{who} {source.published[:7]}".strip() if source.published else who
+
+
 @dataclass(frozen=True)
 class SlidePage:
     index: int  # 1-based, == scene_number
@@ -106,7 +113,7 @@ def build_pages(
             slide=slide,
             index=index,
             total=total,
-            sources=[deck.source_by_id(sid).title for sid in slide.source_ids],
+            sources=list(dict.fromkeys(source_label(deck.source_by_id(sid)) for sid in slide.source_ids)),
             disclaimer=DISCLAIMER[deck.category],
             mascot_src=mascot_uri(mascot_dir, slide),
             show_safe_zone=show_safe_zone,

@@ -105,7 +105,10 @@ def build_clip(ctx: MediaContext, job: SlideJob) -> ClipResult:
         MediaKind.AI_IMAGE: _ai_image,
         MediaKind.TITLE_CARD: _title_card,
         MediaKind.ARTWORK: _artwork,
+        MediaKind.DIAGRAM: _diagram,
     }[kind]
+    if kind == MediaKind.SLIDE and job.stage is not None:
+        builder = _animated   # v3: a plain slide gets pulses instead of holding still for its whole slot
     result = builder(ctx, job)
     elapsed = round(time.monotonic() - started, 2)
     logger.info("clip %02d %s → %s (%.1fs) %s", job.index, kind.value, result.used, elapsed, result.note)
@@ -227,6 +230,19 @@ def _artwork(ctx: MediaContext, job: SlideJob) -> ClipResult:
     png = ctx.capturer.still(html, ctx.work_dir / "placeholders" / f"{job.slide.id}.png")
     clip = ffmpeg_ops.still_to_clip(png, out, job.seconds)
     return _result(job, USED_PLACEHOLDER, clip, note=f"PLACEHOLDER: artwork {artwork_id!r} missing")
+
+
+def _diagram(ctx: MediaContext, job: SlideJob) -> ClipResult:
+    """Channel-drawn animated diagram under the usual overlay (top bar, lower-third, sources)."""
+    from content_farm.explainer.diagrams.render import render_clip
+
+    media = job.slide.media
+    starts = list(job.stage.reveals) if job.stage else []
+    raw = render_clip(media.diagram, dict(media.params), starts, job.seconds,
+                      ctx.work_dir / "diagrams" / f"{job.slide.id}.mp4", brand=ctx.brand)
+    clip, _ = ffmpeg_ops.stock_to_clip(raw, _overlay_png(ctx, job), ctx.clip_path(job, ".mp4"), job.seconds,
+                                       job.seconds)
+    return _result(job, "diagram", clip, note=f"diagram {media.diagram} stages at {starts}")
 
 
 def _title_card(ctx: MediaContext, job: SlideJob) -> ClipResult:
