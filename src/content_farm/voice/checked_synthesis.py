@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import logging
+import subprocess
 from pathlib import Path
 
 from content_farm.config import Settings
@@ -120,5 +121,22 @@ def load_checks(audio_dir: Path) -> dict[str, dict]:
 def record_check(audio_dir: Path, filename: str, record: dict) -> None:
     path = audio_dir / CHECK_FILE
     path.parent.mkdir(parents=True, exist_ok=True)
-    updated = {**load_checks(audio_dir), filename: record}
+    updated = {**load_checks(audio_dir), filename: {**record, **_pinyin_columns(record)}}
     path.write_text(json.dumps(updated, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
+
+
+def _pinyin_columns(record: dict) -> dict:
+    """pinyin_cer / tone_errors when the local TTS venv has pypinyin; {} otherwise (CER stays)."""
+    from content_farm.voice import pinyin_check
+    from content_farm.voice.speech_check import normalize
+
+    python = pinyin_check.tts_python()
+    if python is None or not record.get("hypothesis"):
+        return {}
+    ref, hyp = normalize(record.get("tts_text", "")), normalize(record["hypothesis"])
+    try:
+        ref_py, hyp_py = pinyin_check.to_pinyin([ref, hyp], python)
+    except (RuntimeError, OSError, ValueError, subprocess.SubprocessError) as exc:
+        logger.warning("pinyin check skipped: %s", exc)
+        return {}
+    return pinyin_check.compare(ref, hyp, ref_py, hyp_py)
