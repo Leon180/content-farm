@@ -1,0 +1,10 @@
+{
+ "video": "cowos",
+ "rc": 0,
+ "seconds": 25.6,
+ "waited": 0.0,
+ "model": "FLUX.2 [klein] 4B (q4)",
+ "license": "Apache-2.0",
+ "seed": 42,
+ "prompt": "Editorial illustration: one glowing AI processor chip stuck at the front of a long queue of identical chips on a factory conveyor belt, waiting at a closed packaging station gate, clean flat vector style, deep navy and warm amber colours, strong contrast, plain background. Illustration, not a photograph. No text, no letters, no numbers, no logos, no watermark."
+}

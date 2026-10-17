@@ -1,0 +1,167 @@
+{
+ "frog-scribe-3d": {
+  "pick": "Y14",
+  "regions": {
+   "blink": [
+    251,
+    175,
+    536,
+    261
+   ],
+   "mouth_half": [
+    248,
+    273,
+    530,
+    393
+   ],
+   "mouth_open": [
+    248,
+    273,
+    530,
+    393
+   ],
+   "surprised": [
+    248,
+    178,
+    536,
+    359
+   ],
+   "smug": [
+    245,
+    177,
+    536,
+    353
+   ],
+   "speechless": [
+    244,
+    174,
+    583,
+    354
+   ]
+  },
+  "silhouette_iou": {
+   "blink": 0.996,
+   "mouth_half": 0.9951,
+   "mouth_open": 0.994,
+   "surprised": 0.994,
+   "smug": 0.9956,
+   "speechless": 0.9834
+  },
+  "depth": {
+   "pack": "frog-scribe-3d",
+   "seconds": 0.7,
+   "near_share": 0.39
+  },
+  "sheet": "sheet_frog-scribe-3d.png"
+ },
+ "cooler-goldfish-3d": {
+  "pick": "O25",
+  "regions": {
+   "blink": [
+    315,
+    376,
+    464,
+    452
+   ],
+   "mouth_half": [
+    348,
+    406,
+    433,
+    502
+   ],
+   "mouth_open": [
+    348,
+    406,
+    433,
+    502
+   ],
+   "surprised": [
+    325,
+    355,
+    456,
+    486
+   ],
+   "smug": [
+    319,
+    355,
+    459,
+    471
+   ],
+   "speechless": [
+    319,
+    315,
+    584,
+    477
+   ]
+  },
+  "silhouette_iou": {
+   "blink": 0.9984,
+   "mouth_half": 0.9984,
+   "mouth_open": 0.9984,
+   "surprised": 0.9985,
+   "smug": 0.9984,
+   "speechless": 0.9954
+  },
+  "depth": {
+   "pack": "cooler-goldfish-3d",
+   "seconds": 0.67,
+   "near_share": 0.164
+  },
+  "sheet": "sheet_cooler-goldfish-3d.png"
+ },
+ "paint-bottle-3d": {
+  "pick": "C09",
+  "regions": {
+   "blink": [
+    299,
+    324,
+    477,
+    390
+   ],
+   "mouth_half": [
+    326,
+    367,
+    454,
+    545
+   ],
+   "mouth_open": [
+    326,
+    367,
+    454,
+    545
+   ],
+   "surprised": [
+    308,
+    326,
+    420,
+    458
+   ],
+   "smug": [
+    309,
+    311,
+    471,
+    428
+   ],
+   "speechless": [
+    296,
+    324,
+    474,
+    446
+   ]
+  },
+  "silhouette_iou": {
+   "blink": 0.9982,
+   "mouth_half": 0.9982,
+   "mouth_open": 0.9981,
+   "surprised": 0.998,
+   "smug": 0.9979,
+   "speechless": 0.9962
+  },
+  "depth": {
+   "pack": "paint-bottle-3d",
+   "seconds": 0.72,
+   "near_share": 0.643
+  },
+  "sheet": "sheet_paint-bottle-3d.png"
+ }
+}

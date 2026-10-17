@@ -77,7 +77,7 @@ def keyart(src_root: Path, work: Path) -> int:
             continue
         if banned_terms(prompt):
             raise ValueError(f"{name}: banned terms in key-art prompt: {banned_terms(prompt)}")
-        out = work / "keyart" / f"{name}.png"
+        out = work / "keyart" / f"{video.get('keyart_file', name)}.png"
         if out.is_file():
             continue
         out.parent.mkdir(parents=True, exist_ok=True)
@@ -104,7 +104,7 @@ def render(src_root: Path, work: Path) -> int:
         run = scratch(src_root / video["source"], work / name, video)
         if video["keyart_prompt"]:
             (run / "keyart").mkdir(exist_ok=True)
-            shutil.copy2(work / "keyart" / f"{name}.png", run / "keyart" / "keyart.png")
+            shutil.copy2(work / "keyart" / f"{video.get('keyart_file', name)}.png", run / "keyart" / "keyart.png")
         channel = load_channel(video["channel"])
         outputs = th.render_variants(run, channel)
         findings = th.variant_findings(run, channel)
@@ -122,7 +122,7 @@ def render(src_root: Path, work: Path) -> int:
                 "promises": [{"phrase": p, "spoken_at_s": spoken_at(run, p)} for p in spec.promise],
                 "visual": spec.visual.kind, "credit": getattr(spec.visual, "credit", "")}
         if video["keyart_prompt"]:
-            shutil.copy2(work / "keyart" / f"{name}.json", dest / "keyart.json")
+            shutil.copy2(work / "keyart" / f"{video.get('keyart_file', name)}.json", dest / "keyart.json")
         print(name, report[name]["qc"], flush=True)
     (OUT / "promises.json").write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
     errors = [m for r in report.values() for m in r["qc"] if m.startswith("[error]")]

@@ -196,9 +196,12 @@ def set_manifest(folder: Path, **fields: object) -> dict:
 
 
 def build_pack(src: Path, out: Path, pack_id: str, name: str, *, source: dict | None = None,
-               pose_map: dict[str, str] | None = None) -> Built:
-    """``src`` holds base.png + one png per layer (white background); writes the pack to ``out``."""
-    frames = {state: cut_white(Image.open(src / f"{state}.png").convert("RGB")) for state in ("base", *LAYERS)}
+               pose_map: dict[str, str] | None = None, cut_thresh: int = 38) -> Built:
+    """``src`` holds base.png + one png per layer (white background); writes the pack to ``out``.
+    ``cut_thresh``: background flood-fill tolerance; 3D renders need ~100 to drop their soft painted
+    ground shadow (check a near-white body still survives)."""
+    frames = {state: cut_white(Image.open(src / f"{state}.png").convert("RGB"), thresh=cut_thresh)
+              for state in ("base", *LAYERS)}
     base, size = frames["base"], frames["base"].size
     masks = {state: significant_change(base, frames[state]) for state in LAYERS}
     mouth_region = region_of(masks["mouth_open"] | masks["mouth_half"], size)

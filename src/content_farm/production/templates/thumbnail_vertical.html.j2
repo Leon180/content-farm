@@ -16,6 +16,8 @@ html, body { width: 1080px; height: 1920px; overflow: hidden; position: relative
 .hl { color: var(--accent); }
 .outline { color: #fff; -webkit-text-stroke: 12px #111; paint-order: stroke fill; }
 .outline .hl { color: #ffd84d; }
+/* chipcat's brand .hl is a box in the accent colour: keep its text white */
+.chipcat .hl, .chipcat .outline .hl { color: #fff; }
 .sub { position: absolute; left: 64px; font: 900 60px var(--font-heading, sans-serif); color: var(--accent-2, var(--accent)); }
 .art { position: absolute; inset: 0; width: 1080px; height: 1920px; object-fit: cover; }
 .shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.75) 0%, rgba(0,0,0,.2) 38%, rgba(0,0,0,0) 60%); }

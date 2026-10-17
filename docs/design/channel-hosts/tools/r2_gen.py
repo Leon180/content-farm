@@ -29,7 +29,9 @@ HF_HOME = os.environ.get("CF_MFLUX_HF_HOME", "/Users/lileon/.claude/jobs/f9ab017
 MODEL = ["--model", "mflux-community/flux2-klein-4b-mflux-q4", "--base-model", "flux2-klein-4b", "--steps", "4",
          "--width", "768", "--height", "768"]
 MIN_FREE_PERCENT = 25
-WAIT_SECONDS, MAX_WAIT_SECONDS = 20, 1800
+WAIT_SECONDS = 20
+# how long to wait for the machine before giving up (a long local TTS run can hold it for an hour+)
+MAX_WAIT_SECONDS = int(os.environ.get("CF_GATE_MAX_WAIT", "1800"))
 
 
 def free_percent() -> int:
@@ -57,11 +59,30 @@ def tts_processes(ps_output: str | None = None) -> list[str]:
     return hits
 
 
+# Orchestrator 2026-10-17: these small jobs may run alongside the local TTS, but only one image at a
+# time, with free memory >= 35 % and memory pressure below warn. ffmpeg / mflux / mlx_video still block.
+ALLOW_TTS = os.environ.get("CF_GATE_ALLOW_TTS") == "1"
+ALLOW_TTS_MIN_FREE = 35
+
+
+def pressure_level() -> int:
+    """kern.memorystatus_vm_pressure_level: 1 normal, 2 warn, 4 critical."""
+    out = subprocess.run(["sysctl", "-n", "kern.memorystatus_vm_pressure_level"], capture_output=True, text=True)
+    value = out.stdout.strip()
+    if not value.isdigit():
+        raise RuntimeError(f"cannot read memory pressure: {out.stderr.strip() or value!r}")
+    return int(value)
+
+
 def wait_until_idle() -> float:
     waited = 0.0
     while True:
-        busy, free = busy_processes({os.getpid()}) + tts_processes(), free_percent()
-        if not busy and free >= MIN_FREE_PERCENT:
+        busy = busy_processes({os.getpid()}) + ([] if ALLOW_TTS else tts_processes())
+        free = free_percent()
+        floor = ALLOW_TTS_MIN_FREE if ALLOW_TTS else MIN_FREE_PERCENT
+        if ALLOW_TTS and pressure_level() >= 2:
+            busy = [*busy, "memory pressure warn"]
+        if not busy and free >= floor:
             return waited
         if waited >= MAX_WAIT_SECONDS:
             raise TimeoutError(f"still busy after {waited:.0f}s: {busy} free={free}%")

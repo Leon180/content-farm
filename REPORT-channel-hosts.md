@@ -5,15 +5,88 @@
 - **第二輪**（最新）候選牆：`docs/design/channel-hosts/round2/index.html`，手機也能看。編號用兩位數：Y01–Y25、O01–O25、C01–C25。
 - 第一輪選稿頁：`docs/design/channel-hosts/index.html`。編號用一位數（Y1、O1…），跟第二輪不同，不要混用。
 
-## 第四輪（3D 質感＋2.5D）進度紀錄
+## TL;DR（第四輪：3D 質感＋2.5D、金魚、縮圖，2026-10-17）
 
-（做到哪裡，給中斷時接手的人）
-- [x] 嘴型修正：`a662dee`
-- [x] 生圖閘門加入 `qwen3-tts｜voxcpm2`：比對執行檔或腳本路徑，有反例測試。orchestrator 2026-10-17 要求
-- [x] 單張圖轉 3D 調查：`docs/design/channel-hosts/round4/image-to-3d-research.md`
-- [x] 2.5D 渲染：深度 warp 轉頭／點頭、落地陰影、說話 squash。角色包 manifest 設 `motion: 2.5d` 加 `depth.png` 就會啟用；測試 24 項全過
-- [ ] 3D 質感生圖：`tools/r4_gen.py`，raw 在 job tmp 的 `r4-raw/`
-- [ ] `tools/r4_pack.py` 組角色包＋深度圖 → `tools/r4_trial.py` 產出 3 支並排試片 → 報告
+- **3D 版角色包**：`frog-scribe-3d`、`cooler-goldfish-3d`、`paint-bottle-3d`。
+  - 用 klein 參考圖編輯，把平面版重畫成軟膠玩具質感，再用 3D 定裝重生 6 個狀態。
+  - 剪影 IoU：差分 0.983–0.998，其中 3 張低於 0.99；3D 定裝對平面定裝是 0.92 左右，因為畫風本身就改變了外形。
+- **2.5D 動作**：用深度圖做轉頭、點頭，加上落地陰影和說話時的 squash。角色包設 `motion: 2.5d` 就會啟用。
+- **並排試片 3 支**（平面版 vs 3D＋2.5D，各 20 秒）在 `output/channel-hosts-r4/compare_{yokai,cel,offwork}_20s.mp4`。共 3,600 格，禁區像素都是 0 🟢。
+- **O25 金魚**：
+  - 所有臉都已經沒有嘴（定裝、眨眼和各表情都移除），說話時改成水瓶冒泡泡，泡泡依音量變化；3D 版也套用。
+  - 移嘴前後剪影 IoU 1.0。
+- **C09**：說話時在原嘴位換成小 o；有表情時保留表情本身的嘴，所以不會出現殘影。
+- **單張圖轉 3D 調查**：`round4/image-to-3d-research.md`。結論是授權乾淨的模型品質不夠，Hunyuan3D 2.1 不適用歐盟、英國、南韓；**建議維持 2D 路線**。
+- **縮圖**：四支開台片各 3 款（角色／主視覺／數字），共 12 張，每張都通過「60 秒內兌現」檢查；選稿頁 `docs/design/thumbnails/index.html`。產生器已擴充，支援 3 種版型、A/B 變體和 Short 直式封面。
+
+## 第四輪：3D 質感＋2.5D
+
+### 4-1. 做法
+
+1. **3D 重畫**（`tools/r4_gen.py`）：
+   - 平面版定裝 → klein 編輯，prompt 寫「軟膠玩具／黏土 3D 渲染、柔光、邊緣光、柔和陰影，保持同一角色」，不含任何 IP 名，送出前跑禁字檢查。
+   - 3D 定裝對平面定裝的門檻設在 IoU ≥ 0.97，三個角色的最佳值都落在 0.92 左右，所以都沒過，我取各自的最佳值並目視確認。差距來自 3D 化本身的外形變化（變圓、加厚、模型畫了地面陰影），不是換了角色。
+   - 再從 3D 定裝生 6 個狀態，門檻 ≥ 0.99，最多試 3 個 seed。
+2. **去背**：3D 圖會被模型畫上一層淡灰地面陰影。去背門檻從 38 調到 100 才去得掉，同時確認顏料瓶白色的身體沒有被吃掉。
+3. **角色包**（`tools/r4_pack.py`）：
+   - 嘴型和泡泡的位置都重新在 3D 定裝上量：金魚四種嘴位、顏料瓶的小 o。
+   - 深度圖由 `scripts/host_depth_worker.py` 產生，在 mlx-video venv 裡跑 Depth Anything V2 Small（Apache-2.0），每張不到 1 秒。
+4. **2.5D 渲染**（`pngtuber/render.py`）：
+   - 深度 warp：越近的像素平移越多，產生轉頭、點頭的效果，用 premultiplied alpha 避免邊緣出黑邊。
+   - 加柔和落地陰影，說話抬升時陰影會變淡。
+   - 說話時做 squash（變寬變矮，最多 3.5%）。
+   - 為了替轉頭留邊距，2.5D 角色的尺寸會縮小約 7%，所以並排試片裡 3D 版看起來稍小。
+
+### 4-2. 結果 🟢（`round4/packs.json`、`round4/trials.json`）
+
+| 角色包 | 差分 IoU（blink／嘴／驚訝／得意／無言） | 深度圖 | 備註 |
+|---|---|---|---|
+| frog-scribe-3d | 0.996／0.994–0.995／0.994／0.996／**0.983** | 0.7 s | 無言那張眼睛的凸起被壓平了（模型行為）；得意的頭有點歪 |
+| cooler-goldfish-3d | 0.998／0.998／0.999／0.998／0.995 | 0.7 s | 水瓶變成實心軟膠，看不到水，泡泡仍在藍色瓶身裡上升 |
+| paint-bottle-3d | 0.998／0.998／0.998／0.998／0.996 | 0.7 s | 原始最佳 0.987（無言）；去背改進後重算是 0.996 |
+
+| 並排試片（各 20 秒） | 平面版禁區 | 3D 版禁區 | 3D 渲染時間 |
+|---|---|---|---|
+| `output/channel-hosts-r4/compare_yokai_20s.mp4` | 0／600 格 | 0／600 格 | 10.0 s |
+| `output/channel-hosts-r4/compare_cel_20s.mp4` | 0／600 格 | 0／600 格 | 6.4 s |
+| `output/channel-hosts-r4/compare_offwork_20s.mp4`（9:16） | 0／600 格 | 0／600 格 | 9.5 s |
+
+截圖在 `round4/trial_compare_*.jpg`。我的判斷 🟡：3D 版的立體感明顯，但三個角色都會變得更「玩具」，青蛙的水墨感、金魚瓶的透明水感都消失了。要不要換，是風格選擇，請 Leon 看並排片決定。換的方式只要把頻道 yaml 的 ref 改成 `pngtuber/<id>-3d`。
+
+### 4-3. 金魚：嘴巴全部移除，改成冒泡泡（Leon 2026-10-17 兩次指示）
+
+- `speech_fx: bubbles`：說話時，泡泡從嘴邊往上飄，在水面消失。產生率和大小跟音量成正比，靜默時每秒約 0.3 顆。泡泡位置是確定性的（固定 seed）。
+- `erase_mouth`：四種表情的嘴各畫在不同位置，所以對每個位置各用一塊羽化的身體色蓋掉，定裝和每個差分都蓋。移除後定裝剪影 IoU 1.0，各表情合成後也是 1.0（無言 0.993，是汗滴的關係）。
+- 9:16 試片：`output/channel-hosts-r3/trial_offwork_cooler-goldfish_9x16_bubbles.mp4`，730 格禁區 0。
+
+### 4-4. 生圖閘門
+
+- 加入 `qwen3-tts｜voxcpm2`。比對的是執行檔或腳本路徑，有反例測試：只在參數裡提到 voxcpm2 的 shell 不會被擋。
+- 這一輪 TTS 連續佔用超過 1 小時，3D 批次兩次等到逾時（30 分鐘）。後來 orchestrator 核可「與 TTS 並行，但一次一張、可用記憶體 ≥ 35% 且 pressure 不是 warn」，用 `CF_GATE_ALLOW_TTS=1` 跑完。閘門實際有因為 pressure warn 停下來等過一次。
+
+## 縮圖重做（orchestrator d699d146b06f637c）
+
+- **規則**：`docs/design/thumbnails/rules.md`。
+  - 6 條硬規則：每個字、每個數字都要在 60 秒內兌現；不承諾片中沒有的東西；聳動程度不超過內容；不用他人的肖像或品牌；AI 主視覺要記 credits；不直接拿標題投影片。
+  - 7 條有效手法（🟡，要以 A/B 數據為準）。
+  - **Shorts 不支援「測試與比較」**（🟢 政策審查引文）。
+- **產生器**（`production/thumbnail.py`）：
+  - 新增 `layout`：character、keyart、compare，以及 `compare` 數值。
+  - `thumbnail_variants.json` 可以一次出最多 3 款，自動壓成 2 MB 以下的 JPEG；設 `vertical: true` 就出 1080×1920 的 Short 封面。
+  - QC 的 `variant_findings` 會逐款檢查承諾。
+  - CLI：`make_thumbnail.py --variants`。
+- **修了兩個既有 bug**：
+  - (1) 數字比對時旁白被壓縮掉「.」，所以 8.8、34.5 永遠比對不到。已加回歸測試和反例。
+  - (2) 晶片貓品牌的 `.hl` 是 accent 色塊，但模板又把文字設成 accent 色，結果反白字消失，原本的晶片貓縮圖模板也受影響。
+- **12 款**：`docs/design/thumbnails/{cowos,short7722,kyubi,cel}/variant_{a,b,c}.jpg`，每張 61–201 KB，全部通過承諾檢查。每一款的兌現秒數記在 `promises.json`，最晚的是九尾狐的「九條尾巴」，在 53.9 秒。
+  - 主視覺：
+    - CoWoS、7,722、cel 用 klein 生成（`*/keyart.json` 記錄模型、授權、prompt、seed）；
+    - 九尾狐用北齋〈九尾狐〉（CC0，沿用原片 credits）。
+  - cel 主視覺的第一版在紙上畫出了少女速寫，違反 cel「不得出現角色畫」的規則，已經改 prompt 重生（`cel_v2`）。
+  - 7,722 的比對物原本是一張具名交通卡，縮圖改用「8.8 公分的中介層」，避免出現品牌名，也避免把中介層講成「晶片」。
+  - CoWoS c 原本是「80% vs 18」，兩個不可比的數字放在一起，改成單一數字加副標「新產能等 18 個月」。
+- **選稿頁**：`docs/design/thumbnails/index.html`，模擬手機首頁、桌機首頁和 Shorts 架的實際尺寸，附標題、片長徽章和每款的承諾秒數。手機寬度沒有水平捲動，壞圖 0 張。
+- 測試：`tests/unit/test_thumbnail_variants.py` 共 18 項。全套 1 failed（基準既有）／1212 passed／1 skipped 🟢。
 
 ## TL;DR（第三輪：選定與 PNGtuber，2026-10-17）
 

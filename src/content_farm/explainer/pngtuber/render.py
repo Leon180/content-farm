@@ -114,7 +114,8 @@ class Composer:
 
     def __init__(self, pack: Pack, placement: Placement) -> None:
         self.pack, self.placement = pack, placement
-        bbox = pack.base.getchannel("A").getbbox()
+        # size from the solid figure: faint fringes (e.g. a leftover painted shadow) must not shrink it
+        bbox = pack.base.getchannel("A").point(lambda a: 255 if a > 128 else 0).getbbox()
         if bbox is None:
             raise ValueError(f"pack {pack.id}: base image is empty")
         self.bbox = bbox
@@ -131,6 +132,8 @@ class Composer:
     def face(self, expression: str, mouth: int, blink: bool) -> Image.Image:
         if self.pack.mouth_mode == "none":
             mouth = 0
+        elif self.pack.mouth_mode == "small_o" and expression != "neutral":
+            mouth = 0   # the 'o' only replaces the neutral mouth; an expression keeps its own (no ghost smile)
         key = (expression, mouth, blink)
         if key not in self._faces:
             img = self.pack.base.copy()

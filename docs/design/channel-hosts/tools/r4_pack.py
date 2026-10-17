@@ -22,7 +22,8 @@ sys.path.insert(0, str(HERE))
 from r2_gen import wait_until_idle  # noqa: E402
 from r3_pack import SOURCE, sheet  # noqa: E402
 
-from content_farm.explainer.pngtuber.build import apply_mouth_mode, build_pack  # noqa: E402
+from content_farm.explainer.pngtuber.build import (  # noqa: E402
+    apply_mouth_mode, build_pack, erase_mouth, set_manifest)
 from content_farm.explainer.pngtuber.pack import PACK_ROOT  # noqa: E402
 
 ROOT = HERE.parents[3]
@@ -31,6 +32,11 @@ PACKS = {"Y14": ("frog-scribe-3d", "青蛙書記（3D）", "#14110d"),
          "O25": ("cooler-goldfish-3d", "飲水機金魚（3D）", "#ffd84d"),
          "C09": ("paint-bottle-3d", "顏料瓶老師傅（3D）", "#f5f1e8")}
 MLX_HOME = Path(os.environ.get("CF_MLX_VIDEO_HOME", Path.home() / ".local/share/mlx-video"))
+# measured on each 3D base.png (canvas px); same decisions as the flat packs (r3_pack.py)
+ERASE_MOUTH = {"cooler-goldfish-3d": [((397, 433), (60, 38)), ((393, 458), (50, 52)), ((381, 447), (128, 42)),
+                                      ((390, 460), (58, 32))]}
+SPEECH_FX = {"cooler-goldfish-3d": {"kind": "bubbles", "emit": [395, 445], "surface_y": 288, "x_range": [255, 515]}}
+SMALL_O = {"paint-bottle-3d": {"center": (388, 378), "cover": (52, 24), "o_sizes": ((13, 14), (17, 20))}}
 
 
 def depth(folder: Path) -> dict:
@@ -50,15 +56,18 @@ def main(argv: list[str]) -> int:
     report = {}
     for pick, (pack_id, name, bg) in PACKS.items():
         folder = PACK_ROOT / pack_id
-        built = build_pack(raw / pick, folder, pack_id, name,
+        built = build_pack(raw / pick, folder, pack_id, name, cut_thresh=100,   # drops the painted ground shadow
                            source={**SOURCE, "round2_id": pick, "style": "3D re-render (klein edit)"})
-        if pack_id in mouths:
-            m = mouths[pack_id]
+        small_o = {**SMALL_O, **mouths}
+        if pack_id in small_o:
+            m = small_o[pack_id]
             apply_mouth_mode(folder, "small_o", center=tuple(m["center"]), cover=tuple(m["cover"]),
                              o_sizes=tuple(tuple(s) for s in m["o_sizes"]))
-        manifest = json.loads((folder / "manifest.json").read_text(encoding="utf-8"))
-        manifest["motion"] = "2.5d"
-        (folder / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=1), encoding="utf-8")
+        if pack_id in ERASE_MOUTH:
+            print(pack_id, "mouth erased:", erase_mouth(folder, ERASE_MOUTH[pack_id]), flush=True)
+        if pack_id in SPEECH_FX:
+            set_manifest(folder, speech_fx=SPEECH_FX[pack_id])
+        set_manifest(folder, motion="2.5d")
         report[pack_id] = {"pick": pick, "regions": built.regions, "silhouette_iou": built.iou, "depth": depth(folder),
                            "sheet": sheet(pick, raw, pack_id, bg, OUT).name}
         print(pack_id, report[pack_id], flush=True)

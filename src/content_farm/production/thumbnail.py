@@ -195,13 +195,15 @@ def render_variants(run_dir: Path, channel: Channel) -> dict[str, Path]:
     phone = (PHONE_SIZE[1], PHONE_SIZE[1] * 16 // 9) if spec_set.vertical else PHONE_SIZE
     work = run_dir / OUT_DIR / ".work"
     work.mkdir(parents=True, exist_ok=True)
+    pages = {}
+    for key, spec in spec_set.variants.items():   # visuals first: the cat pose opens its own browser
+        visual = _visual_file(run_dir, spec, work, channel)
+        pages[key] = work / f"variant_{key}.html"
+        pages[key].write_text(thumbnail_html(spec, channel, visual.resolve().as_uri() if visual else "",
+                                             vertical=spec_set.vertical), encoding="utf-8")
     outputs = {}
     with PageCapturer(size=size) as capturer:
-        for key, spec in spec_set.variants.items():
-            visual = _visual_file(run_dir, spec, work, channel)
-            html = work / f"variant_{key}.html"
-            html.write_text(thumbnail_html(spec, channel, visual.resolve().as_uri() if visual else "",
-                                           vertical=spec_set.vertical), encoding="utf-8")
+        for key, html in pages.items():
             png = work / f"variant_{key}.png"
             capturer.still(html, png)
             outputs[key] = save_under_limit(png, run_dir / OUT_DIR / f"variant_{key}.jpg")

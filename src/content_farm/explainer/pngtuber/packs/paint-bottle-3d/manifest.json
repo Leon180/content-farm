@@ -1,0 +1,111 @@
+{
+ "id": "paint-bottle-3d",
+ "name": "顏料瓶老師傅（3D）",
+ "size": [
+  768,
+  768
+ ],
+ "layers": [
+  "blink",
+  "mouth_half",
+  "mouth_open",
+  "surprised",
+  "smug",
+  "speechless"
+ ],
+ "mouth_layers": [
+  "mouth_half",
+  "mouth_open"
+ ],
+ "regions": {
+  "blink": [
+   299,
+   324,
+   477,
+   390
+  ],
+  "mouth_half": [
+   326,
+   367,
+   454,
+   545
+  ],
+  "mouth_open": [
+   326,
+   367,
+   454,
+   545
+  ],
+  "surprised": [
+   308,
+   326,
+   420,
+   458
+  ],
+  "smug": [
+   309,
+   311,
+   471,
+   428
+  ],
+  "speechless": [
+   296,
+   324,
+   474,
+   446
+  ]
+ },
+ "expressions": [
+  "neutral",
+  "surprised",
+  "smug",
+  "speechless"
+ ],
+ "pose_map": {},
+ "silhouette_iou": {
+  "blink": 0.9982,
+  "mouth_half": 0.9982,
+  "mouth_open": 0.9981,
+  "surprised": 0.998,
+  "smug": 0.9979,
+  "speechless": 0.9962
+ },
+ "changed_px": {
+  "blink": 1642,
+  "mouth_half": 1688,
+  "mouth_open": 10818,
+  "surprised": 2400,
+  "smug": 2999,
+  "speechless": 2554
+ },
+ "source": {
+  "model": "FLUX.2 [klein] 4B (q4), mflux, klein multi-reference edit",
+  "license": "Apache-2.0",
+  "license_url": "https://huggingface.co/black-forest-labs/FLUX.2-klein-4B/blob/main/LICENSE.md",
+  "note": "AI-generated; Leon 2026-10-17 approved AI images as hosts. Purely AI output may not be protected by copyright.",
+  "round2_id": "C09",
+  "style": "3D re-render (klein edit)"
+ },
+ "mouth_mode": "small_o",
+ "mouth": {
+  "center": [
+   388,
+   378
+  ],
+  "cover": [
+   52,
+   24
+  ],
+  "o_sizes": {
+   "mouth_half": [
+    13,
+    14
+   ],
+   "mouth_open": [
+    17,
+    20
+   ]
+  }
+ },
+ "motion": "2.5d"
+}

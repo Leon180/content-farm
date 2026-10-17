@@ -1,0 +1,10 @@
+{
+ "video": "cel",
+ "rc": 0,
+ "seconds": 25.1,
+ "waited": 0.0,
+ "model": "FLUX.2 [klein] 4B (q4)",
+ "license": "Apache-2.0",
+ "seed": 42,
+ "prompt": "Simple hand-drawn editorial illustration of an empty animation studio desk at night: a glowing light table, a stack of blank paper with only abstract pencil scribbles and circles, a red pencil and a calculator, warm paper colours. No people, no faces, no character drawings. Illustration, not a photograph. No text, no letters, no numbers, no logos, no watermark."
+}

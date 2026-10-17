@@ -1,0 +1,10 @@
+{
+ "video": "short7722",
+ "rc": 0,
+ "seconds": 26.0,
+ "waited": 0.0,
+ "model": "FLUX.2 [klein] 4B (q4)",
+ "license": "Apache-2.0",
+ "seed": 42,
+ "prompt": "Editorial illustration, top-down view: a large glossy square silicon interposer tile with fine gold circuit traces lying on a dark navy desk beside a round silicon wafer, dramatic soft light, clean modern style. Illustration, not a photograph. No text, no letters, no numbers, no logos, no watermark."
+}

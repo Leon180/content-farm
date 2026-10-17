@@ -16,3 +16,14 @@
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channel-hosts/output/channel-hosts-r3/trial_cel_paint-bottle_20s.mp4","min_bytes":500000,"why":"cel-ep1 20 秒試片（gitignored，本機）"}
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channel-hosts/output/channel-hosts-r3/trial_offwork_cooler-goldfish_9x16.mp4","min_bytes":500000,"why":"7,722 Short 9:16 試片（gitignored，本機）"}
 {"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channel-hosts/docs/design/channel-hosts/round3/trials.json","pattern":"\"(meta|subtitles)\": [1-9]","why":"三支試片逐格檢查，角色沒有進入 meta 列或字幕帶"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channel-hosts/src/content_farm/explainer/pngtuber/packs/frog-scribe-3d/depth.png","min_bytes":10000,"why":"第四輪：3D 青蛙包含深度圖（2.5D）"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channel-hosts/src/content_farm/explainer/pngtuber/packs/cooler-goldfish-3d/depth.png","min_bytes":10000,"why":"第四輪：3D 金魚包含深度圖"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channel-hosts/src/content_farm/explainer/pngtuber/packs/paint-bottle-3d/depth.png","min_bytes":10000,"why":"第四輪：3D 顏料瓶包含深度圖"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channel-hosts/output/channel-hosts-r4/compare_yokai_20s.mp4","min_bytes":300000,"why":"平面 vs 3D 並排試片（gitignored，本機）"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channel-hosts/output/channel-hosts-r4/compare_cel_20s.mp4","min_bytes":300000,"why":"平面 vs 3D 並排試片（gitignored，本機）"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channel-hosts/output/channel-hosts-r4/compare_offwork_20s.mp4","min_bytes":300000,"why":"平面 vs 3D 並排試片 9:16（gitignored，本機）"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channel-hosts/docs/design/channel-hosts/round4/trials.json","pattern":"\"(meta|subtitles)\": [1-9]","why":"並排試片 6 個 render（3,600 格）禁區像素全 0"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channel-hosts/docs/design/channel-hosts/round4/image-to-3d-research.md","min_bytes":3000,"why":"單張圖轉 3D 可行性與授權調查"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channel-hosts/docs/design/thumbnails/rules.md","min_bytes":2000,"why":"縮圖規則"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channel-hosts/docs/design/thumbnails/index.html","min_bytes":10000,"why":"縮圖選稿頁（YouTube 手機／桌機／Shorts 尺寸模擬）"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channel-hosts/docs/design/thumbnails/promises.json","pattern":"\\[error\\]|\"spoken_at_s\": null","why":"12 款縮圖都通過承諾檢查，每個承諾都找得到兌現秒數"}

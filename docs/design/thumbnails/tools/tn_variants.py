@@ -21,8 +21,9 @@ VIDEOS = {
             "b": {"layout": "keyart", "lines": ["AI 晶片", "卡在哪？"], "highlight": "卡在哪",
                   "visual": {"kind": "image", "path": "keyart/keyart.png", "credit": "AI 示意圖（FLUX.2 klein）"},
                   "promise": ["真正卡住出貨的"]},
+            # one number: "80% vs 18" would set two incomparable numbers against each other
             "c": {"layout": "compare", "lines": ["產能夠嗎？"], "visual": {"kind": "mascot", "pose": "think"},
-                  "compare": [{"value": "80%", "label": "需求能滿足"}, {"value": "18", "label": "個月等產能"}],
+                  "compare": [{"value": "80%", "label": "需求能滿足"}], "sub": "新產能等 18 個月",
                   "promise": ["80%", "18 個月"]},
         },
     },
@@ -57,9 +58,12 @@ VIDEOS = {
     },
     "cel": {
         "source": "cel-ep1", "channel": "cel", "vertical": False,
+        # v2: v1 drew sketches of girls on the papers; cel rule: no character or person drawings at all
+        "keyart_file": "cel_v2",
         "keyart_prompt": ("Simple hand-drawn editorial illustration of an empty animation studio desk at night: a glowing "
-                          "light table, stacks of pencil drawings on paper, a red pencil and a calculator, warm paper "
-                          "colours, original, no characters. " + KEYART_TAIL),
+                          "light table, a stack of blank paper with only abstract pencil scribbles and circles, a red "
+                          "pencil and a calculator, warm paper colours. No people, no faces, no character drawings. "
+                          + KEYART_TAIL),
         "variants": {
             "a": {"layout": "character", "lines": ["史上最好賺", "卻在虧？"], "highlight": "虧",
                   "visual": {"kind": "mascot", "pose": "shocked"}, "promise": ["史上最好賺的一年", "虧損"]},
