@@ -37,7 +37,9 @@ def reference_fingerprint(reference: VoiceReference) -> str:
     """Hash of the reference clip's bytes + transcript (same formula as voice.local_clone)."""
     path = reference.audio_path()
     if not path.is_file():
-        raise FileNotFoundError(f"voice reference audio not found: {path}")
+        # Planning (status, fingerprints) still works on a machine without the clip; the
+        # voice step itself fails with "voice reference audio not found" (voice.local_clone).
+        return "missing"
     digest = hashlib.sha256(path.read_bytes())
     digest.update(reference.text.encode("utf-8"))
     return digest.hexdigest()[:12]

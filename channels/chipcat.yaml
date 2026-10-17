@@ -10,9 +10,13 @@ mascot:
   name: 晶片貓（本尊）
   ref: chipcat          # explainer/mascot 的角色 id；造型由 mascot 模組負責
   rig_ready: true
-voice:                    # Leon 2026-10-17：Fish 原創聲音（id 在 .env 的 CF_CHIPCAT_VOICE_ID），模型 s2.1-pro（CF_FISH_AUDIO_MODEL，預設亦同）
-  provider: fish_audio
-  voice_id_env: CF_CHIPCAT_VOICE_ID
+voice:                    # Leon 2026-10-17（決策 b6c665874b97、b25068faf5a4）：本機 VoxCPM2 複製「晶片貓女聲」參考聲，不用 Fish
+  provider: voxcpm2
+  voice_id_env: CF_CHIPCAT_VOICE_ID   # 保留：Fish 原創聲音 id 仍在 .env，改回 fish_audio 時用
+  reference:
+    audio: ~/.local/share/content-farm-voices/chipcat-female-ref.wav
+    text: 各位晶片貓的朋友大家好。今天我們要聊的，是一顆晶片從設計圖變成手機裡的處理器，中間到底要經過多少道工序。很多人以為只要有錢買機台就能做出來，但其實真正難的，是把良率一點一點往上拉。說穿了，這就是一場比耐心的長跑。
+    note: Qwen3-TTS VoiceDesign 設計的女聲（REPORT-channel-voices §晶片貓女聲），原文同上
 topic_categories: [半導體, 電子供應鏈, AI 硬體, 能源與電力, 科技公司財報]
 format:
   length: long

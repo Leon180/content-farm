@@ -69,7 +69,7 @@ def _spell_number(match: re.Match) -> str:
 
 def normalize(text: str) -> str:
     """Comparable form: Traditional variants unified, numbers spelled, only letters/digits kept."""
-    text = unicodedata.normalize("NFKC", text).translate(VARIANTS).replace("想象", "想像")
+    text = unicodedata.normalize("NFKC", text).translate(VARIANTS).replace("想象", "想像").replace("×", "乘")
     text = normalize_for_tts(text)  # years digit by digit, as they are read
     text = _NUMBER.sub(_spell_number, _THOUSANDS.sub("", text))
     return "".join(c for c in text if unicodedata.category(c)[0] in "LN").lower()

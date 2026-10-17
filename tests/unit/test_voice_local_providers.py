@@ -151,16 +151,17 @@ async def test_resource_gate_gives_up_after_max_wait() -> None:
                                  probe_free=lambda: 90, sleep=sleep)
 
 
-@pytest.mark.parametrize(("code", "provider"), [("yokai", "voxcpm2"), ("cel", "voxcpm2"), ("offwork", "qwen3_tts")])
+@pytest.mark.parametrize(("code", "provider"), [
+    ("chipcat", "voxcpm2"), ("yokai", "voxcpm2"), ("cel", "voxcpm2"), ("offwork", "qwen3_tts")])
 def test_channel_voices_follow_leons_choice(code: str, provider: str) -> None:
     voice = load_channel(code).voice
-    assert voice.provider == provider and voice.voice_id_env is None
+    assert voice.provider == provider
     assert voice.reference is not None and voice.reference.text.strip()
 
 
-def test_chipcat_stays_on_fish() -> None:
-    voice = load_channel("chipcat").voice
-    assert voice.provider == "fish_audio" and voice.voice_id_env == "CF_CHIPCAT_VOICE_ID"
+def test_no_two_channels_share_a_reference_clip() -> None:
+    refs = [load_channel(code).voice.reference.audio for code in ("chipcat", "yokai", "cel", "offwork")]  # type: ignore[union-attr]
+    assert len(set(refs)) == len(refs)
 
 
 def test_local_provider_without_reference_is_rejected() -> None:
@@ -208,10 +209,13 @@ def _voice_step(code: str, tmp_path: Path, **options: object):  # type: ignore[n
 def test_local_voice_is_free_but_takes_the_render_lock(tmp_path: Path) -> None:
     step, ctx = _voice_step("yokai", tmp_path)
     assert not step.paid(ctx) and step.heavy_if(ctx)
-    step, ctx = _voice_step("chipcat", tmp_path)
-    assert step.paid(ctx) and not step.heavy_if(ctx)
     step, ctx = _voice_step("yokai", tmp_path, mock_voice=True)
     assert not step.heavy_if(ctx)
+    fish = load_channel("chipcat").voice.model_copy(update={"provider": "fish_audio"})
+    channel = load_channel("chipcat").model_copy(update={"voice": fish})
+    step = next(s for s in steps_for(channel) if s.name == "voice")
+    ctx = Context(channel, tmp_path, RunOptions())
+    assert step.paid(ctx) and not step.heavy_if(ctx)
 
 
 def test_voice_source_names_local_provider_not_helpers(tmp_path: Path) -> None:

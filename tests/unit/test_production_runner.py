@@ -59,6 +59,15 @@ class FakeExecutor:
         return 0
 
 
+def _fish_chipcat():  # type: ignore[no-untyped-def]
+    """chipcat as a Fish Audio channel: the paid-voice / voice-id / model tests need one.
+    (The real chipcat moved to local VoxCPM2 on 2026-10-17.)"""
+    from content_farm.production.channels import Voice
+
+    base = load_channel("chipcat")
+    return base.model_copy(update={"voice": Voice(provider="fish_audio", voice_id_env="CF_CHIPCAT_VOICE_ID")})
+
+
 def _touch(path: Path, text: str = "x") -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
@@ -75,12 +84,12 @@ def run_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 def _runner(run_dir: Path, executor: FakeExecutor, **options: object) -> Runner:
-    ctx = Context(load_channel("chipcat"), run_dir, RunOptions(**options))  # type: ignore[arg-type]
+    ctx = Context(_fish_chipcat(), run_dir, RunOptions(**options))  # type: ignore[arg-type]
     return Runner(ctx, executor=executor, log=lambda _: None)
 
 
 def _approve(run_dir: Path, gate: Gate, **kw: str) -> None:
-    decide(run_dir, load_channel("chipcat"), gate, "approved", by="test", **kw)
+    decide(run_dir, _fish_chipcat(), gate, "approved", by="test", **kw)
 
 
 def _walk_to_final(run_dir: Path, executor: FakeExecutor) -> None:
@@ -158,7 +167,7 @@ def voice_env_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 def _paid_runner(run_dir: Path, executor: FakeExecutor, env_file: Path, log: list[str]) -> Runner:
-    ctx = Context(load_channel("chipcat"), run_dir, RunOptions(allow_paid=True, env_file=env_file))
+    ctx = Context(_fish_chipcat(), run_dir, RunOptions(allow_paid=True, env_file=env_file))
     return Runner(ctx, executor=executor, log=log.append)
 
 
@@ -244,7 +253,7 @@ def test_channel_yaml_model_wins_over_env(voice_env_file: Path, monkeypatch: pyt
     from content_farm.production.voice_choice import choose_voice
 
     monkeypatch.setenv("CF_FISH_AUDIO_MODEL", "speech-1.5")
-    base = load_channel("chipcat")
+    base = _fish_chipcat()
     pinned = base.model_copy(update={"voice": base.voice.model_copy(update={"model": "s1"})})
     assert choose_voice(base, voice_env_file, mock=False).model == "speech-1.5"
     assert choose_voice(pinned, voice_env_file, mock=False).model == "s1"
@@ -269,7 +278,7 @@ def test_rejection_is_recorded_and_blocks(run_dir: Path) -> None:
     executor = FakeExecutor(run_dir)
     runner = _runner(run_dir, executor)
     runner.run()
-    decide(run_dir, load_channel("chipcat"), Gate.ARTICLE, "rejected", note="來源不足")
+    decide(run_dir, _fish_chipcat(), Gate.ARTICLE, "rejected", note="來源不足")
     result = runner.run()
     assert result.step == "gate_article" and "來源不足" in result.message
     item = json.loads((run_dir / "review" / "article.decision.json").read_text(encoding="utf-8"))
