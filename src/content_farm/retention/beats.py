@@ -25,8 +25,11 @@ REHOOK_MAX = 90.0
 FIRST_HOOK_MAX = 15.0
 
 _QUESTION = re.compile(r"[？?]|為什麼|怎麼|多少|哪[裡一些個家]|會不會|是不是|到底|嗎[。，]?$")
-_TEASE = re.compile(r"接下來|等一下|待會|後面會|先記住|下一章|下一段|馬上|最後|答案|你會看到|先賣個關子|留到")
-_CONTRAST = re.compile(r"但|卻|反而|不一定|結果|其實|沒想到|竟然|偏偏|不是.{0,24}而是|不是.{0,12}，是")
+_TEASE = re.compile(r"接下來|等一下|待會|後面會|先記住|下一章|下一段|下一個|馬上|最後|答案|你會看到|你會聽到|"
+                    r"先賣個關子|留到|伏筆|回到開頭")
+_CONTRAST = re.compile(r"但|卻|反而|不一定|結果|其實|沒想到|竟然|偏偏|不是.{0,24}而是|不是.{0,12}，是|，不是|還是不夠")
+_SURPRISE = re.compile(r"竟然|沒想到|反而|偏偏|其實")       # a reveal on its own, number or not
+_REPORTED = re.compile(r"據.{0,8}報|報導|挖到|爆料|傳出")   # in a gossip slide: the sourced gossip itself
 _NUMBER = re.compile(r"\d|[一二三四五六七八九十百千萬兩半]+[倍成%％年片週]|翻倍|減半")
 _ANALOGY = re.compile(r"就像|好比|像是|等於|想像|用.{1,8}來想|比喻|差不多是")
 _QUOTE = re.compile(r"說[：:]|自己說|親口|原話|承認|「[^」]{2,}」")  # a person's own words, not 「報導說」
@@ -68,13 +71,14 @@ def classify(sentence: str, slide_beat: str | None = None) -> str | None:
         return "tease"
     if _QUESTION.search(sentence):
         return "question"
-    if _CONTRAST.search(sentence) and (_NUMBER.search(sentence) or "不是" in sentence):
+    if _SURPRISE.search(sentence) or (_CONTRAST.search(sentence) and (_NUMBER.search(sentence) or "不是" in sentence
+                                                                      or "不夠" in sentence)):
         return "reversal"
     if slide_beat == "joke" and _JOKE.search(sentence):
         return "joke"
     if _JOKE.search(sentence):
         return "joke"
-    if slide_beat == "gossip" and _QUOTE.search(sentence):
+    if slide_beat == "gossip" and (_QUOTE.search(sentence) or _REPORTED.search(sentence)):
         return "gossip"
     if _QUOTE.search(sentence):
         return "quote"

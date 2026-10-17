@@ -24,7 +24,7 @@ from content_farm.production.shorts_cut import is_short_cut
 from content_farm.production.voice_choice import VoiceChoice, choose_voice, env_file_defaults
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-EXPLAINER_SUBTITLE_MAX = "16"  # 60 px subtitles (v3): ≤ 20 chars ≈ 1220 px clears the mascot column
+EXPLAINER_SUBTITLE_MAX = "14"  # 64 px subtitles (v3): ≤ 18 chars ≈ 1170 px clears the mascot column
 
 
 @dataclass(frozen=True)

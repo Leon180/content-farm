@@ -19,6 +19,14 @@ from content_farm.evaluation import aggregate, scorecard
 from content_farm.evaluation.panel import Thresholds
 from content_farm.evaluation.prepare import EVAL_DIR, round_dir
 
+def _plain(value: object) -> object:
+    """numpy scalars (bool_, float64 …) from the metrics → plain JSON values."""
+    item = getattr(value, "item", None)
+    if callable(item):
+        return item()
+    raise TypeError(f"not JSON serializable: {type(value).__name__}")
+
+
 LOOP_LOG = EVAL_DIR / "loop.jsonl"
 SCORECARD = EVAL_DIR / "scorecard.html"
 
@@ -53,7 +61,7 @@ def score_round(run_dir: Path, round_no: int | str, thresholds: Thresholds, *, l
         "missing_results": [e["rid"] for e in manifest["reviewers"] if not Path(e["result"]).is_file()],
     }
     result["verdict"] = aggregate.verdict(aud, home, columns, thresholds)
-    (rdir / "score.json").write_text(json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")
+    (rdir / "score.json").write_text(json.dumps(result, ensure_ascii=False, indent=1, default=_plain), encoding="utf-8")
     return result
 
 
@@ -61,7 +69,7 @@ def append_log(run_dir: Path, entry: dict) -> None:
     path = run_dir / LOOP_LOG
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        handle.write(json.dumps(entry, ensure_ascii=False, default=_plain) + "\n")
 
 
 def read_log(run_dir: Path) -> list[dict]:

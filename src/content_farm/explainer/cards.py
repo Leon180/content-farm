@@ -95,17 +95,18 @@ def _render(
 
 def overlay_html(
     deck: Deck, section: Section, slide: Slide, index: int, style: str | None = None,
-    brand: str | None = None, artwork_caption: str = "", ai_label: str = "",
+    brand: str | None = None, artwork_caption: str = "", ai_label: str = "", lower_third: bool = True,
 ) -> str:
     """Transparent page: top bar, lower-third (heading + key line), meta row.
 
     ``artwork_caption`` names the work on screen (artist, title, year); ``ai_label``
     puts the fixed 「AI 示意圖」 badge in the top-left corner of AI illustrations.
+    ``lower_third=False``: no heading box and no footage shade (diagrams draw their own heading).
     """
     line = key_line(slide)
     return _render(deck, section, slide, index, "overlay", style=style, brand=brand,
                    key_line="" if line == slide.heading else line, artwork_caption=artwork_caption,
-                   ai_label=ai_label)
+                   ai_label=ai_label, lower_third=lower_third)
 
 
 def title_card_html(

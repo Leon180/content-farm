@@ -23,8 +23,8 @@ from content_farm.explainer.diagrams.geometry import RETICLE_AREA, RETICLE_MM, p
 
 W, H, FPS = 1920, 1080, 30
 FILL_SECONDS = 1.4
-TOP, BOTTOM = 130, 700          # keep clear of the top bar and the lower-third
-DIAGRAMS = ("wafer_packing", "reticle_stitch", "growth_bars", "share_split")
+TOP, BOTTOM = 250, 790          # under the heading the diagram draws itself, above the meta row (y 832)
+DIAGRAMS = ("wafer_packing", "reticle_stitch", "growth_bars", "share_split", "cross_section")
 
 
 @dataclass(frozen=True)
@@ -97,13 +97,13 @@ def wafer_frames(areas: list[float], labels: list[str], starts: list[float], sec
         layer = layer.rotate(angle, resample=Image.BICUBIC)
         image.paste(layer, (cx - radius - 2, cy - radius - 2), layer)
         draw = ImageDraw.Draw(image)
-        draw.text((cx, BOTTOM - 4), "12 吋晶圓（直徑 300 mm，扣邊 3 mm）", fill=pal.muted, font=small, anchor="mt")
+        draw.text((1500, BOTTOM - 30), "12 吋晶圓，扣邊 3 mm", fill=pal.muted, font=small, anchor="mt")
         if stage >= 0:
-            draw.text((1500, 330), f"{shown}", fill=pal.accent, font=big, anchor="ms")
-            draw.text((1500, 400), "片／每片晶圓", fill=pal.fg, font=mid, anchor="mt")
-            draw.text((1500, 470), labels[stage], fill=pal.muted, font=small, anchor="mt")
+            draw.text((1500, 380), f"{packs[stage].count}", fill=pal.accent, font=big, anchor="ms")   # final count at once (v3 eval)
+            draw.text((1500, 450), "片／每片晶圓", fill=pal.fg, font=mid, anchor="mt")
+            draw.text((1500, 520), labels[stage], fill=pal.muted, font=small, anchor="mt")
             for k in range(stage):
-                draw.text((1500, 540 + 46 * k), f"{labels[k]}：{packs[k].count} 片", fill=pal.muted, font=small, anchor="mt")
+                draw.text((1500, 590 + 46 * k), f"{labels[k]}：{packs[k].count} 片", fill=pal.muted, font=small, anchor="mt")
         yield image
 
 
@@ -133,17 +133,17 @@ def reticle_frames(multiples: list[float], labels: list[str], starts: list[float
                 drop = (1 - appear) * 40
                 draw.rectangle((x + 2, y + 2 - drop, x + width - 2, y + th - 2 - drop),
                                fill=(*_rgb(pal.accent2 if k else pal.accent), round(200 * appear)), outline=pal.fg, width=2)
-                draw.text((x + width / 2, y + th / 2 - drop), "A4", fill=(255, 255, 255, round(255 * appear)),
+                draw.text((x + width / 2, y + th / 2 - drop), "1 次", fill=(255, 255, 255, round(255 * appear)),
                           font=small, anchor="mm")
             sweep = (t - starts[-1] - FILL_SECONDS) / 4.0 if starts else -1
             if sweep > 0:                         # light sweeps across the seams, forever
                 sx = origin_x + (sweep % 1.0) * 3 * tw
                 draw.rectangle((sx, origin_y, sx + 24, origin_y + 3 * th), fill=(255, 255, 255, 90))
             area = round(m * RETICLE_AREA)
-            draw.text((1450, 300), labels[stage], fill=pal.accent, font=mid, anchor="ms")
-            draw.text((1450, 360), f"≈ {area:,} mm²", fill=pal.fg, font=mid, anchor="mt")
-            draw.text((1450, 440), "一次曝光最大 26 × 33 mm", fill=pal.muted, font=small, anchor="mt")
-            draw.text((1450, 490), "＝ 858 mm²（像一張 A4）", fill=pal.muted, font=small, anchor="mt")
+            draw.text((1450, 400), labels[stage], fill=pal.accent, font=mid, anchor="ms")
+            draw.text((1450, 460), f"≈ {area:,} mm²", fill=pal.fg, font=mid, anchor="mt")
+            draw.text((1450, 540), "一次曝光最大 26 × 33 mm", fill=pal.muted, font=small, anchor="mt")
+            draw.text((1450, 590), "＝ 858 mm²（比郵票大一點）", fill=pal.muted, font=small, anchor="mt")
         yield image
 
 
@@ -183,7 +183,7 @@ def bars_frames(values: list[float], labels: list[str], starts: list[float], sec
 def split_frames(values: list[float], labels: list[str], starts: list[float], seconds: float, pal: Palette):
     """A wide bar of the whole (e.g. a year of capacity) split into shares as each is named."""
     total = sum(values) or 1.0
-    left, right, y0, y1 = 220, 1700, 300, 470
+    left, right, y0, y1 = 220, 1700, 400, 570
     mid, small = _font(46), _font(34)
     colours = [pal.accent, pal.accent2, pal.muted, pal.rule]
     for frame in range(round(seconds * FPS)):
@@ -214,6 +214,11 @@ def _rgb(hex_colour: str) -> tuple[int, int, int]:
 
 def frames_for(name: str, params: dict[str, str], starts: list[float], seconds: float, pal: Palette):
     labels = [s.strip() for s in params.get("labels", "").split("|") if s.strip()]
+    if name == "cross_section":     # stages are labels only (build: 載板 → 中介層 → …; warp: 瑕疵 → 受熱 → 翹曲)
+        from content_farm.explainer.diagrams.cross_section import section_frames
+
+        starts = list(starts) if starts else [0.5 + 2.5 * i for i in range(len(labels))]
+        return section_frames(labels, starts, seconds, pal, mode=params.get("mode", "build"))
     values = [float(v) for v in params.get("values", "").split("|") if v.strip()]
     if not values or len(labels) != len(values):
         raise ValueError(f"diagram {name}: params need matching 'values' and 'labels' (| separated)")
@@ -245,17 +250,29 @@ def push_in(image: Image.Image, progress: float) -> Image.Image:
     return image.resize((W, H), Image.BILINEAR, box=box)
 
 
+def _heading(image: Image.Image, heading: str, pal: Palette) -> Image.Image:
+    """The slide heading at the top of the band (diagrams have no lower-third box: v3 eval, it
+    covered the first bars and their year labels)."""
+    if not heading:
+        return image
+    draw = ImageDraw.Draw(image)
+    draw.text((96, 128), heading, fill=pal.fg, font=_font(64))
+    draw.rectangle((96, 214, 216, 222), fill=pal.accent)
+    return image
+
+
 def render_clip(name: str, params: dict[str, str], starts: list[float], seconds: float, out: Path,
-                brand: str | None = None) -> Path:
+                brand: str | None = None, heading: str = "") -> Path:
     out.parent.mkdir(parents=True, exist_ok=True)
+    pal = palette_for(brand)
     cmd = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24",
            "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-", "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
            "-pix_fmt", "yuv420p", str(out)]
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
     total = max(round(seconds * FPS), 1)
     try:
-        for k, image in enumerate(frames_for(name, params, starts, seconds, palette_for(brand))):
-            proc.stdin.write(push_in(image, k / total).tobytes())
+        for k, image in enumerate(frames_for(name, params, starts, seconds, pal)):
+            proc.stdin.write(_heading(push_in(image, k / total), heading, pal).tobytes())
     finally:
         proc.stdin.close()
         err = proc.stderr.read().decode(errors="replace")

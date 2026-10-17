@@ -18,11 +18,11 @@
   </header>
 
 {% if kind == "overlay" %}
-  <div class="footage-shade"></div>
+  {% if lower_third is not defined or lower_third %}<div class="footage-shade"></div>
   <section class="lower-third">
     <div class="lt-heading">{{ slide.heading }}</div>
     {% if key_line %}<div class="lt-key">{{ key_line }}</div>{% endif %}
-  </section>
+  </section>{% endif %}
   {% if artwork_caption %}<div class="art-caption">圖｜{{ artwork_caption }}・公共領域</div>{% endif %}
   {% if ai_label %}<div class="ai-label">{{ ai_label }}{% if slide.media and slide.media.ai_note %}<span class="ai-note">｜{{ slide.media.ai_note }}</span>{% endif %}</div>{% endif %}
 {% elif kind == "title_card" %}

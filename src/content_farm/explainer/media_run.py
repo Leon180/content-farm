@@ -42,7 +42,7 @@ MIN_TRANSITION, MAX_TRANSITION = 0.1, 1.0
 @dataclass(frozen=True)
 class MediaOptions:
     transition: str = "crossfade"
-    transition_seconds: float = 0.4
+    transition_seconds: float = 0.25   # v3 eval: at 0.4 s two pages' text visibly overlapped
     replace: bool = False
     brand: str | None = None  # channel brand (see explainer.brands); None = category theme
     motion_paths: MotionPaths | None = None  # ai_image motion tools; None = Ken Burns

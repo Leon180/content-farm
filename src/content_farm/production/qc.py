@@ -44,7 +44,7 @@ def final_video(run_dir: Path) -> Path | None:
 
 def policy_findings(channel: Channel, deck: Deck) -> list[Finding]:
     """Does the deck ask for media the channel is not allowed to use?"""
-    allowed = {MediaKind.SLIDE, MediaKind.ANIMATED, MediaKind.TITLE_CARD}
+    allowed = {MediaKind.SLIDE, MediaKind.ANIMATED, MediaKind.TITLE_CARD, MediaKind.DIAGRAM}
     if channel.media.stock:
         allowed.add(MediaKind.STOCK)
     if channel.media.ai_image:

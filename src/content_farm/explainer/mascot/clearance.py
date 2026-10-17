@@ -22,7 +22,7 @@ from PIL import ImageFont
 
 from content_farm.explainer.mascot.overlay import FRAME_W, SUBTITLES
 
-SUBTITLE_FONT_SIZE = 60  # timeline_assembly.LANDSCAPE_PRESET.subtitle_font_size
+SUBTITLE_FONT_SIZE = 64  # timeline_assembly.LANDSCAPE_PRESET.subtitle_font_size
 SUBTITLE_OUTLINE = 10    # box padding (ASS Outline with BorderStyle 3) in timeline_assembly
 
 

@@ -43,10 +43,13 @@ def test_long_line_is_flagged_short_is_not(tmp_path: Path) -> None:
 
 
 @needs_font
-def test_default_landscape_wrap_can_overshoot_but_20_cannot(tmp_path: Path) -> None:
-    # comma at position 28: the 24-char wrap takes it (+4 tolerance) → a 28-char line
+def test_default_landscape_wrap_can_overshoot_but_explainer_setting_cannot(tmp_path: Path) -> None:
+    # comma at position 28: the 24-char wrap takes it (+4 tolerance) → a 28-char line; at 64 px
+    # (v3) the explainer's 14-char setting (≤ 18 chars with tolerance) stays clear of the mascot
+    from content_farm.production.steps import EXPLAINER_SUBTITLE_MAX
+
     text = "長期由矽品這些封測廠在台積電授權下承接後段製程而且越做，越多" * 3
     at_24 = wrap_text(text, 24).split("\n")
-    at_20 = wrap_text(text, 20).split("\n")
+    at_explainer = wrap_text(text, int(EXPLAINER_SUBTITLE_MAX)).split("\n")
     assert wide_lines(_srt(tmp_path, *at_24), FONT)  # control: the detector fires
-    assert wide_lines(_srt(tmp_path, *at_20), FONT) == ()
+    assert wide_lines(_srt(tmp_path, *at_explainer), FONT) == ()

@@ -68,7 +68,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--run-dir", type=Path, required=True)
     parser.add_argument("--source", choices=DURATION_SOURCES, default="auto")
     parser.add_argument("--transition", choices=TRANSITION_CHOICES, default="crossfade")
-    parser.add_argument("--transition-seconds", type=float, default=0.4)
+    parser.add_argument("--transition-seconds", type=float, default=0.25)   # v3: 0.4 s let two pages' text overlap
     parser.add_argument("--replace", action="store_true", help="remove old timeline files first")
     parser.add_argument("--no-stock", action="store_true", help="never call Pexels/Pixabay")
     parser.add_argument("--stock-cache", type=Path, default=Path(".cache/explainer_stock"))

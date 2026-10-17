@@ -54,6 +54,8 @@ class FakeExecutor:
             _touch(d / "assembly" / "draft.mp4")
         elif script == "mascot_overlay.py":
             _touch(d / "assembly" / "final.mp4")
+        elif script == "audio_mix.py":
+            _touch(d / "assembly" / "release.mp4")
         elif script == "make_thumbnail.py":
             _touch(d / "thumbnails" / "thumbnail.png")
         return 0
@@ -113,7 +115,7 @@ def test_full_walk_stops_at_each_gate_and_packages(run_dir: Path) -> None:
     result = _runner(run_dir, executor, mock_voice=True).run()
     assert result.outcome is Outcome.COMPLETE
     meta = json.loads((run_dir / "upload" / "youtube_meta.json").read_text(encoding="utf-8"))
-    assert meta["video_path"] == "assembly/final.mp4"
+    assert meta["video_path"] == "assembly/release.mp4"   # chipcat has audio.enabled: the mixed release is uploaded
     assert meta["contains_synthetic_media"] is False  # Studio label off; description discloses
     assert meta["credentials_env"]["refresh_token"] == "CF_YT_CHIPCAT_REFRESH_TOKEN"
     state = load_state(run_dir, "chipcat")

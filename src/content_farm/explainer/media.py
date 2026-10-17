@@ -142,10 +142,10 @@ def _animated(ctx: MediaContext, job: SlideJob, note: str = "") -> ClipResult:
                    problems=capture.problems)
 
 
-def _overlay_png(ctx: MediaContext, job: SlideJob, ai_label: str = "") -> Path:
+def _overlay_png(ctx: MediaContext, job: SlideJob, ai_label: str = "", lower_third: bool = True) -> Path:
     html = ctx.html(f"overlay_{job.index:03d}.html",
                     overlay_html(ctx.deck, job.section, job.slide, job.index, brand=ctx.brand,
-                                 ai_label=ai_label))
+                                 ai_label=ai_label, lower_third=lower_third))
     return ctx.capturer.still(html, ctx.work_dir / "overlays" / f"overlay_{job.index:03d}.png",
                               transparent=True)
 
@@ -239,9 +239,9 @@ def _diagram(ctx: MediaContext, job: SlideJob) -> ClipResult:
     media = job.slide.media
     starts = list(job.stage.reveals) if job.stage else []
     raw = render_clip(media.diagram, dict(media.params), starts, job.seconds,
-                      ctx.work_dir / "diagrams" / f"{job.slide.id}.mp4", brand=ctx.brand)
-    clip, _ = ffmpeg_ops.stock_to_clip(raw, _overlay_png(ctx, job), ctx.clip_path(job, ".mp4"), job.seconds,
-                                       job.seconds)
+                      ctx.work_dir / "diagrams" / f"{job.slide.id}.mp4", brand=ctx.brand, heading=job.slide.heading)
+    clip, _ = ffmpeg_ops.stock_to_clip(raw, _overlay_png(ctx, job, lower_third=False), ctx.clip_path(job, ".mp4"),
+                                       job.seconds, job.seconds)
     return _result(job, "diagram", clip, note=f"diagram {media.diagram} stages at {starts}")
 
 

@@ -146,7 +146,15 @@ class EstimationProvider:
             window_end = min(self._max_chars, len(remaining))
             best_break = -1
 
+            # A sentence end wins over a later comma, so a cue never ends with the opener of the
+            # next sentence (v3 eval: 「…起步了。2016 年，」「等一下，」 dangling at a cue's end).
             for pos in range(window_end, self._min_chars - 1, -1):
+                if pos < len(remaining) and remaining[pos] in "。！？!?" and is_break(pos):
+                    best_break = pos + 1
+                    break
+            for pos in range(window_end, self._min_chars - 1, -1):
+                if best_break >= 0:
+                    break
                 if pos < len(remaining) and is_break(pos):
                     best_break = pos + 1  # Include the punctuation char
                     break

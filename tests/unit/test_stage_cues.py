@@ -19,7 +19,7 @@ def test_reveals_follow_the_narration() -> None:
     sentences = [(0.5, "還有兩條常被忽略的供應線。"), (4.0, "一條是 ABF 基板，也就是最底下那塊多層板。"),
                  (11.0, "欣興把資本支出提高到 340 億元以上。"), (19.0, "另一條是設備，濕製程、點膠、檢測，有不少台灣設備商。")]
     stage = plan(_bullets(), sentences, 30.0)
-    assert [round(t, 1) for t in stage.reveals] == [3.7, 10.7, 18.7]
+    assert [round(t, 1) for t in stage.reveals] == [0.3, 10.7, 18.7]   # first item with the page (v3)
     assert stage.longest_hold <= MAX_HOLD
 
 
@@ -29,7 +29,7 @@ def test_numbered_labels_wait_for_their_number() -> None:
     labels = ["1 倍光罩（858 mm²）", "3.3 倍光罩（2,831 mm²）", "9 倍光罩（7,722 mm²）"]
     sentences = [(0.5, "那一片晶圓排得下幾個？"), (2.4, "把中介層當正方形去排：1 倍光罩、858 平方毫米呢？大約 62 片。"),
                  (11.6, "3.3 倍、2,831 平方毫米呢？"), (16.8, "9 倍、7,722 平方毫米呢？")]
-    assert [round(t, 1) for t in match_times(labels, sentences, 28.0)] == [2.1, 11.3, 16.5]
+    assert [round(t, 1) for t in match_times(labels, sentences, 28.0)] == [0.3, 11.3, 16.5]
 
 
 def test_decimal_numbers_match_whole() -> None:
@@ -37,7 +37,7 @@ def test_decimal_numbers_match_whole() -> None:
 
     labels = ["1 倍：858 mm²", "3.3 倍：2024 量產"]
     sentences = [(1.4, "也就是 858 平方毫米。"), (13.0, "台積電量產 3.3 倍，承諾 5.5 倍。")]
-    assert [round(t, 1) for t in match_times(labels, sentences, 24.0)] == [1.1, 12.7]
+    assert [round(t, 1) for t in match_times(labels, sentences, 24.0)] == [0.3, 12.7]
 
 
 def test_pulses_fill_long_holds() -> None:

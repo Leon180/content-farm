@@ -7,8 +7,8 @@ from dataclasses import dataclass
 from content_farm.retention.beats import Hook
 from content_farm.retention.timing import Scene
 
-SFX_FOR_HOOK = {"reversal": "ding", "joke": "pop", "tease": "whoosh", "question": "whoosh"}
-SFX_MIN_SPACING = 12.0      # s between two SFX (too many = noise; research §5.3)
+SFX_FOR_HOOK = {"reversal": "ding", "gossip": "ding", "joke": "pop", "tease": "whoosh"}   # v3: not on every question
+SFX_MIN_SPACING = 18.0      # s between two SFX (v3 eval: 33 evenly scattered cues read as noise)
 STINGER_CLEAR = 4.0         # no SFX this close to a stinger
 STINGER_LEAD = 0.4          # the stinger starts just before the new chapter's first word
 

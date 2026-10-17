@@ -88,6 +88,7 @@ audio:      # 2026-10-17 cowos-v3：本機 ACE-Step 1.5 生成（授權筆記 ~/
     license: 程式與權重 MIT；模型卡：生成音樂可商用
     license_url: https://huggingface.co/ACE-Step/Ace-Step1.5
   sfx: true
+  bgm_under_voice_db: 13.0   # v3 round 1 measured 18.6 dB under the voice at 15 (target 12–18): bed 2 dB up
 notes:
   - 不給投資建議；財報數字一律附來源
   - 八卦必須有來源

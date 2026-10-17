@@ -161,26 +161,29 @@
   const PULSE = 0.9;
   const pulseTarget = (idx, units) => {
     if (idx >= 0 && units[idx]) return units[idx];
-    return document.querySelector('.bignum .value-row, .bignum .value, .quote .text, .quote > *, .news-card, .content');
+    // the one thing worth pointing at — never the whole page (v3 eval: a full-page glow read as a render error)
+    return document.querySelector('.bignum .value, .quote .text, .quote > *, .news-headline, .heading, .title-main');
   };
   const pulseFx = (list, units) => {
-    const items = list.map(([t, idx]) => ({ t, el: pulseTarget(idx, units) })).filter((p) => p.el);
+    const items = list.map(([t, idx]) => ({ t, el: pulseTarget(idx, units), tint: idx >= 0 })).filter((p) => p.el);
     items.forEach((p) => { p.el.style.transformOrigin = p.el.style.transformOrigin || 'center center'; });
     return {
       duration: items.length ? Math.max(...items.map((p) => p.t + PULSE)) : 0,
       windows: items.map((p) => [p.t, p.t + PULSE]),
       apply(t) {
         const bump = new Map();
+        const tinted = new Set(items.filter((p) => p.tint).map((p) => p.el));
         items.forEach((p) => {
           const x = (t - p.t) / PULSE;
           if (x >= 0 && x <= 1) bump.set(p.el, Math.max(bump.get(p.el) || 0, Math.sin(Math.PI * x)));
           else if (!bump.has(p.el)) bump.set(p.el, 0);
         });
         bump.forEach((b, el) => {
-          // strong enough to read as "something happened" on a phone (v3: 0.05 scale alone was invisible)
+          // strong enough to read as "something happened" on a phone (v3: 0.05 scale alone was invisible);
+          // a list item gets a tint, a headline / big number only scales with a tight glow
           el.style.scale = String(1 + 0.08 * b);
-          el.style.filter = b > 0 ? `drop-shadow(0 0 ${Math.round(28 * b)}px var(--accent, #f5a524))` : '';
-          el.style.backgroundColor = b > 0 ? `rgba(245, 165, 36, ${(0.22 * b).toFixed(3)})` : '';
+          el.style.filter = b > 0 ? `drop-shadow(0 0 ${Math.round(14 * b)}px var(--accent, #f5a524))` : '';
+          el.style.backgroundColor = b > 0 && tinted.has(el) ? `rgba(245, 165, 36, ${(0.22 * b).toFixed(3)})` : '';
         });
       },
     };
