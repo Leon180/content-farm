@@ -14,6 +14,7 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import numpy as np
 from PIL import Image
 
 PACK_ROOT = Path(__file__).parent / "packs"
@@ -40,6 +41,12 @@ class Pack:
     layers: dict[str, Image.Image]
     pose_map: dict[str, str] = field(default_factory=lambda: dict(DEFAULT_POSE_MAP))
     mouth_mode: str = "frames"
+    # 2.5D: a depth map (0 far .. 1 near, same canvas) turns on the depth-driven head turn / nod,
+    # ground shadow and talk squash (manifest "motion": "2.5d" + depth.png from host_depth_worker.py)
+    depth: np.ndarray | None = None
+    # speech effect drawn by the renderer, e.g. {"kind": "bubbles", "emit": [x, y], "surface_y": y,
+    # "x_range": [x0, x1]} in canvas px: bubbles rise from ``emit`` while the host speaks
+    speech_fx: dict | None = None
 
     def expression_for(self, pose: str) -> str:
         return self.pose_map.get(pose, "neutral")
@@ -74,5 +81,18 @@ def load_pack(ref: str, root: Path = PACK_ROOT) -> Pack:
     mouth_mode = manifest.get("mouth_mode", "frames")
     if mouth_mode not in MOUTH_MODES:
         raise PackError(f"pack {folder.name}: mouth_mode {mouth_mode!r} not in {MOUTH_MODES}")
+    depth = None
+    if manifest.get("motion") == "2.5d":
+        depth_path = folder / "depth.png"
+        if not depth_path.is_file():
+            raise PackError(f"pack {folder.name} asks for 2.5d motion but has no depth.png")
+        depth = np.asarray(Image.open(depth_path), dtype=np.float32) / 65535.0
+        if depth.shape != (base.height, base.width):
+            raise PackError(f"pack {folder.name}: depth.png {depth.shape} not on the base canvas {base.size}")
+    speech_fx = manifest.get("speech_fx")
+    if speech_fx is not None:
+        missing = [k for k in ("emit", "surface_y", "x_range") if k not in speech_fx]
+        if speech_fx.get("kind") != "bubbles" or missing:
+            raise PackError(f"pack {folder.name}: speech_fx must be kind 'bubbles' with emit, surface_y, x_range")
     return Pack(id=manifest.get("id", folder.name), name=manifest.get("name", folder.name), base=base,
-                layers=layers, pose_map=pose_map, mouth_mode=mouth_mode)
+                layers=layers, pose_map=pose_map, mouth_mode=mouth_mode, depth=depth, speech_fx=speech_fx)

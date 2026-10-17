@@ -5,6 +5,16 @@
 - **第二輪**（最新）候選牆：`docs/design/channel-hosts/round2/index.html`，手機也能看。編號用兩位數：Y01–Y25、O01–O25、C01–C25。
 - 第一輪選稿頁：`docs/design/channel-hosts/index.html`。編號用一位數（Y1、O1…），跟第二輪不同，不要混用。
 
+## 第四輪（3D 質感＋2.5D）進度紀錄
+
+（做到哪裡，給中斷時接手的人）
+- [x] 嘴型修正：`a662dee`
+- [x] 生圖閘門加入 `qwen3-tts｜voxcpm2`：比對執行檔或腳本路徑，有反例測試。orchestrator 2026-10-17 要求
+- [x] 單張圖轉 3D 調查：`docs/design/channel-hosts/round4/image-to-3d-research.md`
+- [x] 2.5D 渲染：深度 warp 轉頭／點頭、落地陰影、說話 squash。角色包 manifest 設 `motion: 2.5d` 加 `depth.png` 就會啟用；測試 24 項全過
+- [ ] 3D 質感生圖：`tools/r4_gen.py`，raw 在 job tmp 的 `r4-raw/`
+- [ ] `tools/r4_pack.py` 組角色包＋深度圖 → `tools/r4_trial.py` 產出 3 支並排試片 → 報告
+
 ## TL;DR（第三輪：選定與 PNGtuber，2026-10-17）
 
 - Leon 選定 **Y14 青蛙書記（妖怪）、O25 飲水機金魚（下班）、C09 顏料瓶老師傅（賽璐璐）**。三張都做過相似度把關，**沒有明顯撞臉**（🟡 目視判斷，見 §3-1），所以直接做角色包，沒有停下重生。

@@ -15,7 +15,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from PIL import Image
+import numpy as np
+from PIL import Image, ImageDraw, ImageFilter
 
 from content_farm.explainer.mascot.overlay import ORIGIN, Rect
 from content_farm.explainer.mascot.render import ALPHA_CODEC_ARGS, CANVAS_H, CANVAS_W
@@ -46,6 +47,61 @@ VERTICAL = Placement("vertical", (1080, 1920), (560, 520), (0, 1400), height=440
 PLACEMENTS = {p.frame: p for p in (LANDSCAPE, VERTICAL)}
 
 
+YAW_SHIFT = 0.032        # 2.5D: max sideways shift of the nearest pixels, share of the figure width
+NOD_SHIFT = 0.018        # ... and vertical, share of the figure height
+SHADOW_ALPHA = 0.30
+
+
+def depth_warp(img: Image.Image, depth: np.ndarray, dx: float, dy: float) -> Image.Image:
+    """Backward bilinear remap: a pixel at depth d samples from (x - dx·(d-½), y - dy·(d-½)), so near
+    parts slide past far ones like a small head turn. Premultiplied alpha keeps edges clean."""
+    arr = np.asarray(img, dtype=np.float32) / 255.0
+    rgb = arr[..., :3] * arr[..., 3:4]
+    pre = np.concatenate([rgb, arr[..., 3:4]], axis=-1)
+    h, w = depth.shape
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    off = depth - 0.5
+    sx = np.clip(xx - dx * off, 0, w - 1.001)
+    sy = np.clip(yy - dy * off, 0, h - 1.001)
+    x0, y0 = sx.astype(np.int32), sy.astype(np.int32)
+    fx, fy = (sx - x0)[..., None], (sy - y0)[..., None]
+    out = (pre[y0, x0] * (1 - fx) * (1 - fy) + pre[y0, x0 + 1] * fx * (1 - fy)
+           + pre[y0 + 1, x0] * (1 - fx) * fy + pre[y0 + 1, x0 + 1] * fx * fy)
+    alpha = out[..., 3:4]
+    rgb = np.where(alpha > 1e-4, out[..., :3] / np.maximum(alpha, 1e-4), 0.0)
+    return Image.fromarray((np.concatenate([rgb, alpha], axis=-1) * 255).round().astype(np.uint8))
+
+
+def draw_bubbles(img: Image.Image, bubbles: Sequence[tuple[float, float, float, float]], offset: tuple[int, int],
+                 scale: float) -> Image.Image:
+    """Light, see-through bubbles (pack px → face px): faint fill, white rim, a small highlight."""
+    ss = 3   # supersample for smooth small circles
+    layer = Image.new("RGBA", (img.width * ss, img.height * ss), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(layer)
+    for bx, by, br, ba in bubbles:
+        x, y, r = (bx - offset[0]) * scale * ss, (by - offset[1]) * scale * ss, max(1.5, br * scale) * ss
+        draw.ellipse((x - r, y - r, x + r, y + r), fill=(255, 255, 255, round(55 * ba)),
+                     outline=(255, 255, 255, round(225 * ba)), width=max(2, round(r * 0.2)))
+        hr = r * 0.28
+        draw.ellipse((x - r * 0.45 - hr, y - r * 0.45 - hr, x - r * 0.45 + hr, y - r * 0.45 + hr),
+                     fill=(255, 255, 255, round(235 * ba)))
+    out = img.copy()
+    out.alpha_composite(layer.resize(img.size, Image.LANCZOS))
+    return out
+
+
+def ground_shadow(width: int, lift: float) -> Image.Image:
+    """Soft contact shadow; fainter while the figure is lifted by the talk bounce."""
+    w, h = max(8, round(width * 0.62)), max(4, round(width * 0.075))
+    pad = 12
+    shadow = Image.new("L", (w + 2 * pad, h + 2 * pad), 0)
+    strength = SHADOW_ALPHA * max(0.4, 1.0 - lift / 12.0)
+    ImageDraw.Draw(shadow).ellipse((pad, pad, pad + w, pad + h), fill=round(255 * strength))
+    out = Image.new("RGBA", shadow.size, (0, 0, 0, 0))
+    out.putalpha(shadow.filter(ImageFilter.GaussianBlur(5)))
+    return out
+
+
 @dataclass(frozen=True)
 class RenderStats:
     frames: int
@@ -64,6 +120,12 @@ class Composer:
         self.bbox = bbox
         w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
         self.scale = min(placement.height / h, placement.max_width / w)
+        self.depth: np.ndarray | None = None
+        if pack.depth is not None:   # 2.5D: leave room for the turn and the squash inside max_width
+            self.scale *= 1.0 - YAW_SHIFT - 0.04
+            size = (round(w * self.scale), round(h * self.scale))
+            crop = Image.fromarray(np.ascontiguousarray(pack.depth[bbox[1]:bbox[3], bbox[0]:bbox[2]], dtype=np.float32))
+            self.depth = np.asarray(crop.resize(size, Image.BILINEAR), dtype=np.float32)
         self._faces: dict[tuple[str, int, bool], Image.Image] = {}
 
     def face(self, expression: str, mouth: int, blink: bool) -> Image.Image:
@@ -86,16 +148,26 @@ class Composer:
     def canvas(self, frame: HostFrame) -> Image.Image:
         p = self.placement
         img = self.face(frame.expression, frame.mouth, frame.blink)
-        w, h = img.width, round(img.height * frame.stretch)
+        if frame.bubbles:
+            img = draw_bubbles(img, frame.bubbles, self.bbox[:2], self.scale)
+        base_w = img.width
+        squash = frame.squash if self.depth is not None else 0.0
+        if self.depth is not None:
+            img = depth_warp(img, self.depth, YAW_SHIFT * img.width * frame.yaw, NOD_SHIFT * img.height * frame.nod)
+        w, h = round(img.width * (1 + squash)), round(img.height * frame.stretch * (1 - squash))
         img = img.resize((w, h), Image.BILINEAR)
         pad = round(0.06 * max(w, h)) + 4
         work = Image.new("RGBA", (w + 2 * pad, h + pad), (0, 0, 0, 0))
         work.paste(img, (pad, 0), img)
         feet = (pad + w / 2, h)                          # rotate about the middle of the feet
         work = work.rotate(frame.angle, resample=Image.BICUBIC, center=feet)
-        anchor_x = p.canvas[0] - p.margin_x - w / 2 if p.anchor == "right" else p.margin_x + w / 2
+        anchor_x = p.canvas[0] - p.margin_x - base_w / 2 if p.anchor == "right" else p.margin_x + base_w / 2
         anchor_y = p.canvas[1] - p.margin_bottom - frame.lift
         out = Image.new("RGBA", p.canvas, (0, 0, 0, 0))
+        if self.depth is not None:
+            shadow = ground_shadow(base_w, frame.lift)
+            out.alpha_composite(shadow, (round(anchor_x - shadow.width / 2),
+                                         round(p.canvas[1] - p.margin_bottom - shadow.height * 0.62)))
         out.alpha_composite(work, (round(anchor_x - feet[0]), round(anchor_y - feet[1])))
         return out
 

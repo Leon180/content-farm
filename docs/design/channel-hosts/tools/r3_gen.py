@@ -77,8 +77,9 @@ def edit(ref: Path, prompt: str, seed: int, out: Path, log: Path, meta: dict) ->
     return record
 
 
-def accepted_edit(base: Path, prompt: str, out: Path, log: Path, meta: dict, *, tag: str = "") -> dict:
-    """Try SEEDS until the silhouette IoU against base reaches IOU_MIN; keep the best attempt either way."""
+def accepted_edit(base: Path, prompt: str, out: Path, log: Path, meta: dict, *, tag: str = "",
+                  iou_min: float = IOU_MIN) -> dict:
+    """Try SEEDS until the silhouette IoU against base reaches iou_min; keep the best attempt either way."""
     if out.is_file() and not tag:
         return {**meta, "skipped": True}
     base_mask, best = mask(base), None
@@ -93,12 +94,12 @@ def accepted_edit(base: Path, prompt: str, out: Path, log: Path, meta: dict, *, 
         print(f"{meta} seed {seed} iou {score:.4f}", flush=True)
         if best is None or score > best[0]:
             best = (score, trial, seed)
-        if score >= IOU_MIN:
+        if score >= iou_min:
             break
     if best is None:
         raise RuntimeError(f"every attempt failed for {meta}")
     out.write_bytes(best[1].read_bytes())
-    return {**meta, "seed": best[2], "iou": round(best[0], 4), "passed": best[0] >= IOU_MIN}
+    return {**meta, "seed": best[2], "iou": round(best[0], 4), "passed": best[0] >= iou_min}
 
 
 def redo(out_dir: Path, items: str) -> int:

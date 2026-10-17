@@ -187,6 +187,75 @@ def test_mouth_mode_is_validated(pack_root: Path) -> None:
         build.apply_mouth_mode(pack_root / "testy", "small_o")
 
 
+def _make_25d(pack_root: Path) -> None:
+    """Depth: a dome, nearest in the middle of the body, 0 outside it."""
+    folder = pack_root / "testy"
+    alpha = np.asarray(Image.open(folder / "base.png").getchannel("A")) > 128
+    yy, xx = np.mgrid[0:SIZE[1], 0:SIZE[0]]
+    dome = np.clip(1 - ((xx - 100) / 70.0) ** 2 - ((yy - 135) / 95.0) ** 2, 0, 1) * alpha
+    Image.fromarray((dome * 65535).astype(np.uint16)).save(folder / "depth.png")
+    manifest = json.loads((folder / "manifest.json").read_text(encoding="utf-8"))
+    manifest["motion"] = "2.5d"
+    (folder / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+
+
+def test_depth_warp_moves_near_pixels_more_than_far_ones() -> None:
+    img = Image.new("RGBA", (40, 20), (0, 0, 0, 0))
+    ImageDraw.Draw(img).rectangle((18, 0, 21, 19), fill=(255, 0, 0, 255))   # a red bar in the middle
+    near, far = np.ones((20, 40), np.float32), np.zeros((20, 40), np.float32)
+    shifted = np.asarray(render.depth_warp(img, near, dx=8, dy=0).getchannel("A"))
+    behind = np.asarray(render.depth_warp(img, far, dx=8, dy=0).getchannel("A"))
+    assert np.nonzero(shifted[10] > 128)[0].mean() == pytest.approx(19.5 + 4, abs=0.6)   # +dx·½
+    assert np.nonzero(behind[10] > 128)[0].mean() == pytest.approx(19.5 - 4, abs=0.6)    # -dx·½
+
+
+def test_25d_pack_needs_its_depth_map(pack_root: Path) -> None:
+    _make_25d(pack_root)
+    assert pack.load_pack("testy", root=pack_root).depth is not None
+    (pack_root / "testy" / "depth.png").unlink()
+    with pytest.raises(pack.PackError, match="depth.png"):
+        pack.load_pack("testy", root=pack_root)
+
+
+@pytest.mark.parametrize("placement", [render.LANDSCAPE, render.VERTICAL])
+def test_25d_worst_case_stays_out_of_forbidden_zones(pack_root: Path, placement: render.Placement) -> None:
+    _make_25d(pack_root)
+    composer = render.Composer(pack.load_pack("testy", root=pack_root), placement)
+    for yaw in (-1.0, 1.0):
+        frame = motion.HostFrame("neutral", 2, False, 1.0 + motion.BREATH_SCALE, motion.SWAY_DEG * yaw,
+                                 motion.BOUNCE_PX, yaw=yaw, nod=-yaw, squash=motion.TALK_SQUASH)
+        layer = Image.new("RGBA", placement.frame, (0, 0, 0, 0))
+        layer.alpha_composite(composer.canvas(frame), placement.origin)
+        alpha = np.asarray(layer.getchannel("A"))
+        for name, r in placement.forbidden.items():
+            assert not (alpha[r.y0:r.y1, r.x0:r.x1] > 8).any(), f"2.5D host enters {name}"
+
+
+FX = {"kind": "bubbles", "emit": [100, 150], "surface_y": 60, "x_range": [40, 160]}
+
+
+def test_bubbles_follow_the_voice_and_stay_in_the_water() -> None:
+    fps, n = 30.0, 600
+    loud = motion.bubble_track(np.full(n, 0.9), fps, n, FX, seed=1)
+    quiet = motion.bubble_track(np.zeros(n), fps, n, FX, seed=1)
+    assert motion.bubble_track(np.full(n, 0.9), fps, n, FX, seed=1) == loud          # deterministic
+    count = lambda track: sum(len(f) for f in track)  # noqa: E731
+    assert count(loud) > 5 * count(quiet) > 0                                         # idle: now and then one
+    assert max(b[2] for f in loud for b in f) > max(b[2] for f in quiet for b in f)    # louder → bigger
+    for frame in loud + quiet:
+        for x, y, r, a in frame:
+            assert y - r > FX["surface_y"] and FX["x_range"][0] <= x - r and x + r <= FX["x_range"][1]
+            assert 0 < a <= 1
+
+
+def test_speech_fx_is_validated(pack_root: Path) -> None:
+    build.set_manifest(pack_root / "testy", speech_fx=FX)
+    assert pack.load_pack("testy", root=pack_root).speech_fx == FX
+    build.set_manifest(pack_root / "testy", speech_fx={"kind": "sparkles"})
+    with pytest.raises(pack.PackError, match="speech_fx"):
+        pack.load_pack("testy", root=pack_root)
+
+
 def test_committed_packs_load() -> None:
     for folder in sorted(p for p in pack.PACK_ROOT.iterdir() if p.is_dir()):
         loaded = pack.load_pack(folder.name)

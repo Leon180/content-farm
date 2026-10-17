@@ -40,10 +40,27 @@ def free_percent() -> int:
     return int(match.group(1))
 
 
+TTS_MARKERS = ("qwen3-tts", "voxcpm2")   # orchestrator 2026-10-17: local TTS peaks at 20+ GB
+
+
+def tts_processes(ps_output: str | None = None) -> list[str]:
+    """Local TTS model processes, matched on the executable and script path only (like
+    wan.busy_processes), so a process that merely mentions the names in its arguments is not one."""
+    if ps_output is None:
+        ps_output = subprocess.run(["ps", "-axo", "pid=,command="], capture_output=True, text=True).stdout
+    hits = []
+    for line in ps_output.splitlines():
+        parts = line.split()
+        if len(parts) >= 2 and int(parts[0]) != os.getpid() and any(
+                marker in token for token in parts[1:3] for marker in TTS_MARKERS):
+            hits.append(" ".join(parts[1:4]))
+    return hits
+
+
 def wait_until_idle() -> float:
     waited = 0.0
     while True:
-        busy, free = busy_processes({os.getpid()}), free_percent()
+        busy, free = busy_processes({os.getpid()}) + tts_processes(), free_percent()
         if not busy and free >= MIN_FREE_PERCENT:
             return waited
         if waited >= MAX_WAIT_SECONDS:

@@ -34,6 +34,15 @@ class HostFrame:
     stretch: float    # vertical scale about the feet
     angle: float      # degrees about the feet
     lift: float       # px up (canvas pixels at the final size)
+    # 2.5D only (packs with a depth map); 0 = the flat behaviour
+    yaw: float = 0.0     # -1..1 head turn: near pixels shift sideways more than far ones
+    nod: float = 0.0     # -1..1 nod: the same, vertically
+    squash: float = 0.0  # 0..1 talk squash: wider and shorter
+    bubbles: tuple[tuple[float, float, float, float], ...] = ()   # speech_fx: (x, y, radius, alpha), pack px
+
+
+YAW_PERIOD_S, NOD_PERIOD_S = 7.7, 4.6
+TALK_SQUASH = 0.035      # at a fully open mouth
 
 
 def mouth_levels(envelope: np.ndarray, hold: int = MOUTH_HOLD_FRAMES) -> np.ndarray:
@@ -48,6 +57,44 @@ def mouth_levels(envelope: np.ndarray, hold: int = MOUTH_HOLD_FRAMES) -> np.ndar
     return out
 
 
+BUBBLE_IDLE_RATE = 0.3       # bubbles per second while silent ("now and then one or two")
+BUBBLE_TALK_RATE = 9.0       # extra bubbles per second at full voice
+BUBBLE_RADIUS = (5.0, 13.0)  # pack px: quiet .. loud
+BUBBLE_SPEED = (45.0, 85.0)  # pack px per second, upward
+BUBBLE_SPREAD = 16.0         # pack px, sideways jitter at the emit point
+BUBBLE_FADE_IN = 40.0        # pack px of rise before a bubble is fully visible (keeps the face clear)
+
+
+def bubble_track(envelope: np.ndarray, fps: float, n_frames: int, fx: dict,
+                 seed: int) -> list[tuple[tuple[float, float, float, float], ...]]:
+    """Bubbles on screen per frame. Emission rate and size follow the voice envelope; each bubble
+    rises with a small wobble from near ``emit`` and disappears at ``surface_y`` (deterministic)."""
+    rng = np.random.default_rng(seed + 9173)
+    ex, ey = fx["emit"]
+    x0, x1 = fx["x_range"]
+    surface = fx["surface_y"]
+    born: list[tuple[float, float, float, float, float]] = []   # t0, x, radius, speed, wobble phase
+    frames = []
+    for i in range(n_frames):
+        level = float(envelope[i]) if i < len(envelope) else 0.0
+        rate = BUBBLE_IDLE_RATE + BUBBLE_TALK_RATE * level
+        for _ in range(rng.poisson(rate / fps)):
+            radius = BUBBLE_RADIUS[0] + (BUBBLE_RADIUS[1] - BUBBLE_RADIUS[0]) * level * rng.uniform(0.5, 1.0)
+            born.append((i / fps, ex + rng.normal(0, BUBBLE_SPREAD), radius, rng.uniform(*BUBBLE_SPEED),
+                         rng.uniform(0, 6.28)))
+        t = i / fps
+        alive = []
+        for t0, bx, r, v, ph in born:
+            risen = v * (t - t0)
+            y = ey - risen
+            if y - r > surface:
+                x = min(x1 - r, max(x0 + r, bx + 4.0 * math.sin(5.0 * (t - t0) + ph)))
+                alive.append((x, y, r, min(1.0, 0.25 + risen / BUBBLE_FADE_IN)))
+        born = [b for b in born if ey - b[3] * (t - b[0]) - b[2] > surface]
+        frames.append(tuple(alive))
+    return frames
+
+
 def host_frames(cues: Sequence[SceneCue], envelope: np.ndarray, fps: float, n_frames: int, pack: Pack,
                 seed: int = 7) -> tuple[HostFrame, ...]:
     if len(envelope) < n_frames:
@@ -56,6 +103,8 @@ def host_frames(cues: Sequence[SceneCue], envelope: np.ndarray, fps: float, n_fr
     blinks = idle.blink_schedule(duration, seed)
     mouths = mouth_levels(np.asarray(envelope[:n_frames]))
     phase = (seed % 97) / 97 * 2 * math.pi
+    bubbles = (bubble_track(np.asarray(envelope), fps, n_frames, pack.speech_fx, seed)
+               if pack.speech_fx else [()] * n_frames)
     frames = []
     for i in range(n_frames):
         t = i / fps
@@ -65,5 +114,9 @@ def host_frames(cues: Sequence[SceneCue], envelope: np.ndarray, fps: float, n_fr
             expression=expression, mouth=int(mouths[i]), blink=blink,
             stretch=1.0 + BREATH_SCALE * idle.breath(t),
             angle=SWAY_DEG * math.sin(2 * math.pi * t / SWAY_PERIOD_S + phase),
-            lift=BOUNCE_PX * float(envelope[i])))
+            lift=BOUNCE_PX * float(envelope[i]),
+            yaw=math.sin(2 * math.pi * t / YAW_PERIOD_S + 2 * phase),
+            nod=0.6 * math.sin(2 * math.pi * t / NOD_PERIOD_S + 3 * phase),
+            squash=TALK_SQUASH * float(envelope[i]),
+            bubbles=bubbles[i]))
     return tuple(frames)

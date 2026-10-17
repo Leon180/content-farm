@@ -139,6 +139,14 @@ def apply_mouth_mode(folder: Path, mode: str, *, center: tuple[int, int] | None 
     return manifest
 
 
+def set_manifest(folder: Path, **fields: object) -> dict:
+    """Merge renderer settings (``motion``, ``speech_fx``, …) into a built pack's manifest."""
+    path = folder / "manifest.json"
+    manifest = {**json.loads(path.read_text(encoding="utf-8")), **fields}
+    path.write_text(json.dumps(manifest, ensure_ascii=False, indent=1), encoding="utf-8")
+    return manifest
+
+
 def build_pack(src: Path, out: Path, pack_id: str, name: str, *, source: dict | None = None,
                pose_map: dict[str, str] | None = None) -> Built:
     """``src`` holds base.png + one png per layer (white background); writes the pack to ``out``."""

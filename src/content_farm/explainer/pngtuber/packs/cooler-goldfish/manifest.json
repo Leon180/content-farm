@@ -85,25 +85,17 @@
   "note": "AI-generated; Leon 2026-10-17 approved AI images as hosts. Purely AI output may not be protected by copyright.",
   "round2_id": "O25"
  },
- "mouth_mode": "small_o",
- "mouth": {
-  "center": [
+ "mouth_mode": "none",
+ "speech_fx": {
+  "kind": "bubbles",
+  "emit": [
    393,
-   430
+   445
   ],
-  "cover": [
-   64,
-   40
-  ],
-  "o_sizes": {
-   "mouth_half": [
-    12,
-    13
-   ],
-   "mouth_open": [
-    16,
-    19
-   ]
-  }
+  "surface_y": 296,
+  "x_range": [
+   270,
+   510
+  ]
  }
 }

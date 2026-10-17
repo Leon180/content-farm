@@ -16,7 +16,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 from content_farm.assembly.drawtext import find_cjk_font
-from content_farm.explainer.pngtuber.build import apply_mouth_mode, build_pack
+from content_farm.explainer.pngtuber.build import apply_mouth_mode, build_pack, set_manifest
 from content_farm.explainer.pngtuber.motion import HostFrame
 from content_farm.explainer.pngtuber.pack import PACK_ROOT, load_pack
 from content_farm.explainer.pngtuber.render import Composer, Placement
@@ -32,7 +32,12 @@ PACKS = {  # round-2 id → (pack id, name, brand background)
 # measured on base.png). Y14 keeps the generated mouths.
 MOUTHS = {
     "paint-bottle": {"mode": "small_o", "center": (386, 378), "cover": (52, 24), "o_sizes": ((13, 14), (17, 20))},
-    "cooler-goldfish": {"mode": "small_o", "center": (393, 430), "cover": (64, 40), "o_sizes": ((12, 13), (16, 19))},
+    # Leon, later the same day: the goldfish's mouth does not move at all; the water bubbles instead
+    "cooler-goldfish": {"mode": "none"},
+}
+# speech effects (canvas px measured on base.png): bubbles rise from the fish's mouth to the water surface
+SPEECH_FX = {
+    "cooler-goldfish": {"kind": "bubbles", "emit": [393, 445], "surface_y": 296, "x_range": [270, 510]},
 }
 SOURCE = {"model": "FLUX.2 [klein] 4B (q4), mflux, klein multi-reference edit", "license": "Apache-2.0",
           "license_url": "https://huggingface.co/black-forest-labs/FLUX.2-klein-4B/blob/main/LICENSE.md",
@@ -47,7 +52,7 @@ REVIEW = Placement("review", (0, 0), (SHEET_CELL, SHEET_CELL), (0, 0), height=23
                    anchor="left", margin_x=12, margin_bottom=10, forbidden={})
 
 
-def sheet(pick: str, raw: Path, pack_id: str, bg: str) -> Path:
+def sheet(pick: str, raw: Path, pack_id: str, bg: str, out_dir: Path = OUT) -> Path:
     cols = max(len(RAW_STATES), len(COMPOSED))
     img = Image.new("RGB", (SHEET_CELL * cols, SHEET_CELL * 2 + 80), bg)
     draw, font = ImageDraw.Draw(img), ImageFont.truetype(find_cjk_font(), 22)
@@ -61,7 +66,7 @@ def sheet(pick: str, raw: Path, pack_id: str, bg: str) -> Path:
         canvas = composer.canvas(HostFrame(expr, mouth, blink, 1.0, 0.0, 0.0))
         img.paste(canvas, (i * SHEET_CELL, SHEET_CELL + 36), canvas)
         draw.text((i * SHEET_CELL + 8, 2 * SHEET_CELL + 40), f"組合：{label}", font=font, fill=ink)
-    out = OUT / f"sheet_{pack_id}.png"
+    out = out_dir / f"sheet_{pack_id}.png"
     img.save(out, optimize=True)
     return out
 
@@ -74,7 +79,10 @@ def main(argv: list[str]) -> int:
         built = build_pack(raw / pick, PACK_ROOT / pack_id, pack_id, name, source={**SOURCE, "round2_id": pick})
         if pack_id in MOUTHS:
             m = MOUTHS[pack_id]
-            apply_mouth_mode(PACK_ROOT / pack_id, m["mode"], center=m["center"], cover=m["cover"], o_sizes=m["o_sizes"])
+            apply_mouth_mode(PACK_ROOT / pack_id, m["mode"], center=m.get("center"), cover=m.get("cover"),
+                             o_sizes=m.get("o_sizes"))
+        if pack_id in SPEECH_FX:
+            set_manifest(PACK_ROOT / pack_id, speech_fx=SPEECH_FX[pack_id])
         report[pack_id] = {"pick": pick, "regions": built.regions, "silhouette_iou": built.iou,
                            "changed_px": built.changed_px, "sheet": sheet(pick, raw, pack_id, bg).name}
         print(pack_id, report[pack_id], flush=True)
