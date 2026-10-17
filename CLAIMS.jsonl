@@ -1,1 +1,6 @@
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-cowos-v3/REPORT-cowos-v3.md","min_bytes":6000,"why":"dispatch-declared deliverable (inherited CLAIMS from channel-voices / channel-hosts replaced; those stay on their own branches)"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-cowos-v3/output/cowos-v3/assembly/release.mp4","min_bytes":1000000,"why":"final mixed video (gate_final not approved, per instruction)"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-cowos-v3/output/cowos-v3/upload/manual/preview.html","min_bytes":1000,"why":"manual-kit preview"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-cowos-v3/output/cowos-v3/upload/manual/thumbnail_C.jpg","min_bytes":10000,"why":"three Test & Compare thumbnails A/B/C"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-cowos-v3/output/cowos-v3/eval/scorecard.html","min_bytes":1000,"why":"scorecard comparing baseline and rounds 1-3"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-cowos-v3/output/cowos-v3/eval/round-3/score.json","min_bytes":1000,"why":"final eval round score (verdict: click 5.8 < 7)"}
