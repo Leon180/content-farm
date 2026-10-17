@@ -77,6 +77,7 @@ class Kit:
     playlist: str
     thumbnail: Path | None = None
     thumbnail_note: str = ""
+    variants: tuple[Path, ...] = ()     # thumbnail_A/B/C.jpg for YouTube Studio 「測試與比較」
     subtitles: tuple[shorts_cut.Cue, ...] = ()
 
     @property
@@ -210,7 +211,7 @@ def write_kit(run_dir: Path, channel: Channel, options: KitOptions | None = None
     out = kit.directory
     out.mkdir(parents=True, exist_ok=True)
     thumbnail, note = make_thumbnail(kit, options.thumbnail_at)
-    kit = replace(kit, thumbnail=thumbnail, thumbnail_note=note)
+    kit = replace(kit, thumbnail=thumbnail, thumbnail_note=note, variants=copy_variants(run_dir, out))
     _write(out / "title.txt", kit.meta["title"] + "\n")
     _write(out / "description.txt", kit.meta["description"])
     _write(out / "tags.txt", ", ".join(kit.meta.get("tags") or []) + "\n")
@@ -223,6 +224,18 @@ def write_kit(run_dir: Path, channel: Channel, options: KitOptions | None = None
     _write(out / "README.md", build_readme(kit))
     _write(out / "preview.html", build_preview_html(kit))
     return kit
+
+
+def copy_variants(run_dir: Path, out: Path) -> tuple[Path, ...]:
+    """thumbnails/variant_<k>.jpg → <kit>/thumbnail_<K>.jpg (each already < 2 MB)."""
+    for old in out.glob("thumbnail_?.jpg"):
+        old.unlink()
+    copied = []
+    for source in sorted((run_dir / "thumbnails").glob("variant_?.jpg")):
+        target = out / f"thumbnail_{source.stem[-1].upper()}.jpg"
+        shutil.copyfile(source, target)
+        copied.append(target)
+    return tuple(copied)
 
 
 def _write(path: Path, text: str) -> None:

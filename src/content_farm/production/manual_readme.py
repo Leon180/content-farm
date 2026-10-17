@@ -72,6 +72,20 @@ def _elements(kit: Kit) -> list[str]:
             "   - 資訊卡：在章節轉折點放同頻道相關影片或播放清單（同頻道還沒有其他影片前先不加）"]
 
 
+def _test_and_compare(kit: Kit) -> list[str]:
+    """Three thumbnails → Studio 「測試與比較」 (Leon 2026-10-17; YouTube Help 13861714)."""
+    if not kit.variants or kit.is_short:
+        return []
+    names = "、".join(f"`{p.name}`" for p in kit.variants)
+    return [
+        f"   - **縮圖 A/B（{len(kit.variants)} 款都上傳）**：在縮圖區按「測試與比較」（只有電腦版 Studio、且已開啟進階功能才有），"
+        f"依序上傳 {names}。",
+        "     - 測試期間**不要改標題或縮圖**（改了測試會中止）；YouTube 以「觀看時間占比」選勝出款，最長約兩週。",
+        "     - 結果：Winner＝自動全面換成該款；Performed Same／Inconclusive＝保留第一張（A）。結果截圖回報 orchestrator。",
+        "     - 預約公開或私人影片要等公開後測試才會開始；Shorts 不能測。",
+    ]
+
+
 def _studio_steps(kit: Kit) -> list[str]:
     meta = kit.meta
     return [
@@ -83,6 +97,7 @@ def _studio_steps(kit: Kit) -> list[str]:
         f"   - 標題：貼 `title.txt`（{len(meta['title'])}/{TITLE_MAX} 字）",
         "   - 說明：貼 `description.txt`（章節、參考資料、素材授權、AI 揭露都在裡面）",
         f"   - 縮圖：上傳 `{kit.thumbnail.name if kit.thumbnail else 'thumbnail.png'}`。{kit.thumbnail_note}",
+        *_test_and_compare(kit),
         f"   - 播放清單：「{kit.playlist}」（沒有就新建）",
         "   - 觀眾：**「否，這不是為兒童打造的內容」**",
         "   - 展開「顯示更多」：",
@@ -102,6 +117,7 @@ def build_readme(kit: Kit) -> str:
     chapters = kit.meta.get("chapters") or []
     notes = warnings(kit)
     files = ["title.txt", "description.txt", "tags.txt", kit.thumbnail.name if kit.thumbnail else "thumbnail.png",
+             *(p.name for p in kit.variants),
              *(["subtitles.srt", "subtitles.vtt"] if kit.subtitles else []), "preview.html"]
     lines = [
         *([MACHINE_VOICE_BANNER] if kit.machine_voice else []),
