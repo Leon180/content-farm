@@ -1,0 +1,62 @@
+<!doctype html>
+{# 1280x720 thumbnail, layouts (b) keyart and (c) compare (docs/design/thumbnails/rules.md).
+   Layout (a) "character" stays in thumbnail.html.j2. Brand tokens (:root) set colours and fonts. #}
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<style>
+{{ root | safe }}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 1280px; height: 720px; overflow: hidden; position: relative; background: var(--bg); }
+{{ brand_style | safe }}
+.tag { position: absolute; left: 44px; top: 40px; padding: 8px 20px; background: var(--accent); color: #fff;
+  font: 900 34px var(--font-heading, sans-serif); letter-spacing: .02em; }
+.big { position: absolute; font-family: var(--font-heading, sans-serif); font-weight: 900; line-height: 1.06; }
+.hl { color: var(--accent); }
+.outline { color: #fff; -webkit-text-stroke: 10px #111; paint-order: stroke fill; }
+.outline .hl { color: #ffd84d; }
+.sub { position: absolute; font: 900 46px var(--font-heading, sans-serif); }
+.credit { position: absolute; right: 18px; bottom: 14px; padding: 2px 10px; background: rgba(0,0,0,.55);
+  color: rgba(255,255,255,.8); font: 500 18px "Noto Sans CJK TC", sans-serif; }
+.art { position: absolute; inset: 0; width: 1280px; height: 720px; object-fit: cover; }
+.shade { position: absolute; inset: 0; background: linear-gradient(0deg, rgba(0,0,0,.82) 0%, rgba(0,0,0,.35) 42%, rgba(0,0,0,0) 70%); }
+.num { font-family: var(--font-number, var(--font-heading, sans-serif)); font-weight: 900; line-height: .95; color: var(--fg); }
+.label { font: 900 52px var(--font-heading, sans-serif); color: var(--fg); margin-top: 8px; }
+.vs { position: absolute; width: 132px; height: 132px; border-radius: 50%; background: var(--accent); color: #fff;
+  display: flex; align-items: center; justify-content: center; font: 900 56px var(--font-number, sans-serif); }
+.visual { position: absolute; }
+</style>
+</head>
+<body class="thumb {{ brand }}">
+{% macro lines_html() %}{% for line in spec.lines %}<div>{% if spec.highlight and spec.highlight in line %}{{ line.split(spec.highlight)[0] }}<span class="hl">{{ spec.highlight }}</span>{{ line.split(spec.highlight)[1] }}{% else %}{{ line }}{% endif %}</div>{% endfor %}{% endmacro %}
+{% set n = spec.text | length %}
+{% if spec.layout == "keyart" %}
+  <img class="art" src="{{ visual_uri }}" style="object-position:{{ spec.visual.focus }} center">
+  <div class="shade"></div>
+  <div class="tag">{{ channel_name }}</div>
+  <div class="big outline" style="left:56px;bottom:{{ 120 if spec.sub else 60 }}px;width:1100px;font-size:{{ 150 if n <= 6 else 124 }}px">{{ lines_html() }}</div>
+  {% if spec.sub %}<div class="sub" style="left:62px;bottom:48px;color:#ffd84d;text-shadow:0 3px 0 #000">{{ spec.sub }}</div>{% endif %}
+  {% if spec.visual.credit %}<div class="credit">{{ spec.visual.credit }}</div>{% endif %}
+{% else %}{# compare #}
+  <div class="tag">{{ channel_name }}</div>
+  <div class="big" style="left:60px;top:118px;width:1160px;font-size:{{ 92 if n <= 8 else 80 }}px;color:var(--fg)">{{ lines_html() }}</div>
+  {% if spec.compare | length == 2 %}
+    {% for side in spec.compare %}
+    <div style="position:absolute;left:{{ 70 if loop.first else 720 }}px;top:300px;width:500px;text-align:center">
+      <div class="num" style="font-size:{{ 230 if side.value|length <= 3 else 170 }}px;{% if not loop.first %}color:var(--accent){% endif %}">{{ side.value }}</div>
+      <div class="label">{{ side.label }}</div>
+    </div>
+    {% endfor %}
+    <div class="vs" style="left:574px;top:380px">vs</div>
+  {% else %}
+    {% set side = spec.compare[0] %}
+    <div style="position:absolute;left:60px;top:270px;width:{{ 760 if visual_uri else 1160 }}px">
+      <div class="num" style="font-size:{{ 250 if side.value|length <= 5 else 190 }}px;color:var(--accent)">{{ side.value }}</div>
+      <div class="label" style="font-size:64px">{{ side.label }}</div>
+    </div>
+    {% if visual_uri %}<img class="visual" src="{{ visual_uri }}" style="right:40px;bottom:20px;height:470px">{% endif %}
+  {% endif %}
+  {% if spec.sub %}<div class="sub" style="left:64px;bottom:40px;color:var(--accent-2, var(--accent))">{{ spec.sub }}</div>{% endif %}
+{% endif %}
+</body>
+</html>
