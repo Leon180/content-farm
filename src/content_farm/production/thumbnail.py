@@ -268,7 +268,9 @@ def promise_findings(run_dir: Path, spec: ThumbnailSpec, label: str = "") -> lis
     everything = "".join(text for _, text in scenes)
     shown = spec.text + spec.number + "".join(side.value for side in spec.compare)
     late = [p for p in spec.promise if _compact(p) not in early]
-    numbers = [n for n in _NUMBER.findall(shown) if n not in everything and n.replace(",", "") not in everything]
+    # the narration is compacted (punctuation, including '.' and ',', removed), so compact the number too:
+    # "8.8" must match the spoken "8.8 公分", "7,722" the spoken "7722"
+    numbers = [n for n in _NUMBER.findall(shown) if _compact(n.rstrip(".,")) not in everything]
     findings = []
     if late:
         findings.append(Finding("thumbnail_promise", "error",

@@ -47,6 +47,16 @@ def test_compare_numbers_must_be_in_the_narration(tmp_path: Path) -> None:
     assert any("variant c" in m and "9" in m for m in msgs)
 
 
+def test_decimal_numbers_match_the_spoken_ones(tmp_path: Path) -> None:
+    """Regression: the narration is compacted (no '.'), so '8.8' used to be reported as unspoken."""
+    spec = th.ThumbnailSpec.model_validate({**COMPARE, "compare": [{"value": "8.8", "label": "公分"}],
+                                            "promise": ["8.8 公分"]})
+    run = _run(tmp_path / "said", {"c": COMPARE}, "拼起來大約 8.8 乘 8.8 公分。")
+    assert th.promise_findings(run, spec) == []
+    other = _run(tmp_path / "other", {"c": COMPARE}, "拼起來大約 9.8 公分。")
+    assert th.promise_findings(other, spec)        # control: a different number is still caught
+
+
 def test_variant_findings_check_every_variant(tmp_path: Path) -> None:
     good = {**KEYART, "promise": ["尾巴"]}
     run = _run(tmp_path, {"a": good, "b": {**good, "promise": ["沒講過的話"]}}, "原典裡只有一條尾巴。")
