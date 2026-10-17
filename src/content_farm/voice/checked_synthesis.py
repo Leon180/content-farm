@@ -16,7 +16,7 @@ from content_farm.config import Settings
 from content_farm.voice.local_worker import LocalWorker, snapshot_dir
 from content_farm.voice.pronunciation import KeyTerm
 from content_farm.voice.protocol import TTSProvider
-from content_farm.voice.speech_check import Attempt, SceneCheck, build_aliases, choose, evaluate
+from content_farm.voice.speech_check import Attempt, SceneCheck, build_aliases, choose, evaluate, normalize
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +71,12 @@ class CheckedSynthesizer:
             logger.info("Speech check %s try %d: CER %.3f missing %s", output_path.name, index, attempt.cer,
                         list(attempt.missing) or "-")
             if attempt.passes(self._max_cer):
+                break
+            if any(normalize(a.hypothesis) == normalize(attempt.hypothesis) for a in attempts[:-1]):
+                # A new seed read back word for word the same: the mismatch is systematic (whisper
+                # spelling a foreign name its own way, or the script itself), not a bad take.
+                logger.info("Speech check %s: try %d heard exactly like an earlier try; stop re-generating",
+                            output_path.name, index)
                 break
         chosen = choose(tuple(attempts))
         paths[chosen].replace(output_path)

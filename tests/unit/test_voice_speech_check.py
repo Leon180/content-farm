@@ -182,6 +182,14 @@ def test_reassess_rejudges_stored_transcript_without_resynthesis(check_settings:
 
 
 @pytest.mark.asyncio
+async def test_identical_read_back_stops_retrying(check_settings: Settings, tmp_path: Path) -> None:
+    """Whisper writing 網飛 for Netflix on every seed is not fixed by another seed."""
+    out = tmp_path / "scene_001.mp3"
+    check, tts, _ = await _synth(check_settings, ["臺積電的Coors產能", "臺積電的Coors產能。"], out)
+    assert len(tts.seeds) == 2 and check.status == "warn"
+
+
+@pytest.mark.asyncio
 async def test_shared_worker_is_not_closed_by_checker(check_settings: Settings) -> None:
     worker = FakeWorker([])
     checker = CheckedSynthesizer(FakeTTS(), check_settings, (), worker=worker)  # type: ignore[arg-type]

@@ -37,6 +37,13 @@ key_terms:
     heard_as: [臺積電, 台積電]
   - display: 輝達
     heard_as: [輝達, nvidia]
+  # 外文專名：whisper 常把念對的英文寫成中文譯名（2026-10-17 cel s16/s17）
+  - display: GAINAX
+    heard_as: [蓋納克斯, 蓋那克斯, 蓋納斯, gainax]
+  - display: Netflix
+    heard_as: [網飛, 奈飛, 網路飛, netflix]
+  - display: MAPPA
+    heard_as: [馬帕, 瑪帕, mappa]
   - display: 中介層
   - display: 九尾狐   # 湖／糊／胡 與 狐 同音（hú），2026-10-17 九尾狐 s02/s04 whisper 轉回「九尾湖」「九尾糊」
     heard_as: [九尾湖, 九尾糊, 九尾胡, 九尾壺]
