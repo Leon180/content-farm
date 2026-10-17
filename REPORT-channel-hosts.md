@@ -5,6 +5,102 @@
 - **第二輪**（最新）候選牆：`docs/design/channel-hosts/round2/index.html`，手機也能看。編號用兩位數：Y01–Y25、O01–O25、C01–C25。
 - 第一輪選稿頁：`docs/design/channel-hosts/index.html`。編號用一位數（Y1、O1…），跟第二輪不同，不要混用。
 
+## TL;DR（第三輪：選定與 PNGtuber，2026-10-17）
+
+- Leon 選定 **Y14 青蛙書記（妖怪）、O25 飲水機金魚（下班）、C09 顏料瓶老師傅（賽璐璐）**。三張都做過相似度把關，**沒有明顯撞臉**（🟡 目視判斷，見 §3-1），所以直接做角色包，沒有停下重生。
+- 三個 **PNGtuber 角色包** 已接進 pipeline：
+  - 每包有定裝、閉嘴、張嘴 2 段、眨眼、驚訝、得意、無言；
+  - 18 張差分的剪影 IoU 是 0.989–0.998，其中 17 張 ≥0.99 🟢；
+  - 疊加器支援呼吸、擺動、依音量換嘴型、隨機眨眼，並依 deck 的 mascot pose 換表情。
+- 三個頻道的設定都改成 `host: pngtuber`、`rig_ready: true`；晶片貓維持向量 rig。
+  - 橫式：固定右下角。
+  - 直式（offwork）：放左下、字幕帶下方。scripted Short 的渲染器已改成真正走這條路。
+- 試片 3 支：九尾狐 20 秒、cel-ep1 20 秒、7,722 Short 整支 24.3 秒（9:16）。**逐格檢查共 1,930 格，角色進入禁區的像素都是 0** 🟢。路徑見 §3-4。
+- pytest：1 failed（基準既有的 multi_provider）／1184 passed／1 skipped 🟢。
+- **要注意**：九尾狐 deck 的 29 張投影片都沒有 mascot pose，所以重跑時 policy 會報 `mascot_presence` error；之後的妖怪 deck 要寫 pose。完整清單見 §3-6。
+
+## 第三輪：選定與 PNGtuber
+
+### 3-1. 相似度把關（Y14／O25／C09）🟡
+
+| 編號 | 最接近的知名角色類型 | 差異 | 結論 |
+|---|---|---|---|
+| Y14 青蛙書記 | ① 某日本文具公司的大眼青蛙（白眼球加黑瞳、紅臉頰、常穿衣服）；② 網路迷因青蛙（厚唇、下垂眼皮、寫實比例）；③ 外星青蛙軍曹動畫（帽子、星星） | 我們的是小黑點眼、沒有白眼球，薄荷綠配米白肚，沒有衣服、沒有厚唇，手拿毛筆 | 沒有撞臉。缺點是造型很通用，辨識度要靠毛筆和個性撐。如果要加強，最小修改可以是頭頂一點硃砂，或一頂書生小帽（這次沒做，等 Leon 決定） |
+| O25 飲水機金魚 | ① 動畫電影的金魚女孩（紅色、有人臉）；② 海洋動畫的小丑魚（橘白條紋）；③ 遊戲裡的橘紅鯉魚（有鬍鬚、大嘴） | 橘色圓魚、皺眉，裝在藍色飲水機桶裡。「桶中魚」這個組合是招牌 | 沒有撞臉。角色本體小，表情只佔畫面一小塊 |
+| C09 顏料瓶老師傅 | 療癒系的白色圓團、麻糬角色（Leon 的參考類型之一） | 藍色顏料瓶蓋加滴落的顏料是招牌部件；身體是瓶身輪廓，上窄下寬 | 沒有撞臉，但拿掉瓶蓋就是通用白團。白身體在 cel 的米白底上對比偏弱，靠黑外框撐 |
+
+### 3-2. 角色包（`src/content_farm/explainer/pngtuber/packs/{frog-scribe,cooler-goldfish,paint-bottle}/`）
+
+- **生成方式**（`docs/design/channel-hosts/tools/r3_gen.py`）：
+  - Leon 選的圖當參考圖，用 klein 多參考編輯生成 6 個狀態；
+  - 每張都驗剪影 IoU，≥0.99 才收，不到就換 seed 重生，最多 3 個 seed；
+  - 生圖閘門跟第二輪相同。
+- **IoU 結果** 🟢（`round3/packs.json`）：
+
+  | 角色 | blink | mouth_half | mouth_open | surprised | smug | speechless |
+  |---|---|---|---|---|---|---|
+  | 青蛙書記 | 0.998 | 0.998 | 0.998 | 0.997 | 0.995 | **0.989** |
+  | 飲水機金魚 | 0.998 | 0.998 | 0.998 | 0.998 | 0.998 | 0.990 |
+  | 顏料瓶 | 0.998 | 0.998 | 0.997 | 0.998 | 0.998 | 0.998 |
+
+  - Y14 的定裝圖先做了一次清理：原圖蛙腿後面有一根多出來的灰棒，我用編輯移除，所以對原圖的 IoU 是 0.982。這是刻意造成的剪影改變，不是漂移。
+  - **IoU 量不到「臉畫錯」**：青蛙的 speechless 第一版 IoU 0.996，但眼睛整個不見了。是我看圖抓到的，改了 prompt（明寫「兩條平線眼」）重生。新版 0.989，略低於 0.99，原因是加在身體外面的兩滴汗。我判定可接受 🟡。
+- **組裝方式**（`pngtuber/build.py`）：
+  - 生成的整張圖之間會有線條抖動，直接換整張會閃。
+  - 所以每個圖層只保留自己「顯著改變的區域」：差值門檻＋opening 去除抖動，再用百分位數去掉離群點，取 bbox 加邊距。區域內整塊換上，邊緣羽化；兩段嘴型共用張嘴的區域。
+  - 第一版用的是整臉大框，「得意＋說話」時會疊出殘影（`round3/sheet_*.png` 已是修正版）。
+- **審稿圖**：`docs/design/channel-hosts/round3/sheet_<pack>.png`。第一列是生成的原圖，第二列是渲染器實際組出來的樣子，包含「得意＋說話」的組合。
+
+### 3-3. 接進 pipeline
+
+| 檔案 | 改了什麼 |
+|---|---|
+| `explainer/pngtuber/`（新） | `pack.py`：格式、載入、驗證、pose→表情對照。`build.py`：角色包組裝。`motion.py`：逐格狀態；嘴型有 2 格遲滯，避免閃動；眨眼、呼吸沿用 rig 的 `idle`。`render.py`：placement、合成、ProRes 4444 alpha。`run.py`：draft→final。`still.py`：縮圖用的單張。`cutout.py`：去白底 |
+| `production/channels.py` | `Mascot.host: rig｜pngtuber`（預設 rig）。設成 pngtuber 時，ref 必須是 `pngtuber/<id>` |
+| `production/steps.py` | mascot 步驟遇到 pngtuber 頻道時多傳 `--pngtuber <ref>` |
+| `scripts/mascot_overlay.py` | 新增 `--pngtuber`。字幕寬度檢查照舊先跑 |
+| `explainer/mascot/overlay.py` | `overlay()` 多一個 `origin` 參數，預設值不變，晶片貓行為不變 |
+| `production/thumbnail.py` | 縮圖選 MascotVisual 時，pngtuber 頻道用角色包，不再畫晶片貓 |
+| `production/shorts_scripted_render.py` | pngtuber 頻道的 Short：beat 裡的貓位留空，渲完後用 beat 的 pose 疊角色（直式 placement） |
+| `channels/{yokai,cel,offwork}.yaml` | `host: pngtuber`、`rig_ready: true`、ref 指向對應角色包 |
+
+- **pose→表情**：
+  - shocked→驚訝、smug→得意、deadpan／think→無言；
+  - idle、point、wave→中性。靜態圖做不出手勢，這三個 pose 只會換嘴型。
+  - 驚訝時不眨眼，因為中性的眨眼圖層蓋不住瞪大的眼睛。
+- **placement**：
+  - **橫式**：沿用 rig 的 620×540 畫布和 overlay 原點，角色高約 352 px 靠右下。
+  - **直式 9:16**：畫布 560×520，原點 (0,1400)，角色高約 440 px 靠左下，位於燒入字幕帶（y 1220–1420）下方、Shorts 右側按鈕的左邊。這是 scripted Short 原本放貓的位置。
+  - 禁區：橫式是 meta 列和字幕帶，直式是字幕帶。單元測試用最壞情況（最大呼吸、最大擺動、說話抬升）驗過，**而且有反例測試**：故意左移時，偵測器確實會抓到。
+
+### 3-4. 試片 🟢（`docs/design/channel-hosts/round3/trials.json`）
+
+| 試片 | 路徑 | 長度 | 逐格禁區像素 | 渲染時間 |
+|---|---|---|---|---|
+| 九尾狐＋青蛙書記 | `output/channel-hosts-r3/trial_yokai_frog-scribe_20s.mp4` | 20 s／600 格 | meta 0、字幕 0 | 6.7 s |
+| cel-ep1＋顏料瓶 | `output/channel-hosts-r3/trial_cel_paint-bottle_20s.mp4` | 20 s／600 格 | meta 0、字幕 0 | 7.4 s |
+| 7,722 Short＋金魚（9:16） | `output/channel-hosts-r3/trial_offwork_cooler-goldfish_9x16.mp4` | 24.3 s／730 格 | 字幕 0 | — |
+
+- 路徑相對於本 worktree，在 `output/` 底下（gitignore，不 commit）。截圖 `round3/trial_*.jpg` 每支 4 張，有 commit。
+- 素材取自 `cf-launch-fixes/output/` 的三個 run。橫式試片用 symlink 唯讀引用；Short 是把小檔複製到 job tmp 再跑，因為 renderer 會改寫 `subtitles.srt`。**沒有動到 launch-fixes 的任何檔案**。
+- 九尾狐的 deck 沒有 mascot pose，所以這支只會看到中性表情加眨眼、說話；換表情的效果請看 cel 和 Short。
+
+### 3-5. 測試
+
+- 新增 18 項測試：`tests/unit/test_pngtuber.py` 17 項，加上 `test_production_channels.py` 的 `test_mascot_step_passes_the_pngtuber_pack` 1 項。用合成角色測：組包、載入錯誤、pose 對照、嘴型遲滯、驚訝不眨眼、兩種 placement 的禁區，加上禁區反例、快取，以及 channel 的 host 驗證。
+- 改了 3 項既有測試，它們原本把 cel 當成「沒有角色的頻道」：`test_production_channels`、`test_launch_rules`（兩處）。改成明確建一個 `rig_ready: false` 的頻道當對照，原本的測試意義保留。
+- 全套：1 failed（`test_multi_provider…returns_first_provider_results`，基準既有，十幾份報告都記過）／1184 passed／1 skipped 🟢。基準 launch-fixes 是 1166 passed。
+
+### 3-6. 已知限制與需要 Leon 決定的事
+
+1. **妖怪 deck 要開始寫 mascot pose**：九尾狐 deck 是 0/29，yokai 一開 rig_ready，policy 就會報 `mascot_presence` error，門檻是 80%。cel-ep1 是 24/28，沒問題。我**沒有改**九尾狐的 deck。
+2. **說話疊在表情上會有小接縫**：例如青蛙「得意＋說話」時，臉頰紅暈會在嘴框邊緣被切掉。要完全消除，得為每個表情各做一組嘴型，每角色多 6 張差分。這次沒做。
+3. **靜態圖沒有手勢**：point、wave 只會換嘴型。如果要指圖表，要另外生成「指」的整張姿勢圖，並接受剪影會跳一下。
+4. **9:16 的左下角**跟 YouTube Shorts 的標題、頻道名疊層重疊。這是原本晶片貓就在的位置，我沿用；如果要更保險，可以往上移到字幕帶和 UI 之間，但空間很擠。
+5. **mascot 步驟沒有加 identity**：加了的話，所有已完成的晶片貓 run 都會被判定要重渲。代價是頻道換角色包時不會自動重跑，要手動刪 `assembly/final.mp4` 或強制重跑那一步。
+6. **著作權**：角色本體是純 AI 產出，可能不受著作權保護，品牌保護較弱。角色包的 `manifest.json` 有記錄來源模型和授權（klein 4B，Apache-2.0）。三個頻道的 `ai_disclosure` 本來就是 true。
+7. 角色包圖檔共 5.4 MB，放在 `src/` 底下，會 commit 進 public repo。
+
 ## TL;DR（第二輪，2026-10-17）
 
 - Leon 覺得第一輪「好醜」，所以改做法：先寫設計原則（`round2/principles.md`），再用本機 FLUX.2 klein 4B 每頻道生 25 張，共 **75 張**，全部成功 🟢。

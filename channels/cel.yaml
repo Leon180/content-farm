@@ -6,9 +6,10 @@ pipeline: explainer
 brand: cel
 deck_category: knowledge
 mascot:
-  name: 格仔（底片格身體、鉛筆呆毛）
-  ref: cel-frame          # 新角色，rig 尚未製作；未完成前跳過 mascot 疊加
-  rig_ready: false
+  name: 顏料瓶老師傅       # Leon 2026-10-17 選定第二輪 C09（AI 生成角色，PNGtuber）
+  ref: pngtuber/paint-bottle
+  host: pngtuber
+  rig_ready: true
 voice:
   provider: fish_audio
   voice_id_env: CF_CEL_VOICE_ID

@@ -6,9 +6,10 @@ pipeline: explainer
 brand: yokai
 deck_category: knowledge   # 之後加 myth category 再換
 mascot:
-  name: 說書貓（晶片貓換裝：斗篷＋提燈）
-  ref: chipcat-storyteller
-  rig_ready: false        # 換裝造型未做；做好前跳過 mascot 疊加
+  name: 青蛙書記           # Leon 2026-10-17 選定第二輪 Y14（AI 生成角色，PNGtuber）
+  ref: pngtuber/frog-scribe
+  host: pngtuber
+  rig_ready: true
 voice:
   provider: fish_audio
   voice_id_env: CF_YOKAI_VOICE_ID

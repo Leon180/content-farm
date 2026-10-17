@@ -5,9 +5,10 @@ line: 冷笑話 Shorts＋迷因考古
 pipeline: shorts_skit     # 沒有文章、沒有 deck：劇本 → 配音 → 角色小劇場
 brand: offwork
 mascot:
-  name: 下班貓（晶片貓便服）＋配角 PM 狗
-  ref: chipcat-offwork
-  rig_ready: false        # 便服造型＋PM 狗未做
+  name: 飲水機金魚         # Leon 2026-10-17 選定第二輪 O25（AI 生成角色，PNGtuber；9:16 放左下）
+  ref: pngtuber/cooler-goldfish
+  host: pngtuber
+  rig_ready: true
 voice:
   provider: fish_audio
   voice_id_env: CF_OFFWORK_VOICE_ID

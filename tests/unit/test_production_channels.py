@@ -41,8 +41,24 @@ def test_channel_differences_are_expressed() -> None:
     assert "article" not in step_names(offwork)
     assert yokai.media.artwork and yokai.media.artwork_license_required
     assert not any(c.media.source_footage for c in channels.values())
-    assert not cel.mascot.rig_ready and "mascot" not in step_names(cel)
-    assert "mascot" in step_names(channels["chipcat"])
+    # Leon 2026-10-17: yokai / cel / offwork use AI-generated PNGtuber packs; 晶片貓 keeps the vector rig
+    for code in ("yokai", "cel", "offwork"):
+        assert channels[code].mascot.host == "pngtuber" and channels[code].mascot.rig_ready
+        assert channels[code].mascot.ref.startswith("pngtuber/")
+    assert "mascot" in step_names(cel) and "mascot" in step_names(channels["chipcat"])
+    assert channels["chipcat"].mascot.host == "rig"
+
+
+def test_mascot_step_passes_the_pngtuber_pack() -> None:
+    from content_farm.production.steps import _host_args
+
+    class Ctx:
+        def __init__(self, channel):
+            self.channel = channel
+
+    channels = {c.code: c for c in load_all()}
+    assert _host_args(Ctx(channels["cel"])) == ("--pngtuber", "pngtuber/paint-bottle")
+    assert _host_args(Ctx(channels["chipcat"])) == ()
 
 
 def test_youtube_section_holds_env_names_only() -> None:

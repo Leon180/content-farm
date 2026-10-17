@@ -105,8 +105,12 @@ def thumbnail_html(spec: ThumbnailSpec, channel: Channel, visual_uri: str) -> st
         brand_style=brand_style, visual_uri=visual_uri)
 
 
-def _visual_file(run_dir: Path, spec: ThumbnailSpec, work: Path) -> Path | None:
+def _visual_file(run_dir: Path, spec: ThumbnailSpec, work: Path, channel: Channel) -> Path | None:
     if isinstance(spec.visual, MascotVisual):
+        if channel.mascot.host == "pngtuber":
+            from content_farm.explainer.pngtuber.still import pose_still
+
+            return pose_still(channel.mascot.ref, spec.visual.pose, work / f"host_{spec.visual.pose}.png")
         from content_farm.explainer.mascot.still import pose_png
 
         return pose_png(spec.visual.pose, work / f"cat_{spec.visual.pose}.png")
@@ -125,7 +129,7 @@ def render_thumbnail(run_dir: Path, channel: Channel) -> Path:
     spec = load_spec(run_dir)
     work = run_dir / OUT_DIR / ".work"
     work.mkdir(parents=True, exist_ok=True)
-    visual = _visual_file(run_dir, spec, work)
+    visual = _visual_file(run_dir, spec, work, channel)
     html = work / "thumbnail.html"
     html.write_text(thumbnail_html(spec, channel, visual.resolve().as_uri() if visual else ""), encoding="utf-8")
     out = run_dir / OUT_FILE

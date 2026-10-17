@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 from enum import Enum
 from pathlib import Path
+from typing import Literal
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -53,6 +54,14 @@ class Mascot(_Strict):
     name: str
     ref: str = Field(description="character id or asset path; resolved by the mascot module")
     rig_ready: bool = Field(default=False, description="False = skip the mascot overlay step")
+    # rig: the vector 晶片貓 (explainer.mascot). pngtuber: a still-image pack, ref = "pngtuber/<pack id>"
+    host: Literal["rig", "pngtuber"] = "rig"
+
+    @model_validator(mode="after")
+    def _pngtuber_ref(self) -> Mascot:
+        if self.host == "pngtuber" and not self.ref.startswith("pngtuber/"):
+            raise ValueError(f"mascot.host pngtuber needs ref 'pngtuber/<pack id>', got {self.ref!r}")
+        return self
 
 
 class Voice(_Strict):

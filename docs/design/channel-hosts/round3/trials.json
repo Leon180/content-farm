@@ -1,0 +1,70 @@
+{
+ "yokai": {
+  "run_dir": "/Users/lileon/.claude/jobs/a7f5fad7/tmp/r3-trials/yokai",
+  "pack": "pngtuber/frog-scribe",
+  "final": "/Users/lileon/.claude/jobs/a7f5fad7/tmp/r3-trials/yokai/assembly/final.mp4",
+  "placement": "landscape",
+  "frames": 600,
+  "faces": 9,
+  "timings": {
+   "params": 1.1,
+   "render": 2.7,
+   "overlay": 2.9,
+   "total": 6.7
+  },
+  "forbidden": {
+   "meta": 0,
+   "subtitles": 0,
+   "frames_checked": 600
+  },
+  "stills": [
+   "trial_yokai_02.0s.jpg",
+   "trial_yokai_07.5s.jpg",
+   "trial_yokai_13.0s.jpg",
+   "trial_yokai_18.5s.jpg"
+  ]
+ },
+ "cel": {
+  "run_dir": "/Users/lileon/.claude/jobs/a7f5fad7/tmp/r3-trials/cel",
+  "pack": "pngtuber/paint-bottle",
+  "final": "/Users/lileon/.claude/jobs/a7f5fad7/tmp/r3-trials/cel/assembly/final.mp4",
+  "placement": "landscape",
+  "frames": 600,
+  "faces": 5,
+  "timings": {
+   "params": 1.0,
+   "render": 2.6,
+   "overlay": 3.8,
+   "total": 7.4
+  },
+  "forbidden": {
+   "meta": 0,
+   "subtitles": 0,
+   "frames_checked": 600
+  },
+  "stills": [
+   "trial_cel_02.0s.jpg",
+   "trial_cel_07.5s.jpg",
+   "trial_cel_13.0s.jpg",
+   "trial_cel_18.5s.jpg"
+  ]
+ },
+ "short": {
+  "run_dir": "/Users/lileon/.claude/jobs/a7f5fad7/tmp/r3-trials/short_pipeline",
+  "pack": "pngtuber/cooler-goldfish",
+  "final": "/Users/lileon/.claude/jobs/a7f5fad7/tmp/r3-trials/short_pipeline/assembly/final.mp4",
+  "placement": "vertical",
+  "seconds": 24.32,
+  "beats": 5,
+  "forbidden": {
+   "subtitles": 0,
+   "frames_checked": 730
+  },
+  "stills": [
+   "trial_short_02.0s.jpg",
+   "trial_short_07.5s.jpg",
+   "trial_short_13.0s.jpg",
+   "trial_short_18.5s.jpg"
+  ]
+ }
+}
