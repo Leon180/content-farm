@@ -189,7 +189,8 @@
           // a list item gets a tint, a headline / big number only scales with a tight glow
           el.style.scale = String(1 + 0.08 * b);
           el.style.filter = b > 0 ? `drop-shadow(0 0 ${Math.round(14 * b)}px var(--accent, #f5a524))` : '';
-          el.style.backgroundColor = b > 0 && tinted.has(el) ? `rgba(245, 165, 36, ${(0.22 * b).toFixed(3)})` : '';
+          // 0.35: a small unit (one timeline event) at 0.22 moved the frame too little to register as a change
+          el.style.backgroundColor = b > 0 && tinted.has(el) ? `rgba(245, 165, 36, ${(0.35 * b).toFixed(3)})` : '';
         });
       },
     };
