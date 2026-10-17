@@ -123,6 +123,7 @@ def reticle_frames(multiples: list[float], labels: list[str], starts: list[float
             m = multiples[stage]
             tiles = math.ceil(m)
             progress = _ease((t - starts[stage]) / FILL_SECONDS) * tiles
+            captions = []
             for k in range(tiles):
                 appear = min(max(progress - k, 0.0), 1.0)
                 if appear <= 0:
@@ -133,12 +134,13 @@ def reticle_frames(multiples: list[float], labels: list[str], starts: list[float
                 drop = (1 - appear) * 40
                 draw.rectangle((x + 2, y + 2 - drop, x + width - 2, y + th - 2 - drop),
                                fill=(*_rgb(pal.accent2 if k else pal.accent), round(200 * appear)), outline=pal.fg, width=2)
-                draw.text((x + width / 2, y + th / 2 - drop), "1 次", fill=(255, 255, 255, round(255 * appear)),
-                          font=small, anchor="mm")
+                captions.append(((x + width / 2, y + th / 2 - drop), round(255 * appear)))
             sweep = (t - starts[-1] - FILL_SECONDS) / 4.0 if starts else -1
-            if sweep > 0:                         # light sweeps across the seams, forever
+            if sweep > 0:                         # light sweeps across the seams, forever (under the captions)
                 sx = origin_x + (sweep % 1.0) * 3 * tw
                 draw.rectangle((sx, origin_y, sx + 24, origin_y + 3 * th), fill=(255, 255, 255, 90))
+            for at, alpha in captions:
+                draw.text(at, "1 次", fill=(255, 255, 255, alpha), font=small, anchor="mm")
             area = round(m * RETICLE_AREA)
             draw.text((1450, 400), labels[stage], fill=pal.accent, font=mid, anchor="ms")
             draw.text((1450, 460), f"≈ {area:,} mm²", fill=pal.fg, font=mid, anchor="mt")

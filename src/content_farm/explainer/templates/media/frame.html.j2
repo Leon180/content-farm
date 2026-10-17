@@ -55,7 +55,8 @@
   </main>
 {% endif %}
 
-  <footer class="meta{% if kind == 'overlay' %} on-footage{% endif %}">
+  {# diagrams (lower_third=False) sit on the channel background: no footage shadow, it blurs the line #}
+  <footer class="meta{% if kind == 'overlay' and (lower_third is not defined or lower_third) %} on-footage{% endif %}">
     {% if sources %}<span class="sources">來源：{{ sources | join("；") }}</span>{% endif %}
     {% if deck.as_of %}<span class="asof">資料截至 {{ deck.as_of }}</span>{% endif %}
     {% if disclaimer %}<span class="disclaimer">{{ disclaimer }}</span>{% endif %}
