@@ -53,10 +53,23 @@ class GateConfig:
     lock_path: str = "~/.cache/content-farm/local_tts.lock"
 
 
+_SHELLS = ("sh", "bash", "zsh", "pgrep", "grep", "timeout")
+
+
 def busy_pids(pattern: str) -> list[int]:
-    """PIDs whose command line matches ``pattern`` (pgrep -f), excluding this process."""
-    proc = subprocess.run(["pgrep", "-f", pattern], capture_output=True, text=True, check=False)
-    return [int(pid) for pid in proc.stdout.split() if pid.isdigit() and int(pid) != os.getpid()]
+    """PIDs whose command line matches ``pattern`` (pgrep -fl), excluding this process and shells /
+    pgrep wrappers that merely mention the pattern (2026-10-17: another job's `for … pgrep -f
+    "mlx_video|…"` wait loop matched, and the two gates waited on each other)."""
+    proc = subprocess.run(["pgrep", "-fl", pattern], capture_output=True, text=True, check=False)
+    pids = []
+    for line in proc.stdout.splitlines():
+        pid, _, command = line.strip().partition(" ")
+        if not pid.isdigit() or int(pid) == os.getpid():
+            continue
+        if Path(command.split(" ", 1)[0]).name in _SHELLS:
+            continue
+        pids.append(int(pid))
+    return pids
 
 
 def free_memory_pct() -> int | None:

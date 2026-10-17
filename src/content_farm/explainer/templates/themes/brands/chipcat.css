@@ -79,7 +79,7 @@ body {
 .bignum .unit { color: var(--accent); font-family: var(--font-number); }
 .bignum .value-row { border-bottom: 2px solid var(--fg); padding-bottom: 12px; align-self: flex-start; position: relative; }
 .bignum .value-row::after {
-  content: "MEASURED"; position: absolute; right: 0; bottom: -34px;
+  content: "關鍵數字"; position: absolute; right: 0; bottom: -34px;   /* was "MEASURED": wrong on estimates, English (v3 eval) */
   font: 700 20px var(--font-number); color: var(--accent-2); letter-spacing: .2em;
 }
 .bignum .caption { margin-top: 48px; }
@@ -88,10 +88,10 @@ body {
 .compare { grid-template-columns: 1fr 80px 1fr; }
 .compare .side { background: var(--card); border-radius: 0; border-top: none; border: 2px solid var(--fg); position: relative; padding-top: 52px; }
 .compare .side::before {
-  content: "SPEC-A"; position: absolute; top: 0; left: 0; padding: 4px 14px;
+  content: "比較 A"; position: absolute; top: 0; left: 0; padding: 4px 14px;   /* was "SPEC-A" (v3: 英文標籤改中文) */
   background: var(--fg); color: var(--card); font: 700 20px var(--font-number); letter-spacing: .15em;
 }
-.compare .side.right::before { content: "SPEC-B"; background: var(--accent); }
+.compare .side.right::before { content: "比較 B"; background: var(--accent); }
 .compare .side.right { border-color: var(--accent); }
 .compare li::before { content: "— "; color: var(--accent-2); }
 .compare .vs { font-family: var(--font-number); color: var(--fg); font-size: 36px; }

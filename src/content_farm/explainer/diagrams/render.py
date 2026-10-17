@@ -24,7 +24,7 @@ from content_farm.explainer.diagrams.geometry import RETICLE_AREA, RETICLE_MM, p
 W, H, FPS = 1920, 1080, 30
 FILL_SECONDS = 1.4
 TOP, BOTTOM = 130, 700          # keep clear of the top bar and the lower-third
-DIAGRAMS = ("wafer_packing", "reticle_stitch")
+DIAGRAMS = ("wafer_packing", "reticle_stitch", "growth_bars", "share_split")
 
 
 @dataclass(frozen=True)
@@ -147,6 +147,66 @@ def reticle_frames(multiples: list[float], labels: list[str], starts: list[float
         yield image
 
 
+# ---- growth bars / share split ----------------------------------------------------------------
+
+def bars_frames(values: list[float], labels: list[str], starts: list[float], seconds: float, pal: Palette,
+                unit: str = ""):
+    """One bar per value, growing when its label is spoken; a faint shimmer keeps them alive."""
+    top = max(values) or 1.0
+    n = len(values)
+    left, right = 260, 1660
+    slot = (right - left) / n
+    bar_w = slot * 0.56
+    base_y, max_h = BOTTOM - 70, BOTTOM - 70 - TOP - 70
+    big, small = _font(52), _font(34)
+    for frame in range(round(seconds * FPS)):
+        t = frame / FPS
+        image = Image.new("RGB", (W, H), pal.bg)
+        draw = ImageDraw.Draw(image, "RGBA")
+        draw.line((left - 20, base_y, right, base_y), fill=pal.rule, width=4)
+        for k, (value, label) in enumerate(zip(values, labels)):
+            grow = _ease((t - starts[k]) / FILL_SECONDS) if t >= starts[k] else 0.0
+            x = left + k * slot + (slot - bar_w) / 2
+            h = max_h * value / top * grow
+            colour = pal.accent if k == n - 1 else pal.accent2
+            if h > 0:
+                draw.rectangle((x, base_y - h, x + bar_w, base_y), fill=colour)
+                shimmer = (t * 0.35 + k * 0.17) % 1.0          # a light band climbing the bar
+                sy = base_y - h * shimmer
+                draw.rectangle((x, sy - 10, x + bar_w, sy), fill=(255, 255, 255, 60))
+                text = f"{value:g}{unit}"
+                draw.text((x + bar_w / 2, base_y - h - 12), text, fill=pal.fg, font=big, anchor="ms")
+            draw.text((x + bar_w / 2, base_y + 16), label, fill=pal.muted, font=small, anchor="mt")
+        yield image
+
+
+def split_frames(values: list[float], labels: list[str], starts: list[float], seconds: float, pal: Palette):
+    """A wide bar of the whole (e.g. a year of capacity) split into shares as each is named."""
+    total = sum(values) or 1.0
+    left, right, y0, y1 = 220, 1700, 300, 470
+    mid, small = _font(46), _font(34)
+    colours = [pal.accent, pal.accent2, pal.muted, pal.rule]
+    for frame in range(round(seconds * FPS)):
+        t = frame / FPS
+        image = Image.new("RGB", (W, H), pal.bg)
+        draw = ImageDraw.Draw(image, "RGBA")
+        draw.rectangle((left, y0, right, y1), outline=pal.rule, width=4)
+        x = left
+        for k, (value, label) in enumerate(zip(values, labels)):
+            share = value / total
+            grow = _ease((t - starts[k]) / FILL_SECONDS) if t >= starts[k] else 0.0
+            width = (right - left) * share * grow
+            if width > 0:
+                draw.rectangle((x, y0, x + width, y1), fill=colours[k % len(colours)])
+                draw.text((x + width / 2, (y0 + y1) / 2), f"{share:.0%}", fill="#ffffff", font=mid, anchor="mm")
+                draw.text((x + width / 2, y1 + 30), label, fill=pal.fg, font=small, anchor="mt")
+            x += (right - left) * share
+        pulse = (math.sin(t * 2.2) + 1) / 2                    # the first share breathes
+        draw.rectangle((left - 6, y0 - 6, left + (right - left) * values[0] / total + 6, y1 + 6),
+                       outline=(*_rgb(pal.accent), round(80 + 140 * pulse)), width=6)
+        yield image
+
+
 def _rgb(hex_colour: str) -> tuple[int, int, int]:
     h = hex_colour.lstrip("#")
     return int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
@@ -163,6 +223,10 @@ def frames_for(name: str, params: dict[str, str], starts: list[float], seconds: 
         return wafer_frames(values, labels, starts, seconds, pal)
     if name == "reticle_stitch":
         return reticle_frames(values, labels, starts, seconds, pal)
+    if name == "growth_bars":
+        return bars_frames(values, labels, starts, seconds, pal, unit=params.get("unit", ""))
+    if name == "share_split":
+        return split_frames(values, labels, starts, seconds, pal)
     raise ValueError(f"unknown diagram {name!r}; known: {', '.join(DIAGRAMS)}")
 
 

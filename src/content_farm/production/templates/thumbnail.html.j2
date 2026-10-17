@@ -27,6 +27,7 @@ html, body { width: 1280px; height: 720px; overflow: hidden; position: relative;
   background-size: 64px 64px; }
 .chipcat-die { position: absolute; left: 960px; top: 150px; width: 96px; height: 96px; background: var(--accent); border: 6px solid var(--fg); }
 .chipcat-tag { position: absolute; left: 80px; top: 56px; background: var(--fg); color: #fff; font: 900 34px var(--font-heading); padding: 6px 18px; }
+.chipcat-badge { position: absolute; left: 80px; top: 116px; background: var(--accent-2); color: #fff; font: 900 40px var(--font-heading); padding: 4px 18px; }
 .chipcat-sub { position: absolute; left: 84px; bottom: 70px; font: 900 50px var(--font-heading); color: #fff; background: var(--accent-2); padding: 8px 22px; }
 .stroke { -webkit-text-stroke: 4px #fff; paint-order: stroke fill; }
 .stroke .hl { -webkit-text-stroke: 0; }
@@ -47,10 +48,11 @@ html, body { width: 1280px; height: 720px; overflow: hidden; position: relative;
 <body class="thumb {{ brand }}">
 {% if brand == "chipcat" %}
   <div class="chipcat-bg"></div><div class="chipcat-rail"></div><div class="chipcat-amber"></div>
-  <div class="chipcat-wafer"></div><div class="chipcat-die"></div>
-  {% if visual_uri %}<img class="visual" src="{{ visual_uri }}" style="left:700px;top:150px;height:600px">{% endif %}
+  <div class="chipcat-wafer"></div>{# the orange "die" square read as a missing image (v3 eval): removed #}
+  {% if visual_uri %}<img class="visual" src="{{ visual_uri }}" style="left:720px;top:110px;height:560px">{% endif %}
   <div class="chipcat-tag">晶片貓拆解</div>
-  <div class="big stroke" style="left:80px;top:140px;width:760px;font-size:{{ 150 if spec.text|length <= 8 else 134 }}px;color:var(--fg)">
+  {% if spec.badge %}<div class="chipcat-badge">{{ spec.badge }}</div>{% endif %}
+  <div class="big stroke" style="left:80px;top:{{ 200 if spec.badge else 140 }}px;width:760px;font-size:{{ 150 if spec.text|length <= 8 else 134 }}px;color:var(--fg)">
     {% for line in spec.lines %}<div>{% if spec.highlight and spec.highlight in line %}{{ line.split(spec.highlight)[0] }}<span class="hl">{{ spec.highlight }}</span>{{ line.split(spec.highlight)[1] }}{% else %}{{ line }}{% endif %}</div>{% endfor %}
   </div>
   {% if spec.sub %}<div class="chipcat-sub">{{ spec.sub }}</div>{% endif %}

@@ -27,6 +27,13 @@ html, body { width: 1280px; height: 720px; overflow: hidden; position: relative;
 .vs { position: absolute; width: 132px; height: 132px; border-radius: 50%; background: var(--accent); color: #fff;
   display: flex; align-items: center; justify-content: center; font: 900 56px var(--font-number, sans-serif); }
 .visual { position: absolute; }
+.badge { position: absolute; left: 44px; top: 104px; padding: 4px 18px; background: var(--fg); color: #fff;
+  font: 900 40px var(--font-heading, sans-serif); }
+.panel { position: absolute; right: 44px; top: 60px; width: 560px; height: 560px; border-radius: 24px;
+  background: var(--fg); overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.panel img { width: 100%; height: 100%; object-fit: contain; }
+.grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(14,27,42,.06) 2px, transparent 2px),
+  linear-gradient(90deg, rgba(14,27,42,.06) 2px, transparent 2px); background-size: 48px 48px; }
 </style>
 </head>
 <body class="thumb {{ brand }}">
@@ -39,17 +46,27 @@ html, body { width: 1280px; height: 720px; overflow: hidden; position: relative;
   <div class="big outline" style="left:56px;bottom:{{ 120 if spec.sub else 60 }}px;width:1100px;font-size:{{ 150 if n <= 6 else 124 }}px">{{ lines_html() }}</div>
   {% if spec.sub %}<div class="sub" style="left:62px;bottom:48px;color:#ffd84d;text-shadow:0 3px 0 #000">{{ spec.sub }}</div>{% endif %}
   {% if spec.visual.credit %}<div class="credit">{{ spec.visual.credit }}</div>{% endif %}
-{% else %}{# compare #}
+  {% if spec.badge %}<div class="badge">{{ spec.badge }}</div>{% endif %}
+{% elif spec.layout == "panel" %}
+  <div class="grid"></div>
   <div class="tag">{{ channel_name }}</div>
-  <div class="big" style="left:60px;top:118px;width:1160px;font-size:{{ 92 if n <= 8 else 80 }}px;color:var(--fg)">{{ lines_html() }}</div>
+  {% if spec.badge %}<div class="badge">{{ spec.badge }}</div>{% endif %}
+  <div class="big" style="left:56px;top:230px;width:620px;font-size:{{ 160 if n <= 5 else 124 }}px;color:var(--fg)">{{ lines_html() }}</div>
+  <div class="panel"><img src="{{ visual_uri }}"></div>
+  {% if spec.sub %}<div class="sub" style="left:60px;bottom:56px;color:#fff;background:var(--accent-2, var(--accent));padding:6px 18px;font-size:42px">{{ spec.sub }}</div>{% endif %}
+{% else %}{# compare #}
+  <div class="grid"></div>
+  <div class="tag">{{ channel_name }}</div>
+  {% if spec.badge %}<div class="badge">{{ spec.badge }}</div>{% endif %}
+  <div class="big" style="left:60px;top:{{ 178 if spec.badge else 118 }}px;width:1160px;font-size:{{ 92 if n <= 8 else 80 }}px;color:var(--fg)">{{ lines_html() }}</div>
   {% if spec.compare | length == 2 %}
     {% for side in spec.compare %}
-    <div style="position:absolute;left:{{ 70 if loop.first else 720 }}px;top:300px;width:500px;text-align:center">
-      <div class="num" style="font-size:{{ 230 if side.value|length <= 3 else 170 }}px;{% if not loop.first %}color:var(--accent){% endif %}">{{ side.value }}</div>
+    <div style="position:absolute;left:{{ 70 if loop.first else 720 }}px;top:{{ 330 if spec.badge else 300 }}px;width:500px;text-align:center">
+      <div class="num" style="font-size:{{ 230 if side.value|length <= 3 else 170 }}px;{% if loop.first and spec.compare_symbol == "→" %}color:var(--muted, var(--fg)){% elif not loop.first %}color:var(--accent){% endif %}">{{ side.value }}</div>
       <div class="label">{{ side.label }}</div>
     </div>
     {% endfor %}
-    <div class="vs" style="left:574px;top:380px">vs</div>
+    <div class="vs" style="left:574px;top:{{ 410 if spec.badge else 380 }}px;{% if spec.compare_symbol == "→" %}font-size:96px;font-family:var(--font-heading, sans-serif){% endif %}">{{ spec.compare_symbol }}</div>
   {% else %}
     {% set side = spec.compare[0] %}
     <div style="position:absolute;left:60px;top:270px;width:{{ 760 if visual_uri else 1160 }}px">

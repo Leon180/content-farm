@@ -70,7 +70,8 @@ class CompareSide(_Strict):
 
 # docs/design/thumbnails/rules.md: (a) character + big text, (b) full-bleed key art + question,
 # (c) one or two big numbers. All three keep the same promise rule (spoken within 60 s).
-Layout = Literal["character", "keyart", "compare"]
+# (d) panel: text left, a drawn diagram on a dark panel right (thumbnail research 2026-10, CoWoS B).
+Layout = Literal["character", "keyart", "compare", "panel"]
 
 
 class ThumbnailSpec(_Strict):
@@ -83,6 +84,9 @@ class ThumbnailSpec(_Strict):
     promise: tuple[str, ...] = Field(min_length=1)
     layout: Layout = "character"
     compare: tuple[CompareSide, ...] = Field(default=(), max_length=2)
+    compare_symbol: str = Field(default="vs", min_length=1, max_length=2)   # e.g. "→" for before/after
+    # second-row label under the channel tag, e.g. 「台積電 · CoWoS」 (a topic keyword every variant keeps)
+    badge: str = Field(default="", max_length=14)
 
     @model_validator(mode="after")
     def _short_text(self) -> ThumbnailSpec:
@@ -93,8 +97,8 @@ class ThumbnailSpec(_Strict):
             raise ValueError(f"highlight {self.highlight!r} is not in the lines")
         if self.layout == "compare" and not self.compare:
             raise ValueError("layout 'compare' needs one or two compare values")
-        if self.layout == "keyart" and not isinstance(self.visual, ImageVisual):
-            raise ValueError("layout 'keyart' needs an image visual (artwork or key art)")
+        if self.layout in ("keyart", "panel") and not isinstance(self.visual, ImageVisual):
+            raise ValueError(f"layout {self.layout!r} needs an image visual (artwork, key art or a drawn diagram)")
         return self
 
     @property
@@ -268,7 +272,8 @@ def promise_findings(run_dir: Path, spec: ThumbnailSpec, label: str = "") -> lis
     scenes = _narration_starts(run_dir)
     early = "".join(text for start, text in scenes if start < PROMISE_WITHIN_SECONDS)
     everything = "".join(text for _, text in scenes)
-    shown = spec.text + spec.number + "".join(side.value for side in spec.compare)
+    # space-separated: "62" and "5" must not read as one number "625"
+    shown = " ".join([spec.text, spec.number, *(side.value for side in spec.compare)])
     late = [p for p in spec.promise if _compact(p) not in early]
     # the narration is compacted (punctuation, including '.' and ',', removed), so compact the number too:
     # "8.8" must match the spoken "8.8 公分", "7,722" the spoken "7722"
