@@ -24,6 +24,13 @@ def test_collapsed_tail_is_spread_back_over_the_gap() -> None:
         assert chars / (seg.end_seconds - seg.start_seconds) < 9
 
 
+def test_tail_without_gap_shares_the_previous_cue_span() -> None:
+    segments = (_seg(1, 270.0, 277.0, "整體先進封裝產能呢？大概是不到兩年前的四倍。"), _seg(2, 277.0, 277.0, "四倍了，還是不夠？"))
+    fixed = repair_collapsed(segments, scene_start=260.0, scene_end=278.5)
+    assert fixed[0].start_seconds == 270.0 and abs(fixed[1].end_seconds - 278.5) < 0.01
+    assert fixed[1].end_seconds - fixed[1].start_seconds > 1.0
+
+
 def test_normal_cues_are_untouched() -> None:
     segments = (_seg(1, 0.0, 3.0, "一二三四五六七八九十"), _seg(2, 3.2, 6.0, "一二三四五六七八"))
     assert repair_collapsed(segments, scene_start=0.0) == segments
