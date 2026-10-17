@@ -16,7 +16,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 from content_farm.assembly.drawtext import find_cjk_font
-from content_farm.explainer.pngtuber.build import build_pack
+from content_farm.explainer.pngtuber.build import apply_mouth_mode, build_pack
 from content_farm.explainer.pngtuber.motion import HostFrame
 from content_farm.explainer.pngtuber.pack import PACK_ROOT, load_pack
 from content_farm.explainer.pngtuber.render import Composer, Placement
@@ -26,6 +26,13 @@ PACKS = {  # round-2 id → (pack id, name, brand background)
     "Y14": ("frog-scribe", "青蛙書記", "#14110d"),
     "O25": ("cooler-goldfish", "飲水機金魚", "#ffd84d"),
     "C09": ("paint-bottle", "顏料瓶老師傅", "#f5f1e8"),
+}
+# Leon 2026-10-17 after the trials: C09's talking mouth sat in the wrong place, O25's did not suit the
+# fish. Both now keep their own mouth and only swap it for a small 'o' at the same spot (canvas px,
+# measured on base.png). Y14 keeps the generated mouths.
+MOUTHS = {
+    "paint-bottle": {"mode": "small_o", "center": (386, 378), "cover": (52, 24), "o_sizes": ((13, 14), (17, 20))},
+    "cooler-goldfish": {"mode": "small_o", "center": (393, 430), "cover": (64, 40), "o_sizes": ((12, 13), (16, 19))},
 }
 SOURCE = {"model": "FLUX.2 [klein] 4B (q4), mflux, klein multi-reference edit", "license": "Apache-2.0",
           "license_url": "https://huggingface.co/black-forest-labs/FLUX.2-klein-4B/blob/main/LICENSE.md",
@@ -65,6 +72,9 @@ def main(argv: list[str]) -> int:
     report = {}
     for pick, (pack_id, name, bg) in PACKS.items():
         built = build_pack(raw / pick, PACK_ROOT / pack_id, pack_id, name, source={**SOURCE, "round2_id": pick})
+        if pack_id in MOUTHS:
+            m = MOUTHS[pack_id]
+            apply_mouth_mode(PACK_ROOT / pack_id, m["mode"], center=m["center"], cover=m["cover"], o_sizes=m["o_sizes"])
         report[pack_id] = {"pick": pick, "regions": built.regions, "silhouette_iou": built.iou,
                            "changed_px": built.changed_px, "sheet": sheet(pick, raw, pack_id, bg).name}
         print(pack_id, report[pack_id], flush=True)

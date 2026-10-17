@@ -18,6 +18,9 @@ from PIL import Image
 
 PACK_ROOT = Path(__file__).parent / "packs"
 MOUTH_LAYERS = ("mouth_half", "mouth_open")
+# frames: generated talking mouths; none: the mouth never moves (the talk bounce still shows speech);
+# small_o: mouth layers are a small drawn 'o' over the original mouth (build.apply_mouth_mode)
+MOUTH_MODES = ("frames", "none", "small_o")
 EXPRESSIONS = ("neutral", "surprised", "smug", "speechless")
 LAYERS = ("blink", *MOUTH_LAYERS, *EXPRESSIONS[1:])
 # rig poses (explainer.mascot.cues.POSES) → expression; gestures the stills cannot do stay neutral
@@ -36,6 +39,7 @@ class Pack:
     base: Image.Image
     layers: dict[str, Image.Image]
     pose_map: dict[str, str] = field(default_factory=lambda: dict(DEFAULT_POSE_MAP))
+    mouth_mode: str = "frames"
 
     def expression_for(self, pose: str) -> str:
         return self.pose_map.get(pose, "neutral")
@@ -67,5 +71,8 @@ def load_pack(ref: str, root: Path = PACK_ROOT) -> Pack:
     bad = sorted({v for v in pose_map.values() if v not in EXPRESSIONS})
     if bad:
         raise PackError(f"pack {folder.name}: unknown expressions in pose_map: {bad}")
+    mouth_mode = manifest.get("mouth_mode", "frames")
+    if mouth_mode not in MOUTH_MODES:
+        raise PackError(f"pack {folder.name}: mouth_mode {mouth_mode!r} not in {MOUTH_MODES}")
     return Pack(id=manifest.get("id", folder.name), name=manifest.get("name", folder.name), base=base,
-                layers=layers, pose_map=pose_map)
+                layers=layers, pose_map=pose_map, mouth_mode=mouth_mode)

@@ -91,6 +91,23 @@
 - 改了 3 項既有測試，它們原本把 cel 當成「沒有角色的頻道」：`test_production_channels`、`test_launch_rules`（兩處）。改成明確建一個 `rig_ready: false` 的頻道當對照，原本的測試意義保留。
 - 全套：1 failed（`test_multi_provider…returns_first_provider_results`，基準既有，十幾份報告都記過）／1184 passed／1 skipped 🟢。基準 launch-fixes 是 1166 passed。
 
+### 3-5b. 嘴型修正（Leon 看完試片後，2026-10-17）
+
+- **問題**：
+  - C09 原本的嘴是眼睛下方那條小橫線（Leon 說的小 u），但生成的張嘴圖把嘴畫在更下面，說話時嘴跑位。
+  - O25 生成的張嘴跟角色不搭。
+- **做法**：每個角色包新增 `mouth_mode` 設定，三種值：
+  - `frames`：用生成的嘴，Y14 維持這個；
+  - `none`：嘴不動，只靠說話時的輕微彈跳；
+  - `small_o`：說話時，用周圍顏色（羽化邊緣）蓋掉原本的嘴，再在**同一個中心點**畫一個小「o」，半開和全開只差大小。這是程式畫的，不靠生成，所以不會再跑位。
+- C09、O25 改成 `small_o`。嘴的中心點是在 base 上實際量的：C09 是 (386,378)，O25 是 (393,430)，記錄在 `tools/r3_pack.py` 的 `MOUTHS`。
+- 重渲兩支試片（覆蓋原檔，路徑不變）：
+  - cel 20 秒：600 格，meta 0、字幕 0；
+  - Short 24.3 秒：730 格，字幕 0。
+  - 截圖已更新 🟢。
+- 測試：新增 3 項，包括「o 的重心落在原嘴中心 ±2 px」、`none` 時張嘴與閉嘴的合成結果完全相同、模式驗證。PNGtuber 測試共 20 項全過 🟢。
+- 已知殘留：放大看時，O25 舊嘴角兩端有極淡的痕跡；在影片尺寸下看不出來 🟡。
+
 ### 3-6. 已知限制與需要 Leon 決定的事
 
 1. **妖怪 deck 要開始寫 mascot pose**：九尾狐 deck 是 0/29，yokai 一開 rig_ready，policy 就會報 `mascot_presence` error，門檻是 80%。cel-ep1 是 24/28，沒問題。我**沒有改**九尾狐的 deck。

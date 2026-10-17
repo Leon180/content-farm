@@ -84,5 +84,26 @@
   "license_url": "https://huggingface.co/black-forest-labs/FLUX.2-klein-4B/blob/main/LICENSE.md",
   "note": "AI-generated; Leon 2026-10-17 approved AI images as hosts. Purely AI output may not be protected by copyright.",
   "round2_id": "C09"
+ },
+ "mouth_mode": "small_o",
+ "mouth": {
+  "center": [
+   386,
+   378
+  ],
+  "cover": [
+   52,
+   24
+  ],
+  "o_sizes": {
+   "mouth_half": [
+    13,
+    14
+   ],
+   "mouth_open": [
+    17,
+    20
+   ]
+  }
  }
 }

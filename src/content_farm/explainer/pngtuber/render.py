@@ -67,6 +67,8 @@ class Composer:
         self._faces: dict[tuple[str, int, bool], Image.Image] = {}
 
     def face(self, expression: str, mouth: int, blink: bool) -> Image.Image:
+        if self.pack.mouth_mode == "none":
+            mouth = 0
         key = (expression, mouth, blink)
         if key not in self._faces:
             img = self.pack.base.copy()

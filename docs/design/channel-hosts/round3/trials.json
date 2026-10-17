@@ -32,10 +32,10 @@
   "frames": 600,
   "faces": 5,
   "timings": {
-   "params": 1.0,
-   "render": 2.6,
-   "overlay": 3.8,
-   "total": 7.4
+   "params": 5.3,
+   "render": 5.3,
+   "overlay": 7.0,
+   "total": 17.7
   },
   "forbidden": {
    "meta": 0,

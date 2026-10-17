@@ -161,6 +161,32 @@ def test_channel_mascot_pngtuber_needs_a_pack_ref() -> None:
         Mascot(name="x", ref="frog", host="pngtuber")
 
 
+def test_small_o_mouth_is_drawn_at_the_original_mouth(pack_root: Path) -> None:
+    folder = pack_root / "testy"
+    build.apply_mouth_mode(folder, "small_o", center=(100, 134), cover=(30, 12), o_sizes=((8, 9), (11, 13)))
+    p = pack.load_pack("testy", root=pack_root)
+    assert p.mouth_mode == "small_o"
+    alpha = np.asarray(p.layers["mouth_open"].getchannel("A"))
+    ys, xs = np.nonzero(alpha > 128)
+    assert abs(xs.mean() - 100) < 2 and abs(ys.mean() - 134) < 2     # centred on the original mouth
+    assert alpha[200, 100] == 0 and alpha[100, 80] == 0                # body and eyes untouched
+
+
+def test_mouth_mode_none_keeps_the_mouth_still(pack_root: Path) -> None:
+    build.apply_mouth_mode(pack_root / "testy", "none")
+    composer = render.Composer(pack.load_pack("testy", root=pack_root), render.LANDSCAPE)
+    closed = np.asarray(composer.face("neutral", 0, False))
+    talking = np.asarray(composer.face("neutral", 2, False))
+    assert np.array_equal(closed, talking)
+
+
+def test_mouth_mode_is_validated(pack_root: Path) -> None:
+    with pytest.raises(ValueError, match="mouth mode"):
+        build.apply_mouth_mode(pack_root / "testy", "wide")
+    with pytest.raises(ValueError, match="center"):
+        build.apply_mouth_mode(pack_root / "testy", "small_o")
+
+
 def test_committed_packs_load() -> None:
     for folder in sorted(p for p in pack.PACK_ROOT.iterdir() if p.is_dir()):
         loaded = pack.load_pack(folder.name)
