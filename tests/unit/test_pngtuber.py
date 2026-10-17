@@ -256,6 +256,21 @@ def test_speech_fx_is_validated(pack_root: Path) -> None:
         pack.load_pack("testy", root=pack_root)
 
 
+def test_erase_mouth_removes_it_everywhere_and_keeps_the_silhouette(pack_root: Path) -> None:
+    folder = pack_root / "testy"
+    iou = build.erase_mouth(folder, [((100, 134), (34, 16)), ((100, 136), (30, 22))])
+    assert iou["base_before_vs_after"] == 1.0
+    p = pack.load_pack("testy", root=pack_root)
+    assert p.mouth_mode == "none"
+    for state in ("neutral", "surprised", "smug"):
+        img = p.base.copy()
+        if state != "neutral":
+            img.alpha_composite(p.layers[state])
+        rgb = np.asarray(img.convert("RGB"), dtype=int)
+        assert rgb[128:144, 90:111].min() > 60, f"{state}: dark mouth pixels left"   # the mouth is gone
+        assert rgb[100, 80].max() < 60                                                 # the eye is not
+
+
 def test_committed_packs_load() -> None:
     for folder in sorted(p for p in pack.PACK_ROOT.iterdir() if p.is_dir()):
         loaded = pack.load_pack(folder.name)

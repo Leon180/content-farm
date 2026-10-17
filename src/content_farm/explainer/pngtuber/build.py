@@ -139,6 +139,54 @@ def apply_mouth_mode(folder: Path, mode: str, *, center: tuple[int, int] | None 
     return manifest
 
 
+def mouth_cover(base: Image.Image, center: tuple[int, int], cover: tuple[int, int]) -> Image.Image:
+    """A feathered patch of the colour around the mouth that hides it (no 'o' drawn on top)."""
+    scale = 4
+    w, h = base.size
+    cx, cy, rx, ry = center[0] * scale, center[1] * scale, cover[0] / 2 * scale, cover[1] / 2 * scale
+    alpha = Image.new("L", (w * scale, h * scale), 0)
+    ImageDraw.Draw(alpha).ellipse((cx - rx, cy - ry, cx + rx, cy + ry), fill=255)
+    big = Image.new("RGBA", (w * scale, h * scale), (*_ring_colour(base, center, cover), 0))
+    big.putalpha(alpha.filter(ImageFilter.GaussianBlur(3 * scale)))
+    layer = big.resize((w, h), Image.LANCZOS)
+    layer.putalpha(Image.fromarray(np.minimum(np.asarray(layer.getchannel("A")), np.asarray(base.getchannel("A")))))
+    return layer
+
+
+def erase_mouth(folder: Path, covers: list[tuple[tuple[int, int], tuple[int, int]]]) -> dict:
+    """Remove the drawn mouth from the base and from every layer (each patch may carry its own
+    copy, and expressions draw it in different places: one (center, size) cover per place), so the
+    host has no mouth at all; sets mouth_mode 'none'. Returns silhouette IoU: base before vs after,
+    and each composed state vs the erased base (the covers stay inside the body)."""
+    base_before = Image.open(folder / "base.png").convert("RGBA")
+    patch_ = Image.new("RGBA", base_before.size, (0, 0, 0, 0))
+    for center, cover in covers:
+        patch_.alpha_composite(mouth_cover(base_before, center, cover))
+    iou = {}
+    for name in ("base", *LAYERS):
+        path = folder / f"{name}.png"
+        before = Image.open(path).convert("RGBA")
+        after = before.copy()
+        if name == "base":
+            after.alpha_composite(patch_)
+        else:   # only where the layer is drawn: a patch layer stays transparent elsewhere
+            covered = patch_.copy()
+            covered.putalpha(Image.fromarray(np.minimum(np.asarray(patch_.getchannel("A")),
+                                                        np.asarray(before.getchannel("A")))))
+            after.alpha_composite(covered)
+        after.save(path, optimize=True)
+        if name == "base":
+            iou["base_before_vs_after"] = round(silhouette_iou(before, after), 4)
+    erased = Image.open(folder / "base.png").convert("RGBA")
+    for name in LAYERS:   # every composed state against the erased base
+        composed = erased.copy()
+        composed.alpha_composite(Image.open(folder / f"{name}.png").convert("RGBA"))
+        iou[name] = round(silhouette_iou(erased, composed), 4)
+    set_manifest(folder, mouth_mode="none",
+                 mouth_erased=[{"center": list(c), "cover": list(s)} for c, s in covers])
+    return iou
+
+
 def set_manifest(folder: Path, **fields: object) -> dict:
     """Merge renderer settings (``motion``, ``speech_fx``, …) into a built pack's manifest."""
     path = folder / "manifest.json"

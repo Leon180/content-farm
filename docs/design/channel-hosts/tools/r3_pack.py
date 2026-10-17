@@ -16,7 +16,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 from content_farm.assembly.drawtext import find_cjk_font
-from content_farm.explainer.pngtuber.build import apply_mouth_mode, build_pack, set_manifest
+from content_farm.explainer.pngtuber.build import apply_mouth_mode, build_pack, erase_mouth, set_manifest
 from content_farm.explainer.pngtuber.motion import HostFrame
 from content_farm.explainer.pngtuber.pack import PACK_ROOT, load_pack
 from content_farm.explainer.pngtuber.render import Composer, Placement
@@ -39,6 +39,10 @@ MOUTHS = {
 SPEECH_FX = {
     "cooler-goldfish": {"kind": "bubbles", "emit": [393, 445], "surface_y": 296, "x_range": [270, 510]},
 }
+# Leon: the goldfish's drawn mouth looked odd — removed from the base and every layer (no mouth at all)
+#   covers: base frown, surprised 'o' (lower), smug smile (wide), speechless frown (lower) — all below the eyes
+ERASE_MOUTH = {"cooler-goldfish": [((393, 434), (70, 52)), ((393, 463), (42, 46)), ((395, 448), (124, 40)),
+                                   ((390, 462), (62, 32))]}
 SOURCE = {"model": "FLUX.2 [klein] 4B (q4), mflux, klein multi-reference edit", "license": "Apache-2.0",
           "license_url": "https://huggingface.co/black-forest-labs/FLUX.2-klein-4B/blob/main/LICENSE.md",
           "note": "AI-generated; Leon 2026-10-17 approved AI images as hosts. Purely AI output may not be "
@@ -83,6 +87,8 @@ def main(argv: list[str]) -> int:
                              o_sizes=m.get("o_sizes"))
         if pack_id in SPEECH_FX:
             set_manifest(PACK_ROOT / pack_id, speech_fx=SPEECH_FX[pack_id])
+        if pack_id in ERASE_MOUTH:
+            print(pack_id, "mouth erased, silhouette IoU:", erase_mouth(PACK_ROOT / pack_id, ERASE_MOUTH[pack_id]))
         report[pack_id] = {"pick": pick, "regions": built.regions, "silhouette_iou": built.iou,
                            "changed_px": built.changed_px, "sheet": sheet(pick, raw, pack_id, bg).name}
         print(pack_id, report[pack_id], flush=True)
