@@ -15,7 +15,7 @@ from dataclasses import dataclass
 
 from content_farm.explainer.deck import Layout, Slide
 
-MAX_HOLD = 7.0          # s; the QC limit is 8 s, keep a margin for encoder/scene-detect slop
+MAX_HOLD = 5.5          # s; QC limit 8 s — small reveals (a timeline event) barely move the picture, keep margin
 LEAD = 0.3              # a unit appears this long before its words
 MIN_STEP = 0.8          # two reveals never closer than this
 FIRST_LATEST = 0.3      # the first unit appears with the page (v3 eval: half-empty pages read as broken)

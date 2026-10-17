@@ -162,7 +162,13 @@
   const pulseTarget = (idx, units) => {
     if (idx >= 0 && units[idx]) return units[idx];
     // the one thing worth pointing at — never the whole page (v3 eval: a full-page glow read as a render error)
-    return document.querySelector('.bignum .value, .quote .text, .quote > *, .news-headline, .heading, .title-main');
+    // in priority order (a comma list would return the first match in document order: the heading)
+    const order = ['.bignum .value', '.quote .text', '.news-headline', '.timeline', '.content', '.title-main', '.heading'];
+    for (const sel of order) {
+      const el = document.querySelector(sel);
+      if (el) return el;
+    }
+    return null;
   };
   const pulseFx = (list, units) => {
     const items = list.map(([t, idx]) => ({ t, el: pulseTarget(idx, units), tint: idx >= 0 })).filter((p) => p.el);
