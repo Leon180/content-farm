@@ -10,6 +10,7 @@ mascot:
   rig_ready: false        # 便服造型＋PM 狗未做
 voice:                    # Leon 2026-10-17：本機 Qwen3-TTS Base（Apache-2.0）複製參考聲
   provider: qwen3_tts
+  tempo: 1.0              # 944769e1fc01：先 1.0
   reference:
     audio: ~/.local/share/content-farm-voices/offwork-take34.wav
     text: 兄弟我跟你講，上班這件事情喔，說穿了就是用時間換薪水。問題是，老闆想要的是你的時間、你的週末、還有你的靈魂，但薪水只給你時間那一份。所以我現在的原則很簡單：六點一到，電腦一關，誰都別想找到我。

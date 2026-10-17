@@ -12,6 +12,7 @@ mascot:
   rig_ready: true
 voice:                    # Leon 2026-10-17（決策 b6c665874b97、b25068faf5a4）：本機 VoxCPM2 複製「晶片貓女聲」參考聲，不用 Fish
   provider: voxcpm2
+  tempo: 1.0              # 944769e1fc01：先 1.0；語速 >5 字/秒或片長出 7–10 分再回報
   voice_id_env: CF_CHIPCAT_VOICE_ID   # 保留：Fish 原創聲音 id 仍在 .env，改回 fish_audio 時用
   reference:
     audio: ~/.local/share/content-farm-voices/chipcat-female-ref.wav

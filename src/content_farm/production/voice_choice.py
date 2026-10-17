@@ -57,6 +57,7 @@ class VoiceChoice:
     pronunciation_sha: str = ""               # entries this provider/channel uses
     channel_code: str = ""
     speech_check: bool = False
+    tempo: float = 1.0
 
     def describe(self) -> str:
         """One line for logs and fingerprints. Voice ids are not secrets; API keys never appear."""
@@ -67,6 +68,7 @@ class VoiceChoice:
             fallback = "" if self.from_channel else "，退回預設"
             voice = f" voice_id={self.voice_id or '(未設)'}（來源 {self.source}{fallback}）"
         extra = f" pron={self.pronunciation_sha}" if self.pronunciation_sha else ""
+        extra += f" tempo={self.tempo:g}" if self.tempo != 1.0 else ""
         return f"{self.provider}{model}{voice}{extra}"
 
     def env(self) -> dict[str, str]:
@@ -84,6 +86,7 @@ class VoiceChoice:
             env["CF_CHANNEL_CODE"] = self.channel_code
         if self.speech_check:
             env["CF_SPEECH_CHECK"] = "true"
+            env["CF_TTS_TEMPO"] = f"{self.tempo:g}"
         return env
 
 
@@ -129,7 +132,7 @@ def _pronunciation(channel: Channel) -> dict:
     path = REPO_ROOT / channel.voice.pronunciation
     sha = table_fingerprint(path, provider=channel.voice.provider, channel=channel.code)
     return {"pronunciation": str(path), "pronunciation_sha": sha, "channel_code": channel.code,
-            "speech_check": True}
+            "speech_check": True, "tempo": channel.voice.tempo}
 
 
 def choose_voice(channel: Channel, env_file: Path, *, mock: bool) -> VoiceChoice:

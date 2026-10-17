@@ -10,6 +10,7 @@ from pathlib import Path
 
 from content_farm.config import Settings
 from content_farm.script_gen.schemas import Script
+from content_farm.voice import tempo
 from content_farm.voice.checked_synthesis import CheckedSynthesizer, load_checks, record_check
 from content_farm.voice.factory import LEGACY_MODEL, effective_tts_model, effective_voice_id
 from content_farm.voice.pronunciation import load_table, merged_map
@@ -86,6 +87,7 @@ class VoiceGenerator:
         self._semaphore = asyncio.Semaphore(1 if local else settings.max_concurrent_scenes)
         self._voice_id = effective_voice_id(settings)
         self._model = effective_tts_model(settings)
+        self._tempo = settings.tts_tempo
         self._table = (load_table(Path(settings.pronunciation_file), provider=settings.tts_provider,
                                   channel=settings.channel_code)
                        if settings.pronunciation_file else None)
@@ -110,6 +112,29 @@ class VoiceGenerator:
         path.parent.mkdir(parents=True, exist_ok=True)
         updated = {**self._load_identities(), filename: identity}
         path.write_text(json.dumps(updated, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
+
+    async def _ensure_take(self, take: Path, *, narration: str, tts_text: str,
+                           previous_text: str | None, next_text: str | None) -> None:
+        """The synthesized take at ``take``: reused when made by this voice from this text (I-1)."""
+        identity = _identity(self._settings.tts_provider, self._voice_id, tts_text, self._model)
+        exists = take.exists() and take.stat().st_size > 0
+        if exists and _with_legacy_model(self._load_identities().get(take.name)) == identity:
+            logger.info("Reusing existing audio: %s", take)
+            self._reassess(take.name, narration)
+            return
+        if exists:
+            logger.info("Re-synthesizing %s: voice or text differs from the recorded audio", take)
+        voice_id = self._settings.tts_voice_id or None
+        if self._checker is None:
+            await self._tts.generate_speech_with_context(
+                text=tts_text, output_path=take, previous_text=previous_text,
+                next_text=next_text, voice_id=voice_id)
+        else:
+            check = await self._checker.synthesize(
+                narration=narration, tts_text=tts_text, output_path=take,
+                previous_text=previous_text, next_text=next_text, voice_id=voice_id)
+            record_check(self._output_dir, take.name, {**check.to_json(), "tts_text": tts_text})
+        self._record_identity(take.name, identity)
 
     def _reassess(self, filename: str, narration: str) -> None:
         record = load_checks(self._output_dir).get(filename) if self._checker else None
@@ -220,38 +245,15 @@ class VoiceGenerator:
         """Generate audio for a single scene with continuity context."""
         async with self._semaphore:
             output_path = self._output_dir / f"scene_{scene_number:03d}.mp3"
-
             tts_text = normalize_for_tts(narration, merged_map(self._table, pronunciation_map))
-            identity = _identity(self._settings.tts_provider, self._voice_id, tts_text, self._model)
-            exists = output_path.exists() and output_path.stat().st_size > 0
-
-            # Skip the API call only for audio made by this voice from this text (I-1)
-            if exists and _with_legacy_model(self._load_identities().get(output_path.name)) == identity:
-                logger.info("Reusing existing audio: %s", output_path)
-                self._reassess(output_path.name, narration)
-                duration = await _get_audio_duration(output_path)
-                return AudioSegment(
-                    scene_number=scene_number,
-                    file_path=str(output_path),
-                    duration_seconds=round(duration, 2),
-                    character_count=len(narration),
-                    tts_text=tts_text,
-                )
-
-            if exists:
-                logger.info("Re-synthesizing %s: voice or text differs from the recorded audio",
-                            output_path)
-            voice_id = self._settings.tts_voice_id or None
-            if self._checker is None:
-                await self._tts.generate_speech_with_context(
-                    text=tts_text, output_path=output_path, previous_text=previous_text,
-                    next_text=next_text, voice_id=voice_id)
-            else:
-                check = await self._checker.synthesize(
-                    narration=narration, tts_text=tts_text, output_path=output_path,
-                    previous_text=previous_text, next_text=next_text, voice_id=voice_id)
-                record_check(self._output_dir, output_path.name, {**check.to_json(), "tts_text": tts_text})
-            self._record_identity(output_path.name, identity)
+            take = tempo.place_take(self._output_dir, output_path.name, self._tempo)
+            await self._ensure_take(take, narration=narration, tts_text=tts_text,
+                                    previous_text=previous_text, next_text=next_text)
+            if take != output_path and (tempo.applied(self._output_dir, output_path.name) != self._tempo
+                                        or not output_path.is_file()
+                                        or output_path.stat().st_mtime < take.stat().st_mtime):
+                await tempo.retime(self._settings.ffmpeg_path, take, output_path, self._tempo)
+                tempo.record_applied(self._output_dir, output_path.name, self._tempo)
 
             # Use ffprobe for accurate duration (C-2)
             duration = await _get_audio_duration(output_path)

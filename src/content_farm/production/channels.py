@@ -77,6 +77,9 @@ class Voice(_Strict):
     # else the provider default. Changing voice id or model re-voices the whole video.
     model: str | None = Field(default=None, min_length=1, max_length=80)
     reference: VoiceReference | None = None
+    # Narration speed, pitch kept (ffmpeg atempo). Changing it re-times the takes; it never
+    # re-synthesizes (voice.tempo). Leon 2026-10-17 944769e1fc01.
+    tempo: float = Field(default=1.0, ge=0.5, le=2.0)
     # Shared pronunciation table, relative to the repo root (TTS text only, not subtitles).
     pronunciation: str = "channels/shared/pronunciation.yaml"
 

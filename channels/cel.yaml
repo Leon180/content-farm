@@ -11,6 +11,7 @@ mascot:
   rig_ready: false
 voice:                    # Leon 2026-10-17：本機 VoxCPM2（Apache-2.0）複製參考聲
   provider: voxcpm2
+  tempo: 1.12             # Leon 2026-10-17 944769e1fc01（音高不變）
   reference:
     audio: ~/.local/share/content-farm-voices/cel-take0.wav
     text: 大家好，歡迎來到賽璐璐研究室。今天我們要用三張圖表，看懂一部動畫從企劃到播出的資金流向。第一，誰出錢；第二，誰承擔風險；第三，最後的收益又是怎麼分配的。把這三件事搞清楚，你就會明白為什麼有些作品叫好卻不叫座。
