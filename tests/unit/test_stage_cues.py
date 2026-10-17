@@ -32,6 +32,14 @@ def test_numbered_labels_wait_for_their_number() -> None:
     assert [round(t, 1) for t in match_times(labels, sentences, 28.0)] == [2.1, 11.3, 16.5]
 
 
+def test_decimal_numbers_match_whole() -> None:
+    from content_farm.explainer.stage_cues import match_times
+
+    labels = ["1 倍：858 mm²", "3.3 倍：2024 量產"]
+    sentences = [(1.4, "也就是 858 平方毫米。"), (13.0, "台積電量產 3.3 倍，承諾 5.5 倍。")]
+    assert [round(t, 1) for t in match_times(labels, sentences, 24.0)] == [1.1, 12.7]
+
+
 def test_pulses_fill_long_holds() -> None:
     pulses, longest = add_pulses([1.0], 40.0, unit_count=1)
     assert longest <= MAX_HOLD

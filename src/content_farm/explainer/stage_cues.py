@@ -51,8 +51,9 @@ def _norm(text: str) -> str:
 
 def _score(unit: str, sentence: str) -> float:
     numbers = {n.replace(",", "").rstrip(".") for n in _NUM.findall(unit)} - {""}
+    said_numbers = {n.replace(",", "").rstrip(".") for n in _NUM.findall(sentence)}   # keeps "3.3" whole
     said = _norm(sentence).replace(",", "")
-    hits = sum(1 for n in numbers if n in said)
+    hits = sum(1 for n in numbers if n in said_numbers)
     if numbers and not hits:
         return 0.0      # a unit with numbers is said when its number is (labels share words like 倍光罩)
     score = 3.0 * hits
