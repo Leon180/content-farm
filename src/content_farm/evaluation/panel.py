@@ -85,7 +85,7 @@ def word_persona(panels: Panels, persona: Persona, round_no: int) -> str:
     traits = list(persona.traits)
     rng.shuffle(traits)
     framing = panels.framings[(round_no - 1 + len(persona.id)) % len(panels.framings)]
-    return framing.format(who=persona.who, traits="；".join(traits) + "。")
+    return framing.format(who=persona.who, traits="；".join(t.rstrip("。") for t in traits)).replace("。。", "。")
 
 
 def roster(panels: Panels, stage_name: str, channel_code: str, round_no: int, *, final_round: bool,

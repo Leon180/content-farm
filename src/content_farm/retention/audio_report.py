@@ -16,7 +16,7 @@ from content_farm.retention.timing import Sentence, normalise
 
 WINDOW = 10.0
 RATE_FAST, RATE_SLOW = 5.8, 3.8          # 字/秒 while speaking, pauses excluded (🟡 comfort band)
-MONOTONE_ST, LIVELY_ST = 1.6, 3.2        # F0 spread in semitones (🟡)
+MONOTONE_ST, LIVELY_ST = 1.5, 5.0        # F0 spread in semitones; normal expressive speech ≈ 2–4 (🟡)
 SPEECH_GATE = -40.0                      # momentary LUFS above which the voice stem "speaks"
 
 

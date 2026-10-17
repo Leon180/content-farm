@@ -44,6 +44,7 @@ def extract_frames(video: Path, out_dir: Path, step: float = STEP) -> list[tuple
 
 def build_sheets(frames: list[tuple[float, Path]], out_dir: Path) -> list[Path]:
     font = _font(30)
+    out_dir.mkdir(parents=True, exist_ok=True)
     sheets = []
     for n, start in enumerate(range(0, len(frames), PER_SHEET), 1):
         chunk = frames[start:start + PER_SHEET]
