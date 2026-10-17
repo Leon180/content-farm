@@ -86,7 +86,7 @@ def section_frames(labels: list[str], starts: list[float], seconds: float, pal: 
     """Frames for the 1920x1080 diagram band: the section centred, the stage label on the right."""
     from content_farm.explainer.diagrams.render import BOTTOM, H, TOP, W
 
-    size = BOTTOM - TOP
+    size = round((BOTTOM - TOP) * 1.4)          # the drawing fills ~32–75 % of its square: scale up, shift up
     side = _font(52)
     for frame in range(round(seconds * FPS)):
         t = frame / FPS
@@ -98,7 +98,7 @@ def section_frames(labels: list[str], starts: list[float], seconds: float, pal: 
         else:
             section = draw(size, pal, parts=max(stage + 1, 0), dark=False)
         image = Image.new("RGB", (W, H), pal.bg)
-        image.paste(section, ((W - size) // 2 - 260, TOP))
+        image.paste(section, ((W - size) // 2 - 300, TOP - round(size * 0.26)))
         draw_ = ImageDraw.Draw(image)
         for k, text in enumerate(labels[: stage + 1]):
             colour = pal.accent if k == stage else pal.muted
