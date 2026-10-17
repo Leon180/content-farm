@@ -53,6 +53,22 @@ def subtitle_style(run_dir: Path, vertical: bool) -> dict:
     return {**style, "height_pct": round(100 * style["font_px"] / style["frame_h"], 1), "recorded": recorded}
 
 
+def subtitle_timing(run_dir: Path) -> dict:
+    """Cues shown impossibly briefly (> 9 chars/s or < 0.4 s): collapsed forced alignment."""
+    from content_farm.visual.timeline import parse_srt
+
+    srt = run_dir / "subtitles" / "subtitles.srt"
+    if not srt.is_file():
+        return {"cues": 0, "collapsed": []}
+    cues = parse_srt(srt.read_text(encoding="utf-8"))
+    bad = []
+    for start, end, text in cues:
+        chars = sum(1 for c in text if not c.isspace())
+        if end - start < 0.4 or chars / max(end - start, 1e-3) > 9.0:
+            bad.append({"start": round(start, 1), "seconds": round(end - start, 2), "text": text.replace("\n", "")[:30]})
+    return {"cues": len(cues), "collapsed": bad}
+
+
 def speech_errors(run_dir: Path) -> dict:
     path = run_dir / "audio" / "speech_check.json"
     if not path.is_file():
@@ -90,6 +106,7 @@ def build_report(run_dir: Path, *, vertical: bool = False, with_audio: bool = Tr
         "duration": picture.duration,
         "content": {**beats.as_dict(), "speech_rate": speech_rate(run_dir, scenes)},
         "visual": {**picture.as_dict(), "subtitle": subtitle_style(run_dir, vertical),
+                   "subtitle_timing": subtitle_timing(run_dir),
                    "sync": sync_findings(scenes, sentences, texts),
                    "density": {"max": max(dens.values(), default=0), "dense_pages": [k for k, v in dens.items() if v > DENSE_CHARS],
                                "per_slide": dens},

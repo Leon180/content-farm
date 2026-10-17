@@ -152,6 +152,8 @@ def objective_checks(obj: dict, thumbs: dict | None = None) -> list[Check]:
         Check("visual", "轉場殘影段", len(v["held_blends"]), "0", not v["held_blends"]),
         Check("visual", "字幕字高（% 畫面高）", v["subtitle"]["height_pct"], "5–6", 5.0 <= v["subtitle"]["height_pct"] <= 6.0),
         Check("visual", "字幕底條", v["subtitle"]["box"], "有", bool(v["subtitle"]["box"]), False),
+        Check("visual", "字幕閃現（<0.4 秒或 >9 字/秒）", len((v.get("subtitle_timing") or {}).get("collapsed", [])), "0",
+              not (v.get("subtitle_timing") or {}).get("collapsed")),
         Check("visual", "畫面數字與旁白不同步", len(v["sync"]), "≤3", len(v["sync"]) <= 3, False),
         Check("visual", "文字過密頁（>60 字）", len(v["density"]["dense_pages"]), "≤2", len(v["density"]["dense_pages"]) <= 2, False),
         Check("visual", "每分鐘換場", v["cuts_per_minute"], "≥6", v["cuts_per_minute"] >= 6, False),

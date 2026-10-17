@@ -278,4 +278,6 @@ class WhisperAlignmentProvider:
                     scene_number=last.scene_number,
                 )
 
-        return tuple(segments)
+        from content_farm.subtitle.repair import repair_collapsed
+
+        return repair_collapsed(segments, scene_start=offset_seconds)
