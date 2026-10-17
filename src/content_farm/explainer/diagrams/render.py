@@ -230,6 +230,21 @@ def frames_for(name: str, params: dict[str, str], starts: list[float], seconds: 
     raise ValueError(f"unknown diagram {name!r}; known: {', '.join(DIAGRAMS)}")
 
 
+PUSH_IN = 0.10      # the camera moves in 10 % over the slot, centred on the diagram band
+
+
+def push_in(image: Image.Image, progress: float) -> Image.Image:
+    """Slow camera push-in (eased) so a diagram never reads as a still between its stages."""
+    zoom = 1 + PUSH_IN * (1 - (1 - min(max(progress, 0.0), 1.0)) ** 2)
+    if zoom <= 1.0005:
+        return image
+    w, h = W / zoom, H / zoom
+    cx = W / 2
+    cy = min(max((TOP + BOTTOM) / 2, h / 2), H - h / 2)     # keep the crop inside the frame
+    box = (cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2)
+    return image.resize((W, H), Image.BILINEAR, box=box)
+
+
 def render_clip(name: str, params: dict[str, str], starts: list[float], seconds: float, out: Path,
                 brand: str | None = None) -> Path:
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -237,9 +252,10 @@ def render_clip(name: str, params: dict[str, str], starts: list[float], seconds:
            "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-", "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
            "-pix_fmt", "yuv420p", str(out)]
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+    total = max(round(seconds * FPS), 1)
     try:
-        for image in frames_for(name, params, starts, seconds, palette_for(brand)):
-            proc.stdin.write(image.tobytes())
+        for k, image in enumerate(frames_for(name, params, starts, seconds, palette_for(brand))):
+            proc.stdin.write(push_in(image, k / total).tobytes())
     finally:
         proc.stdin.close()
         err = proc.stderr.read().decode(errors="replace")

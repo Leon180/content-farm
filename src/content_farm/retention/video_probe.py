@@ -89,6 +89,23 @@ def _runs(mask: np.ndarray, min_len: int) -> list[tuple[int, int]]:
     return runs
 
 
+ANCHOR_DIFF = 1.5       # mean |Δ| from the stretch's first frame that counts as "the picture changed"
+
+
+def _anchored_runs(frames: np.ndarray, min_len: int) -> list[tuple[int, int]]:
+    """[start, end) runs in which every frame stays within ANCHOR_DIFF of the run's first frame."""
+    runs, start = [], 0
+    anchor = frames[0].astype(np.int16)
+    for i in range(1, len(frames) + 1):
+        changed = i == len(frames) or np.abs(frames[i].astype(np.int16) - anchor).mean() >= ANCHOR_DIFF
+        if changed:
+            if i - start >= min_len:
+                runs.append((start, i))
+            if i < len(frames):
+                start, anchor = i, frames[i].astype(np.int16)
+    return runs
+
+
 def _span(a: int, b: int) -> Span:
     return Span(round(a / FPS, 2), round(b / FPS, 2))
 
@@ -126,7 +143,9 @@ def analyse_frames(frames: np.ndarray) -> VideoReport:
         if not collapsed or t - collapsed[-1] > 0.5:
             collapsed.append(t)
     still_runs = _runs(diffs < STILL_DIFF, min_len=2 * FPS)
-    stills = [_span(a, b + 1) for a, b in still_runs]
+    # a still = the picture stays close to where the stretch began; slow motion (a turning
+    # wafer, a push-in) accumulates and ends it, a static slide does not
+    stills = [_span(a, b) for a, b in _anchored_runs(frames, min_len=2 * FPS)]
     long_stills = [s for s in stills if s.seconds > STILL_MAX]
     stds = frames.reshape(len(frames), -1).std(axis=1)
     blanks = [_span(a, b) for a, b in _runs(stds < BLANK_STD, min_len=FPS)]   # ≥ 1 s

@@ -177,8 +177,10 @@
           else if (!bump.has(p.el)) bump.set(p.el, 0);
         });
         bump.forEach((b, el) => {
-          el.style.scale = String(1 + 0.05 * b);
-          el.style.filter = b > 0 ? `drop-shadow(0 0 ${Math.round(18 * b)}px var(--accent, #f5a524))` : '';
+          // strong enough to read as "something happened" on a phone (v3: 0.05 scale alone was invisible)
+          el.style.scale = String(1 + 0.08 * b);
+          el.style.filter = b > 0 ? `drop-shadow(0 0 ${Math.round(28 * b)}px var(--accent, #f5a524))` : '';
+          el.style.backgroundColor = b > 0 ? `rgba(245, 165, 36, ${(0.22 * b).toFixed(3)})` : '';
         });
       },
     };
