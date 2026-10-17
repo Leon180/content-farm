@@ -2,9 +2,15 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from content_farm.config import Settings
+from content_farm.voice.local_clone import CloneReference
+from content_farm.voice.local_worker import GateConfig
 from content_farm.voice.protocol import TTSProvider
 
+# Local voice-cloning providers: the voice is the reference clip, not an id.
+LOCAL_PROVIDERS = ("voxcpm2", "qwen3_tts")
 
 _DEFAULT_VOICE = {
     "fish_audio": lambda s: s.fish_audio_reference_id,
@@ -13,8 +19,18 @@ _DEFAULT_VOICE = {
 }
 
 
+def clone_reference(settings: Settings) -> CloneReference:
+    if not settings.tts_ref_audio:
+        raise ValueError(f"{settings.tts_provider} needs a reference clip: set voice.reference in the channel "
+                         "yaml (CF_TTS_REF_AUDIO / CF_TTS_REF_TEXT)")
+    return CloneReference(Path(settings.tts_ref_audio).expanduser(), settings.tts_ref_text)
+
+
 def effective_voice_id(settings: Settings) -> str:
-    """The voice the provider will actually use: the per-run override, else its default."""
+    """The voice the provider will actually use: the per-run override, else its default.
+    Local cloning providers are identified by a hash of their reference clip + transcript."""
+    if settings.tts_provider in LOCAL_PROVIDERS:
+        return f"ref:{clone_reference(settings).fingerprint()}"
     default = _DEFAULT_VOICE.get(settings.tts_provider)
     return settings.tts_voice_id or (default(settings) if default else "")
 
@@ -23,15 +39,43 @@ def effective_voice_id(settings: Settings) -> str:
 # ``model`` in voice_identity.json was made with this one.
 LEGACY_MODEL = {"fish_audio": "speech-1.5"}
 
+_MODEL = {
+    "fish_audio": lambda s: s.fish_audio_model,
+    "voxcpm2": lambda s: s.voxcpm2_model,
+    "qwen3_tts": lambda s: s.qwen3_tts_model,
+}
+
 
 def effective_tts_model(settings: Settings) -> str:
     """The model that is part of a voice's identity ("" = not tracked for this provider)."""
-    return settings.fish_audio_model if settings.tts_provider == "fish_audio" else ""
+    model = _MODEL.get(settings.tts_provider)
+    return model(settings) if model else ""
+
+
+def gate_config(settings: Settings) -> GateConfig:
+    return GateConfig(settings.local_tts_busy_pattern, settings.local_tts_min_free_pct,
+                      settings.local_tts_max_wait_s, settings.local_tts_lock_path)
+
+
+def _local_provider(settings: Settings) -> TTSProvider:
+    from content_farm.voice.qwen3_tts import Qwen3TTSProvider
+    from content_farm.voice.voxcpm2 import VoxCPM2Provider
+
+    if settings.tts_provider == "voxcpm2":
+        cls, hub = VoxCPM2Provider, settings.voxcpm2_hub_dir
+    else:
+        cls, hub = Qwen3TTSProvider, settings.qwen3_tts_hub_dir
+    return cls(python=settings.local_tts_python, hub_dir=hub, model=effective_tts_model(settings),
+               reference=clone_reference(settings), gate=gate_config(settings),
+               ffmpeg_path=settings.ffmpeg_path, seed=settings.tts_seed)
 
 
 def create_tts_provider(settings: Settings) -> TTSProvider:
     """Create the appropriate TTS provider based on settings."""
     provider = settings.tts_provider
+
+    if provider in LOCAL_PROVIDERS:
+        return _local_provider(settings)
 
     if provider == "elevenlabs":
         from content_farm.voice.elevenlabs import ElevenLabsProvider
@@ -68,5 +112,6 @@ def create_tts_provider(settings: Settings) -> TTSProvider:
         )
 
     raise ValueError(
-        f"Unknown TTS provider: {provider!r}. Use 'elevenlabs', 'fish_audio' or 'macos_say'."
+        f"Unknown TTS provider: {provider!r}. Use 'elevenlabs', 'fish_audio', 'voxcpm2', 'qwen3_tts' "
+        "or 'macos_say'."
     )

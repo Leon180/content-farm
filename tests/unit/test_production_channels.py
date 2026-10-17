@@ -50,6 +50,9 @@ def test_youtube_section_holds_env_names_only() -> None:
         for value in (channel.youtube.client_id_env, channel.youtube.client_secret_env,
                       channel.youtube.refresh_token_env, channel.youtube.channel_id_env,
                       channel.voice.voice_id_env):
+            if value is None:  # local cloning voices: the reference clip is the voice, no id
+                assert channel.voice.reference is not None
+                continue
             assert value.isupper() and value.startswith("CF_")
 
 

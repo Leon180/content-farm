@@ -9,9 +9,12 @@ mascot:
   name: 格仔（底片格身體、鉛筆呆毛）
   ref: cel-frame          # 新角色，rig 尚未製作；未完成前跳過 mascot 疊加
   rig_ready: false
-voice:
-  provider: fish_audio
-  voice_id_env: CF_CEL_VOICE_ID
+voice:                    # Leon 2026-10-17：本機 VoxCPM2（Apache-2.0）複製參考聲
+  provider: voxcpm2
+  reference:
+    audio: ~/.local/share/content-farm-voices/cel-take0.wav
+    text: 大家好，歡迎來到賽璐璐研究室。今天我們要用三張圖表，看懂一部動畫從企劃到播出的資金流向。第一，誰出錢；第二，誰承擔風險；第三，最後的收益又是怎麼分配的。把這三件事搞清楚，你就會明白為什麼有些作品叫好卻不叫座。
+    note: 本機試驗 2026-10 的 cel take0（trial-scripts/common.py REF_PICK）
 topic_categories: [製作委員會與錢, 動畫師勞動與薪資, 外包與海外產線, 串流與授權生意, 業界歷史事件]
 format:
   length: long

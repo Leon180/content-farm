@@ -10,7 +10,7 @@ mascot:
   name: 晶片貓（本尊）
   ref: chipcat          # explainer/mascot 的角色 id；造型由 mascot 模組負責
   rig_ready: true
-voice:
+voice:                    # Leon 2026-10-17：Fish 原創聲音（id 在 .env 的 CF_CHIPCAT_VOICE_ID），模型 s2.1-pro（CF_FISH_AUDIO_MODEL，預設亦同）
   provider: fish_audio
   voice_id_env: CF_CHIPCAT_VOICE_ID
 topic_categories: [半導體, 電子供應鏈, AI 硬體, 能源與電力, 科技公司財報]

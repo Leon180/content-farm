@@ -15,9 +15,13 @@ from pathlib import Path
 from content_farm.production import shorts_cut
 
 MACHINE_PROVIDER = "macos_say"
-PROVIDER_NAMES = {"macos_say": "macOS say", "fish_audio": "Fish Audio", "elevenlabs": "ElevenLabs"}
+PROVIDER_NAMES = {"macos_say": "macOS say", "fish_audio": "Fish Audio", "elevenlabs": "ElevenLabs",
+                  "voxcpm2": "VoxCPM2（本機合成語音）", "qwen3_tts": "Qwen3-TTS（本機合成語音）"}
 
-_TTS_LINE = re.compile(r"content_farm\.voice\.(?!generator\b)(\w+) INFO .*TTS", re.IGNORECASE)
+# Helper modules (worker, read-back check) log too but never synthesize.
+_TTS_LINE = re.compile(
+    r"content_farm\.voice\.(?!generator\b|local_worker\b|checked_synthesis\b|speech_check\b)(\w+) INFO .*TTS",
+    re.IGNORECASE)
 
 
 def voice_run_dir(run_dir: Path) -> Path:

@@ -298,6 +298,27 @@ def short_motion_findings(run_dir: Path) -> list[Finding]:
     return [Finding("short_motion", "ok", f"{len(report['beats'])} beats, longest still stage {worst:.1f}s")]
 
 
+def speech_check_findings(run_dir: Path) -> list[Finding]:
+    """Read-back check of the narration (audio/speech_check.json, written by the voice step):
+    scenes still misread after the re-generations are listed as a warning for the reviewer."""
+    path = run_dir / "audio" / "speech_check.json"
+    if not path.is_file():
+        return []
+    checks = json.loads(path.read_text(encoding="utf-8"))
+    current = {p.name for p in (run_dir / "audio").glob("scene_*.mp3")}
+    checks = {name: c for name, c in sorted(checks.items()) if name in current}
+    if not checks:
+        return []
+    worst = max(c["cer"] for c in checks.values())
+    regenerated = sum(c.get("regenerations", 0) for c in checks.values())
+    bad = [f"{name} CER {c['cer']:.2f}" + (f" 缺 {'、'.join(c['missing_terms'])}" if c["missing_terms"] else "")
+           for name, c in checks.items() if c["status"] != "ok"]
+    summary = f"{len(checks)} scenes, worst CER {worst:.3f}, {regenerated} re-generation(s)"
+    if bad:
+        return [Finding("speech_check", "warn", f"{len(bad)} scene(s) still misread: {'; '.join(bad)} ({summary})")]
+    return [Finding("speech_check", "ok", summary)]
+
+
 def qc_channel(run_dir: Path, channel: Channel) -> Channel:
     """A Short cut is checked as a Short (9:16, Shorts length) whatever channel publishes it;
     e.g. the 7,722 Short on the 16:9 chipcat channel."""
@@ -322,6 +343,7 @@ def run_qc(run_dir: Path, channel: Channel, deck: Deck | None) -> dict:
         findings += credits_findings(channel, credits)
     findings += subtitle_findings(run_dir, channel)
     findings += short_motion_findings(run_dir)
+    findings += speech_check_findings(run_dir)
     if deck is not None and channel.format.length == "long":
         from content_farm.production.thumbnail import thumbnail_findings
 

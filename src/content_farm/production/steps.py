@@ -18,7 +18,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from content_farm.production.channels import Channel, Gate, Pipeline
+from content_farm.production.channels import LOCAL_TTS_PROVIDERS, Channel, Gate, Pipeline
 from content_farm.production.shorts_cut import SOURCE_FILE as SHORT_SOURCE_FILE
 from content_farm.production.shorts_cut import is_short_cut
 from content_farm.production.voice_choice import VoiceChoice, choose_voice, env_file_defaults
@@ -69,6 +69,7 @@ class Step:
     hint: str = ""                              # what to do when an agent step has no output
     paid: Callable[[Context], bool] = lambda ctx: False
     heavy: bool = False                         # takes the machine-wide render lock
+    heavy_if: Callable[[Context], bool] = lambda ctx: False   # heavy only for some settings (local TTS)
     applies: Callable[[Channel], bool] = lambda channel: True
     # Settings that change the output without touching any input file (e.g. the TTS
     # voice); folded into the fingerprint and logged when the step runs.
@@ -85,6 +86,18 @@ def _run_dir(ctx: Context) -> str:
 
 def voice_choice(ctx: Context) -> VoiceChoice:
     return choose_voice(ctx.channel, ctx.options.env_file, mock=ctx.options.mock_voice)
+
+
+PAID_TTS = ("fish_audio", "elevenlabs")
+
+
+def _voice_paid(ctx: Context) -> bool:
+    return not ctx.options.mock_voice and ctx.channel.voice.provider in PAID_TTS
+
+
+def _voice_local(ctx: Context) -> bool:
+    """A local TTS model needs the machine to itself: run it under the render lock."""
+    return not ctx.options.mock_voice and ctx.channel.voice.provider in LOCAL_TTS_PROVIDERS
 
 
 def _voice_env(ctx: Context) -> dict[str, str]:
@@ -130,7 +143,7 @@ EXPLAINER_STEPS: tuple[Step, ...] = (
          inputs=("deck.json", "script.json"),
          command=lambda c: _py(c, "run_stage.py", "--stage", "voice", "--run-dir", _run_dir(c),
                                env=_voice_env(c)),
-         paid=lambda c: not c.options.mock_voice, identity=lambda c: voice_choice(c).describe()),
+         paid=_voice_paid, heavy_if=_voice_local, identity=lambda c: voice_choice(c).describe()),
     Step("illustrate", "cmd", "AI 插圖（本機模型，一次一張）", inputs=("deck.json",),
          command=lambda c: _py(c, "illustrate.py", "--run-dir", _run_dir(c), "--channel", c.channel.code,
                                "--env-file", str(c.options.env_file)),
@@ -160,7 +173,7 @@ EXPLAINER_STEPS: tuple[Step, ...] = (
          command=lambda c: _py(c, "make_thumbnail.py", "--run-dir", _run_dir(c), "--channel", c.channel.code)),
     Step("qc", "internal", "自動品質檢查", outputs=("qc/qc_report.json",),
          inputs=("assembly/*.mp4", "credits.json", "subtitles/subtitles.srt", "deck.json", "thumbnail.json",
-                 "thumbnails/thumbnail.png")),
+                 "thumbnails/thumbnail.png", "audio/speech_check.json")),
     Step("gate_final", "gate", "成片審看", gate=Gate.FINAL,
          artifacts=("assembly/final.mp4", "assembly/draft.mp4", "qc/qc_report.json")),
     Step("package", "internal", "上傳資料（標題、說明、章節、授權、AI 揭露、排程）",
@@ -177,11 +190,11 @@ SHORTS_SKIT_STEPS: tuple[Step, ...] = (
          inputs=("script.json",),
          command=lambda c: _py(c, "run_stage.py", "--stage", "voice", "--run-dir", _run_dir(c),
                                env=_voice_env(c) | {"CF_SUBTITLE_MAX_CHARS_PER_LINE_LANDSCAPE": "24"}),
-         paid=lambda c: not c.options.mock_voice, identity=lambda c: voice_choice(c).describe()),
+         paid=_voice_paid, heavy_if=_voice_local, identity=lambda c: voice_choice(c).describe()),
     Step("skit_render", "agent", "角色小劇場渲染", outputs=("assembly/final.mp4",),
          hint="直式角色小劇場渲染器尚未實作（roadmap R4）；先手動放 assembly/final.mp4"),
     Step("qc", "internal", "自動品質檢查", outputs=("qc/qc_report.json",),
-         inputs=("assembly/*.mp4", "subtitles/subtitles.srt")),
+         inputs=("assembly/*.mp4", "subtitles/subtitles.srt", "audio/speech_check.json")),
     Step("gate_final", "gate", "成片審看", gate=Gate.FINAL,
          artifacts=("assembly/final.mp4", "qc/qc_report.json")),
     Step("package", "internal", "上傳資料", outputs=("upload/youtube_meta.json",),
@@ -200,7 +213,7 @@ SHORTS_CUT_STEPS: tuple[Step, ...] = (
          inputs=(SHORT_SOURCE_FILE,),
          command=lambda c: _py(c, "short_from_long.py", "--run-dir", _run_dir(c)), heavy=True),
     Step("qc", "internal", "自動品質檢查", outputs=("qc/qc_report.json",),
-         inputs=("assembly/*.mp4", "subtitles/subtitles.srt")),
+         inputs=("assembly/*.mp4", "subtitles/subtitles.srt", "audio/speech_check.json")),
     Step("gate_final", "gate", "成片審看", gate=Gate.FINAL,
          artifacts=("assembly/final.mp4", "qc/qc_report.json")),
     Step("package", "internal", "上傳資料（#Shorts）", outputs=("upload/youtube_meta.json",),
@@ -219,12 +232,12 @@ SHORTS_SCRIPTED_STEPS: tuple[Step, ...] = (
          inputs=("script.json",),
          command=lambda c: _py(c, "run_stage.py", "--stage", "voice", "--run-dir", _run_dir(c),
                                env=_voice_env(c)),
-         paid=lambda c: not c.options.mock_voice, identity=lambda c: voice_choice(c).describe()),
+         paid=_voice_paid, heavy_if=_voice_local, identity=lambda c: voice_choice(c).describe()),
     Step("cut", "cmd", "直式 Short（每拍一頁動畫＋角色＋字幕）", outputs=("assembly/final.mp4",),
          inputs=(SHORT_SOURCE_FILE, "audio/scene_*.mp3"),
          command=lambda c: _py(c, "short_from_long.py", "--run-dir", _run_dir(c)), heavy=True),
     Step("qc", "internal", "自動品質檢查", outputs=("qc/qc_report.json",),
-         inputs=("assembly/*.mp4", "subtitles/subtitles.srt")),
+         inputs=("assembly/*.mp4", "subtitles/subtitles.srt", "audio/speech_check.json")),
     Step("gate_final", "gate", "成片審看", gate=Gate.FINAL,
          artifacts=("assembly/final.mp4", "qc/qc_report.json")),
     Step("package", "internal", "上傳資料（#Shorts）", outputs=("upload/youtube_meta.json",),

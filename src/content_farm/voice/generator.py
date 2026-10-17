@@ -10,7 +10,9 @@ from pathlib import Path
 
 from content_farm.config import Settings
 from content_farm.script_gen.schemas import Script
+from content_farm.voice.checked_synthesis import CheckedSynthesizer, record_check
 from content_farm.voice.factory import LEGACY_MODEL, effective_tts_model, effective_voice_id
+from content_farm.voice.pronunciation import load_table, merged_map
 from content_farm.voice.protocol import TTSProvider
 from content_farm.voice.schemas import AudioSegment, VoiceArtifact
 from content_farm.voice.text_normalize import normalize_for_tts
@@ -81,6 +83,12 @@ class VoiceGenerator:
         self._semaphore = asyncio.Semaphore(settings.max_concurrent_scenes)
         self._voice_id = effective_voice_id(settings)
         self._model = effective_tts_model(settings)
+        self._table = (load_table(Path(settings.pronunciation_file), provider=settings.tts_provider,
+                                  channel=settings.channel_code)
+                       if settings.pronunciation_file else None)
+        self._checker = (CheckedSynthesizer(tts, settings, self._table.key_terms if self._table else (),
+                                            mapping=self._table.mapping if self._table else None)
+                         if settings.speech_check else None)
 
     def _load_identities(self) -> dict[str, dict[str, str]]:
         path = self._output_dir / IDENTITY_FILE
@@ -101,7 +109,20 @@ class VoiceGenerator:
         path.write_text(json.dumps(updated, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
 
     async def generate(self, script: Script) -> VoiceArtifact:
-        """Generate audio for all scenes in the script."""
+        """Generate audio for all scenes in the script; local models are unloaded at the end."""
+        try:
+            return await self._generate(script)
+        finally:
+            await self._close()
+
+    async def _close(self) -> None:
+        if self._checker is not None:
+            await self._checker.aclose()
+        close = getattr(self._tts, "aclose", None)
+        if close is not None:
+            await close()
+
+    async def _generate(self, script: Script) -> VoiceArtifact:
         logger.info("TTS voice: provider=%s model=%s voice_id=%s (%s)", self._settings.tts_provider,
                     self._model or "-", self._voice_id or "(provider default)",
                     "CF_TTS_VOICE_ID" if self._settings.tts_voice_id else "provider default setting")
@@ -187,7 +208,7 @@ class VoiceGenerator:
         async with self._semaphore:
             output_path = self._output_dir / f"scene_{scene_number:03d}.mp3"
 
-            tts_text = normalize_for_tts(narration, pronunciation_map)
+            tts_text = normalize_for_tts(narration, merged_map(self._table, pronunciation_map))
             identity = _identity(self._settings.tts_provider, self._voice_id, tts_text, self._model)
             exists = output_path.exists() and output_path.stat().st_size > 0
 
@@ -206,13 +227,16 @@ class VoiceGenerator:
             if exists:
                 logger.info("Re-synthesizing %s: voice or text differs from the recorded audio",
                             output_path)
-            await self._tts.generate_speech_with_context(
-                text=tts_text,
-                output_path=output_path,
-                previous_text=previous_text,
-                next_text=next_text,
-                voice_id=self._settings.tts_voice_id or None,
-            )
+            voice_id = self._settings.tts_voice_id or None
+            if self._checker is None:
+                await self._tts.generate_speech_with_context(
+                    text=tts_text, output_path=output_path, previous_text=previous_text,
+                    next_text=next_text, voice_id=voice_id)
+            else:
+                check = await self._checker.synthesize(
+                    narration=narration, tts_text=tts_text, output_path=output_path,
+                    previous_text=previous_text, next_text=next_text, voice_id=voice_id)
+                record_check(self._output_dir, output_path.name, {**check.to_json(), "tts_text": tts_text})
             self._record_identity(output_path.name, identity)
 
             # Use ffprobe for accurate duration (C-2)

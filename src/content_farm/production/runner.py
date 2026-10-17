@@ -216,7 +216,7 @@ class Runner:
             self.log(f"{step.name}: {identity}")
             _event(self.run_dir, step=step.name, identity=identity)
         command = step.command(self.ctx)
-        if not step.heavy:
+        if not (step.heavy or step.heavy_if(self.ctx)):
             return self._execute(state, step, command, lambda: self._cmd_inputs(step))
         with render_lock(self.max_load, self.log):
             return self._execute(state, step, command, lambda: self._cmd_inputs(step))

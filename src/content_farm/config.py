@@ -40,6 +40,35 @@ class Settings(BaseSettings):
     macos_say_voice: str = "Flo (Chinese (Taiwan))"  # list installed voices: say -v '?'
     macos_say_rate: int | None = Field(default=None, gt=0)  # words per minute (say -r); None = voice default
 
+    # Local voice-cloning TTS ("voxcpm2" | "qwen3_tts", both Apache-2.0). They run in their own
+    # venv through scripts/local_tts_worker.py; the repo .venv never imports mlx. Models are
+    # read from the Hugging Face hub caches below, offline (nothing is downloaded).
+    local_tts_python: str = "~/.local/share/qwen3-tts/.venv/bin/python"
+    voxcpm2_hub_dir: str = "~/.local/share/voxcpm2/hf/hub"
+    voxcpm2_model: str = "mlx-community/VoxCPM2-8bit"
+    qwen3_tts_hub_dir: str = "~/.local/share/qwen3-tts/hf/hub"
+    qwen3_tts_model: str = "mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16"
+    # Reference clip + its transcript for cloning; the runner sets them from the channel yaml.
+    tts_ref_audio: str = ""
+    tts_ref_text: str = ""
+    tts_seed: int = 1
+    # Resource gate before a local model loads: wait while these run or free memory is low.
+    local_tts_busy_pattern: str = "mlx_video|mflux|ffmpeg"
+    local_tts_min_free_pct: int = Field(default=25, ge=0, le=100)
+    local_tts_max_wait_s: int = Field(default=1800, ge=0)
+    local_tts_lock_path: str = "~/.cache/content-farm/local_tts.lock"
+
+    # Read-back check: whisper transcribes each synthesized scene; above the threshold (or a
+    # key term missing) the scene is re-generated with another seed, up to the retry limit.
+    speech_check: bool = False
+    speech_check_max_cer: float = Field(default=0.12, ge=0, le=1)
+    speech_check_retries: int = Field(default=3, ge=0, le=10)
+    asr_hub_dir: str = "~/.local/share/qwen3-tts/hf/hub"
+    asr_model: str = "mlx-community/whisper-large-v3-turbo-asr-fp16"
+    # Shared pronunciation table (TTS text only; subtitles keep the script's wording).
+    pronunciation_file: str = ""
+    channel_code: str = ""
+
     # --- Visual ---
     stock_provider: str = "pexels"  # "pexels" | "pixabay" | "multi"
     pexels_api_key: SecretStr = SecretStr("")

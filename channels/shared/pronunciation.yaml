@@ -1,0 +1,44 @@
+# 念稿發音表 — 只改送進 TTS 的文字，字幕和畫面照講稿原文。
+#
+# 合併順序（後者覆蓋前者）：shared → providers.<provider> → channels.<code> → script.json 的 pronunciation_map
+# key 是講稿裡的寫法，value 是送進 TTS 的寫法。依序做字串取代，所以長詞放前面。
+# 每一條都要寫來源（哪次試聽／哪個 ASR 結果），不要憑感覺加：加錯會把念對的念錯。
+#
+# key_terms：自動念錯檢查（voice.speech_check）會確認這些詞在 whisper 轉回的文字裡聽得到；
+#   出現在該段講稿、但轉回文字裡找不到 display／spoken／heard_as 任何一個 → 該段重生。
+#   heard_as 是「念對了但 whisper 寫成別的字」的寫法（同音字），不是錯誤念法。
+
+shared: {}
+
+providers:
+  voxcpm2:
+    # 2026-10-17 本機試驗（VoxCPM2-8bit、妖怪參考聲，seed 1/2 皆同；ASR whisper-large-v3-turbo）
+    蘆葦: 盧偉      # 原文「掃過蘆葦」→ 轉回「走過療戶／寥戶」；改「盧偉」後轉回「蘆葦」
+    掃過: 嫂過      # 「掃過」→ 轉回「走過」；改「嫂過」後轉回「掃過」
+    霧: 務          # 「霧裡」→ 轉回「母裏／牡蠣」；改「務」後轉回「霧裏」
+    CoWoS: 扣窩斯   # 原樣念成「Cosal Girls／Coors」；試驗報告：CoWoS 全部念錯。「扣窩斯」轉回「扣窩絲／扣沃斯」（同音）
+  qwen3_tts:
+    # 2026-10-17 本機試驗（Qwen3-TTS Base、下班了參考聲）
+    員工: 原工      # 原文「員工」→ 轉回「雲共／雲供」；改「原工」後兩個 seed 都轉回「員工」
+    蘆葦: 盧偉      # 「蘆葦」→ 轉回「君空／雲餐」
+    CoWoS: 扣窩斯   # 「COWOS」seed 1 轉回「Coke OS」；「扣窩斯」轉回「扣沃斯／扣國斯」
+  fish_audio: {}    # 晶片貓 Fish：先不改，看 speech_check 結果再加
+
+channels: {}
+
+key_terms:
+  - display: CoWoS
+    heard_as: [cowos, 扣窩斯, 扣窩絲, 扣沃斯, 扣握斯, coworse]
+  - display: TSMC
+    heard_as: [tsmc]
+  - display: HBM
+    heard_as: [hbm]
+  - display: 台積電
+    heard_as: [臺積電, 台積電]
+  - display: 輝達
+    heard_as: [輝達, nvidia]
+  - display: 中介層
+  - display: 九尾狐
+  - display: 員工
+  - display: 蘆葦
+  - display: 製作委員會

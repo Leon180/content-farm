@@ -55,17 +55,45 @@ class Mascot(_Strict):
     rig_ready: bool = Field(default=False, description="False = skip the mascot overlay step")
 
 
+LOCAL_TTS_PROVIDERS = ("voxcpm2", "qwen3_tts")
+TTS_PROVIDERS = ("fish_audio", "elevenlabs", "macos_say", *LOCAL_TTS_PROVIDERS)
+
+
+class VoiceReference(_Strict):
+    """The clip a local cloning model imitates, and its exact transcript."""
+    audio: str = Field(min_length=1, description="path to the reference WAV; ~ is expanded")
+    text: str = Field(min_length=1, description="what is said in the clip, word for word")
+    note: str = ""   # where the take came from (trial, take id), for people
+
+    def audio_path(self) -> Path:
+        return Path(self.audio).expanduser()
+
+
 class Voice(_Strict):
     provider: str = "fish_audio"
-    voice_id_env: str = Field(description="env var holding the TTS voice/model id")
+    # env var holding the voice id (Fish / ElevenLabs); local cloning providers use `reference`
+    voice_id_env: str | None = Field(default=None, description="env var holding the TTS voice id")
     # TTS model for this channel (Fish: sent as the `model` header). None = CF_FISH_AUDIO_MODEL,
     # else the provider default. Changing voice id or model re-voices the whole video.
-    model: str | None = Field(default=None, min_length=1, max_length=40)
+    model: str | None = Field(default=None, min_length=1, max_length=80)
+    reference: VoiceReference | None = None
+    # Shared pronunciation table, relative to the repo root (TTS text only, not subtitles).
+    pronunciation: str = "channels/shared/pronunciation.yaml"
 
     @field_validator("voice_id_env")
     @classmethod
-    def _env_name(cls, value: str) -> str:
-        return _check_env_name(value)
+    def _env_name(cls, value: str | None) -> str | None:
+        return None if value is None else _check_env_name(value)
+
+    @model_validator(mode="after")
+    def _provider_needs(self) -> Voice:
+        if self.provider not in TTS_PROVIDERS:
+            raise ValueError(f"unknown voice provider {self.provider!r}; choose from {', '.join(TTS_PROVIDERS)}")
+        if self.provider in LOCAL_TTS_PROVIDERS and self.reference is None:
+            raise ValueError(f"voice provider {self.provider} clones a reference clip: set voice.reference")
+        if self.provider not in LOCAL_TTS_PROVIDERS and self.voice_id_env is None:
+            raise ValueError(f"voice provider {self.provider} needs voice.voice_id_env")
+        return self
 
 
 class Format(_Strict):

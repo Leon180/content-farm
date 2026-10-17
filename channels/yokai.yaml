@@ -9,9 +9,12 @@ mascot:
   name: 說書貓（晶片貓換裝：斗篷＋提燈）
   ref: chipcat-storyteller
   rig_ready: false        # 換裝造型未做；做好前跳過 mascot 疊加
-voice:
-  provider: fish_audio
-  voice_id_env: CF_YOKAI_VOICE_ID
+voice:                    # Leon 2026-10-17：本機 VoxCPM2（Apache-2.0）複製參考聲
+  provider: voxcpm2
+  reference:
+    audio: ~/.local/share/content-farm-voices/yokai-take1.wav
+    text: 很久很久以前，在一座沒有名字的山裡，住著一位老獵人。每到黃昏，他都會聽見林子深處，傳來像是有人在哼歌的聲音。他從來不敢回頭看。因為村裡的老人說過，回頭的人，就再也走不出那座山了。
+    note: 本機試驗 2026-10 的 yokai take1（trial-scripts/common.py REF_PICK）
 topic_categories: [山海經異獸, 日本妖怪, 台灣魔神仔與民間傳說, 台灣信仰的來歷, 世界比較神話]
 format:
   length: long
