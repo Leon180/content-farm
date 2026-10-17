@@ -121,6 +121,9 @@ def build_description(channel: Channel, script: Script, credits: dict | None,
     credit_text = (credits or {}).get("description_text", "").strip()
     if credit_text:
         parts += [credit_text, ""]
+    audio_text = (credits or {}).get("audio_description_text", "").strip()
+    if audio_text:
+        parts += [audio_text, ""]
     if template:
         parts.append(template.footer)
     line = ai_disclosure_line(content or SyntheticContent(voice=True, images=True))
@@ -147,6 +150,10 @@ def build_meta(
     script = Script.model_validate_json((run_dir / "script.json").read_text(encoding="utf-8"))
     credits_path = run_dir / "credits.json"
     credits = json.loads(credits_path.read_text(encoding="utf-8")) if credits_path.is_file() else None
+    audio_credits = run_dir / "audio" / "mix" / "audio_credits.json"
+    if audio_credits.is_file():   # BGM / stinger attribution from the mix step (CC BY etc.)
+        audio = json.loads(audio_credits.read_text(encoding="utf-8"))
+        credits = {**(credits or {}), "audio_description_text": audio.get("description_text", "")}
     video = final_video(run_dir)
     if video is None:
         raise FileNotFoundError(f"{run_dir}/assembly has no final.mp4 or draft.mp4")

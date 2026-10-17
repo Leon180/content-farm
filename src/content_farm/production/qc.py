@@ -33,8 +33,9 @@ class Finding:
 
 
 def final_video(run_dir: Path) -> Path | None:
-    """The mascot-composited final if it exists, else the assembly draft."""
-    for name in ("final.mp4", "draft.mp4"):
+    """What gets uploaded: the mixed release (BGM/SFX/master), else the mascot-composited
+    final, else the assembly draft."""
+    for name in ("release.mp4", "final.mp4", "draft.mp4"):
         path = run_dir / "assembly" / name
         if path.is_file():
             return path
@@ -319,6 +320,46 @@ def speech_check_findings(run_dir: Path) -> list[Finding]:
     return [Finding("speech_check", "ok", summary)]
 
 
+def retention_findings(data: dict, channel: Channel) -> list[Finding]:
+    """Long videos: dead zones block (Leon 2026-10-17 「新片要 0 死區」); the rest are warnings."""
+    from content_farm.retention.beats import FIRST_HOOK_MAX, MAX_GAP
+
+    content, visual, audio = data["content"], data["visual"], data["audio"]
+    zones = data["dead_zones"]
+    findings = [Finding("dead_zones", "error" if zones else "ok",
+                        f"{len(zones)} dead zone(s) > 10 s: " + ", ".join(f"{z['start']:.0f}-{z['end']:.0f}s" for z in zones[:6])
+                        if zones else "no 10 s stretch without a cut, sound cue or narration hook")]
+    first = content.get("first_hook")
+    findings.append(Finding("beat_gap", "ok" if content["max_gap"] <= MAX_GAP and first is not None
+                            and first <= FIRST_HOOK_MAX else "warn",
+                            f"longest gap between hooks {content['max_gap']}s; first hook at {first}s; "
+                            f"{len(content['problems'])} beat problem(s)"))
+    findings.append(Finding("still_frames", "ok" if visual["longest_still"] <= visual["still_max"] else "warn",
+                            f"longest still {visual['longest_still']}s ({len(visual['long_stills'])} over "
+                            f"{visual['still_max']:.0f}s); blank {len(visual['blanks'])}, stuck blend "
+                            f"{len(visual['held_blends'])}"))
+    if audio.get("integrated") is not None and channel.audio.enabled:
+        target, peak = channel.audio.master_lufs, channel.audio.true_peak_db
+        ok = abs(audio["integrated"] - target) <= 1.0 and audio["true_peak"] <= peak + 0.5 and not audio["clipped_samples"]
+        findings.append(Finding("loudness", "ok" if ok else "warn",
+                                f"I {audio['integrated']} LUFS (target {target}), TP {audio['true_peak']} dBTP "
+                                f"(≤ {peak}), clipped samples {audio['clipped_samples']}"))
+    return findings
+
+
+def retention_qc(run_dir: Path, channel: Channel) -> list[Finding]:
+    from content_farm.retention.report import build_report, write_report
+
+    if channel.format.length != "long" or not (run_dir / "script.json").is_file():
+        return []
+    try:
+        data = build_report(run_dir, vertical=channel.format.aspect == "9:16")
+    except (OSError, RuntimeError, ValueError, KeyError) as exc:
+        return [Finding("retention", "error", f"retention report failed: {exc}")]
+    write_report(run_dir, data)
+    return retention_findings(data, channel)
+
+
 def qc_channel(run_dir: Path, channel: Channel) -> Channel:
     """A Short cut is checked as a Short (9:16, Shorts length) whatever channel publishes it;
     e.g. the 7,722 Short on the 16:9 chipcat channel."""
@@ -361,6 +402,7 @@ def run_qc(run_dir: Path, channel: Channel, deck: Deck | None) -> dict:
             findings += black_findings(black_segments(video))
         except (subprocess.SubprocessError, RuntimeError, KeyError, ValueError) as exc:
             findings.append(Finding("probe", "error", f"could not inspect {video.name}: {exc}"))
+        findings += retention_qc(run_dir, channel)
     report = {
         "video": video.relative_to(run_dir).as_posix() if video else None,
         "errors": sum(f.level == "error" for f in findings),

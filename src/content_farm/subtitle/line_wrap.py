@@ -111,9 +111,19 @@ def _find_break_point(text: str, max_chars: int) -> int:
         if _WEAK_BREAK.match(text[pos]) and safe(pos + 1):
             return pos + 1
 
-    # 4. Hard break at the max window, moved back to before any atom it would cut;
+    # 4. Word boundary guess (no segmenter installed): after a particle (的了著過) or before a
+    #    function word (是在和…), so a line does not end mid-word (CoWoS v3 eval: 按詞斷行).
+    for pos in range(hard_window_end - 1, window_start - 1, -1):
+        if (text[pos] in _AFTER_PARTICLE or text[pos + 1:pos + 2] in _BEFORE_WORD) and safe(pos + 1):
+            return pos + 1
+
+    # 5. Hard break at the max window, moved back to before any atom it would cut;
     #    an atom longer than the whole line stays whole (the line runs long).
     return _hard_break(text, hard_window_end, safe)
+
+
+_AFTER_PARTICLE = frozenset("的了著過")
+_BEFORE_WORD = frozenset("是在和與跟就也都把被從到而但卻還要會能讓")
 
 
 def _hard_break(text: str, limit: int, safe: Callable[[int], bool]) -> int:

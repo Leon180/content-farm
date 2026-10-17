@@ -126,7 +126,7 @@ def _media_section(run_dir: Path) -> str:
 
 
 def _final_section(run_dir: Path) -> str:
-    video = next((f"assembly/{n}" for n in ("final.mp4", "draft.mp4") if (run_dir / "assembly" / n).is_file()), None)
+    video = next((f"assembly/{n}" for n in ("release.mp4", "final.mp4", "draft.mp4") if (run_dir / "assembly" / n).is_file()), None)
     player = (f'<h2>成片 {escape(video)}</h2><video controls preload="metadata" src="../{escape(video)}"></video>'
               if video else "<p class='error'>沒有成片</p>")
     qc = _read_json(run_dir / "qc" / "qc_report.json") or {}

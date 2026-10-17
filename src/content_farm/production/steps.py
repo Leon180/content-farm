@@ -24,7 +24,7 @@ from content_farm.production.shorts_cut import is_short_cut
 from content_farm.production.voice_choice import VoiceChoice, choose_voice, env_file_defaults
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-EXPLAINER_SUBTITLE_MAX = "20"  # keeps landscape subtitles clear of the mascot (REPORT-explainer-v2 §3)
+EXPLAINER_SUBTITLE_MAX = "16"  # 60 px subtitles (v3): ≤ 20 chars ≈ 1220 px clears the mascot column
 
 
 @dataclass(frozen=True)
@@ -175,6 +175,11 @@ EXPLAINER_STEPS: tuple[Step, ...] = (
                                "--workers", str(c.options.mascot_workers), *_host_args(c)),
          # no identity: one would change the fingerprint of every finished chipcat run and re-render it
          heavy=True, applies=lambda channel: channel.mascot.rig_ready),
+    Step("mix", "cmd", "配樂、轉場音、音效、母帶（-14 LUFS）", outputs=("assembly/release.mp4",),
+         inputs=("assembly/final.mp4", "assembly/draft.mp4", "deck.json", "script.json"),
+         command=lambda c: _py(c, "audio_mix.py", "--run-dir", _run_dir(c), "--channel", c.channel.code),
+         identity=lambda c: c.channel.audio.model_dump_json(),
+         heavy=True, applies=lambda channel: channel.audio.enabled),
     Step("thumbnail", "cmd", "頻道縮圖（角色／畫作＋大字）", outputs=("thumbnails/thumbnail.png",),
          inputs=("thumbnail.json", "assets/artwork/*", "assets/ai_images/*"),
          command=lambda c: _py(c, "make_thumbnail.py", "--run-dir", _run_dir(c), "--channel", c.channel.code)),
@@ -182,7 +187,7 @@ EXPLAINER_STEPS: tuple[Step, ...] = (
          inputs=("assembly/*.mp4", "credits.json", "subtitles/subtitles.srt", "deck.json", "thumbnail.json",
                  "thumbnails/thumbnail.png", "audio/speech_check.json")),
     Step("gate_final", "gate", "成片審看", gate=Gate.FINAL,
-         artifacts=("assembly/final.mp4", "assembly/draft.mp4", "qc/qc_report.json")),
+         artifacts=("assembly/release.mp4", "assembly/final.mp4", "assembly/draft.mp4", "qc/qc_report.json")),
     Step("package", "internal", "上傳資料（標題、說明、章節、授權、AI 揭露、排程）",
          outputs=("upload/youtube_meta.json",),
          inputs=("script.json", "credits.json", "assembly/*.mp4", "production.schedule.json")),

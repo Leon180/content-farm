@@ -194,6 +194,32 @@ class AiIllustration(_Strict):
         return value
 
 
+class AudioTrack(_Strict):
+    """One licensed (or self-generated) audio file; every field ends up in the credits."""
+
+    path: str = Field(min_length=1, description="WAV/MP3 path; ~ is expanded")
+    title: str = Field(min_length=1)
+    source: str = Field(min_length=1, description="where it came from: model + repo, or a URL")
+    license: str = Field(min_length=1, description="licence of the file / of the model output")
+    license_url: str = ""
+    attribution: str = ""          # text that must appear in the description (CC BY); empty = none
+    chapters: tuple[int, ...] = () # BGM only: 1-based chapters this bed plays under; empty = any
+
+
+class AudioMix(_Strict):
+    """BGM bed + chapter stinger + hook SFX + loudness targets (research 2026-10 §5.3–5.4, 🟡)."""
+
+    enabled: bool = False
+    bgm: tuple[AudioTrack, ...] = ()
+    stinger: AudioTrack | None = None   # None = the built-in synthesized stinger
+    sfx: bool = True                    # synthesized SFX on some narration hooks
+    voice_lufs: float = Field(default=-16.0, ge=-30, le=-10)
+    bgm_under_voice_db: float = Field(default=15.0, ge=8, le=30)   # bed level under speech
+    duck_db: float = Field(default=10.0, ge=0, le=24)              # extra drop while someone speaks
+    master_lufs: float = Field(default=-14.0, ge=-24, le=-9)
+    true_peak_db: float = Field(default=-1.5, ge=-6, le=0)
+
+
 class YouTube(_Strict):
     # One OAuth client (shared, CF_YOUTUBE_CLIENT_ID/SECRET as today); one refresh token per
     # channel, minted by scripts/get_youtube_token.py while signed in as that channel.
@@ -232,6 +258,7 @@ class Channel(_Strict):
     gates: tuple[Gate, ...]
     youtube: YouTube
     identity: Identity | None = None   # opening / sign-off / description per channel
+    audio: AudioMix = AudioMix()       # BGM / SFX / mastering (long videos)
     notes: tuple[str, ...] = ()
 
     @field_validator("brand")

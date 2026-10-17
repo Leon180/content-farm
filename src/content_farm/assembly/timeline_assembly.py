@@ -73,6 +73,7 @@ class OrientationPreset:
     subtitle_font_size: int
     subtitle_alignment: int  # ASS alignment code: 2=bottom-center, 5=middle-center
     subtitle_margin_v: int   # vertical margin from bottom (for alignment 2)
+    subtitle_box: bool = False  # semi-transparent bar behind the text (ASS BorderStyle 3)
 
 
 PORTRAIT_PRESET = OrientationPreset(
@@ -88,10 +89,22 @@ LANDSCAPE_PRESET = OrientationPreset(
     width=1920,
     height=1080,
     fps=30,
-    subtitle_font_size=52,
+    subtitle_font_size=60,   # 5.6 % of 1080 (CoWoS v3 eval: 字高 5–6 %; was 52 ≈ 4.8 %)
     subtitle_alignment=2,  # bottom-center for long-form
     subtitle_margin_v=80,
+    subtitle_box=True,
 )
+
+
+def _subtitle_colours_and_border(preset: OrientationPreset) -> str:
+    """ASS colour + border fields (PrimaryColour … Shadow) for the Default style.
+
+    Box: BorderStyle 3 draws an opaque box in OutlineColour; alpha 0x60 ≈ 62 % opaque black,
+    padded by Outline px. Otherwise a 3 px black outline with a soft shadow (the old look).
+    """
+    if preset.subtitle_box:
+        return "&H00FFFFFF,&H00FFFFFF,&H60000000,&H00000000,1,0,0,0,100,100,0,0,3,10,0"
+    return "&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,1,0,0,0,100,100,0,0,1,3,1"
 
 
 def preset_for(orientation: Orientation) -> OrientationPreset:
@@ -365,8 +378,7 @@ async def _burn_subtitles(
             " ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow,"
             " Alignment, MarginL, MarginR, MarginV, Encoding\n"
             f"Style: Default,{font_name},{preset.subtitle_font_size},"
-            "&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,"
-            f"1,0,0,0,100,100,0,0,1,3,1,{preset.subtitle_alignment},40,40,"
+            f"{_subtitle_colours_and_border(preset)},{preset.subtitle_alignment},40,40,"
             f"{preset.subtitle_margin_v},1\n"
         )
 
