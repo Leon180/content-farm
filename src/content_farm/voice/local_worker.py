@@ -75,11 +75,14 @@ async def wait_for_resources(
     probe_busy: Callable[[str], list[int]] = busy_pids,
     probe_free: Callable[[], int | None] = free_memory_pct,
     sleep: Callable[[float], object] = asyncio.sleep,
+    busy_only: bool = False,
 ) -> int:
-    """Wait until nothing heavy runs and free memory >= the floor. Returns seconds waited."""
+    """Wait until nothing heavy runs and free memory >= the floor. Returns seconds waited.
+    ``busy_only``: between scenes, with our own model already loaded, free memory is ours to
+    use — only wait for other heavy processes."""
     waited = 0
     while True:
-        busy, free = probe_busy(config.busy_pattern), probe_free()
+        busy, free = probe_busy(config.busy_pattern), None if busy_only else probe_free()
         if not busy and (free is None or free >= config.min_free_pct):
             if waited:
                 logger.info("Resource gate open after %ds (free=%s%%)", waited, free)
@@ -103,6 +106,7 @@ class LocalWorker:
         self._proc: asyncio.subprocess.Process | None = None
         self._lock_handle: IO[str] | None = None
         self._io_lock = asyncio.Lock()
+        self._load_lock = asyncio.Lock()
         self._loaded: set[str] = set()
 
     async def _start(self) -> None:
@@ -140,6 +144,10 @@ class LocalWorker:
         async with self._io_lock:
             if self._proc is None:
                 await self._start()
+            elif payload.get("op") == "synth":
+                # Another session may have started a video/image model or a render after we
+                # loaded: pause (model stays loaded) rather than share the GPU with it.
+                await wait_for_resources(self._gate, busy_only=True)
             assert self._proc is not None and self._proc.stdin is not None and self._proc.stdout is not None
             self._proc.stdin.write((json.dumps(payload, ensure_ascii=False) + "\n").encode("utf-8"))
             await self._proc.stdin.drain()
@@ -153,12 +161,13 @@ class LocalWorker:
 
     async def ensure_loaded(self, op: str, **fields: str) -> None:
         key = f"{op}:{fields.get('model_dir')}"
-        if key in self._loaded:
-            return
-        reply = await self.request({"op": op, **fields})
-        logger.info("Local worker %s %s loaded in %ss", op, Path(fields.get("model_dir", "")).parent.parent.name,
-                    reply.get("load_s"))
-        self._loaded.add(key)
+        async with self._load_lock:  # concurrent scenes must not each send a load
+            if key in self._loaded:
+                return
+            reply = await self.request({"op": op, **fields})
+            logger.info("Local worker %s %s loaded in %ss", op,
+                        Path(fields.get("model_dir", "")).parent.parent.name, reply.get("load_s"))
+            self._loaded.add(key)
 
     async def close(self) -> None:
         """Quit the worker (frees the model's memory) and release the machine-wide lock."""

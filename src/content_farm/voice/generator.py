@@ -80,7 +80,10 @@ class VoiceGenerator:
         self._tts = tts
         self._settings = settings
         self._output_dir = output_dir or Path("output/audio")
-        self._semaphore = asyncio.Semaphore(settings.max_concurrent_scenes)
+        # A local model is one process doing one thing at a time: voice scenes in order, each
+        # synthesized, read back and re-generated before the next (cleaner logs, same speed).
+        local = getattr(tts, "worker", None) is not None
+        self._semaphore = asyncio.Semaphore(1 if local else settings.max_concurrent_scenes)
         self._voice_id = effective_voice_id(settings)
         self._model = effective_tts_model(settings)
         self._table = (load_table(Path(settings.pronunciation_file), provider=settings.tts_provider,

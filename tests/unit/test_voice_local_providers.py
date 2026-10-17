@@ -132,6 +132,16 @@ async def test_resource_gate_waits_for_busy_processes_and_low_memory() -> None:
 
 
 @pytest.mark.asyncio
+async def test_between_scenes_only_other_processes_count() -> None:
+    def no_free_probe() -> int:
+        raise AssertionError("memory is not probed between scenes")
+
+    waited = await wait_for_resources(GateConfig(), probe_busy=lambda _: [], probe_free=no_free_probe,
+                                      busy_only=True)
+    assert waited == 0
+
+
+@pytest.mark.asyncio
 async def test_resource_gate_gives_up_after_max_wait() -> None:
     async def sleep(seconds: float) -> None:
         return None
