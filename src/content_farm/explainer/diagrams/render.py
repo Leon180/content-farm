@@ -180,7 +180,8 @@ def bars_frames(values: list[float], labels: list[str], starts: list[float], sec
         yield image
 
 
-def split_frames(values: list[float], labels: list[str], starts: list[float], seconds: float, pal: Palette):
+def split_frames(values: list[float], labels: list[str], starts: list[float], seconds: float, pal: Palette,
+                 show_pct: bool = True):
     """A wide bar of the whole (e.g. a year of capacity) split into shares as each is named."""
     total = sum(values) or 1.0
     left, right, y0, y1 = 220, 1700, 400, 570
@@ -198,7 +199,8 @@ def split_frames(values: list[float], labels: list[str], starts: list[float], se
             width = (right - left) * share * grow
             if width > 0:
                 draw.rectangle((x, y0, x + width, y1), fill=colours[k % len(colours)])
-                draw.text((x + width / 2, (y0 + y1) / 2), f"{share:.0%}", fill="#ffffff", font=mid, anchor="mm")
+                if show_pct:   # off when the source only says 「過半」 (v3 eval: 51 % looked falsely precise)
+                    draw.text((x + width / 2, (y0 + y1) / 2), f"{share:.0%}", fill="#ffffff", font=mid, anchor="mm")
                 draw.text((x + width / 2, y1 + 30), label, fill=pal.fg, font=small, anchor="mt")
             x += (right - left) * share
         pulse = (math.sin(t * 2.2) + 1) / 2                    # the first share breathes
@@ -231,7 +233,7 @@ def frames_for(name: str, params: dict[str, str], starts: list[float], seconds: 
     if name == "growth_bars":
         return bars_frames(values, labels, starts, seconds, pal, unit=params.get("unit", ""))
     if name == "share_split":
-        return split_frames(values, labels, starts, seconds, pal)
+        return split_frames(values, labels, starts, seconds, pal, show_pct=params.get("pct", "on") != "off")
     raise ValueError(f"unknown diagram {name!r}; known: {', '.join(DIAGRAMS)}")
 
 

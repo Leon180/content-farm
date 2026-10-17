@@ -123,5 +123,13 @@ def plan(slide: Slide, sentences: list[tuple[float, str]], seconds: float) -> St
     """``sentences``: (start seconds from the slide's start, text) of this slide's narration."""
     unit_texts = units(slide)
     reveals = match_times(unit_texts, sentences, seconds) if unit_texts else []
+    if slide.layout == Layout.COMPARE and not (slide.media and slide.media.diagram) and reveals:
+        # a comparison is read side by side: both boxes appear with the page (v3 eval: a lone
+        # 「VS」 / one empty box read as a broken layout); each side pulses when it is talked about
+        spoken = [(t, i) for i, t in enumerate(reveals)]
+        reveals = [min(reveals[0], FIRST_LATEST)] * len(reveals)
+        pulses, longest = add_pulses(reveals, seconds, unit_count=len(unit_texts))
+        merged = sorted({*pulses, *((round(t, 2), i) for t, i in spoken if t > 1.0)})
+        return StagePlan(tuple(reveals), tuple(merged), longest)
     pulses, longest = add_pulses(reveals, seconds, unit_count=len(unit_texts))
     return StagePlan(tuple(reveals), tuple(pulses), longest)

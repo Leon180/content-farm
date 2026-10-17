@@ -25,7 +25,7 @@ _UNITS = (
 _TOKEN = r"[A-Za-z0-9]+(?:[.\-–~/+:,'’][A-Za-z0-9]+)*%?"
 _PREFIX = r"(?:(?:NT|US)?\$\s?|第\s?)?"
 _UNIT = "|".join(re.escape(u) for u in _UNITS)
-_ATOM = re.compile(rf"{_PREFIX}{_TOKEN}(?:(?<=[0-9])\s?(?:{_UNIT}))?")
+_ATOM = re.compile(rf"{_PREFIX}{_TOKEN}(?:(?<=[0-9])\s?(?:{_UNIT})|(?<=[A-Za-z])\s?版)?")   # 「L 版」 too (v3)
 
 
 def protected_spans(text: str) -> tuple[tuple[int, int], ...]:
