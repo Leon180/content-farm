@@ -5,3 +5,7 @@
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channel-hosts/docs/design/channel-hosts/frames/chipcat.jpg","min_bytes":50000,"why":"晶片貓同規格對照實景"}
 {"kind":"blob_equal","a":"HEAD:REPORT-channel-hosts.md","b":"design/channel-hosts:REPORT-channel-hosts.md","why":"報告已 commit 在 design/channel-hosts"}
 {"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channel-hosts/docs/design/channel-hosts/frames.json","pattern":"\"(meta|subtitles)\": [1-9]","why":"沒有任何實景圖的角色像素進入 meta 列或字幕帶"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channel-hosts/docs/design/channel-hosts/round2/principles.md","min_bytes":4000,"why":"第二輪：從參考 IP 抽出的設計原則"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channel-hosts/docs/design/channel-hosts/round2/index.html","min_bytes":20000,"why":"第二輪 75 張候選牆（手機可看）"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channel-hosts/docs/design/channel-hosts/round2/img/C25.jpg","min_bytes":10000,"why":"75 張都有輸出（最後一張存在）"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-channel-hosts/docs/design/channel-hosts/round2/prompts.json","pattern":"[Cc]hiikawa|[Ss]umikko|[Pp]ok[eé]mon|[Pp]ikachu|[Dd]oraemon|[Tt]otoro|[Gg]hibli|[Ss]anrio|[Kk]irby|[Ss]tyle of|吉伊卡哇|角落生物|寶可夢|哆啦|豬小妹|龍貓","why":"實際用的 75 條提示詞不含 IP／角色名或 style of"}
