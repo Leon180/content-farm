@@ -1,0 +1,129 @@
+"""Round 2: generate the 75 candidates with local FLUX.2 [klein] 4B, one image at a time.
+
+    PYTHONPATH=src python docs/design/channel-hosts/tools/r2_gen.py <raw_dir> [--only Y01,O03]
+
+Before every image: no ffmpeg / remotion / mflux / mlx_video process (wan.busy_processes, which
+matches the executable, not text in other processes' arguments) and `memory_pressure -Q` free
+>= 25 %. Existing images are skipped, so an interrupted run resumes. Each run appends to
+<raw_dir>/runs.jsonl. Writes round2/prompts.json (the exact prompts) before generating.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+from r2_prompts import all_prompts, check_prompts  # noqa: E402
+
+from content_farm.explainer.wan import busy_processes  # noqa: E402
+
+BIN = Path(os.environ.get("CF_MFLUX_BIN_DIR", "/Users/lileon/.claude/jobs/d3bbd556/tmp/flux-venv/bin"))
+HF_HOME = os.environ.get("CF_MFLUX_HF_HOME", "/Users/lileon/.claude/jobs/f9ab0177/tmp/hf")
+MODEL = ["--model", "mflux-community/flux2-klein-4b-mflux-q4", "--base-model", "flux2-klein-4b", "--steps", "4",
+         "--width", "768", "--height", "768"]
+MIN_FREE_PERCENT = 25
+WAIT_SECONDS = 20
+# how long to wait for the machine before giving up (a long local TTS run can hold it for an hour+)
+MAX_WAIT_SECONDS = int(os.environ.get("CF_GATE_MAX_WAIT", "1800"))
+
+
+def free_percent() -> int:
+    out = subprocess.run(["memory_pressure", "-Q"], capture_output=True, text=True).stdout
+    match = re.search(r"free percentage:\s*(\d+)%", out)
+    if not match:
+        raise RuntimeError(f"cannot read memory_pressure -Q: {out!r}")
+    return int(match.group(1))
+
+
+TTS_MARKERS = ("qwen3-tts", "voxcpm2")   # orchestrator 2026-10-17: local TTS peaks at 20+ GB
+
+
+def tts_processes(ps_output: str | None = None) -> list[str]:
+    """Local TTS model processes, matched on the executable and script path only (like
+    wan.busy_processes), so a process that merely mentions the names in its arguments is not one."""
+    if ps_output is None:
+        ps_output = subprocess.run(["ps", "-axo", "pid=,command="], capture_output=True, text=True).stdout
+    hits = []
+    for line in ps_output.splitlines():
+        parts = line.split()
+        if len(parts) >= 2 and int(parts[0]) != os.getpid() and any(
+                marker in token for token in parts[1:3] for marker in TTS_MARKERS):
+            hits.append(" ".join(parts[1:4]))
+    return hits
+
+
+# Orchestrator 2026-10-17: these small jobs may run alongside the local TTS, but only one image at a
+# time, with free memory >= 35 % and memory pressure below warn. ffmpeg / mflux / mlx_video still block.
+ALLOW_TTS = os.environ.get("CF_GATE_ALLOW_TTS") == "1"
+ALLOW_TTS_MIN_FREE = 35
+
+
+def pressure_level() -> int:
+    """kern.memorystatus_vm_pressure_level: 1 normal, 2 warn, 4 critical."""
+    out = subprocess.run(["sysctl", "-n", "kern.memorystatus_vm_pressure_level"], capture_output=True, text=True)
+    value = out.stdout.strip()
+    if not value.isdigit():
+        raise RuntimeError(f"cannot read memory pressure: {out.stderr.strip() or value!r}")
+    return int(value)
+
+
+def wait_until_idle() -> float:
+    waited = 0.0
+    while True:
+        busy = busy_processes({os.getpid()}) + ([] if ALLOW_TTS else tts_processes())
+        free = free_percent()
+        floor = ALLOW_TTS_MIN_FREE if ALLOW_TTS else MIN_FREE_PERCENT
+        if ALLOW_TTS and pressure_level() >= 2:
+            busy = [*busy, "memory pressure warn"]
+        if not busy and free >= floor:
+            return waited
+        if waited >= MAX_WAIT_SECONDS:
+            raise TimeoutError(f"still busy after {waited:.0f}s: {busy} free={free}%")
+        print(f"waiting: busy={busy[:2]} free={free}%", flush=True)
+        time.sleep(WAIT_SECONDS)
+        waited += WAIT_SECONDS
+
+
+def generate(row: dict, raw: Path, log: Path) -> None:
+    out = raw / f"{row['id']}.png"
+    if out.is_file():
+        return
+    waited = wait_until_idle()
+    started = time.monotonic()
+    proc = subprocess.run([str(BIN / "mflux-generate-flux2"), *MODEL, "--prompt", row["prompt"],
+                           "--seed", str(row["seed"]), "--output", str(out)],
+                          capture_output=True, text=True, env={**os.environ, "HF_HOME": HF_HOME, "HF_HUB_OFFLINE": "1"})
+    peak = re.findall(r"Peak MLX memory: ([\d.]+) GB", proc.stdout + proc.stderr)
+    record = {"id": row["id"], "seed": row["seed"], "rc": proc.returncode, "seconds": round(time.monotonic() - started, 1),
+              "waited": waited, "peak_gb": float(peak[-1]) if peak else None}
+    with log.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(record) + "\n")
+    print(json.dumps(record), flush=True)
+    if proc.returncode != 0 or not out.is_file():
+        raise RuntimeError(f"{row['id']} failed: {(proc.stderr or proc.stdout)[-600:]}")
+    time.sleep(2)
+
+
+def main(argv: list[str]) -> int:
+    raw = Path(argv[0])
+    only = set(argv[argv.index("--only") + 1].split(",")) if "--only" in argv else None
+    rows = all_prompts()
+    check_prompts(rows)
+    (HERE.parent / "round2").mkdir(exist_ok=True)
+    (HERE.parent / "round2" / "prompts.json").write_text(json.dumps(rows, ensure_ascii=False, indent=1), encoding="utf-8")
+    raw.mkdir(parents=True, exist_ok=True)
+    for row in rows:
+        if only is None or row["id"] in only:
+            generate(row, raw, raw / "runs.jsonl")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

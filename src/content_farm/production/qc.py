@@ -348,6 +348,9 @@ def run_qc(run_dir: Path, channel: Channel, deck: Deck | None) -> dict:
         from content_farm.production.thumbnail import thumbnail_findings
 
         findings += thumbnail_findings(run_dir, channel)
+    from content_farm.production.thumbnail import variant_findings
+
+    findings += variant_findings(run_dir, channel)   # A/B variants or Shorts covers, when the run has them
     video = final_video(run_dir)
     if video is None:
         findings.append(Finding("final_video", "error", "assembly/final.mp4 and draft.mp4 missing"))

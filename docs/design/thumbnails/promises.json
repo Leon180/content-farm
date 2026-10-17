@@ -1,0 +1,242 @@
+{
+ "cowos": {
+  "channel": "晶片貓",
+  "vertical": false,
+  "qc": [
+   "[ok] 3 variants keep their promise"
+  ],
+  "variants": {
+   "a": {
+    "layout": "character",
+    "text": "卡住 AI 的不是晶片",
+    "sub": "是時間差",
+    "file": "cowos/variant_a.jpg",
+    "kb": 119,
+    "promises": [
+     {
+      "phrase": "卡住出貨的",
+      "spoken_at_s": 0.0
+     },
+     {
+      "phrase": "是時間差",
+      "spoken_at_s": 19.9
+     }
+    ],
+    "visual": "mascot",
+    "credit": ""
+   },
+   "b": {
+    "layout": "keyart",
+    "text": "AI 晶片卡在哪？",
+    "sub": "",
+    "file": "cowos/variant_b.jpg",
+    "kb": 95,
+    "promises": [
+     {
+      "phrase": "真正卡住出貨的",
+      "spoken_at_s": 0.0
+     }
+    ],
+    "visual": "image",
+    "credit": "AI 示意圖（FLUX.2 klein）"
+   },
+   "c": {
+    "layout": "compare",
+    "text": "產能夠嗎？",
+    "sub": "新產能等 18 個月",
+    "file": "cowos/variant_c.jpg",
+    "kb": 81,
+    "promises": [
+     {
+      "phrase": "80%",
+      "spoken_at_s": 10.4
+     },
+     {
+      "phrase": "18 個月",
+      "spoken_at_s": 10.4
+     }
+    ],
+    "visual": "mascot",
+    "credit": ""
+   }
+  }
+ },
+ "short7722": {
+  "channel": "晶片貓",
+  "vertical": true,
+  "qc": [
+   "[ok] 3 variants keep their promise"
+  ],
+  "variants": {
+   "a": {
+    "layout": "character",
+    "text": "7,722平方毫米",
+    "sub": "",
+    "file": "short7722/variant_a.jpg",
+    "kb": 96,
+    "promises": [
+     {
+      "phrase": "7,722 平方毫米",
+      "spoken_at_s": 0.0
+     }
+    ],
+    "visual": "mascot",
+    "credit": ""
+   },
+   "b": {
+    "layout": "keyart",
+    "text": "8.8 公分的中介層",
+    "sub": "",
+    "file": "short7722/variant_b.jpg",
+    "kb": 201,
+    "promises": [
+     {
+      "phrase": "8.8 公分",
+      "spoken_at_s": 12.1
+     }
+    ],
+    "visual": "image",
+    "credit": "AI 示意圖"
+   },
+   "c": {
+    "layout": "compare",
+    "text": "拼到幾倍？",
+    "sub": "",
+    "file": "short7722/variant_c.jpg",
+    "kb": 78,
+    "promises": [
+     {
+      "phrase": "9 倍",
+      "spoken_at_s": 4.6
+     }
+    ],
+    "visual": "mascot",
+    "credit": ""
+   }
+  }
+ },
+ "kyubi": {
+  "channel": "妖怪溯源所",
+  "vertical": false,
+  "qc": [
+   "[ok] 3 variants keep their promise"
+  ],
+  "variants": {
+   "a": {
+    "layout": "character",
+    "text": "九尾狐會吃人？",
+    "sub": "最早的原典",
+    "file": "kyubi/variant_a.jpg",
+    "kb": 104,
+    "promises": [
+     {
+      "phrase": "會吃人",
+      "spoken_at_s": 17.7
+     },
+     {
+      "phrase": "最早寫到牠的書",
+      "spoken_at_s": 0.0
+     }
+    ],
+    "visual": "mascot",
+    "credit": ""
+   },
+   "b": {
+    "layout": "keyart",
+    "text": "牠跟美女沒關係？",
+    "sub": "",
+    "file": "kyubi/variant_b.jpg",
+    "kb": 196,
+    "promises": [
+     {
+      "phrase": "跟美女一點關係都沒有",
+      "spoken_at_s": 0.0
+     }
+    ],
+    "visual": "image",
+    "credit": "葛飾北齋〈九尾狐〉大都會博物館 CC0"
+   },
+   "c": {
+    "layout": "compare",
+    "text": "原本會吃人",
+    "sub": "",
+    "file": "kyubi/variant_c.jpg",
+    "kb": 61,
+    "promises": [
+     {
+      "phrase": "九條尾巴",
+      "spoken_at_s": 53.9
+     },
+     {
+      "phrase": "會吃人",
+      "spoken_at_s": 17.7
+     }
+    ],
+    "visual": "mascot",
+    "credit": ""
+   }
+  }
+ },
+ "cel": {
+  "channel": "賽璐璐研究室",
+  "vertical": false,
+  "qc": [
+   "[ok] 3 variants keep their promise"
+  ],
+  "variants": {
+   "a": {
+    "layout": "character",
+    "text": "史上最好賺卻在虧？",
+    "sub": "",
+    "file": "cel/variant_a.jpg",
+    "kb": 99,
+    "promises": [
+     {
+      "phrase": "史上最好賺的一年",
+      "spoken_at_s": 24.5
+     },
+     {
+      "phrase": "虧損",
+      "spoken_at_s": 24.5
+     }
+    ],
+    "visual": "mascot",
+    "credit": ""
+   },
+   "b": {
+    "layout": "keyart",
+    "text": "錢去哪了？",
+    "sub": "帳對不起來",
+    "file": "cel/variant_b.jpg",
+    "kb": 108,
+    "promises": [
+     {
+      "phrase": "帳就對不起來",
+      "spoken_at_s": 0.0
+     }
+    ],
+    "visual": "image",
+    "credit": "AI 示意圖（FLUX.2 klein）"
+   },
+   "c": {
+    "layout": "compare",
+    "text": "市場新高公司虧損？",
+    "sub": "",
+    "file": "cel/variant_c.jpg",
+    "kb": 64,
+    "promises": [
+     {
+      "phrase": "34.5% 虧損",
+      "spoken_at_s": 24.5
+     },
+     {
+      "phrase": "60.0%",
+      "spoken_at_s": 24.5
+     }
+    ],
+    "visual": "mascot",
+    "credit": ""
+   }
+  }
+ }
+}

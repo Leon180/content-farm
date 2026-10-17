@@ -1,0 +1,145 @@
+{
+ "id": "cooler-goldfish-3d",
+ "name": "飲水機金魚（3D）",
+ "size": [
+  768,
+  768
+ ],
+ "layers": [
+  "blink",
+  "mouth_half",
+  "mouth_open",
+  "surprised",
+  "smug",
+  "speechless"
+ ],
+ "mouth_layers": [
+  "mouth_half",
+  "mouth_open"
+ ],
+ "regions": {
+  "blink": [
+   315,
+   376,
+   464,
+   452
+  ],
+  "mouth_half": [
+   348,
+   406,
+   433,
+   502
+  ],
+  "mouth_open": [
+   348,
+   406,
+   433,
+   502
+  ],
+  "surprised": [
+   325,
+   355,
+   456,
+   486
+  ],
+  "smug": [
+   319,
+   355,
+   459,
+   471
+  ],
+  "speechless": [
+   319,
+   315,
+   584,
+   477
+  ]
+ },
+ "expressions": [
+  "neutral",
+  "surprised",
+  "smug",
+  "speechless"
+ ],
+ "pose_map": {},
+ "silhouette_iou": {
+  "blink": 0.9984,
+  "mouth_half": 0.9984,
+  "mouth_open": 0.9984,
+  "surprised": 0.9985,
+  "smug": 0.9984,
+  "speechless": 0.9954
+ },
+ "changed_px": {
+  "blink": 1286,
+  "mouth_half": 1823,
+  "mouth_open": 2946,
+  "surprised": 3060,
+  "smug": 3308,
+  "speechless": 2494
+ },
+ "source": {
+  "model": "FLUX.2 [klein] 4B (q4), mflux, klein multi-reference edit",
+  "license": "Apache-2.0",
+  "license_url": "https://huggingface.co/black-forest-labs/FLUX.2-klein-4B/blob/main/LICENSE.md",
+  "note": "AI-generated; Leon 2026-10-17 approved AI images as hosts. Purely AI output may not be protected by copyright.",
+  "round2_id": "O25",
+  "style": "3D re-render (klein edit)"
+ },
+ "mouth_mode": "none",
+ "mouth_erased": [
+  {
+   "center": [
+    397,
+    433
+   ],
+   "cover": [
+    60,
+    38
+   ]
+  },
+  {
+   "center": [
+    393,
+    458
+   ],
+   "cover": [
+    50,
+    52
+   ]
+  },
+  {
+   "center": [
+    381,
+    447
+   ],
+   "cover": [
+    128,
+    42
+   ]
+  },
+  {
+   "center": [
+    390,
+    460
+   ],
+   "cover": [
+    58,
+    32
+   ]
+  }
+ ],
+ "speech_fx": {
+  "kind": "bubbles",
+  "emit": [
+   395,
+   445
+  ],
+  "surface_y": 288,
+  "x_range": [
+   255,
+   515
+  ]
+ },
+ "motion": "2.5d"
+}

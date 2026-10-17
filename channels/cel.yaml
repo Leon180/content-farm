@@ -6,10 +6,11 @@ pipeline: explainer
 brand: cel
 deck_category: knowledge
 mascot:
-  name: 格仔（底片格身體、鉛筆呆毛）
-  ref: cel-frame          # 新角色，rig 尚未製作；未完成前跳過 mascot 疊加
-  rig_ready: false
-voice:                    # Leon 2026-10-17：本機 VoxCPM2（Apache-2.0）複製參考聲
+  name: 顏料瓶老師傅       # Leon 2026-10-17 選定第二輪 C09 3D＋2.5D 版（AI 生成角色，PNGtuber）
+  ref: pngtuber/paint-bottle-3d   # manifest motion: 2.5d
+  host: pngtuber
+  rig_ready: true
+voice:                  # Leon 2026-10-17：本機 VoxCPM2（Apache-2.0）複製參考聲
   provider: voxcpm2
   tempo: 1.12             # Leon 2026-10-17 944769e1fc01（音高不變）
   reference:

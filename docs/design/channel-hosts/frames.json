@@ -1,0 +1,152 @@
+{
+  "y1": {
+    "brand": "yokai",
+    "kind": "vector",
+    "source": "y1",
+    "host_bbox": [
+      1604,
+      731,
+      1903,
+      1066
+    ],
+    "forbidden_pixels": {
+      "meta": 0,
+      "subtitles": 0
+    }
+  },
+  "y2": {
+    "brand": "yokai",
+    "kind": "vector",
+    "source": "y2",
+    "host_bbox": [
+      1614,
+      720,
+      1904,
+      1066
+    ],
+    "forbidden_pixels": {
+      "meta": 0,
+      "subtitles": 0
+    }
+  },
+  "y3": {
+    "brand": "yokai",
+    "kind": "ai",
+    "source": "yokai_base_s23.png",
+    "host_bbox": [
+      1607,
+      730,
+      1908,
+      1072
+    ],
+    "forbidden_pixels": {
+      "meta": 0,
+      "subtitles": 0
+    }
+  },
+  "o1": {
+    "brand": "offwork",
+    "kind": "vector",
+    "source": "o1",
+    "host_bbox": [
+      1475,
+      720,
+      1908,
+      1072
+    ],
+    "forbidden_pixels": {
+      "meta": 0,
+      "subtitles": 0
+    }
+  },
+  "o2": {
+    "brand": "offwork",
+    "kind": "vector",
+    "source": "o2",
+    "host_bbox": [
+      1600,
+      793,
+      1908,
+      1072
+    ],
+    "forbidden_pixels": {
+      "meta": 0,
+      "subtitles": 0
+    }
+  },
+  "o3": {
+    "brand": "offwork",
+    "kind": "ai",
+    "source": "offwork_base_s11.png",
+    "host_bbox": [
+      1600,
+      747,
+      1908,
+      1072
+    ],
+    "forbidden_pixels": {
+      "meta": 0,
+      "subtitles": 0
+    }
+  },
+  "c1": {
+    "brand": "cel",
+    "kind": "vector",
+    "source": "c1",
+    "host_bbox": [
+      1606,
+      721,
+      1902,
+      1065
+    ],
+    "forbidden_pixels": {
+      "meta": 0,
+      "subtitles": 0
+    }
+  },
+  "c2": {
+    "brand": "cel",
+    "kind": "vector",
+    "source": "c2",
+    "host_bbox": [
+      1683,
+      720,
+      1903,
+      1065
+    ],
+    "forbidden_pixels": {
+      "meta": 0,
+      "subtitles": 0
+    }
+  },
+  "c3": {
+    "brand": "cel",
+    "kind": "ai",
+    "source": "cel_base_s23.png",
+    "host_bbox": [
+      1634,
+      731,
+      1908,
+      1072
+    ],
+    "forbidden_pixels": {
+      "meta": 0,
+      "subtitles": 0
+    }
+  },
+  "chipcat": {
+    "brand": "chipcat",
+    "kind": "rig",
+    "source": "idle",
+    "host_bbox": [
+      1647,
+      706,
+      1899,
+      1062
+    ],
+    "forbidden_pixels": {
+      "meta": 0,
+      "subtitles": 0
+    }
+  }
+}

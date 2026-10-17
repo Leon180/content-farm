@@ -12,6 +12,8 @@ html, body { width: 1280px; height: 720px; overflow: hidden; position: relative;
 {{ brand_style | safe }}
 .big { position: absolute; font-weight: 900; line-height: 1.08; letter-spacing: -.01em; }
 .hl { color: var(--accent); }
+/* chipcat's brand .hl is a box in the accent colour: its text must stay white (else it vanishes) */
+.chipcat .hl, .chipcat .stroke .hl { color: #fff; }
 .visual { position: absolute; }
 /* chipcat: grid paper, wafer behind a big cat, navy text */
 .chipcat-bg { position: absolute; inset: 0; background: var(--bg);

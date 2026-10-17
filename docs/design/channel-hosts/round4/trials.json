@@ -1,0 +1,93 @@
+{
+ "yokai": {
+  "run_dir": "/Users/lileon/.claude/jobs/a7f5fad7/tmp/r3-trials/yokai",
+  "flat": {
+   "pack": "pngtuber/frog-scribe",
+   "frames": 600,
+   "faces": 9,
+   "render_seconds": 3.3,
+   "forbidden": {
+    "meta": 0,
+    "subtitles": 0,
+    "frames_checked": 600
+   }
+  },
+  "3d": {
+   "pack": "pngtuber/frog-scribe-3d",
+   "frames": 600,
+   "faces": 9,
+   "render_seconds": 10.0,
+   "forbidden": {
+    "meta": 0,
+    "subtitles": 0,
+    "frames_checked": 600
+   }
+  },
+  "compare": "/Users/lileon/project/content-farm/.claude/worktrees/cf-channel-hosts/output/channel-hosts-r4/compare_yokai_20s.mp4",
+  "stills": [
+   "trial_compare_yokai_03.0s.jpg",
+   "trial_compare_yokai_09.0s.jpg",
+   "trial_compare_yokai_15.0s.jpg"
+  ]
+ },
+ "cel": {
+  "run_dir": "/Users/lileon/.claude/jobs/a7f5fad7/tmp/r3-trials/cel",
+  "flat": {
+   "pack": "pngtuber/paint-bottle",
+   "frames": 600,
+   "faces": 5,
+   "render_seconds": 2.9,
+   "forbidden": {
+    "meta": 0,
+    "subtitles": 0,
+    "frames_checked": 600
+   }
+  },
+  "3d": {
+   "pack": "pngtuber/paint-bottle-3d",
+   "frames": 600,
+   "faces": 5,
+   "render_seconds": 6.4,
+   "forbidden": {
+    "meta": 0,
+    "subtitles": 0,
+    "frames_checked": 600
+   }
+  },
+  "compare": "/Users/lileon/project/content-farm/.claude/worktrees/cf-channel-hosts/output/channel-hosts-r4/compare_cel_20s.mp4",
+  "stills": [
+   "trial_compare_cel_03.0s.jpg",
+   "trial_compare_cel_09.0s.jpg",
+   "trial_compare_cel_15.0s.jpg"
+  ]
+ },
+ "offwork": {
+  "run_dir": "/Users/lileon/.claude/jobs/a7f5fad7/tmp/r3-trials/short_pipeline",
+  "flat": {
+   "pack": "pngtuber/cooler-goldfish",
+   "frames": 600,
+   "faces": 5,
+   "render_seconds": 5.5,
+   "forbidden": {
+    "subtitles": 0,
+    "frames_checked": 600
+   }
+  },
+  "3d": {
+   "pack": "pngtuber/cooler-goldfish-3d",
+   "frames": 600,
+   "faces": 5,
+   "render_seconds": 9.5,
+   "forbidden": {
+    "subtitles": 0,
+    "frames_checked": 600
+   }
+  },
+  "compare": "/Users/lileon/project/content-farm/.claude/worktrees/cf-channel-hosts/output/channel-hosts-r4/compare_offwork_20s.mp4",
+  "stills": [
+   "trial_compare_offwork_03.0s.jpg",
+   "trial_compare_offwork_09.0s.jpg",
+   "trial_compare_offwork_15.0s.jpg"
+  ]
+ }
+}

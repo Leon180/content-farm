@@ -90,7 +90,9 @@ def test_missing_opening_outro_take_and_mascot_are_errors() -> None:
 
 def test_mascot_rule_skips_channels_without_a_rig() -> None:
     deck = load_deck(EXAMPLE / "deck.json")
-    assert channel_rules.mascot_findings(load_channel("cel"), deck) == []
+    cel = load_channel("cel")   # since 2026-10-17 every channel has a host; switch it off explicitly
+    no_host = cel.model_copy(update={"mascot": cel.mascot.model_copy(update={"rig_ready": False})})
+    assert channel_rules.mascot_findings(no_host, deck) == []
 
 
 def test_policy_step_runs_the_channel_rules() -> None:
@@ -171,8 +173,11 @@ def test_mascot_channel_thumbnail_needs_the_cat(tmp_path: Path) -> None:
     run = _thumb_run(tmp_path, spec, [("卡住了。", 10.0)])
     chipcat = [f.message for f in thumbnail.thumbnail_findings(run, load_channel("chipcat"))]
     assert any("must be on the thumbnail" in m for m in chipcat)
-    cel = thumbnail.thumbnail_findings(run, load_channel("cel"))  # control: no rig → brand art is fine
-    assert [f.level for f in cel] == ["ok"]
+    # cel now has a PNGtuber host, so it must show it too
+    assert any("must be on the thumbnail" in f.message for f in thumbnail.thumbnail_findings(run, load_channel("cel")))
+    cel = load_channel("cel")   # control: a channel with no host → brand art is fine
+    no_host = cel.model_copy(update={"mascot": cel.mascot.model_copy(update={"rig_ready": False})})
+    assert [f.level for f in thumbnail.thumbnail_findings(run, no_host)] == ["ok"]
 
 
 def test_missing_spec_is_an_error(tmp_path: Path) -> None:

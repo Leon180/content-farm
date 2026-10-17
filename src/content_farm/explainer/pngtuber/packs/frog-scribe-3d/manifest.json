@@ -1,0 +1,90 @@
+{
+ "id": "frog-scribe-3d",
+ "name": "青蛙書記（3D）",
+ "size": [
+  768,
+  768
+ ],
+ "layers": [
+  "blink",
+  "mouth_half",
+  "mouth_open",
+  "surprised",
+  "smug",
+  "speechless"
+ ],
+ "mouth_layers": [
+  "mouth_half",
+  "mouth_open"
+ ],
+ "regions": {
+  "blink": [
+   251,
+   175,
+   536,
+   261
+  ],
+  "mouth_half": [
+   248,
+   273,
+   530,
+   393
+  ],
+  "mouth_open": [
+   248,
+   273,
+   530,
+   393
+  ],
+  "surprised": [
+   248,
+   178,
+   536,
+   359
+  ],
+  "smug": [
+   245,
+   177,
+   536,
+   353
+  ],
+  "speechless": [
+   244,
+   174,
+   583,
+   354
+  ]
+ },
+ "expressions": [
+  "neutral",
+  "surprised",
+  "smug",
+  "speechless"
+ ],
+ "pose_map": {},
+ "silhouette_iou": {
+  "blink": 0.996,
+  "mouth_half": 0.9951,
+  "mouth_open": 0.994,
+  "surprised": 0.994,
+  "smug": 0.9956,
+  "speechless": 0.9834
+ },
+ "changed_px": {
+  "blink": 5187,
+  "mouth_half": 4234,
+  "mouth_open": 12064,
+  "surprised": 13412,
+  "smug": 13328,
+  "speechless": 13613
+ },
+ "source": {
+  "model": "FLUX.2 [klein] 4B (q4), mflux, klein multi-reference edit",
+  "license": "Apache-2.0",
+  "license_url": "https://huggingface.co/black-forest-labs/FLUX.2-klein-4B/blob/main/LICENSE.md",
+  "note": "AI-generated; Leon 2026-10-17 approved AI images as hosts. Purely AI output may not be protected by copyright.",
+  "round2_id": "Y14",
+  "style": "3D re-render (klein edit)"
+ },
+ "motion": "2.5d"
+}

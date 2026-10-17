@@ -45,9 +45,10 @@ ORIGIN = (FRAME_W - CANVAS_W, FRAME_H - CANVAS_H)
 
 def overlay_command(
     draft: Path, alpha_video: Path, out: Path, *, crf: int = 18, duration: float | None = None,
+    origin: tuple[int, int] = ORIGIN,
 ) -> list[str]:
     """ffmpeg args: draft + alpha mascot → out. Audio is copied untouched."""
-    x, y = ORIGIN
+    x, y = origin
     trim = ["-t", f"{duration:.3f}"] if duration else []
     graph = f"[0:v][1:v]overlay={x}:{y}:eof_action=pass:format=auto,format=yuv420p[v]"
     return [
@@ -60,8 +61,9 @@ def overlay_command(
 
 def overlay(
     draft: Path, alpha_video: Path, out: Path, *, crf: int = 18, duration: float | None = None,
+    origin: tuple[int, int] = ORIGIN,
 ) -> Path:
-    result = subprocess.run(overlay_command(draft, alpha_video, out, crf=crf, duration=duration),
+    result = subprocess.run(overlay_command(draft, alpha_video, out, crf=crf, duration=duration, origin=origin),
                             capture_output=True, text=True, timeout=3600)
     if result.returncode != 0:
         raise RuntimeError(f"overlay failed: {result.stderr[-400:]}")

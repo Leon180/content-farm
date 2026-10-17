@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+from PIL import Image
 
 from content_farm.explainer import ffmpeg_ops
 from content_farm.explainer.brands import brand_css_path
@@ -143,7 +144,13 @@ def render_scripted(run_dir: Path, channel: Channel) -> ScriptedResult:
         raise FileNotFoundError(f"voice audio missing: {', '.join(missing)}")
     work = run_dir / "short"
     work.mkdir(parents=True, exist_ok=True)
-    cats = {pose: pose_png(pose, work / f"cat_{pose}.png") for pose in {b.pose for b in spec.beats}}
+    pngtuber = channel.mascot.rig_ready and channel.mascot.host == "pngtuber"
+    if pngtuber:   # the host is overlaid afterwards; the beats keep the cat's slot empty
+        blank = work / "host_slot.png"
+        Image.new("RGBA", (4, 4), (0, 0, 0, 0)).save(blank)
+        cats = {pose: blank for pose in {b.pose for b in spec.beats}}
+    else:
+        cats = {pose: pose_png(pose, work / f"cat_{pose}.png") for pose in {b.pose for b in spec.beats}}
 
     cues = cut.relayout(cut.parse_cues((run_dir / "subtitles" / "subtitles.srt").read_text(encoding="utf-8")))
     (run_dir / "subtitles" / "subtitles.srt").write_text(cut.to_srt(cues), encoding="utf-8")
@@ -175,4 +182,20 @@ def render_scripted(run_dir: Path, channel: Channel) -> ScriptedResult:
     longest = max(item["longest_hold"] for item in report)
     (run_dir / BEAT_REPORT).write_text(json.dumps({"max_step_seconds": MAX_STEP_SECONDS, "beats": report},
                                                   ensure_ascii=False, indent=2), encoding="utf-8")
+    if pngtuber:
+        _overlay_host(run_dir, out, channel.mascot.ref, spec.beats, seconds)
     return ScriptedResult(video=out, seconds=total, beats=n, longest_hold=longest)
+
+
+def _overlay_host(run_dir: Path, rendered: Path, pack_ref: str, beats: tuple[ShortBeat, ...],
+                  seconds: list[float]) -> None:
+    """The beats without a cat become draft.mp4; the PNGtuber goes bottom-left with each beat's pose."""
+    from content_farm.explainer.mascot.cues import SceneCue
+    from content_farm.explainer.pngtuber.run import run_host_overlay
+
+    draft = rendered.with_name("draft.mp4")
+    rendered.replace(draft)
+    starts = [sum(seconds[:i]) for i in range(len(seconds) + 1)]
+    cues = tuple(SceneCue(index=i, start=starts[i - 1], end=starts[i], pose=beat.pose)
+                 for i, beat in enumerate(beats, start=1))
+    run_host_overlay(run_dir, pack_ref, cues=cues, out=rendered)

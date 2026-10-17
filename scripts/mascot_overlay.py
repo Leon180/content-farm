@@ -4,6 +4,7 @@ Usage:
     python scripts/mascot_overlay.py --run-dir output/<run>
     python scripts/mascot_overlay.py --run-dir output/<run> --seconds 20   # quick preview
     python scripts/mascot_overlay.py --run-dir output/<run> --stills 12.5,40,61.2
+    python scripts/mascot_overlay.py --run-dir output/<run> --pngtuber pngtuber/frog-scribe  # still-image host
 
 Reads deck.json (mascot.pose / say per slide) or script.json, slide timing from
 visual/ timeline names (fallback: audio/scene_NNN.mp3 lengths), and voice audio
@@ -43,7 +44,23 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--dump-params", action="store_true", help="also write assembly/mascot_params.json")
     parser.add_argument("--allow-subtitle-overlap", action="store_true",
                         help="overlay even if a subtitle line reaches the cat's column")
+    parser.add_argument("--pngtuber", metavar="REF",
+                        help="draw a PNGtuber pack (e.g. pngtuber/frog-scribe) instead of the vector rig")
     return parser.parse_args(argv)
+
+
+def _pngtuber(args: argparse.Namespace) -> int:
+    from content_farm.explainer.pngtuber.run import run_host_overlay
+
+    result = run_host_overlay(args.run_dir, args.pngtuber, seed=args.seed, seconds=args.seconds, out=args.out)
+    t = result.timings
+    print(f"Host:   {args.pngtuber} ({result.placement}), {result.render.frames} frames, "
+          f"{result.render.faces} composited faces")
+    print(f"Timing: params {t['params']:.1f}s, render {t['render']:.1f}s, "
+          f"overlay {t['overlay']:.1f}s, total {t['total']:.1f}s")
+    print(f"Alpha:  {result.alpha_video}")
+    print(f"Final:  {result.final}")
+    return 0
 
 
 def _subtitle_clearance(run_dir: Path) -> list[str]:
@@ -79,6 +96,8 @@ def main(argv: list[str] | None = None) -> int:
             print("Re-run voice with CF_SUBTITLE_MAX_CHARS_PER_LINE_LANDSCAPE=20 (or shorten those "
                   "sentences), or pass --allow-subtitle-overlap.", file=sys.stderr)
             return 1
+        if args.pngtuber:
+            return _pngtuber(args)
         result = run_overlay(args.run_dir, workers=args.workers, seed=args.seed,
                              seconds=args.seconds, out=args.out)
         if args.dump_params:
@@ -86,7 +105,7 @@ def main(argv: list[str] | None = None) -> int:
             frames = frames_for_run(args.run_dir, info, args.seed)
             dump = [{"params": dict(f.params), "say": f.say} for f in frames]
             (args.run_dir / "assembly" / "mascot_params.json").write_text(json.dumps(dump), encoding="utf-8")
-    except (OSError, ValueError, CueError, ValidationError, RuntimeError) as exc:
+    except (OSError, ValueError, CueError, ValidationError, RuntimeError) as exc:  # PackError is a ValueError
         print(f"Error: {exc}", file=sys.stderr)
         return 1
 

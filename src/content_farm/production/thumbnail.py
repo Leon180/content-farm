@@ -63,6 +63,16 @@ class BrandVisual(_Strict):
     kind: Literal["brand"]                     # the channel's key visual (icon art), no character
 
 
+class CompareSide(_Strict):
+    value: str = Field(min_length=1, max_length=9)   # the big number, e.g. "7,722" or "九"
+    label: str = Field(default="", max_length=8)     # what it counts, e.g. "mm²" or "條尾巴"
+
+
+# docs/design/thumbnails/rules.md: (a) character + big text, (b) full-bleed key art + question,
+# (c) one or two big numbers. All three keep the same promise rule (spoken within 60 s).
+Layout = Literal["character", "keyart", "compare"]
+
+
 class ThumbnailSpec(_Strict):
     lines: tuple[str, ...] = Field(min_length=1, max_length=2)
     highlight: str = ""                        # a word inside lines drawn in the accent colour
@@ -71,6 +81,8 @@ class ThumbnailSpec(_Strict):
     number_note: str = Field(default="", max_length=8)
     visual: MascotVisual | ImageVisual | BrandVisual = Field(discriminator="kind")
     promise: tuple[str, ...] = Field(min_length=1)
+    layout: Layout = "character"
+    compare: tuple[CompareSide, ...] = Field(default=(), max_length=2)
 
     @model_validator(mode="after")
     def _short_text(self) -> ThumbnailSpec:
@@ -79,6 +91,10 @@ class ThumbnailSpec(_Strict):
             raise ValueError(f"thumbnail text is {chars} chars; keep it <= {MAX_TEXT_CHARS} (phone legibility)")
         if self.highlight and self.highlight not in "".join(self.lines):
             raise ValueError(f"highlight {self.highlight!r} is not in the lines")
+        if self.layout == "compare" and not self.compare:
+            raise ValueError("layout 'compare' needs one or two compare values")
+        if self.layout == "keyart" and not isinstance(self.visual, ImageVisual):
+            raise ValueError("layout 'keyart' needs an image visual (artwork or key art)")
         return self
 
     @property
@@ -96,17 +112,23 @@ def _root_tokens(brand: str) -> str:
     return css[start: css.index("}", start) + 1]
 
 
-def thumbnail_html(spec: ThumbnailSpec, channel: Channel, visual_uri: str) -> str:
+def thumbnail_html(spec: ThumbnailSpec, channel: Channel, visual_uri: str, *, vertical: bool = False) -> str:
     env = Environment(loader=FileSystemLoader([str(TEMPLATES), str(BRAND_ASSET_DIR)]),
                       autoescape=select_autoescape(["html", "j2"]))
     brand_style = env.get_template(f"{channel.brand}/assets.html.j2").module.style()
-    return env.get_template("thumbnail.html.j2").render(
+    template = "thumbnail_vertical.html.j2" if vertical else (
+        "thumbnail.html.j2" if spec.layout == "character" else "thumbnail_layouts.html.j2")
+    return env.get_template(template).render(
         spec=spec, brand=channel.brand, channel_name=channel.name, root=_root_tokens(channel.brand),
         brand_style=brand_style, visual_uri=visual_uri)
 
 
-def _visual_file(run_dir: Path, spec: ThumbnailSpec, work: Path) -> Path | None:
+def _visual_file(run_dir: Path, spec: ThumbnailSpec, work: Path, channel: Channel) -> Path | None:
     if isinstance(spec.visual, MascotVisual):
+        if channel.mascot.host == "pngtuber":
+            from content_farm.explainer.pngtuber.still import pose_still
+
+            return pose_still(channel.mascot.ref, spec.visual.pose, work / f"host_{spec.visual.pose}.png")
         from content_farm.explainer.mascot.still import pose_png
 
         return pose_png(spec.visual.pose, work / f"cat_{spec.visual.pose}.png")
@@ -125,7 +147,7 @@ def render_thumbnail(run_dir: Path, channel: Channel) -> Path:
     spec = load_spec(run_dir)
     work = run_dir / OUT_DIR / ".work"
     work.mkdir(parents=True, exist_ok=True)
-    visual = _visual_file(run_dir, spec, work)
+    visual = _visual_file(run_dir, spec, work, channel)
     html = work / "thumbnail.html"
     html.write_text(thumbnail_html(spec, channel, visual.resolve().as_uri() if visual else ""), encoding="utf-8")
     out = run_dir / OUT_FILE
@@ -134,6 +156,75 @@ def render_thumbnail(run_dir: Path, channel: Channel) -> Path:
     with Image.open(out) as image:
         image.convert("RGB").resize(PHONE_SIZE, Image.LANCZOS).save(run_dir / SMALL_FILE)
     return out
+
+
+VARIANTS_FILE = "thumbnail_variants.json"
+VERTICAL_SIZE = (1080, 1920)
+MAX_BYTES = 2 * 1024 * 1024      # YouTube custom thumbnail limit
+JPEG_QUALITIES = (92, 86, 80, 72, 64)
+
+
+class ThumbnailVariants(_Strict):
+    """Up to three specs for YouTube Test & Compare (landscape). ``vertical``: Shorts covers
+    (1080x1920); Test & Compare is not available for Shorts, so those are picked by hand."""
+    vertical: bool = False
+    variants: dict[str, ThumbnailSpec] = Field(min_length=1, max_length=3)
+
+
+def load_variants(run_dir: Path) -> ThumbnailVariants:
+    return ThumbnailVariants.model_validate_json((run_dir / VARIANTS_FILE).read_text(encoding="utf-8"))
+
+
+def save_under_limit(png: Path, out: Path, limit: int = MAX_BYTES) -> Path:
+    """Re-encode the capture as JPEG at the best quality that fits under ``limit`` bytes."""
+    with Image.open(png) as image:
+        rgb = image.convert("RGB")
+    for quality in JPEG_QUALITIES:
+        rgb.save(out, "JPEG", quality=quality, optimize=True, progressive=True)
+        if out.stat().st_size <= limit:
+            return out
+    raise ValueError(f"{out.name} is {out.stat().st_size} bytes even at quality {JPEG_QUALITIES[-1]}")
+
+
+def render_variants(run_dir: Path, channel: Channel) -> dict[str, Path]:
+    """Write ``thumbnails/variant_<key>.jpg`` (< 2 MB) plus a phone-size preview for each variant."""
+    from content_farm.explainer.capture import PageCapturer
+
+    spec_set = load_variants(run_dir)
+    size = VERTICAL_SIZE if spec_set.vertical else SIZE
+    phone = (PHONE_SIZE[1], PHONE_SIZE[1] * 16 // 9) if spec_set.vertical else PHONE_SIZE
+    work = run_dir / OUT_DIR / ".work"
+    work.mkdir(parents=True, exist_ok=True)
+    pages = {}
+    for key, spec in spec_set.variants.items():   # visuals first: the cat pose opens its own browser
+        visual = _visual_file(run_dir, spec, work, channel)
+        pages[key] = work / f"variant_{key}.html"
+        pages[key].write_text(thumbnail_html(spec, channel, visual.resolve().as_uri() if visual else "",
+                                             vertical=spec_set.vertical), encoding="utf-8")
+    outputs = {}
+    with PageCapturer(size=size) as capturer:
+        for key, html in pages.items():
+            png = work / f"variant_{key}.png"
+            capturer.still(html, png)
+            outputs[key] = save_under_limit(png, run_dir / OUT_DIR / f"variant_{key}.jpg")
+            with Image.open(png) as image:
+                image.convert("RGB").resize(phone, Image.LANCZOS).save(run_dir / OUT_DIR / f"variant_{key}_phone.png")
+    return outputs
+
+
+def variant_findings(run_dir: Path, channel: Channel) -> list[Finding]:
+    """Every variant must keep its promise, not only the one that wins the test."""
+    if not (run_dir / VARIANTS_FILE).is_file():
+        return []
+    try:
+        spec_set = load_variants(run_dir)
+    except ValueError as exc:
+        return [Finding("thumbnail_variants", "error", f"{VARIANTS_FILE} invalid: {exc}")]
+    findings = [f for key, spec in spec_set.variants.items() for f in promise_findings(run_dir, spec, f"variant {key}")]
+    big = [p.name for p in (run_dir / OUT_DIR).glob("variant_*.jpg") if p.stat().st_size > MAX_BYTES]
+    if big:
+        findings.append(Finding("thumbnail_variants", "error", f"over 2 MB: {', '.join(sorted(big))}"))
+    return findings or [Finding("thumbnail_variants", "ok", f"{len(spec_set.variants)} variants keep their promise")]
 
 
 def _compact(text: str) -> str:
@@ -163,17 +254,30 @@ def thumbnail_findings(run_dir: Path, channel: Channel) -> list[Finding]:
         findings.append(Finding("thumbnail", "error", f"{OUT_FILE} not rendered (run make_thumbnail.py)"))
     if channel.mascot.rig_ready and not isinstance(spec.visual, MascotVisual):
         findings.append(Finding("thumbnail", "error", f"{channel.mascot.name} must be on the thumbnail"))
+    findings += promise_findings(run_dir, spec)
+    return findings or [Finding("thumbnail", "ok", f"「{spec.text}」+ {spec.visual.kind}; promise paid off "
+                                                   f"within {PROMISE_WITHIN_SECONDS:.0f}s")]
+
+
+def promise_findings(run_dir: Path, spec: ThumbnailSpec, label: str = "") -> list[Finding]:
+    """Errors when a promise is not spoken within PROMISE_WITHIN_SECONDS, or a number on the
+    thumbnail (big text, circled number, compare values) is not in the narration at all."""
+    prefix = f"{label}: " if label else ""
     if not (run_dir / "script.json").is_file():
-        return findings + [Finding("thumbnail_promise", "error", "script.json missing; cannot check promise")]
+        return [Finding("thumbnail_promise", "error", f"{prefix}script.json missing; cannot check promise")]
     scenes = _narration_starts(run_dir)
     early = "".join(text for start, text in scenes if start < PROMISE_WITHIN_SECONDS)
     everything = "".join(text for _, text in scenes)
+    shown = spec.text + spec.number + "".join(side.value for side in spec.compare)
     late = [p for p in spec.promise if _compact(p) not in early]
-    numbers = [n for n in _NUMBER.findall(spec.text + spec.number) if n not in everything]
+    # the narration is compacted (punctuation, including '.' and ',', removed), so compact the number too:
+    # "8.8" must match the spoken "8.8 公分", "7,722" the spoken "7722"
+    numbers = [n for n in _NUMBER.findall(shown) if _compact(n.rstrip(".,")) not in everything]
+    findings = []
     if late:
         findings.append(Finding("thumbnail_promise", "error",
-                                f"not spoken in the first {PROMISE_WITHIN_SECONDS:.0f}s: {', '.join(late)}"))
+                                f"{prefix}not spoken in the first {PROMISE_WITHIN_SECONDS:.0f}s: {', '.join(late)}"))
     if numbers:
-        findings.append(Finding("thumbnail_promise", "error", f"numbers not in the narration: {', '.join(numbers)}"))
-    return findings or [Finding("thumbnail", "ok", f"「{spec.text}」+ {spec.visual.kind}; promise paid off "
-                                                   f"within {PROMISE_WITHIN_SECONDS:.0f}s")]
+        findings.append(Finding("thumbnail_promise", "error",
+                                f"{prefix}numbers not in the narration: {', '.join(numbers)}"))
+    return findings

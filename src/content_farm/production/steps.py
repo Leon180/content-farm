@@ -84,6 +84,12 @@ def _run_dir(ctx: Context) -> str:
     return str(ctx.run_dir)
 
 
+def _host_args(ctx: Context) -> tuple[str, ...]:
+    """The mascot step draws the vector rig unless the channel uses a PNGtuber pack."""
+    mascot = ctx.channel.mascot
+    return ("--pngtuber", mascot.ref) if mascot.host == "pngtuber" else ()
+
+
 def voice_choice(ctx: Context) -> VoiceChoice:
     return choose_voice(ctx.channel, ctx.options.env_file, mock=ctx.options.mock_voice)
 
@@ -166,7 +172,8 @@ EXPLAINER_STEPS: tuple[Step, ...] = (
     Step("mascot", "cmd", "角色疊加", outputs=("assembly/final.mp4",),
          inputs=("assembly/draft.mp4", "deck.json", "subtitles/subtitles.srt"),
          command=lambda c: _py(c, "mascot_overlay.py", "--run-dir", _run_dir(c),
-                               "--workers", str(c.options.mascot_workers)),
+                               "--workers", str(c.options.mascot_workers), *_host_args(c)),
+         # no identity: one would change the fingerprint of every finished chipcat run and re-render it
          heavy=True, applies=lambda channel: channel.mascot.rig_ready),
     Step("thumbnail", "cmd", "頻道縮圖（角色／畫作＋大字）", outputs=("thumbnails/thumbnail.png",),
          inputs=("thumbnail.json", "assets/artwork/*", "assets/ai_images/*"),

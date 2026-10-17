@@ -1,0 +1,56 @@
+<!doctype html>
+{# 1080x1920 Shorts cover, all three layouts (docs/design/thumbnails/rules.md). Text stays out of the
+   Shorts UI: nothing important below y 1540 (title / channel overlay) or right of x 940 (buttons). #}
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<style>
+{{ root | safe }}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 1080px; height: 1920px; overflow: hidden; position: relative; background: var(--bg); }
+{{ brand_style | safe }}
+.tag { position: absolute; left: 60px; top: 110px; padding: 10px 24px; background: var(--accent); color: #fff;
+  font: 900 44px var(--font-heading, sans-serif); }
+.big { position: absolute; left: 60px; width: 880px; font-family: var(--font-heading, sans-serif); font-weight: 900;
+  line-height: 1.06; color: var(--fg); }
+.hl { color: var(--accent); }
+.outline { color: #fff; -webkit-text-stroke: 12px #111; paint-order: stroke fill; }
+.outline .hl { color: #ffd84d; }
+/* chipcat's brand .hl is a box in the accent colour: keep its text white */
+.chipcat .hl, .chipcat .outline .hl { color: #fff; }
+.sub { position: absolute; left: 64px; font: 900 60px var(--font-heading, sans-serif); color: var(--accent-2, var(--accent)); }
+.art { position: absolute; inset: 0; width: 1080px; height: 1920px; object-fit: cover; }
+.shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.75) 0%, rgba(0,0,0,.2) 38%, rgba(0,0,0,0) 60%); }
+.num { font-family: var(--font-number, var(--font-heading, sans-serif)); font-weight: 900; line-height: .95; color: var(--fg); }
+.label { font: 900 66px var(--font-heading, sans-serif); color: var(--fg); margin-top: 10px; }
+.visual { position: absolute; }
+</style>
+</head>
+<body class="thumb vertical {{ brand }}">
+{% macro lines_html() %}{% for line in spec.lines %}<div>{% if spec.highlight and spec.highlight in line %}{{ line.split(spec.highlight)[0] }}<span class="hl">{{ spec.highlight }}</span>{{ line.split(spec.highlight)[1] }}{% else %}{{ line }}{% endif %}</div>{% endfor %}{% endmacro %}
+{% set n = spec.text | length %}
+{% if spec.layout == "keyart" %}
+  <img class="art" src="{{ visual_uri }}" style="object-position:{{ spec.visual.focus }} center">
+  <div class="shade"></div>
+  <div class="tag">{{ channel_name }}</div>
+  <div class="big outline" style="top:240px;font-size:{{ 170 if n <= 5 else 140 }}px">{{ lines_html() }}</div>
+  {% if spec.sub %}<div class="sub" style="top:{{ 620 if spec.lines|length > 1 else 460 }}px;color:#ffd84d;text-shadow:0 4px 0 #000">{{ spec.sub }}</div>{% endif %}
+{% elif spec.layout == "compare" %}
+  <div class="tag">{{ channel_name }}</div>
+  <div class="big" style="top:240px;font-size:{{ 120 if n <= 6 else 100 }}px">{{ lines_html() }}</div>
+  {% for side in spec.compare %}
+  <div style="position:absolute;left:60px;top:{{ 560 + loop.index0 * 420 }}px;width:880px">
+    <div class="num" style="font-size:{{ 300 if side.value|length <= 5 else 220 }}px;{% if loop.last %}color:var(--accent){% endif %}">{{ side.value }}</div>
+    <div class="label">{{ side.label }}</div>
+  </div>
+  {% endfor %}
+  {% if visual_uri %}<img class="visual" src="{{ visual_uri }}" style="left:60px;bottom:400px;height:{{ 380 if spec.compare|length == 2 else 560 }}px">{% endif %}
+  {% if spec.sub %}<div class="sub" style="top:1420px">{{ spec.sub }}</div>{% endif %}
+{% else %}{# character #}
+  <div class="tag">{{ channel_name }}</div>
+  <div class="big" style="top:240px;font-size:{{ 170 if n <= 5 else 140 }}px">{{ lines_html() }}</div>
+  {% if visual_uri %}<img class="visual" src="{{ visual_uri }}" style="left:50%;transform:translateX(-50%);top:640px;height:860px;max-width:900px;object-fit:contain">{% endif %}
+  {% if spec.sub %}<div class="sub" style="top:{{ 420 if spec.lines|length == 1 else 580 }}px">{{ spec.sub }}</div>{% endif %}
+{% endif %}
+</body>
+</html>
