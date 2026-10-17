@@ -1,0 +1,93 @@
+# 評審團設定（Leon 2026-10-17 工作流：選題 → review → 腳本 → review → 初剪 → review → 調整 → 上片）
+# 角色 × 人數 × 階段都在這裡；src/content_farm/evaluation/panel.py 讀取。
+# 本版只實作 rough_cut / final 兩個階段（cf-cowos-v3）；topic / script 階段由 cf-review-panels 接手，
+# 擴充點：在 stages 下新增階段、在 roles 下新增 rubric，panel.py 的 materials_for(stage) 加素材種類。
+
+version: 1
+
+# 每輪換措辭：同一位觀眾的特質以不同句型與順序描述，避免修正過擬合到固定文字
+framings:
+  - "你是{who}。{traits}"
+  - "請用這個人的眼光看片：{who}。關於他／她：{traits}"
+  - "{who}——{traits}。照這個人真實的耐心與興趣反應，不要比真人更有耐心。"
+
+personas:
+  chipcat:
+    - id: commuter
+      who: 28 歲台北上班族
+      traits: [捷運上用手機看、1.25 倍速、隨時滑走, 對科技新聞有興趣但不是工程師, 討厭開場鋪陳太久、畫面停太久、名詞太多, 前 15 秒沒被抓住就走]
+    - id: engineer
+      who: 35 歲新竹半導體封裝製程工程師
+      traits: [懂 CoWoS／中介層／HBM、用電腦看, 內容講錯、太淺、數字沒出處就不耐煩並留言糾正, 有新產業觀點或數字分析會很投入, 特別檢查技術正確性]
+    - id: student
+      who: 19 歲大一文組學生
+      traits: [常聽說台積電但完全不懂半導體、用平板看, 名詞多又沒比喻就跟不上, 喜歡梗、八卦、好笑畫面, 標出每個聽不懂的詞]
+    - id: investor
+      who: 45 歲有買台股的業務經理
+      traits: [在客廳電視大螢幕看, 想知道跟台積電、輝達、供應鏈誰受惠的關係, 不要技術細節但要結論清楚, 頻道不給投資建議——評估會不會失望、片中有沒有教他自己去哪查]
+    - id: senior
+      who: 63 歲退休公務員
+      traits: [用手機看、字幕要大、語速不能快, 喜歡可愛貓角色, 不喜歡英文縮寫和閃太快的畫面, 評估字幕大小、語速、縮寫]
+    - id: teacher          # holdout：只在最後一輪出現，不參與前幾輪修正依據
+      holdout: true
+      who: 42 歲國中理化老師
+      traits: [想找能放給學生看的課外素材、用教室投影或平板看, 在意比喻是否正確、會不會誤導學生, 喜歡清楚的章節與結論, 不喜歡誇張標題和不必要的商業話題]
+  yokai:
+    - {id: folklore_fan, who: 30 歲民俗愛好者, traits: [讀過山海經白話版, 在意出處是否正確, 喜歡考據與比較]}
+    - {id: casual, who: 24 歲上班族, traits: [睡前手機滑, 想聽故事不想聽論文, 前 15 秒不有趣就走]}
+    - {id: student, who: 17 歲高中生, traits: [只看過動漫裡的妖怪, 喜歡畫面與冷笑話, 古文聽不懂]}
+    - {id: scholar, who: 50 歲中文系講師, traits: [會檢查引文與年代, 討厭把傳說講成史實]}
+    - {id: senior, who: 65 歲退休阿嬤, traits: [手機看、字幕要大, 喜歡台灣在地傳說, 語速要慢]}
+    - {id: parent, holdout: true, who: 38 歲家長, traits: [陪小孩一起看, 在意會不會太恐怖, 喜歡有知識點]}
+  cel:
+    - {id: anime_fan, who: 22 歲動漫迷, traits: [每季追番, 想知道製作內幕, 討厭被說教]}
+    - {id: industry, who: 33 歲動畫業界從業者, traits: [懂製作委員會與外包, 數字講錯會糾正]}
+    - {id: casual, who: 27 歲上班族, traits: [看過幾部熱門作品, 前 15 秒不有趣就走]}
+    - {id: investor, who: 40 歲關心娛樂股的投資人, traits: [想知道誰賺錢, 不要投資建議但要結論清楚]}
+    - {id: student, who: 20 歲設計系學生, traits: [想入行, 在意薪資與工作條件]}
+    - {id: critic, holdout: true, who: 35 歲影評部落客, traits: [在意論證與敘事, 討厭灌水]}
+
+pros:
+  editor:
+    title: 專業剪輯
+    brief: >-
+      你是有十年經驗的 YouTube 知識類長片剪輯師。只看節奏與畫面：換場頻率、靜止畫面、轉場髒不髒、
+      畫面與旁白同步、素材是否貼題、字幕可讀性、BGM／音效位置（依每 10 秒聲音描述判斷）。
+    rubric: [節奏與換場, 畫面與旁白同步, 素材貼題, 字幕與版面, 聲音設計]
+  director:
+    title: 專業導演
+    brief: >-
+      你是知識類節目導演。看整體敘事：開場鉤子與承諾、章節結構、每段是否推進論點、re-hook、角色（主持角色）使用、
+      語氣一致性、結尾收束與下集預告；指出觀眾會在哪裡失去方向。
+    rubric: [開場與承諾, 結構與推進, 角色與語氣, 收尾]
+  writer:
+    title: 專業編劇
+    brief: >-
+      你是科普節目編劇。看講稿：比喻是否先於定義、每 10 秒是否有讓人想聽下去的東西、名詞密度、
+      笑點與八卦是否自然、有沒有灌水句。
+    rubric: [比喻與定義, 節拍密度, 名詞密度, 幽默與八卦, 精簡度]
+
+stages:
+  rough_cut:          # 初剪：觀眾 ×5 ＋剪輯 ＋導演（編劇可選）
+    viewers: 5
+    holdout: false
+    pros: {editor: 1, director: 1, writer: 0}
+    homepage: true
+  final:              # 成片／最後一輪：加 holdout 觀眾
+    viewers: 5
+    holdout: true
+    pros: {editor: 1, director: 1, writer: 1}
+    homepage: true
+  shorts:             # Shorts：客觀指標 ＋ 2 位觀眾
+    viewers: 2
+    holdout: false
+    pros: {}
+    homepage: false
+
+thresholds:            # Leon 2026-10-17 先用這組（另定再改）
+  leave_median_pct: 0.5        # 合成觀眾離開時間中位數 ≥ 片長 50%
+  click_mean: 7.0              # 平均點擊意願 ≥ 7/10
+  objective_all_green: true    # 死區 0、節拍最大間隔 ≤10 s、最長靜止 ≤8 s、首個鉤子 ≤15 s
+  homepage_noticed_median: 3   # 首頁情境：被注意名次中位 ≤ 3
+  homepage_pick_factor: 2.0    # 被選比例 ≥ 2/N（N＝首頁張數）
+  max_rounds: 3

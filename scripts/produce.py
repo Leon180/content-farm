@@ -13,6 +13,7 @@ Usage:
     python scripts/produce.py short-from-long --from output/cowos --slide s09 --channel offwork \
         --run-dir output/offwork-7722 --title "…" --number 7,722 --unit mm²   # 9:16 Short (R5)
     python scripts/produce.py manual-kit --run-dir output/cowos [--out DIR]  # Studio upload kit + preview.html
+    python scripts/produce.py eval-loop --run-dir output/cowos --max-rounds 3  # review panel → fix loop (one step)
 
 Exit codes for ``run``: 0 all steps done, 1 a step failed, 3 waiting (gate, agent
 step, or paid step without --allow-paid). Each stop prints the next command.
@@ -91,6 +92,13 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
                      help="voice for the banner; auto reads logs/voice.log")
     kit.add_argument("--playlist", default="", help="default: the channel's playlist name")
     kit.add_argument("--thumbnail-at", type=float, help="use the video frame at this second as thumbnail")
+
+    loop = sub.add_parser("eval-loop", help="pre-launch eval → fix loop (review panel + objective metrics)")
+    loop.add_argument("--run-dir", type=Path, required=True)
+    loop.add_argument("--max-rounds", type=int, default=None, help="default: review_panels.yaml (3)")
+    loop.add_argument("--competitors", type=Path, help="dir with competitors.json for the homepage feeds")
+    loop.add_argument("--change", action="append", default=[], help="what was fixed since the last round")
+    loop.add_argument("--minutes", type=float, help="minutes spent on the round being scored")
 
     status = sub.add_parser("status")
     status.add_argument("--run-dir", type=Path, required=True)
@@ -174,6 +182,18 @@ def cmd_manual_kit(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_eval_loop(args: argparse.Namespace) -> int:
+    """One step of eval → fix: prepare a round / wait for reviewers / score / say what to fix.
+    Exit 0 pass, 3 waiting or fix needed, 4 stopped at max rounds (report the gap)."""
+    from content_farm.evaluation.flow import advance
+
+    channel = load_channel(read_channel_code(args.run_dir))
+    step = advance(args.run_dir.resolve(), channel, max_rounds=args.max_rounds, competitors_dir=args.competitors,
+                   changes=args.change, minutes=args.minutes)
+    print(f"[{step.status}] {step.message}")
+    return step.exit_code
+
+
 def cmd_decide(args: argparse.Namespace, verdict: str) -> int:
     channel = load_channel(read_channel_code(args.run_dir))
     decision = decide(args.run_dir.resolve(), channel, Gate(args.gate), verdict, note=args.note,
@@ -232,7 +252,7 @@ def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
     handlers = {"run": cmd_run, "status": cmd_status, "inbox": cmd_inbox, "plan": cmd_plan,
                 "channels": cmd_channels, "short-from-long": cmd_short_from_long,
-                "manual-kit": cmd_manual_kit,
+                "manual-kit": cmd_manual_kit, "eval-loop": cmd_eval_loop,
                 "approve": lambda a: cmd_decide(a, "approved"),
                 "reject": lambda a: cmd_decide(a, "rejected")}
     try:

@@ -35,12 +35,22 @@ def dead_zones(duration: float, *event_lists: list[float], limit: float = DEAD_Z
             for a, b in zip(points, points[1:]) if b - a > limit]
 
 
-def subtitle_style(run_dir: Path, vertical: bool) -> dict:
-    from content_farm.assembly.timeline_assembly import LANDSCAPE_PRESET, PORTRAIT_PRESET
+LEGACY_SUBTITLE = {"font_px": 52, "frame_h": 1080, "box": False}   # assembly before 2026-10-17 v3
 
-    preset = PORTRAIT_PRESET if vertical else LANDSCAPE_PRESET
-    return {"font_px": preset.subtitle_font_size, "frame_h": preset.height,
-            "height_pct": round(100 * preset.subtitle_font_size / preset.height, 1), "box": preset.subtitle_box}
+
+def subtitle_style(run_dir: Path, vertical: bool) -> dict:
+    """What assembly burned in (``assembly/subtitle_style.json``); older runs did not record it, so
+    they are reported with the pre-v3 landscape style and ``recorded: false``."""
+    path = run_dir / "assembly" / "subtitle_style.json"
+    if path.is_file():
+        style, recorded = json.loads(path.read_text(encoding="utf-8")), True
+    elif vertical:
+        from content_farm.assembly.timeline_assembly import PORTRAIT_PRESET as p
+
+        style, recorded = {"font_px": p.subtitle_font_size, "frame_h": p.height, "box": p.subtitle_box}, False
+    else:
+        style, recorded = dict(LEGACY_SUBTITLE), False
+    return {**style, "height_pct": round(100 * style["font_px"] / style["frame_h"], 1), "recorded": recorded}
 
 
 def speech_errors(run_dir: Path) -> dict:

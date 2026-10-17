@@ -9,6 +9,7 @@ and image (.png/.jpg/.jpeg/.webp) files.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import re
 import shutil
@@ -390,6 +391,10 @@ async def _burn_subtitles(
             flags=_re.DOTALL,
         )
         tmp_ass.write_text(patched, encoding="utf-8")
+        # what was burned in, for the retention report (字高、底條) — measured, not assumed
+        (output_path.parent / "subtitle_style.json").write_text(json.dumps({
+            "font_px": preset.subtitle_font_size, "frame_h": height, "box": preset.subtitle_box,
+            "alignment": preset.subtitle_alignment, "margin_v": preset.subtitle_margin_v}), encoding="utf-8")
 
         # Step 3: burn ASS into video
         args = [
