@@ -23,6 +23,15 @@ def test_reveals_follow_the_narration() -> None:
     assert stage.longest_hold <= MAX_HOLD
 
 
+def test_numbered_labels_wait_for_their_number() -> None:
+    from content_farm.explainer.stage_cues import match_times
+
+    labels = ["1 倍光罩（858 mm²）", "3.3 倍光罩（2,831 mm²）", "9 倍光罩（7,722 mm²）"]
+    sentences = [(0.5, "那一片晶圓排得下幾個？"), (2.4, "把中介層當正方形去排：1 倍光罩、858 平方毫米呢？大約 62 片。"),
+                 (11.6, "3.3 倍、2,831 平方毫米呢？"), (16.8, "9 倍、7,722 平方毫米呢？")]
+    assert [round(t, 1) for t in match_times(labels, sentences, 28.0)] == [2.1, 11.3, 16.5]
+
+
 def test_pulses_fill_long_holds() -> None:
     pulses, longest = add_pulses([1.0], 40.0, unit_count=1)
     assert longest <= MAX_HOLD
