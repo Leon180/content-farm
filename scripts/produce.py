@@ -52,7 +52,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     run.add_argument("--allow-paid", action="store_true", help="allow paid API steps (TTS)")
     run.add_argument("--no-stock", action="store_true", help="never call Pexels/Pixabay")
     run.add_argument("--env-file", type=Path, help="default <repo>/.env")
-    run.add_argument("--mascot-workers", type=int, default=2)
+    run.add_argument("--mascot-workers", type=int, default=3)
     run.add_argument("--max-load", type=float, default=None,
                      help="wait before heavy steps while 1-min load average is above this")
     run.add_argument("--until", help="stop after this step")

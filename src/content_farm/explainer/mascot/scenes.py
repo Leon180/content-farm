@@ -62,8 +62,13 @@ def scene_frames(span: SceneSpan, audio: Path | None, fps: float, decode=lipsync
     return compose_scene(span, scene_mouth(audio, span, fps, decode), fps)
 
 
+# Modules that only orchestrate or place the clip (not what a frame looks like) stay out of the
+# identity, so e.g. a new overlay encoder setting does not redraw every scene.
+_NOT_PIXELS = ("run.py", "overlay.py", "clearance.py", "still.py", "__init__.py")
+
+
 def renderer_digest() -> str:
-    return code_digest(MASCOT_DIR)
+    return code_digest(MASCOT_DIR, skip=_NOT_PIXELS)
 
 
 def scene_identity(span: SceneSpan, audio: Path | None, fps: float, *, render: str, code: str) -> str:
