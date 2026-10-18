@@ -71,6 +71,8 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--transition-seconds", type=float, default=0.25)   # v3: 0.4 s let two pages' text overlap
     parser.add_argument("--replace", action="store_true", help="remove old timeline files first")
     parser.add_argument("--no-stock", action="store_true", help="never call Pexels/Pixabay")
+    parser.add_argument("--no-cache", action="store_true",
+                        help="rebuild every slot (default: reuse slots whose scene identity is unchanged)")
     parser.add_argument("--stock-cache", type=Path, default=Path(".cache/explainer_stock"))
     parser.add_argument("--env-file", type=Path, default=Path(".env"))
     parser.add_argument("--brand", choices=brand_codes(),
@@ -88,7 +90,7 @@ def main(argv: list[str] | None = None) -> int:
         motion_paths = MotionPaths.from_env(motion_env(args.env_file))
         options = MediaOptions(transition=args.transition,
                                transition_seconds=args.transition_seconds, replace=args.replace,
-                               brand=args.brand, motion_paths=motion_paths)
+                               brand=args.brand, motion_paths=motion_paths, cache=not args.no_cache)
         deck = load_deck(run_dir / "deck.json")
         script = Script.model_validate_json((run_dir / "script.json").read_text(encoding="utf-8"))
         used, durations = resolve_durations(run_dir, script, args.source)
@@ -108,10 +110,13 @@ def main(argv: list[str] | None = None) -> int:
 
     if used == "script":
         print("WARNING: estimated durations — do not assemble from this", file=sys.stderr)
-    for r in run.results:
+    reused = run.reused or (False,) * len(run.results)
+    for r, hit in zip(run.results, reused):
         flag = "  <-- " if r.requested != r.used else ("  [review]" if r.review else "")
+        flag += "  (cached)" if hit else ""
         print(f"{r.index:02d} {r.slide_id:<10} {r.requested:<10} -> {r.used:<14} "
               f"{r.build_seconds:5.1f}s  {r.note}{flag}")
+    print(f"Reused {sum(reused)}/{len(reused)} slot(s) from the scene cache")
     print(f"Placed {len(run.placed)} clips from {used} durations in "
           f"{time.monotonic() - started:.1f}s; ends at {run.placed[-1].stem}")
     print(f"Credits: {run.credits_path}\nReport: {run.report_path}\nContact sheet: {run.contact_sheet}")

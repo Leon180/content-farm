@@ -25,10 +25,19 @@ from content_farm.explainer.ai_images import write_prompt_files
 from content_farm.explainer.artwork import artwork_credits_text
 from content_farm.explainer.capture import PageCapturer
 from content_farm.explainer.deck import Deck
+from content_farm.explainer.media_cache import (
+    cached_build,
+    cached_frame,
+    cached_transitions,
+    job_identity,
+    remember_generation,
+    renderer_digest,
+)
 from content_farm.explainer.media import USED_PLACEHOLDER, ClipResult, MediaContext, SlideJob, build_clip
 from content_farm.explainer.motion_cache import MotionPaths
 from content_farm.explainer.pages import build_pages
 from content_farm.explainer.render import _label_font
+from content_farm.explainer.scene_cache import SceneCache
 from content_farm.explainer.stage_cues import plan as stage_plan
 from content_farm.explainer.stock import StockClient
 from content_farm.explainer.timeline import SlideClip, place_files
@@ -47,6 +56,7 @@ class MediaOptions:
     brand: str | None = None  # channel brand (see explainer.brands); None = category theme
     motion_paths: MotionPaths | None = None  # ai_image motion tools; None = Ken Burns
     staged: bool = True   # v3: reveal slide parts with the narration + pulses (no still > 7 s)
+    cache: bool = True    # reuse clips whose scene identity is unchanged (explainer.media_cache)
 
     def __post_init__(self) -> None:
         if self.transition not in TRANSITION_CHOICES:
@@ -62,6 +72,7 @@ class MediaRun:
     credits_path: Path
     report_path: Path
     contact_sheet: Path
+    reused: tuple[bool, ...] = ()   # per slot: clip taken from the scene cache
 
 
 def jobs_for(deck: Deck, clips: Sequence[SlideClip], brand: str | None = None,
@@ -107,17 +118,36 @@ def media_to_visual(
     write_prompt_files(deck, run_dir)
     jobs = jobs_for(deck, clips, brand=options.brand,
                     narration=narration_by_slide(run_dir) if options.staged else None)
+    static_png_ok = options.transition == "none"
+    cache = SceneCache(work_dir / "cache")
+    code = renderer_digest()
+    keys = [job_identity(deck, job, run_dir=run_dir, brand=options.brand, static_png_ok=static_png_ok,
+                         motion=options.motion_paths, code=code) for job in jobs]
+    reused: list[bool] = []
     with PageCapturer() as capturer:
         ctx = MediaContext(deck=deck, run_dir=run_dir, work_dir=work_dir, capturer=capturer,
-                           stock=stock, static_png_ok=options.transition == "none",
+                           stock=stock, static_png_ok=static_png_ok,
                            brand=options.brand, motion_paths=options.motion_paths)
-        results = [build_clip(ctx, job) for job in jobs]
-    finals = apply_transitions(results, work_dir, options)
+        results = []
+        for job, key in zip(jobs, keys):
+            result, hit = cached_build(ctx, job, cache, key) if options.cache else (build_clip(ctx, job), False)
+            results.append(result)
+            reused.append(hit)
+    if options.cache:
+        finals, final_keys = cached_transitions(results, keys, work_dir, cache, style=options.transition,
+                                                length=options.transition_seconds)
+    else:
+        finals, final_keys = apply_transitions(results, work_dir, options), []
     placed = place_files(clips, finals, run_dir / "visual", replace=options.replace)
     credits_path = write_credits(deck, results, run_dir / "credits.json")
-    report_path = write_report(results, finals, options, work_dir / "media_report.json")
-    sheet = media_contact_sheet(results, work_dir / "contact_sheet.png", work_dir / "sheet_frames")
-    return MediaRun(tuple(results), tuple(placed), credits_path, report_path, sheet)
+    report_path = write_report(results, finals, options, work_dir / "media_report.json",
+                               keys=keys, reused=reused)
+    frame_cache = (cache, keys) if options.cache else None
+    sheet = media_contact_sheet(results, work_dir / "contact_sheet.png", work_dir / "sheet_frames",
+                                frame_cache=frame_cache)
+    if options.cache:
+        remember_generation(work_dir, [*keys, *final_keys], cache)
+    return MediaRun(tuple(results), tuple(placed), credits_path, report_path, sheet, tuple(reused))
 
 
 def apply_transitions(
@@ -206,18 +236,22 @@ def write_credits(deck: Deck, results: Sequence[ClipResult], path: Path) -> Path
 
 def write_report(
     results: Sequence[ClipResult], finals: Sequence[Path], options: MediaOptions, path: Path,
+    *, keys: Sequence[str] = (), reused: Sequence[bool] = (),
 ) -> Path:
+    keys = list(keys) or [None] * len(results)
+    reused = list(reused) or [False] * len(results)
     payload = {
         "transition": options.transition,
         "transition_seconds": options.transition_seconds,
+        "reused": sum(reused),
         "slides": [
-            {"index": r.index, "slide_id": r.slide_id, "requested": r.requested, "used": r.used,
+            {"index": r.index, "identity": key, "reused": hit, "slide_id": r.slide_id, "requested": r.requested, "used": r.used,
              "fallback": r.requested != r.used and r.used != USED_PLACEHOLDER or None,
              "placeholder": r.used == USED_PLACEHOLDER or None,
              "review": r.review or None,
              "seconds": r.seconds, "build_seconds": r.build_seconds, "note": r.note,
              "problems": list(r.problems), "file": str(f)}
-            for r, f in zip(results, finals)
+            for r, f, key, hit in zip(results, finals, keys, reused)
         ],
     }
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -225,16 +259,19 @@ def write_report(
     return path
 
 
-def _thumb_source(result: ClipResult, frames_dir: Path) -> Path:
+def _thumb_source(result: ClipResult, frames_dir: Path, frame_cache=None, position: int = 0) -> Path:
     if result.path.suffix.lower() == ".png":
         return result.path
     at = min(max(result.seconds - 0.6, 0), 3.0)  # after the entrance animation settles
+    if frame_cache is not None:
+        cache, keys = frame_cache
+        return cached_frame(cache, keys[position], lambda out: ffmpeg_ops.frame_at(result.path, at, out))
     return ffmpeg_ops.frame_at(result.path, at, frames_dir / f"frame_{result.index:03d}.png")
 
 
 def media_contact_sheet(
     results: Sequence[ClipResult], out_path: Path, frames_dir: Path,
-    *, columns: int = 3, thumb_width: int = 560,
+    *, columns: int = 3, thumb_width: int = 560, frame_cache=None,
 ) -> Path:
     """Review sheet: one frame per slot; placeholders and fallbacks get a red frame + tag,
     stock clips awaiting a human check an orange one."""
@@ -248,7 +285,7 @@ def media_contact_sheet(
     for i, r in enumerate(results):
         x = gutter + (i % columns) * (thumb_width + gutter)
         y = gutter + (i // columns) * (thumb_h + label_h + gutter)
-        with Image.open(_thumb_source(r, frames_dir)) as img:
+        with Image.open(_thumb_source(r, frames_dir, frame_cache, i)) as img:
             sheet.paste(img.convert("RGB").resize((thumb_width, thumb_h), Image.LANCZOS), (x, y))
         flagged = r.used == USED_PLACEHOLDER or r.requested != r.used
         if flagged:
