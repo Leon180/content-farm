@@ -77,9 +77,11 @@ class LocalCloneProvider:
         output_path: Path,
         voice_id: str | None = None,
         seed: int | None = None,
+        prompt: tuple[Path, str] | None = None,
     ) -> int:
         """Synthesize ``text`` in the reference voice; writes MP3. ``voice_id`` is ignored
-        (the reference clip is the voice)."""
+        (the reference clip is the voice). ``prompt`` = (audio, its text) to continue from
+        (VoxCPM2 only; sentence-window re-voicing)."""
         if not text.strip():
             raise ValueError(f"{self.kind}: cannot synthesize empty text")
         model_dir = str(snapshot_dir(self._hub_dir, self._model))
@@ -89,7 +91,8 @@ class LocalCloneProvider:
             wav = Path(tmp) / "speech.wav"
             reply = await self.worker.request({
                 "op": "synth", "text": text, "ref_audio": str(self._reference.audio),
-                "ref_text": self._reference.text, "seed": self._seed if seed is None else seed, "out": str(wav)})
+                "ref_text": self._reference.text, "seed": self._seed if seed is None else seed, "out": str(wav),
+                **({"prompt_audio": str(prompt[0]), "prompt_text": prompt[1]} if prompt else {})})
             await _encode_mp3(self._ffmpeg, wav, output_path)
         byte_count = output_path.stat().st_size
         # Logged under the provider's own module (voice_source reads the provider from voice.log).

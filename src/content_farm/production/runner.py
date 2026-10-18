@@ -7,6 +7,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import shutil
 import subprocess
 import time
 from collections.abc import Callable, Iterator
@@ -29,6 +30,7 @@ from content_farm.production.steps import REPO_ROOT, Command, Context, Step, ste
 
 LOCK_PATH = Path.home() / ".cache" / "content-farm" / "render.lock"   # legacy; heavy work goes through lanes.queue
 SCHEDULE_FILE = "production.schedule.json"
+APPROVED_DECK = "review/deck.approved.json"   # snapshot at deck approval (fix scope baseline)
 LOAD_POLL_SECONDS = 30
 
 
@@ -322,6 +324,10 @@ def decide(
     state = load_state(run_dir, channel.code).with_decision(decision)
     save_state(run_dir, state)
     _event(run_dir, gate=gate.value, verdict=verdict, note=note, by=by, override=override or None)
+    if verdict == "approved" and gate is Gate.DECK and (run_dir / "deck.json").is_file():
+        # what the next edit is compared against (scripts/fix_scope.py); panel approvals: panel_flow
+        (run_dir / "review").mkdir(parents=True, exist_ok=True)
+        shutil.copy2(run_dir / "deck.json", run_dir / APPROVED_DECK)
     item = run_dir / "review" / f"{gate.value}.decision.json"
     if item.is_file():
         data = json.loads(item.read_text(encoding="utf-8"))

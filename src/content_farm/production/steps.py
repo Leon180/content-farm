@@ -33,7 +33,7 @@ class RunOptions:
     allow_paid: bool = False      # required for paid TTS
     no_stock: bool = False
     env_file: Path = REPO_ROOT / ".env"
-    mascot_workers: int = 2
+    mascot_workers: int = 3       # tiled GPU capture: 3 lanes drew CoWoS v3 (15.3k frames) in 113 s
     python: str = sys.executable
     panels: bool = True           # gates opened by agent review panels (review_panels.yaml)
     auto_agents: bool = False     # run producer agents (claude -p) for agent steps / rework

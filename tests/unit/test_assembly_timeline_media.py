@@ -101,3 +101,26 @@ def test_mixed_png_and_mp4_assemble_without_gaps(tmp_path: Path) -> None:
     )
     assert "black_start" not in black.stderr
     assert not list((tmp_path / "out" / "_tmp").glob("black_*.mp4"))  # no gap filler needed
+
+
+def test_normalized_clips_are_reused_per_scene(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+    visual = tmp_path / "visual"
+    visual.mkdir()
+    Image.new("RGB", (640, 360), "#2060c0").save(visual / "00:00.000~00:01.000.png")
+    Image.new("RGB", (640, 360), "#c06020").save(visual / "00:01.000~00:02.000.png")
+    audio = tmp_path / "full.mp3"
+    _ffmpeg("-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono", "-t", "2", str(audio))
+
+    def assemble() -> Path:
+        return asyncio.run(assemble_from_timeline(
+            visual_dir=visual, audio_path=audio, subtitle_path=None, output_dir=tmp_path / "out",
+            orientation=Orientation.LANDSCAPE, width=640, height=360))
+
+    caplog.set_level("INFO", logger="content_farm.assembly.timeline_assembly")
+    first = assemble().read_bytes()
+    Image.new("RGB", (640, 360), "#20c060").save(visual / "00:01.000~00:02.000.png")   # scene 2 changed
+    second = assemble()
+    assert "Normalized 2 clip(s), reused 0" in caplog.text
+    assert "Normalized 1 clip(s), reused 1" in caplog.text
+    assert second.read_bytes() != first
+    assert len(list((tmp_path / "out" / "norm_cache").iterdir())) == 2   # the stale entry was pruned

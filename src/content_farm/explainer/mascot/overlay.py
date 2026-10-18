@@ -17,6 +17,9 @@ from pathlib import Path
 from content_farm.explainer.mascot.render import CANVAS_H, CANVAS_W
 
 FRAME_W, FRAME_H = 1920, 1080
+# 2026-10-18 (CoWoS v3, 8:30): medium 79.7 s vs veryfast 52.2 s at crf 18, SSIM 0.9987 against the
+# medium encode and a smaller file; decode + overlay alone is 23.5 s. YouTube re-encodes anyway.
+OVERLAY_PRESET = "veryfast"
 
 
 @dataclass(frozen=True)
@@ -54,7 +57,7 @@ def overlay_command(
     return [
         "ffmpeg", "-v", "error", "-y", "-i", str(draft), "-i", str(alpha_video),
         "-filter_complex", graph, "-map", "[v]", "-map", "0:a?",
-        "-c:v", "libx264", "-preset", "medium", "-crf", str(crf),
+        "-c:v", "libx264", "-preset", OVERLAY_PRESET, "-crf", str(crf),
         "-c:a", "copy", *trim, "-movflags", "+faststart", str(out),
     ]
 

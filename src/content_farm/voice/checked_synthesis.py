@@ -90,6 +90,14 @@ class CheckedSynthesizer:
                            output_path.name, len(attempts), check.best.cer, list(check.best.missing))
         return check
 
+    async def check_file(self, narration: str, path: Path) -> SceneCheck:
+        """Read back an existing take (e.g. one patched by window re-voicing) without re-generating."""
+        attempt = evaluate(narration, await self.transcribe(path), self._terms, None, self._aliases)
+        check = SceneCheck((attempt,), 0, self._max_cer)
+        logger.info("Speech check %s (read back): CER %.3f missing %s", path.name, attempt.cer,
+                    list(attempt.missing) or "-")
+        return check
+
     def reassess(self, narration: str, record: dict) -> dict:
         """Re-judge a kept take from its stored transcript with the current rules (e.g. a new
         ``heard_as`` homophone). The audio is unchanged, so nothing is synthesized or re-heard."""

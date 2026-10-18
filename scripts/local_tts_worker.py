@@ -13,7 +13,8 @@ directories; the parent sets ``HF_HUB_OFFLINE=1`` so nothing is downloaded.
 Requests::
 
     {"op": "load_tts", "kind": "voxcpm2" | "qwen3_tts", "model_dir": "..."}
-    {"op": "synth", "text": "...", "ref_audio": "...", "ref_text": "...", "seed": 1, "out": "x.wav"}
+    {"op": "synth", "text": "...", "ref_audio": "...", "ref_text": "...", "seed": 1, "out": "x.wav",
+     "prompt_audio": "...", "prompt_text": "..."}   # prompt_*: optional (voxcpm2), continuation context
     {"op": "load_asr", "model_dir": "..."}
     {"op": "asr", "file": "x.wav"}          -> {"text": "<Traditional Chinese>"}
     {"op": "quit"}
@@ -70,8 +71,11 @@ def _synth(req: dict) -> dict:
         ref = load_audio(req["ref_audio"], sample_rate=model.sample_rate)
         results = model.generate(text=req["text"], ref_audio=ref, ref_text=req["ref_text"], lang_code="chinese")
     else:
-        results = model.generate(text=req["text"], ref_audio=req["ref_audio"], prompt_audio=req["ref_audio"],
-                                 prompt_text=req["ref_text"])
+        # prompt_audio / prompt_text: continue from this audio (default: the voice reference itself);
+        # sentence-window re-voicing passes the previous sentence of the old take here.
+        results = model.generate(text=req["text"], ref_audio=req["ref_audio"],
+                                 prompt_audio=req.get("prompt_audio") or req["ref_audio"],
+                                 prompt_text=req.get("prompt_text") or req["ref_text"])
     chunks = list(results)
     if not chunks:
         raise RuntimeError("model returned no audio")

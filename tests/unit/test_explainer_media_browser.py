@@ -111,3 +111,31 @@ def test_transition_none_keeps_plain_slides_as_png(tmp_path: Path) -> None:
                           options=MediaOptions(transition="none"))
     assert [p.suffix for p in run.placed] == [".png"] * 4
     assert [_md5(p) for p in run.placed] == [_md5(r.png_path) for r in rendered]
+
+
+def test_scene_cache_rebuilds_only_the_changed_slot(tmp_path: Path) -> None:
+    data = deck_dict()
+    deck = Deck.model_validate(data)
+    run_dir = tmp_path / "run"
+    render_pages(build_pages(deck), run_dir / "slides")
+    clips = plan_slide_timeline([1.0, 1.1, 1.2, 1.0])
+    options = MediaOptions(transition="crossfade", transition_seconds=0.2, replace=True)
+    first = media_to_visual(deck, run_dir, clips, stock=None, options=options)
+    assert first.reused == (False,) * 4
+    before = [_md5(p) for p in first.placed]
+
+    again = media_to_visual(deck, run_dir, clips, stock=None, options=options)
+    assert again.reused == (True,) * 4
+    assert [_md5(p) for p in again.placed] == before
+
+    data["sections"][1]["slides"][0]["heading"] = "改過的標題"
+    edited = Deck.model_validate(data)
+    render_pages(build_pages(edited), run_dir / "slides")
+    third = media_to_visual(edited, run_dir, clips, stock=None, options=options)
+    assert third.reused == (True, False, True, True)
+    after = [_md5(p) for p in third.placed]
+    # slot 1 blends into the changed slot 2's first frame: its final changes, its clip is reused
+    assert after[2] == before[2] and after[3] == before[3]
+    assert after[1] != before[1]
+    report = json.loads(third.report_path.read_text())
+    assert report["reused"] == 3

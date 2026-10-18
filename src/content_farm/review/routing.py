@@ -4,9 +4,14 @@ Each fix carries its linked scope (Leon 2026-10-18 fix-scope rules): every other
 number / term appears (sentences, titles, thumbnail text, description), and the whole chapter
 when the fix changes a chapter's argument. A plan whose fixes have no scope is refused.
 
-The full per-word index, the TTS window and "sentence ids → ranges to re-render" belong to
-feat/incremental-render; ``scope_provider`` / ``range_provider`` pick its functions up when that
-branch is merged (module ``content_farm.incremental``), else fall back to the simple versions here.
+How this meets feat/incremental-render (merged 1352879): the fix list here is the *pre-edit*
+scope (what the producer must touch). After the producer edits deck.json, their pieces take over
+by themselves: stable ``slide.sentence_ids`` keep unchanged sentences' audio/clips, the voice step
+re-voices only changed sentences ±2 within a scene, media/mascot caches redraw only changed scenes,
+and ``scripts/fix_scope.py`` (``explainer.fix_scope.analyse`` against ``review/deck.approved.json``,
+which panel approval also writes) lists every leftover old wording. ``scope_provider`` /
+``range_provider`` look for ``issue_scope`` / ``rerender_ranges`` in ``content_farm.explainer.fix_scope``
+and fall back to the simple versions here (that module has neither yet).
 """
 
 from __future__ import annotations
@@ -88,14 +93,14 @@ def simple_ranges(sentence_ids: list[str], sentences: list[Sentence]) -> dict[st
 
 def _provider(name: str, fallback: Callable) -> Callable:
     try:
-        module = importlib.import_module("content_farm.incremental")
+        module = importlib.import_module("content_farm.explainer.fix_scope")
     except ImportError:
         return fallback
     return getattr(module, name, fallback)
 
 
 def scope_provider() -> Callable[[dict[str, Any], Texts], Scope]:
-    return _provider("fix_scope", simple_scope)
+    return _provider("issue_scope", simple_scope)
 
 
 def range_provider() -> Callable[[list[str], list[Sentence]], dict[str, list[str]]]:

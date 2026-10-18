@@ -36,7 +36,9 @@ from content_farm.explainer.mascot.run import frames_for_run, probe_video, run_o
 def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--run-dir", type=Path, required=True)
-    parser.add_argument("--workers", type=int, default=min(4, os.cpu_count() or 1))
+    parser.add_argument("--workers", type=int, default=min(3, os.cpu_count() or 1))
+    parser.add_argument("--no-cache", action="store_true",
+                        help="redraw every scene (default: reuse scenes whose identity is unchanged)")
     parser.add_argument("--seed", type=int, default=7, help="idle-motion seed (same seed = same frames)")
     parser.add_argument("--seconds", type=float, help="only the first N seconds (preview)")
     parser.add_argument("--out", type=Path, help="default <run-dir>/assembly/final.mp4")
@@ -99,7 +101,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.pngtuber:
             return _pngtuber(args)
         result = run_overlay(args.run_dir, workers=args.workers, seed=args.seed,
-                             seconds=args.seconds, out=args.out)
+                             seconds=args.seconds, out=args.out, use_cache=not args.no_cache)
         if args.dump_params:
             info = probe_video(args.run_dir / "assembly" / "draft.mp4")
             frames = frames_for_run(args.run_dir, info, args.seed)
@@ -111,9 +113,10 @@ def main(argv: list[str] | None = None) -> int:
 
     t = result.timings
     seconds = result.rendered_frames / result.info.fps
-    print(f"Frames: {result.rendered_frames} ({seconds:.1f}s @ {result.info.fps:g} fps), "
-          f"{result.render.unique_frames} unique, {result.render.workers} workers")
-    print(f"Timing: params {t['params']:.1f}s, render {t['render']:.1f}s, "
+    print(f"Frames: {result.rendered_frames} ({seconds:.1f}s @ {result.info.fps:g} fps); "
+          f"scenes {result.scenes}, reused {result.reused_scenes}; drew {result.render.frames} frames "
+          f"with {result.render.workers} workers")
+    print(f"Timing: params {t['params']:.1f}s, render {t['render']:.1f}s, join {t.get('join', 0.0):.1f}s, "
           f"overlay {t['overlay']:.1f}s, total {t['total']:.1f}s")
     print(f"Alpha:  {result.alpha_video}")
     print(f"Final:  {result.final}")

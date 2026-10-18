@@ -20,6 +20,7 @@ from pydantic import ValidationError
 
 from content_farm.explainer.deck import load_deck
 from content_farm.explainer.lint import lint_deck
+from content_farm.explainer.sentence_ids import LEDGER_FILE, stamp_run
 from content_farm.explainer.to_script import deck_to_script
 
 
@@ -29,6 +30,8 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--deck", type=Path, help="deck.json path (default <run-dir>/deck.json)")
     parser.add_argument("--out", type=Path, help="script.json path (default <run-dir>/script.json)")
     parser.add_argument("--strict", action="store_true", help="treat lint warnings as errors")
+    parser.add_argument("--no-ids", action="store_true",
+                        help="do not stamp sentence ids into deck.json (default: stamp, see explainer.sentence_ids)")
     args = parser.parse_args(argv)
     if args.deck is None and args.run_dir is None:
         parser.error("give --run-dir or --deck")
@@ -41,8 +44,12 @@ def main(argv: list[str] | None = None) -> int:
     out_path = args.out or (args.run_dir or deck_path.parent) / "script.json"
 
     try:
+        if not args.no_ids:
+            stamp = stamp_run(deck_path.parent, deck_path)
+            print(f"sentence ids: {len(stamp.kept)} kept ({len(stamp.moved)} moved), "
+                  f"{len(stamp.added)} new, {len(stamp.retired)} retired -> {deck_path.parent / LEDGER_FILE}")
         deck = load_deck(deck_path)
-    except (OSError, json.JSONDecodeError, ValidationError) as exc:
+    except (OSError, json.JSONDecodeError, ValidationError, KeyError, ValueError) as exc:
         print(f"Invalid deck {deck_path}:\n{exc}", file=sys.stderr)
         return 1
 

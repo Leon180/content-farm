@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import logging
 import multiprocessing
+import os
 import subprocess
 import tempfile
 import time
@@ -128,6 +129,10 @@ def render_alpha_video(
 
 
 def _concat(parts: Sequence[Path], out: Path) -> None:
+    out.parent.mkdir(parents=True, exist_ok=True)
+    if len(parts) == 1:
+        os.replace(parts[0], out)
+        return
     listing = out.parent / f".{out.stem}_parts.txt"
     listing.write_text("".join(f"file '{p.resolve()}'\n" for p in parts), encoding="utf-8")
     try:
@@ -147,3 +152,171 @@ def render_still(frame: Frame, out: Path, rig: Path = RIG_PATH) -> Path:
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_bytes(list(capture_pngs([frame], rig))[0])
     return out
+
+
+# --- Tiled GPU capture (incremental render) ---------------------------------------------------
+# Profile 2026-10-18 (CoWoS v3, 150 frames): one frame per screenshot on Chromium's software
+# raster = 144 ms/frame, almost all of it the rig's sticker filter (feMorphology + blur);
+# GPU raster (ANGLE Metal) = 43 ms; GPU + 2x2 rig iframes per screenshot = 13.6 ms
+# (decode + crop included). Composited on grey, tiled vs single capture differ in no pixel by
+# more than 16/255 and in 0.0000% of pixels by more than 8 (only fully transparent RGB moves).
+# A frame always lands in tile ``local index % TILES`` (chunks start on a tile boundary), so a
+# scene renders to the same pixels however the work is split.
+GPU_ARGS = ("--enable-gpu", "--use-angle=metal", "--enable-gpu-rasterization", "--ignore-gpu-blocklist")
+GRID_ARGS = ("--disable-web-security", "--allow-file-access-from-files")  # script the rig iframes
+TILE_COLS, TILE_ROWS = 2, 2
+TILES = TILE_COLS * TILE_ROWS
+
+
+def gpu_enabled() -> bool:
+    return os.environ.get("CF_MASCOT_GPU", "1") != "0"
+
+
+def render_settings() -> str:
+    """Names what shapes the captured pixels (part of each scene's cache identity)."""
+    return f"tiles{TILE_COLS}x{TILE_ROWS}:{'gpu' if gpu_enabled() else 'cpu'}"
+
+
+def _grid_html(rig: Path) -> str:
+    uri = rig.resolve().as_uri()
+    cells = "".join(
+        f'<iframe id="f{i}" src="{uri}" style="position:absolute;left:{(i % TILE_COLS) * CANVAS_W}px;'
+        f'top:{(i // TILE_COLS) * CANVAS_H}px;width:{CANVAS_W}px;height:{CANVAS_H}px;border:0"></iframe>'
+        for i in range(TILES))
+    return f"<!doctype html><html><body style='margin:0;background:transparent'>{cells}</body></html>"
+
+
+class RigGrid:
+    """``with RigGrid() as grid: for rgba in grid.capture(frames): ...`` — one browser,
+    TILES rig iframes, one screenshot per TILES frames."""
+
+    def __init__(self, rig: Path = RIG_PATH) -> None:
+        self._rig = rig
+        self._stack = None
+        self._page = None
+        self._cdp = None
+
+    def __enter__(self) -> RigGrid:
+        from contextlib import ExitStack
+
+        from playwright.sync_api import sync_playwright
+
+        stack = ExitStack()
+        try:
+            tmp = Path(stack.enter_context(tempfile.TemporaryDirectory(prefix="rig_grid_")))
+            grid = tmp / "grid.html"
+            grid.write_text(_grid_html(self._rig), encoding="utf-8")
+            pw = stack.enter_context(sync_playwright())
+            browser = pw.chromium.launch(args=[*CHROMIUM_ARGS, *(GPU_ARGS if gpu_enabled() else ()), *GRID_ARGS])
+            stack.callback(browser.close)
+            page = browser.new_page(viewport={"width": CANVAS_W * TILE_COLS, "height": CANVAS_H * TILE_ROWS})
+            page.goto(grid.as_uri())
+            page.wait_for_function(f"[...Array({TILES}).keys()].every(i => document.getElementById('f' + i)"
+                                   ".contentWindow.applyParams)")
+            cdp = page.context.new_cdp_session(page)
+            cdp.send("Emulation.setDefaultBackgroundColorOverride", {"color": {"r": 0, "g": 0, "b": 0, "a": 0}})
+        except BaseException:
+            stack.close()
+            raise
+        self._stack, self._page, self._cdp = stack, page, cdp
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        if self._stack is not None:
+            self._stack.close()
+
+    def capture(self, frames: Sequence[Frame]):
+        """Yield one RGBA array (CANVAS_H x CANVAS_W x 4) per frame; frame i in tile i % TILES."""
+        import base64
+        import io
+
+        import numpy as np
+        from PIL import Image
+
+        for lo in range(0, len(frames), TILES):
+            batch = frames[lo:lo + TILES]
+            self._page.evaluate(
+                "(items) => items.forEach(([p, s], i) =>"
+                " document.getElementById('f' + i).contentWindow.applyParams(p, s))",
+                [[dict(f.params), f.say] for f in batch])
+            shot = self._cdp.send("Page.captureScreenshot", {"format": "png", "optimizeForSpeed": True})
+            img = np.asarray(Image.open(io.BytesIO(base64.b64decode(shot["data"]))).convert("RGBA"))
+            for i in range(len(batch)):
+                x, y = (i % TILE_COLS) * CANVAS_W, (i // TILE_COLS) * CANVAS_H
+                yield np.ascontiguousarray(img[y:y + CANVAS_H, x:x + CANVAS_W])
+
+
+def encode_rgba(frames_rgba, fps: float, out: Path) -> int:
+    """Pipe RGBA arrays into a ProRes 4444 .mov; returns the frame count."""
+    out.parent.mkdir(parents=True, exist_ok=True)
+    cmd = ["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgba", "-s", f"{CANVAS_W}x{CANVAS_H}",
+           "-framerate", f"{fps:g}", "-i", "-", *ALPHA_CODEC_ARGS, "-an", str(out)]
+    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+    count = 0
+    try:
+        for rgba in frames_rgba:
+            proc.stdin.write(rgba.tobytes())
+            count += 1
+    finally:
+        proc.stdin.close()
+        stderr = proc.stderr.read().decode(errors="replace")
+        proc.wait()
+    if proc.returncode != 0:
+        raise MascotRenderError(f"ffmpeg failed for {out}: {stderr[-400:]}")
+    return count
+
+
+def _render_chunks(args: tuple[list[tuple[Sequence[Frame], str]], float, str]) -> int:
+    """Worker: render a list of (frames, out path) chunks in one browser."""
+    chunks, fps, rig = args
+    with RigGrid(Path(rig)) as grid:
+        return sum(encode_rgba(grid.capture(frames), fps, Path(out)) for frames, out in chunks)
+
+
+def tile_chunks(count: int, size: int) -> list[tuple[int, int]]:
+    """[lo, hi) chunks of ``count`` frames, each starting on a tile boundary."""
+    size = max(TILES, size - size % TILES)
+    return [(lo, min(count, lo + size)) for lo in range(0, count, size)]
+
+
+def _lanes(pieces: Sequence[tuple[Sequence[Frame], Path, int]], workers: int) -> list[list[tuple[list, str]]]:
+    """Spread chunks over ``workers`` lanes, longest first onto the least loaded lane."""
+    lanes: list[list[tuple[list, str]]] = [[] for _ in range(max(1, min(workers, len(pieces))))]
+    loads = [0] * len(lanes)
+    for frames, part, _owner in sorted(pieces, key=lambda p: -len(p[0])):
+        lane = loads.index(min(loads))
+        lanes[lane].append((list(frames), str(part)))
+        loads[lane] += len(frames)
+    return [lane for lane in lanes if lane]
+
+
+def render_scene_parts(jobs: Sequence[tuple[Sequence[Frame], Path]], fps: float, *, workers: int = 3,
+                       chunk_frames: int = 400, rig: Path = RIG_PATH) -> RenderStats:
+    """Render scenes (frames, out .mov) in parallel: each scene is cut into tile-aligned
+    chunks, chunks are spread over ``workers`` processes, then joined per scene."""
+    import shutil
+
+    started = time.monotonic()
+    if not jobs:
+        return RenderStats(0, 0, 0, 0.0)
+    work = jobs[0][1].parent
+    work.mkdir(parents=True, exist_ok=True)
+    tmp_root = Path(tempfile.mkdtemp(prefix=".parts_", dir=work))
+    try:
+        pieces = [(frames[lo:hi], tmp_root / f"job{j:03d}_part{c:03d}.mov", j)
+                  for j, (frames, _out) in enumerate(jobs)
+                  for c, (lo, hi) in enumerate(tile_chunks(len(frames), chunk_frames))]
+        tasks = [(lane, fps, str(rig)) for lane in _lanes(pieces, workers)]
+        if len(tasks) == 1:
+            counts = [_render_chunks(tasks[0])]
+        else:
+            with multiprocessing.get_context("spawn").Pool(len(tasks)) as pool:
+                counts = pool.map(_render_chunks, tasks)
+        for j, (_frames, out) in enumerate(jobs):
+            _concat([part for _f, part, owner in pieces if owner == j], out)
+    finally:
+        shutil.rmtree(tmp_root, ignore_errors=True)
+    stats = RenderStats(sum(counts), sum(counts), len(tasks), time.monotonic() - started)
+    logger.info("mascot: %d frames in %d scene(s) with %d workers in %.1fs",
+                stats.frames, len(jobs), stats.workers, stats.seconds)
+    return stats

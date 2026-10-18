@@ -14,7 +14,7 @@
     "max_parallel_reviewers": 8
   },
   "steps": {
-    "_comment": "mem_gb = the job's own increment over the idle machine (≈5 GB used at idle, 82–85% free). 🟢 measured system-wide peaks: VoxCPM2 21.7 / Qwen3 24.5 (local_worker.py), mlx_video ≈26, ACE-Step MLX peak 16.7 (footprint 41 incl. swap), ffmpeg encode RSS ≈0.5 (ps 2026-10-18); increments = peak − 5 GB 🟡; the rest are 🟡 estimates.",
+    "_comment": "mem_gb = the job's own increment over the idle machine (≈5 GB used at idle, 82–85% free). 🟢 measured system-wide peaks: VoxCPM2 21.7 / Qwen3 24.5 (local_worker.py), mlx_video ≈26, ACE-Step MLX peak 16.7 (footprint 41 incl. swap), ffmpeg encode RSS ≈0.5 (ps 2026-10-18), Z-Image (mflux) 6.4 GB peak at 54–61 s/image (REPORT-ai-illustration); system-wide peaks − 5 GB idle = increments 🟡; the rest are 🟡 estimates.",
     "topic": {"mem_gb": 0.6},
     "article": {"mem_gb": 0.6},
     "deck": {"mem_gb": 0.6},
@@ -26,7 +26,7 @@
     "thumbnail": {"mem_gb": 1.5, "cpu_cores": 1},
     "thumbnail_variants": {"mem_gb": 2.0, "cpu_cores": 1},
     "voice": {"mem_gb": 18.0, "gpu": "exclusive", "cpu_cores": 2, "locks": ["local_tts"]},
-    "illustrate": {"mem_gb": 18.0, "gpu": "exclusive", "cpu_cores": 2, "locks": ["render"]},
+    "illustrate": {"mem_gb": 7.0, "gpu": "exclusive", "cpu_cores": 2, "locks": ["render"]},
     "ai_motion": {"mem_gb": 21.0, "gpu": "exclusive", "cpu_cores": 2, "locks": ["render"]},
     "bgm": {"mem_gb": 17.0, "gpu": "exclusive", "cpu_cores": 2, "locks": ["render"]},
     "media": {"mem_gb": 4.0, "gpu": "shared", "cpu_cores": 4, "locks": ["render"]},

@@ -54,6 +54,11 @@ class Settings(BaseSettings):
     tts_seed: int = 1
     # Narration tempo (ffmpeg atempo, pitch kept); the runner sets it from voice.tempo.
     tts_tempo: float = Field(default=1.0, ge=0.5, le=2.0)
+    # Sentence-window re-voicing (voice.window / voice.splice): when only some sentences of a
+    # scene changed, re-voice them plus this many neighbours each side (same scene) and splice
+    # into the old take. -1 = always re-voice the whole scene. Default from the CoWoS v3
+    # experiment, see REPORT-incremental-render.md.
+    tts_splice_radius: int = Field(default=2, ge=-1, le=5)
     # Resource gate before a local model loads: wait while these run or free memory is low.
     local_tts_busy_pattern: str = "mlx_video|mflux|ffmpeg"
     local_tts_min_free_pct: int = Field(default=25, ge=0, le=100)

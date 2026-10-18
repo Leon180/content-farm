@@ -17,6 +17,7 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
+from content_farm.explainer.scene_cache import SceneCache, digest, file_digest
 from content_farm.types import Orientation
 
 logger = logging.getLogger(__name__)
@@ -176,8 +177,13 @@ async def assemble_from_timeline(
     tmp_dir = output_dir / "_tmp"
     tmp_dir.mkdir(parents=True, exist_ok=True)
 
-    # Step 1: Normalize each clip, filling gaps with black frames
+    # Step 1: Normalize each clip, filling gaps with black frames. A normalized clip depends
+    # only on its source file and target length, so unchanged scenes are reused (incremental
+    # render); concat, audio and the subtitle burn still run over the whole video.
     normalized: list[Path] = []
+    norm_cache = SceneCache(output_dir / NORM_CACHE_DIR)
+    keys: list[str] = []
+    reused = 0
     cursor = 0.0  # current position in seconds
     for i, clip in enumerate(clips):
         # Insert black filler if there's a gap before this clip
@@ -191,14 +197,22 @@ async def assemble_from_timeline(
             )
             normalized.append(filler_path)
 
-        norm_path = tmp_dir / f"norm_{i:03d}.mp4"
-        await _normalize_clip(
-            clip, norm_path,
-            ffmpeg_path=ffmpeg_path, ffprobe_path=ffprobe_path,
-            width=width, height=height, fps=fps,
-        )
-        normalized.append(norm_path)
+        key = _normalized_key(clip, width=width, height=height, fps=fps)
+        if norm_cache.get(key) is None:
+            norm_path = tmp_dir / f"norm_{i:03d}.mp4"
+            await _normalize_clip(
+                clip, norm_path,
+                ffmpeg_path=ffmpeg_path, ffprobe_path=ffprobe_path,
+                width=width, height=height, fps=fps,
+            )
+            norm_cache.put(key, {"clip.mp4": norm_path}, {"source": clip.path.name}, move=True)
+        else:
+            reused += 1
+        keys.append(key)
+        normalized.append(norm_cache.path(key, "clip.mp4"))
         cursor = clip.end_seconds
+    norm_cache.prune(keys)
+    logger.info("Normalized %d clip(s), reused %d from %s", len(clips) - reused, reused, norm_cache.root)
 
     # Step 2: Concat normalized clips
     concat_path = tmp_dir / "video_only.mp4"
@@ -223,6 +237,20 @@ async def assemble_from_timeline(
         len(clips), draft_path,
     )
     return draft_path
+
+
+# The subtitle burn is the one whole-video encode left in assembly. 2026-10-18 (CoWoS v3, 8:30):
+# medium/crf 23 took ~75 s; veryfast/crf 18 is faster and keeps more detail for the overlay
+# encode that follows (see REPORT-incremental-render.md for the measured numbers).
+BURN_PRESET, BURN_CRF = "veryfast", "18"
+NORM_CACHE_DIR = "norm_cache"
+NORMALIZE_VERSION = 1   # bump when _normalize_clip's encode settings change
+
+
+def _normalized_key(clip: TimelineClip, *, width: int, height: int, fps: int) -> str:
+    """Identity of a normalized clip: source content, its target length (as passed to -t), frame."""
+    return digest({"v": NORMALIZE_VERSION, "source": file_digest(clip.path), "image": clip.is_image,
+                   "t": f"{clip.target_duration:.2f}", "w": width, "h": height, "fps": fps})
 
 
 async def _normalize_clip(
@@ -401,7 +429,7 @@ async def _burn_subtitles(
             ffmpeg_path, "-y",
             "-i", str(video_path),
             "-vf", f"ass={tmp_ass}",
-            "-c:v", "libx264", "-preset", "medium", "-crf", "23",
+            "-c:v", "libx264", "-preset", BURN_PRESET, "-crf", BURN_CRF,
             "-c:a", "copy",
             "-pix_fmt", "yuv420p",
             "-movflags", "+faststart",
