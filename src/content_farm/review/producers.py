@@ -88,8 +88,9 @@ def produce(step: str, run_dir: Path, *, channel: str, config: ReviewConfig, pyt
     log_dir.mkdir(parents=True, exist_ok=True)
     rid = f"{step}-{len(list(log_dir.glob(f'{step}-*.prompt.md'))) + 1}"
     (log_dir / f"{rid}.prompt.md").write_text(prompt, encoding="utf-8")
-    tools = (*TOOLS, f"Bash({python} {REPO}/scripts/*)")
+    tools = (*TOOLS, f"Bash({python} {REPO}/scripts/:*)")   # prefix rule: only the repo's own scripts
     call = Call(rid, prompt, RECEIPT, tier.model, tier.effort, tools=tools, cwd=run_dir, add_dirs=(REPO,),
+                env=(("PYTHONPATH", str(REPO / "src")),),
                 timeout_s=TIMEOUT_S[step], retries=1, write_tools=True)   # one retry: network drops (2026-10-18)
     result = (client or (lambda c: run_call(c, log_dir=log_dir)))(call)
     with (log_dir / "producers.jsonl").open("a", encoding="utf-8") as handle:

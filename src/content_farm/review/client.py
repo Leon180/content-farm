@@ -41,6 +41,7 @@ class Call:
     timeout_s: int = 1200
     retries: int = 1
     write_tools: bool = False          # producer agents may write files in cwd
+    env: tuple[tuple[str, str], ...] = ()   # extra child env (never an API key: PAID_ENV is removed after)
 
 
 @dataclass(frozen=True)
@@ -77,8 +78,8 @@ def _subprocess(argv: list[str], stdin: str, cwd: Path, env: dict[str, str], tim
     return proc.returncode, proc.stdout, proc.stderr
 
 
-def child_env(base: dict[str, str] | None = None) -> dict[str, str]:
-    env = dict(os.environ if base is None else base)
+def child_env(base: dict[str, str] | None = None, extra: tuple[tuple[str, str], ...] = ()) -> dict[str, str]:
+    env = {**(os.environ if base is None else base), **dict(extra)}
     for key in PAID_ENV:
         env.pop(key, None)
     return env
@@ -126,7 +127,7 @@ def run_call(call: Call, *, runner: Runner = _subprocess, log_dir: Path | None =
     started = time.monotonic()
     cost, tokens, used = 0.0, {"input": 0, "output": 0, "cache_read": 0, "cache_write": 0}, ()
     for attempt in range(1, call.retries + 2):
-        code, stdout, stderr = runner(argv_for(call), call.prompt, call.cwd, child_env(), call.timeout_s)
+        code, stdout, stderr = runner(argv_for(call), call.prompt, call.cwd, child_env(extra=call.env), call.timeout_s)
         if log_dir is not None:
             log_dir.mkdir(parents=True, exist_ok=True)
             (log_dir / f"{call.rid}.attempt{attempt}.json").write_text(stdout or stderr, encoding="utf-8")
