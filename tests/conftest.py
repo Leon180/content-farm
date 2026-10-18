@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+from pathlib import Path
 from unittest.mock import AsyncMock
 
 import pytest
@@ -9,6 +11,36 @@ import pytest
 from content_farm.config import Settings
 from content_farm.llm.cache import NullCache, ResponseCache
 from content_farm.llm.client import LLMClient
+from tests._shared_path_guard import install
+
+REPO = Path(__file__).resolve().parents[1]
+SHARED_PATH_GUARD = install(REPO)   # inactive until pytest_configure
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    SHARED_PATH_GUARD.active = True
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_sessionfinish(session: pytest.Session) -> None:
+    SHARED_PATH_GUARD.active = False   # pytest's own reports (--junitxml …) may go anywhere
+
+
+@pytest.fixture(autouse=True)
+def _shared_paths_to_tmp(monkeypatch: pytest.MonkeyPatch, tmp_path_factory: pytest.TempPathFactory) -> Iterator[None]:
+    """Every machine-wide path (content_farm.paths) points at tmp; a write to a real one fails the test."""
+    shared = tmp_path_factory.getbasetemp() / "shared"
+    monkeypatch.setenv("CF_CACHE_ROOT", str(shared / "cache"))
+    monkeypatch.setenv("CF_HEAVY_QUEUE_DIR", str(shared / "cache" / "heavy-queue"))
+    monkeypatch.setenv("CF_LOCAL_TTS_LOCK_PATH", str(shared / "cache" / "local_tts.lock"))
+    monkeypatch.setenv("CF_ORCH_MAIL", str(shared / "orchestrator" / "orch_mail.py"))   # absent: no mail
+    monkeypatch.setenv("CF_ORCH_MAIL_DIR", str(shared / "orch-mail"))
+    monkeypatch.setenv("ORCH_MAIL_DIR", str(shared / "orch-mail"))
+    before = len(SHARED_PATH_GUARD.violations)
+    yield
+    hits = SHARED_PATH_GUARD.violations[before:]
+    if hits:
+        pytest.fail("\n".join(hits), pytrace=False)
 
 
 @pytest.fixture(autouse=True)

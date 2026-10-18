@@ -39,7 +39,7 @@ def _status() -> int:
               f"{state}  pid {row['pid']}")
         if row.get("reason"):
             print(f"      ↳ {row['reason']}")
-    print(f"{len(rows)} job(s) in {q.QUEUE_DIR}" if rows else f"queue empty ({q.QUEUE_DIR})")
+    print(f"{len(rows)} job(s) in {q.default_queue_dir()}" if rows else f"queue empty ({q.default_queue_dir()})")
     return 0
 
 

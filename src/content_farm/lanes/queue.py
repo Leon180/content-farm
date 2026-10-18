@@ -29,12 +29,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import IO
 
+from content_farm import paths
 from content_farm.lanes import resources as res
 
-QUEUE_DIR = Path(os.environ.get("CF_HEAVY_QUEUE_DIR", Path.home() / ".cache" / "content-farm" / "heavy-queue"))
 SLOT_ENV = "CF_HEAVY_SLOT"
-ORCH_MAIL = Path.home() / "orchestrator" / "orch_mail.py"
-ORCH_MAIL_DIR = Path.home() / ".claude" / "orch-mail-personal"
+
+
+def default_queue_dir() -> Path:
+    """Resolved per call (``CF_HEAVY_QUEUE_DIR``), so tests can redirect it after import."""
+    return paths.heavy_queue_dir()
 
 
 class QueueTimeout(RuntimeError):
@@ -72,10 +75,10 @@ def _ticket_fields() -> set[str]:
     return set(Ticket.__dataclass_fields__)
 
 
-def records(queue_dir: Path = QUEUE_DIR, *, alive: Callable[[int], bool] = _alive) -> list[dict]:
+def records(queue_dir: Path | None = None, *, alive: Callable[[int], bool] = _alive) -> list[dict]:
     """Live ticket records (ticket fields + state, reason, need, since); dead ones are removed."""
     out = []
-    for path in sorted(queue_dir.glob("*.json")):
+    for path in sorted((queue_dir or default_queue_dir()).glob("*.json")):
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
             Ticket(**{k: v for k, v in data.items() if k in _ticket_fields()})
@@ -89,12 +92,13 @@ def records(queue_dir: Path = QUEUE_DIR, *, alive: Callable[[int], bool] = _aliv
     return sorted(out, key=lambda d: Ticket(**{k: v for k, v in d.items() if k in _ticket_fields()}).priority())
 
 
-def tickets(queue_dir: Path = QUEUE_DIR, *, alive: Callable[[int], bool] = _alive) -> list[Ticket]:
+def tickets(queue_dir: Path | None = None, *, alive: Callable[[int], bool] = _alive) -> list[Ticket]:
     return [Ticket(**{k: v for k, v in d.items() if k in _ticket_fields()}) for d in records(queue_dir, alive=alive)]
 
 
-def status(queue_dir: Path = QUEUE_DIR, now: float | None = None) -> list[dict]:
+def status(queue_dir: Path | None = None, now: float | None = None) -> list[dict]:
     now = now or time.time()
+    queue_dir = queue_dir or default_queue_dir()
     return [{**r, "holding": r.get("state") == "running", "waited_s": int(now - r.get("since", now))}
             for r in records(queue_dir)]
 
@@ -116,8 +120,7 @@ def _as_job(record: dict) -> res.Job:
 
 def legacy_locks() -> tuple[Path, ...]:
     """runner.render_lock (``render.lock``) and voice.local_worker (``local_tts.lock``) before the queue."""
-    base = Path.home() / ".cache" / "content-farm"
-    return (base / "render.lock", base / "local_tts.lock")
+    return (paths.render_lock_path(), paths.local_tts_lock_path())
 
 
 def _lock_plan(need: res.Need, queue_dir: Path) -> list[tuple[Path, int]]:
@@ -172,14 +175,15 @@ def default_foreign(config: res.Config) -> Callable[[set[int]], list[tuple[int, 
 
 def orch_mail(summary: str, body: str) -> None:
     """One report to the orchestrator's personal pointer store; never raises."""
-    if not ORCH_MAIL.is_file():
+    script = paths.orch_mail_script()
+    if not script.is_file():
         return
-    note = QUEUE_DIR / f"stall-{uuid.uuid4().hex[:8]}.md"
+    note = default_queue_dir() / f"stall-{uuid.uuid4().hex[:8]}.md"
     note.write_text(f"## TL;DR\n{summary}\n\n{body}\n", encoding="utf-8")
     try:
-        subprocess.run(["python3", str(ORCH_MAIL), "put", "--kind", "report", "--from", "heavy-queue",
+        subprocess.run(["python3", str(script), "put", "--kind", "report", "--from", "heavy-queue",
                         "--to", "orchestrator", "--summary", summary[:100], "--file", str(note)],
-                       env={**os.environ, "ORCH_MAIL_DIR": str(ORCH_MAIL_DIR)}, capture_output=True, timeout=30,
+                       env={**os.environ, "ORCH_MAIL_DIR": str(paths.orch_mail_dir())}, capture_output=True, timeout=30,
                        check=False)
     except (OSError, subprocess.TimeoutExpired):
         pass
@@ -212,7 +216,7 @@ def _unit_test_bypass() -> bool:
 
 @contextmanager
 def slot(ticket: Ticket, need: res.Need, log: Callable[[str], None] = print, *, env: Env | None = None,
-         queue_dir: Path = QUEUE_DIR) -> Iterator[float]:
+         queue_dir: Path | None = None) -> Iterator[float]:
     """Wait for admission (and locks for local work); yields the seconds waited."""
     if need.local and os.environ.get(SLOT_ENV):        # a parent holds the local slot for us
         yield 0.0
@@ -221,6 +225,7 @@ def slot(ticket: Ticket, need: res.Need, log: Callable[[str], None] = print, *, 
         yield 0.0
         return
     env = env or Env()
+    queue_dir = queue_dir or default_queue_dir()
     config = env.config or res.load_config()
     why = res.impossible(need, env.probe(), config)
     if why:
@@ -273,7 +278,7 @@ EXCLUSIVE = res.Need(mem_gb=8.0, gpu="exclusive", cpu_cores=4, locks=("render",)
 
 @contextmanager
 def heavy_slot(ticket: Ticket, log: Callable[[str], None] = print, *, need: res.Need | None = None,
-               env: Env | None = None, queue_dir: Path = QUEUE_DIR) -> Iterator[float]:
+               env: Env | None = None, queue_dir: Path | None = None) -> Iterator[float]:
     """The old single-slot API: exclusive local work (default need ``EXCLUSIVE``)."""
     with slot(ticket, need or EXCLUSIVE, log, env=env, queue_dir=queue_dir) as waited:
         yield waited
