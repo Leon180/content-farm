@@ -156,7 +156,7 @@ def test_packaged_meta_counts_only_while_the_final_approval_matches(tmp_path: Pa
     meta = publish.build_meta(chipcat, run)
     publish.write_meta(run, {**meta, "title": "核可後的標題"})
     assert mk.write_kit(run, chipcat).preview
-    decide(run, chipcat, Gate.FINAL, "approved", by="test")
+    decide(run, chipcat, Gate.FINAL, "approved", by="test", override="test fixture")
     kit = mk.write_kit(run, chipcat)
     assert not kit.preview
     assert _read(run, "title.txt") == "核可後的標題\n"

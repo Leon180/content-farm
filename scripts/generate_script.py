@@ -311,4 +311,7 @@ def _print_review_gate_notice(run_dir: Path, script) -> None:  # noqa: ANN001
 
 
 if __name__ == "__main__":
+    from content_farm.llm.paid import consent_from_argv
+
+    sys.argv = consent_from_argv(sys.argv, "generate_script.py")   # metered API: --allow-paid or exit 2
     asyncio.run(main())

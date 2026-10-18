@@ -31,19 +31,22 @@ class Pipeline(str, Enum):
 
 
 class Gate(str, Enum):
+    TOPIC = "topic"      # 選題：評審團從候選挑前 N 題
     ARTICLE = "article"  # 文章審稿：論點、來源、八卦出處
     DECK = "deck"        # deck 審稿：contact sheet＋講稿
     SCRIPT = "script"    # 短劇本審稿（沒有文章階段的頻道用）
+    TITLE = "title"      # 標題與縮圖：首頁情境＋設計師＋製作人＋自動檢查
     MEDIA = "media"      # B-roll／AI 圖／artwork 授權
     FINAL = "final"      # 成片審看
 
 
-# Gates every pipeline must keep — the final watch-through is never optional.
-REQUIRED_GATES = {Gate.FINAL}
+# Gates every pipeline must keep. Since the review panels (Leon 2026-10-17, e0ac3ac36faf) every
+# gate is opened by an agent panel, so none of a pipeline's gates may be switched off.
 PIPELINE_GATES: dict[Pipeline, tuple[Gate, ...]] = {
-    Pipeline.EXPLAINER: (Gate.ARTICLE, Gate.DECK, Gate.MEDIA, Gate.FINAL),
+    Pipeline.EXPLAINER: (Gate.TOPIC, Gate.ARTICLE, Gate.DECK, Gate.TITLE, Gate.MEDIA, Gate.FINAL),
     Pipeline.SHORTS_SKIT: (Gate.SCRIPT, Gate.FINAL),
 }
+REQUIRED_GATES: dict[Pipeline, frozenset[Gate]] = {p: frozenset(g) for p, g in PIPELINE_GATES.items()}
 
 
 class _Strict(BaseModel):
@@ -259,7 +262,17 @@ class Channel(_Strict):
     youtube: YouTube
     identity: Identity | None = None   # opening / sign-off / description per channel
     audio: AudioMix = AudioMix()       # BGM / SFX / mastering (long videos)
+    publish: dict = {}                 # release windows; validated by production.publish_slot.PublishPlan
     notes: tuple[str, ...] = ()
+
+    @field_validator("publish")
+    @classmethod
+    def _publish_plan(cls, value: dict) -> dict:
+        if value:
+            from content_farm.production.publish_slot import PublishPlan
+
+            PublishPlan.model_validate(value)
+        return value
 
     @field_validator("brand")
     @classmethod
@@ -274,7 +287,7 @@ class Channel(_Strict):
         extra = [gate.value for gate in self.gates if gate not in allowed]
         if extra:
             raise ValueError(f"gates {extra} do not exist in pipeline {self.pipeline.value}")
-        missing = [gate.value for gate in REQUIRED_GATES if gate not in self.gates]
+        missing = sorted(gate.value for gate in REQUIRED_GATES[self.pipeline] if gate not in self.gates)
         if missing:
             raise ValueError(f"gate(s) {missing} cannot be removed")
         if self.pipeline is Pipeline.EXPLAINER and self.deck_category is None:

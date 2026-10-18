@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import logging
+import os
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -62,7 +63,8 @@ class LocalCloneProvider:
         self._reference = reference
         self._ffmpeg = ffmpeg_path
         self._seed = seed
-        self.worker = worker or LocalWorker(python, gate)
+        self._shared = worker is None and os.environ.get(SHARED_ENV) == "1"
+        self.worker = worker or (shared_worker(python, gate) if self._shared else LocalWorker(python, gate))
 
     @property
     def model(self) -> str:
@@ -113,7 +115,29 @@ class LocalCloneProvider:
         return await self.generate_speech(text, output_path=output_path, voice_id=voice_id, seed=seed)
 
     async def aclose(self) -> None:
-        await self.worker.close()
+        if not self._shared:              # a shared worker outlives the run; voice_batch closes it
+            await self.worker.close()
+
+
+# One worker (one loaded model) for every run voiced in this process (scripts/voice_batch.py,
+# Leon 2026-10-18 "TTS 模型載入一次就連配多支片"). The voice is the per-request reference clip,
+# so runs of different channels can share a model of the same family.
+SHARED_ENV = "CF_TTS_SHARED_WORKER"
+_SHARED: dict[str, LocalWorker] = {}
+
+
+def shared_worker(python: str, gate: GateConfig) -> LocalWorker:
+    if python not in _SHARED:
+        _SHARED[python] = LocalWorker(python, gate)
+    return _SHARED[python]
+
+
+async def close_shared_workers() -> int:
+    workers = list(_SHARED.values())
+    _SHARED.clear()
+    for worker in workers:
+        await worker.close()
+    return len(workers)
 
 
 async def _encode_mp3(ffmpeg: str, wav: Path, output_path: Path) -> None:

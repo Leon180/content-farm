@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import shlex
+from collections.abc import Callable
 from html import escape
 from pathlib import Path
 
@@ -19,6 +20,8 @@ from content_farm.production.channels import Channel, Gate
 REVIEW_DIR = "review"
 
 CHECKLISTS: dict[Gate, tuple[str, ...]] = {
+    Gate.TOPIC: ("題目撐得起一支片、跟頻道合、沒重複、來源可查（通常由選題評審團核可）",),
+    Gate.TITLE: ("標題縮圖不誇大、承諾在講稿前 60 秒兌現、縮到手機首頁讀得到（通常由評審團核可）",),
     Gate.ARTICLE: (
         "論點站得住；每個數字、八卦都有 sources.json 裡的來源",
         "艱深名詞先用國高中程度的比喻，再給精確定義",
@@ -143,7 +146,20 @@ def _script_section(run_dir: Path) -> str:
     return f"<h2>{escape(str(script.get('video_title', '')))}</h2>" + _table(("#", "旁白"), rows)
 
 
-SECTIONS = {Gate.ARTICLE: _article_section, Gate.DECK: _deck_section, Gate.MEDIA: _media_section,
+def _json_section(*names: str) -> Callable[[Path], str]:
+    def section(run_dir: Path) -> str:
+        parts = []
+        for name in names:
+            path = run_dir / name
+            text = path.read_text(encoding="utf-8") if path.is_file() else "（缺）"
+            parts.append(f"<h2>{escape(name)}</h2><pre>{escape(text)}</pre>")
+        return "".join(parts)
+    return section
+
+
+SECTIONS = {Gate.TOPIC: _json_section("topics/candidates.json"),
+            Gate.TITLE: _json_section("titles.json", "thumbnail_variants.json"),
+            Gate.ARTICLE: _article_section, Gate.DECK: _deck_section, Gate.MEDIA: _media_section,
             Gate.FINAL: _final_section, Gate.SCRIPT: _script_section}
 
 

@@ -98,7 +98,13 @@ def load_or_preview_meta(run_dir: Path, channel: Channel) -> tuple[dict, bool]:
     path = run_dir / publish.META_PATH
     if path.is_file() and final_approved(run_dir, channel):
         return json.loads(path.read_text(encoding="utf-8")), False
-    return publish.build_meta(channel, run_dir, publish_at=scheduled_publish_at(run_dir)), True
+    from datetime import datetime
+
+    from content_farm.production.publish_slot import peek
+
+    kind = "short" if channel.format.length == "short" else "long"
+    when = scheduled_publish_at(run_dir) or peek(run_dir, channel.code, kind, now=datetime.now().astimezone())
+    return publish.build_meta(channel, run_dir, publish_at=when), True
 
 
 def probe_video(video: Path) -> tuple[float, int, int] | None:

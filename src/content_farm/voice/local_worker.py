@@ -118,6 +118,7 @@ class LocalWorker:
         self._script = script
         self._proc: asyncio.subprocess.Process | None = None
         self._lock_handle: IO[str] | None = None
+        self._slot = None                      # lanes.queue heavy slot when this worker queued itself
         self._io_lock = asyncio.Lock()
         self._load_lock = asyncio.Lock()
         self._loaded: set[str] = set()
@@ -136,6 +137,19 @@ class LocalWorker:
         logger.info("Local TTS worker started (pid %d)", self._proc.pid)
 
     async def _acquire_model_lock(self) -> None:
+        """The machine-wide heavy queue (lanes.queue). Under ``produce.py run`` the runner already
+        holds the slot (CF_HEAVY_SLOT); run on its own, this worker queues like any other job."""
+        from content_farm.lanes.queue import SLOT_ENV, Ticket, heavy_slot
+        from content_farm.lanes.resources import load_config, need_for
+
+        if os.environ.get(SLOT_ENV):
+            return
+        slot = heavy_slot(Ticket(job=f"local-tts:pid{os.getpid()}", kind="other"), logger.info,
+                          need=need_for("voice", load_config()))
+        await asyncio.to_thread(slot.__enter__)
+        self._slot = slot
+
+    async def _acquire_legacy_lock(self) -> None:
         path = Path(self._gate.lock_path).expanduser()
         path.parent.mkdir(parents=True, exist_ok=True)
         handle = path.open("w")
@@ -200,6 +214,9 @@ class LocalWorker:
                 logger.info("Local TTS worker stopped (model unloaded)")
         finally:
             self._loaded.clear()
+            slot, self._slot = self._slot, None
+            if slot is not None:
+                slot.__exit__(None, None, None)
             if self._lock_handle is not None:
                 fcntl.flock(self._lock_handle, fcntl.LOCK_UN)
                 self._lock_handle.close()

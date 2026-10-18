@@ -56,6 +56,8 @@ class FakeExecutor:
             _touch(d / "assembly" / "final.mp4")
         elif script == "audio_mix.py":
             _touch(d / "assembly" / "release.mp4")
+        elif script == "make_thumbnail.py" and "--variants" in command.argv:
+            _touch(d / "thumbnails" / "variant_a.jpg")
         elif script == "make_thumbnail.py":
             _touch(d / "thumbnails" / "thumbnail.png")
         return 0
@@ -82,21 +84,24 @@ def run_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     d.mkdir()
     for name in ("article.md", "sources.json", "deck.json", "thumbnail.json"):
         shutil.copy(EXAMPLE / name, d / name)
+    spec = json.loads((d / "thumbnail.json").read_text(encoding="utf-8"))
+    (d / "thumbnail_variants.json").write_text(json.dumps({"variants": {"A": spec}}, ensure_ascii=False))
+    (d / "titles.json").write_text(json.dumps({"titles": [{"id": "T1", "text": "測試標題"}]}, ensure_ascii=False))
     return d
 
 
 def _runner(run_dir: Path, executor: FakeExecutor, **options: object) -> Runner:
-    ctx = Context(_fish_chipcat(), run_dir, RunOptions(**options))  # type: ignore[arg-type]
+    ctx = Context(_fish_chipcat(), run_dir, RunOptions(**{"panels": False, **options}))  # type: ignore[arg-type]
     return Runner(ctx, executor=executor, log=lambda _: None)
 
 
 def _approve(run_dir: Path, gate: Gate, **kw: str) -> None:
-    decide(run_dir, _fish_chipcat(), gate, "approved", by="test", **kw)
+    decide(run_dir, _fish_chipcat(), gate, "approved", by="test", **{"override": "test (panels off)", **kw})
 
 
 def _walk_to_final(run_dir: Path, executor: FakeExecutor) -> None:
     runner = _runner(run_dir, executor, mock_voice=True)
-    for gate in (Gate.ARTICLE, Gate.DECK, Gate.MEDIA):
+    for gate in (Gate.ARTICLE, Gate.DECK, Gate.TITLE, Gate.MEDIA):
         result = runner.run()
         assert result.outcome is Outcome.GATE and result.step == f"gate_{gate.value}"
         assert result.review_page is not None and result.review_page.is_file()
@@ -108,9 +113,9 @@ def _walk_to_final(run_dir: Path, executor: FakeExecutor) -> None:
 def test_full_walk_stops_at_each_gate_and_packages(run_dir: Path) -> None:
     executor = FakeExecutor(run_dir)
     _walk_to_final(run_dir, executor)
-    # Fake mp4s cannot be probed, so QC reports errors and final approval needs a reason.
+    # Every manual approval is the panel back door and needs a reason (QC errors are noted too).
     with pytest.raises(ValueError, match="override"):
-        _approve(run_dir, Gate.FINAL)
+        decide(run_dir, _fish_chipcat(), Gate.FINAL, "approved", by="test")
     _approve(run_dir, Gate.FINAL, override="test fixture video")
     result = _runner(run_dir, executor, mock_voice=True).run()
     assert result.outcome is Outcome.COMPLETE
@@ -120,7 +125,8 @@ def test_full_walk_stops_at_each_gate_and_packages(run_dir: Path) -> None:
     assert meta["credentials_env"]["refresh_token"] == "CF_YT_CHIPCAT_REFRESH_TOKEN"
     state = load_state(run_dir, "chipcat")
     assert "OVERRIDE QC" in state.decisions["final"].note
-    assert {state.steps[f"gate_{g}"].status for g in ("article", "deck", "media", "final")} == {"approved"}
+    assert {state.steps[f"gate_{g}"].status for g in ("article", "deck", "title", "media", "final")} == {"approved"}
+    assert "MANUAL OVERRIDE" in state.decisions["final"].note
 
 
 def test_resume_skips_finished_steps(run_dir: Path) -> None:
@@ -151,6 +157,8 @@ def test_paid_voice_needs_consent(run_dir: Path) -> None:
     _approve(run_dir, Gate.ARTICLE)
     runner.run()
     _approve(run_dir, Gate.DECK)
+    runner.run()
+    _approve(run_dir, Gate.TITLE)
     result = runner.run()
     assert result.outcome is Outcome.PAID and result.step == "voice"
     assert "voice" not in executor.calls and result.exit_code == 3
@@ -169,7 +177,7 @@ def voice_env_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 def _paid_runner(run_dir: Path, executor: FakeExecutor, env_file: Path, log: list[str]) -> Runner:
-    ctx = Context(_fish_chipcat(), run_dir, RunOptions(allow_paid=True, env_file=env_file))
+    ctx = Context(_fish_chipcat(), run_dir, RunOptions(allow_paid=True, env_file=env_file, panels=False))
     return Runner(ctx, executor=executor, log=log.append)
 
 
@@ -180,6 +188,8 @@ def _run_through_voice(run_dir: Path, executor: FakeExecutor, env_file: Path) ->
     _approve(run_dir, Gate.ARTICLE)
     runner.run()
     _approve(run_dir, Gate.DECK)
+    runner.run()
+    _approve(run_dir, Gate.TITLE)
     assert runner.run(until="voice").outcome is Outcome.COMPLETE
     return log
 
@@ -272,6 +282,11 @@ def test_failed_step_stops_and_retries(run_dir: Path) -> None:
 
 def test_missing_agent_output_waits_with_hint(run_dir: Path) -> None:
     (run_dir / "article.md").unlink()
+    result = _runner(run_dir, FakeExecutor(run_dir)).run()
+    assert result.outcome is Outcome.AGENT and result.step == "topic"    # a new run starts at the topic step
+    (run_dir / "topics").mkdir()
+    (run_dir / "topics" / "candidates.json").write_text('{"candidates": []}', encoding="utf-8")
+    _approve(run_dir, Gate.TOPIC)
     result = _runner(run_dir, FakeExecutor(run_dir)).run()
     assert result.outcome is Outcome.AGENT and "/article" in result.message
 

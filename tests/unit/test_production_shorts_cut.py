@@ -163,10 +163,10 @@ def test_short_run_dir_uses_the_cut_steps_and_only_the_final_gate(tmp_path: Path
             (run_dir / name).write_text("x", encoding="utf-8")
         return 0
 
-    result = Runner(Context(offwork, run_dir, RunOptions()), executor=fake, log=lambda _: None).run()
+    result = Runner(Context(offwork, run_dir, RunOptions(panels=False)), executor=fake, log=lambda _: None).run()
     assert calls == ["short_from_long.py"]
     assert result.outcome is Outcome.GATE and result.step == "gate_final"
-    with pytest.raises(ValueError, match="QC has"):  # the fake mp4 cannot be probed → QC error
+    with pytest.raises(ValueError, match="override"):  # a manual approval is the panel back door
         decide(run_dir, offwork, Gate.FINAL, "approved")
     with pytest.raises(ValueError, match="no gate 'script'"):
         decide(run_dir, offwork, Gate.SCRIPT, "approved")

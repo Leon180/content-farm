@@ -82,7 +82,7 @@ def test_scripted_spec_switches_the_runner_to_script_gate_then_voice(tmp_path: P
         calls.append(Path(command.argv[1]).name)
         return 0
 
-    result = Runner(Context(chipcat, run_dir, RunOptions()), executor=fake, log=lambda _: None).run()
+    result = Runner(Context(chipcat, run_dir, RunOptions(panels=False)), executor=fake, log=lambda _: None).run()
     assert result.outcome is Outcome.GATE and result.step == "gate_script" and calls == []
     script = json.loads((run_dir / "script.json").read_text(encoding="utf-8"))
     assert [s["narration"] for s in script["scenes"]] == [b["narration"] for b in BEATS["beats"]]

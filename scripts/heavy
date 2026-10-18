@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+"""Run any heavy local command through the machine-wide queue (Leon 2026-10-18).
+
+    scripts/heavy --label "orchestrator: artifact transcode" -- ffmpeg -i in.mov out.mp4
+    scripts/heavy --step voice --label "yokai/kyubi:voice" -- python scripts/run_stage.py --stage voice ...
+    scripts/heavy --mem-gb 21 --gpu exclusive --label "mlx_video trial" -- python -m mlx_video ...
+    scripts/heavy --status                      # who runs, who waits, for how long, and why
+    scripts/heavy --check "ffmpeg -i a b"       # hook classifier: exit 2 = block, 0 = allow
+
+Takes the same slot as produce.py (heavy.lock + the legacy render.lock / local_tts.lock, the
+pgrep + memory_pressure gate, the per-step admission check), runs the command, releases on exit.
+Works from any directory with a bare python3 (stdlib only). Exit code = the command's.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO / "src"))
+
+from content_farm.lanes import heavy_rules  # noqa: E402
+from content_farm.lanes import queue as q  # noqa: E402
+from content_farm.lanes import resources as res  # noqa: E402
+
+
+def _status() -> int:
+    rows = q.status()
+    for n, row in enumerate(rows, 1):
+        need = row.get("need", {})
+        mark = "▶" if row["holding"] else f"{n}."
+        state = "running" if row["holding"] else f"waiting {row['waited_s'] // 60}m"
+        print(f"{mark:>3} {row['kind']:<5} {row['job']:<38} {need.get('mem_gb', '?')} GB gpu={need.get('gpu', '?')} "
+              f"{state}  pid {row['pid']}")
+        if row.get("reason"):
+            print(f"      ↳ {row['reason']}")
+    print(f"{len(rows)} job(s) in {q.QUEUE_DIR}" if rows else f"queue empty ({q.QUEUE_DIR})")
+    return 0
+
+
+def _check(command: str) -> int:
+    verdict = heavy_rules.classify(command)
+    print(json.dumps({"block": verdict.block, "heavy": verdict.heavy, "matched": verdict.matched, "why": verdict.why},
+                     ensure_ascii=False))
+    return 2 if verdict.block else 0
+
+
+def main(argv: list[str]) -> int:
+    if "--" in argv:
+        split = argv.index("--")
+        argv, command = argv[:split], argv[split + 1:]
+    else:
+        command = []
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--label", default="")
+    parser.add_argument("--step", help="use this step's declared need from heavy_work.json")
+    parser.add_argument("--mem-gb", type=float)
+    parser.add_argument("--gpu", choices=res.GPU_MODES)
+    parser.add_argument("--kind", default="other", choices=("short", "long", "other"))
+    parser.add_argument("--status", action="store_true")
+    parser.add_argument("--check", metavar="COMMAND")
+    args = parser.parse_args(argv)
+    if args.status:
+        return _status()
+    if args.check is not None:
+        return _check(args.check)
+    if not command:
+        parser.error("give the command after --")
+    config = res.load_config()
+    need = res.need_for(args.step or "heavy_default", config)
+    if args.mem_gb is not None or args.gpu:
+        need = res.Need(args.mem_gb if args.mem_gb is not None else need.mem_gb, args.gpu or need.gpu,
+                        need.cpu_cores, need.locks)
+    ticket = q.Ticket(job=args.label or " ".join(command)[:60], kind=args.kind)
+    try:
+        with q.slot(ticket, need, lambda m: print(m, file=sys.stderr, flush=True)) as waited:
+            print(f"[heavy] slot after {waited:.0f}s: {ticket.job}", file=sys.stderr, flush=True)
+            started = time.monotonic()
+            code = subprocess.run(command, check=False).returncode
+            print(f"[heavy] done in {time.monotonic() - started:.0f}s (exit {code})", file=sys.stderr)
+            return code
+    except (q.ImpossibleNeed, q.QueueTimeout) as exc:
+        print(f"[heavy] {exc}", file=sys.stderr)
+        return 75
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

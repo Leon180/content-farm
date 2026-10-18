@@ -35,6 +35,11 @@ class RunOptions:
     env_file: Path = REPO_ROOT / ".env"
     mascot_workers: int = 3       # tiled GPU capture: 3 lanes drew CoWoS v3 (15.3k frames) in 113 s
     python: str = sys.executable
+    panels: bool = True           # gates opened by agent review panels (review_panels.yaml)
+    auto_agents: bool = False     # run producer agents (claude -p) for agent steps / rework
+    competitors: Path | None = None   # homepage feeds for the title & thumbnail panel
+    review_tier: str = ""         # "opus:high" lifts every reviewer (comparison runs only)
+    review_client: Callable | None = None   # tests inject a fake; None = claude -p subprocesses
 
 
 @dataclass(frozen=True)
@@ -124,11 +129,18 @@ def _media_args(ctx: Context) -> tuple[str, ...]:
     return tuple(args)
 
 
+THUMB_SPECS = ("titles.json", "thumbnail.json", "thumbnail_variants.json")
+
+
 def _gate_enabled(gate: Gate) -> Callable[[Channel], bool]:
     return lambda channel: channel.gate_enabled(gate)
 
 
 EXPLAINER_STEPS: tuple[Step, ...] = (
+    Step("topic", "agent", "選題候選（8–12 題）", outputs=("topics/candidates.json",),
+         hint="選題 agent 寫 topics/candidates.json（produce.py run --auto-agents 會自動呼叫）"),
+    Step("gate_topic", "gate", "選題評審", gate=Gate.TOPIC, artifacts=("topics/candidates.json",),
+         applies=_gate_enabled(Gate.TOPIC)),
     Step("article", "agent", "研究與文章", outputs=("article.md", "sources.json"),
          verify=lambda c: _py(c, "check_article.py", "--run-dir", _run_dir(c)),
          hint="在 run-dir 跑 /article <題目>（Claude skill，會上網查資料）"),
@@ -137,14 +149,24 @@ EXPLAINER_STEPS: tuple[Step, ...] = (
     Step("deck", "agent", "簡報大綱與講稿", outputs=("deck.json",),
          verify=lambda c: _py(c, "deck_to_script.py", "--run-dir", _run_dir(c), "--strict"),
          hint="跑 /deck-outline 再 /deck（會產生 deck.json）"),
-    Step("thumbnail_spec", "agent", "縮圖文案與主視覺", outputs=("thumbnail.json",),
-         hint="寫 thumbnail.json：角色／畫作＋≤10 字大字＋promise（前 60 秒兌現的講稿原句），見 /deck 縮圖規則"),
     Step("policy", "internal", "頻道素材政策與頻道規則（開場、片尾、觀點段、角色）", inputs=("deck.json",)),
     Step("slides", "cmd", "渲染投影片（頻道品牌）", outputs=("slides/contact_sheet.png",),
          inputs=("deck.json",),
          command=lambda c: _py(c, "render_slides.py", "--run-dir", _run_dir(c), "--brand", c.channel.brand)),
     Step("gate_deck", "gate", "deck 審稿", gate=Gate.DECK,
          artifacts=("deck.json", "slides/contact_sheet.png"), applies=_gate_enabled(Gate.DECK)),
+    Step("thumbnail_spec", "agent", "標題 5–6 個＋縮圖 3 款文案", outputs=THUMB_SPECS,
+         hint="寫 titles.json、thumbnail.json、thumbnail_variants.json（承諾＝前 60 秒的講稿原句），見 /deck 縮圖規則"),
+    Step("thumbnail", "cmd", "頻道縮圖（角色／畫作＋大字）", outputs=("thumbnails/thumbnail.png",),
+         inputs=("thumbnail.json", "assets/artwork/*"),
+         command=lambda c: _py(c, "make_thumbnail.py", "--run-dir", _run_dir(c), "--channel", c.channel.code)),
+    Step("thumbnail_variants", "cmd", "縮圖 A/B/C（YouTube 測試與比較）", outputs=("thumbnails/variant_*.jpg",),
+         inputs=("thumbnail_variants.json", "assets/artwork/*"),
+         command=lambda c: _py(c, "make_thumbnail.py", "--run-dir", _run_dir(c), "--channel", c.channel.code,
+                               "--variants")),
+    Step("gate_title", "gate", "標題與縮圖評審", gate=Gate.TITLE,
+         artifacts=("titles.json", "thumbnail.json", "thumbnail_variants.json", "thumbnails/variant_*.jpg"),
+         applies=_gate_enabled(Gate.TITLE)),
     Step("voice", "cmd", "配音＋字幕對齊", outputs=("audio/scene_*.mp3", "subtitles/subtitles.srt"),
          inputs=("deck.json", "script.json"),
          command=lambda c: _py(c, "run_stage.py", "--stage", "voice", "--run-dir", _run_dir(c),
@@ -180,9 +202,6 @@ EXPLAINER_STEPS: tuple[Step, ...] = (
          command=lambda c: _py(c, "audio_mix.py", "--run-dir", _run_dir(c), "--channel", c.channel.code),
          identity=lambda c: c.channel.audio.model_dump_json(),
          heavy=True, applies=lambda channel: channel.audio.enabled),
-    Step("thumbnail", "cmd", "頻道縮圖（角色／畫作＋大字）", outputs=("thumbnails/thumbnail.png",),
-         inputs=("thumbnail.json", "assets/artwork/*", "assets/ai_images/*"),
-         command=lambda c: _py(c, "make_thumbnail.py", "--run-dir", _run_dir(c), "--channel", c.channel.code)),
     Step("qc", "internal", "自動品質檢查", outputs=("qc/qc_report.json",),
          inputs=("assembly/*.mp4", "credits.json", "subtitles/subtitles.srt", "deck.json", "thumbnail.json",
                  "thumbnails/thumbnail.png", "audio/speech_check.json")),
@@ -263,7 +282,16 @@ def steps_for(channel: Channel, run_dir: Path | None = None) -> tuple[Step, ...]
 
         return SHORTS_SCRIPTED_STEPS if load_spec(run_dir).scripted else SHORTS_CUT_STEPS
     steps = {Pipeline.EXPLAINER: EXPLAINER_STEPS, Pipeline.SHORTS_SKIT: SHORTS_SKIT_STEPS}[channel.pipeline]
-    return tuple(step for step in steps if step.applies(channel))
+    legacy = _topic_chosen_elsewhere(run_dir)
+    return tuple(step for step in steps if step.applies(channel) and not (legacy and step.name in TOPIC_STEPS))
+
+
+TOPIC_STEPS = ("topic", "gate_topic")
+
+
+def _topic_chosen_elsewhere(run_dir: Path | None) -> bool:
+    """A run started before the topic panel (article already there, no topics/): skip the topic steps."""
+    return run_dir is not None and (run_dir / "article.md").is_file() and not (run_dir / "topics").is_dir()
 
 
 def step_names(channel: Channel, run_dir: Path | None = None) -> tuple[str, ...]:

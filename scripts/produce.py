@@ -41,6 +41,9 @@ from content_farm.production.state import STATE_FILE, load_state, read_channel_c
 from content_farm.production.steps import Context, RunOptions, steps_for
 
 
+MAX_REWORK_LOOPS = 12   # every stage caps its own rounds; this only stops a runaway loop
+
+
 def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -58,6 +61,12 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     run.add_argument("--until", help="stop after this step")
     run.add_argument("--force", action="append", default=[], help="re-run this step (repeatable)")
     run.add_argument("--publish-at", help="ISO datetime with offset, e.g. 2026-10-22T19:00+08:00")
+    run.add_argument("--no-panels", action="store_true",
+                     help="old behaviour: gates wait for produce.py approve (needs --override) instead of review panels")
+    run.add_argument("--auto-agents", action="store_true",
+                     help="run producer agents (claude -p) for topic/article/deck/titles and their rework")
+    run.add_argument("--competitors", type=Path, help="dir with competitors.json for the homepage feeds")
+    run.add_argument("--review-tier", default="", help='lift every reviewer, e.g. "opus:high" (comparison runs)')
 
     for name in ("approve", "reject"):
         p = sub.add_parser(name)
@@ -66,7 +75,8 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         p.add_argument("--note", default="")
         p.add_argument("--by", default="leon", help="who decided (recorded in production.json)")
         if name == "approve":
-            p.add_argument("--override", default="", help="approve the final gate despite QC errors")
+            p.add_argument("--override", default="",
+                           help="required: why a person approves instead of the review panel (logged)")
 
     short = sub.add_parser("short-from-long", help="cut a 9:16 「一個數字」 Short from a long run")
     short.add_argument("--from", dest="long_run_dir", type=Path, required=True, help="the long run-dir")
@@ -108,6 +118,14 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     plan.add_argument("--week", required=True, help="ISO week, e.g. 2026-W43")
     plan.add_argument("--today", type=date.fromisoformat, default=date.today())
     sub.add_parser("channels")
+    review = sub.add_parser("review", help="side round of one stage's panel (e.g. all-opus comparison); never opens a gate")
+    review.add_argument("--run-dir", type=Path, required=True)
+    review.add_argument("--stage", required=True, help="topic|article|script|title_thumb|media|final")
+    review.add_argument("--tier", default="", help='lift every reviewer, e.g. "opus:high"')
+    review.add_argument("--round", type=int, default=1, help="round number to mirror (holdout sits in the last)")
+    review.add_argument("--suffix", default="-compare")
+    review.add_argument("--competitors", type=Path)
+    sub.add_parser("queue", help="machine-wide heavy-work queue (renders, local TTS, image/video models)")
     return parser.parse_args(argv)
 
 
@@ -135,16 +153,27 @@ def cmd_run(args: argparse.Namespace) -> int:
     if args.publish_at:
         _write_schedule(args.run_dir, args.publish_at)
     options = RunOptions(mock_voice=args.mock_voice, allow_paid=args.allow_paid, no_stock=args.no_stock,
-                         mascot_workers=args.mascot_workers,
+                         mascot_workers=args.mascot_workers, panels=not args.no_panels,
+                         auto_agents=args.auto_agents, competitors=args.competitors,
+                         review_tier=args.review_tier,
                          **({"env_file": args.env_file} if args.env_file else {}))
     runner = Runner(Context(channel, args.run_dir.resolve(), options), max_load=args.max_load)
     result = runner.run(until=args.until, force=frozenset(args.force))
+    loops = 0
+    while args.auto_agents and result.outcome is Outcome.REWORK and loops < MAX_REWORK_LOOPS:
+        loops += 1   # rework routed back by a panel: the producer agents redo it, then the run goes on
+        print(f"[rework {loops}] {result.step}: {result.message}")
+        result = runner.run(until=args.until)
     print(f"[{result.outcome.value}] {result.step}: {result.message}")
     if result.review_page:
         print(f"審核頁：{result.review_page}")
     if result.outcome is Outcome.GATE:
         gate = result.step.removeprefix("gate_")
-        print(f"核可：python scripts/produce.py approve --run-dir {args.run_dir} --gate {gate}")
+        print(f"手動核可（後門）：python scripts/produce.py approve --run-dir {args.run_dir} --gate {gate} "
+              f'--override "理由"')
+    if result.outcome is Outcome.REWORK:
+        print(f"退回：修改清單在 {args.run_dir}/review/{result.step.removeprefix('gate_')}.fixes.json；"
+              f"改完重跑 run（--auto-agents 會自動呼叫產出 agent）")
     if result.outcome is Outcome.COMPLETE and not args.until:
         print(f"下一步：/upload（讀 {args.run_dir}/upload/youtube_meta.json）")
     return result.exit_code
@@ -248,11 +277,48 @@ def cmd_channels(_: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_review(args: argparse.Namespace) -> int:
+    from content_farm.production import panel_flow
+    from content_farm.review.rounds import run_round
+    from content_farm.review.scorecard_html import render
+
+    channel = load_channel(read_channel_code(args.run_dir))
+    ctx = Context(channel, args.run_dir.resolve(), RunOptions(review_tier=args.tier, competitors=args.competitors))
+    config = panel_flow.review_config(ctx)
+    stage = config.stages[args.stage]
+    competitors = panel_flow.competitors_for(ctx)
+    card = run_round(ctx.run_dir, stage_name=args.stage, config=config, channel=channel.code, channel_name=channel.name,
+                     round_no=args.round, with_holdout=args.round == stage.max_rounds, competitors=competitors,
+                     vertical=panel_flow._short(ctx), suffix=args.suffix,  # noqa: SLF001
+                     judge_context=panel_flow._judge_context(ctx, args.stage, competitors)(ctx.run_dir))  # noqa: SLF001
+    render(ctx.run_dir, channel.name)
+    verdict = card["verdict"]
+    print(f"[{'pass' if verdict['pass'] else 'fail'}] {card['label']}: {'；'.join(verdict['reasons']) or 'all thresholds met'}")
+    print(json.dumps(verdict["scores"], ensure_ascii=False, default=str)[:1500])
+    return 0
+
+
+def cmd_queue(_: argparse.Namespace) -> int:
+    from content_farm.lanes.queue import QUEUE_DIR, status
+
+    rows = status()
+    for n, row in enumerate(rows, 1):
+        mark = "▶" if row["holding"] else f"{n}."
+        state = "running" if row["holding"] else f"waiting {row['waited_s'] // 60}m"
+        need = row.get("need", {})
+        print(f"{mark:>3} {row['kind']:<5} {row['progress']:>4.0%}  {row['job']:<40} {need.get('mem_gb', '?')} GB "
+              f"gpu={need.get('gpu', '?')}  {state}  pid {row['pid']}")
+        if row.get("reason"):
+            print(f"      ↳ {row['reason']}")
+    print(f"{len(rows)} job(s) in {QUEUE_DIR}" if rows else f"queue empty ({QUEUE_DIR})")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
     handlers = {"run": cmd_run, "status": cmd_status, "inbox": cmd_inbox, "plan": cmd_plan,
                 "channels": cmd_channels, "short-from-long": cmd_short_from_long,
-                "manual-kit": cmd_manual_kit, "eval-loop": cmd_eval_loop,
+                "manual-kit": cmd_manual_kit, "eval-loop": cmd_eval_loop, "queue": cmd_queue, "review": cmd_review,
                 "approve": lambda a: cmd_decide(a, "approved"),
                 "reject": lambda a: cmd_decide(a, "rejected")}
     try:

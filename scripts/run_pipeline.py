@@ -135,4 +135,7 @@ def _print_materials_result(result: MaterialsResult) -> None:
 
 
 if __name__ == "__main__":
+    from content_farm.llm.paid import consent_from_argv
+
+    sys.argv = consent_from_argv(sys.argv, "run_pipeline.py")   # legacy line writes scripts via the metered API
     asyncio.run(main())
