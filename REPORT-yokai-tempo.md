@@ -46,4 +46,8 @@
 ## 進度紀錄（append）
 - 2026-10-18 開分支，改 tempo 和測試，複製 run-dir。
 - 09:25 UTC `produce.py run` 在 policy 失敗，停下回報。
-- 接手方式：Leon 選了選項之後，A 要先改 deck（加 mascot pose）並重審 gate_deck，再執行 `PYTHONPATH=<wt>/src .venv/bin/python scripts/produce.py run --run-dir output/yokai-kyubi-v2 --no-stock --env-file /Users/lileon/project/content-farm/.env`。
+- orchestrator 轉達：選 A，並照 prompt 檔「追加」一節做（merge review-panels／cowos-facts、deck 加青蛙書記、`--auto-agents` 跑第 3–6 步，gate_final 留給 Leon）。
+- 已 merge：`feat/review-panels`（376208e；CLAIMS.jsonl 衝突，保留本分支版本）、`feat/cowos-facts`（dcfc682，沒有衝突）。
+- 已寫好 `docs/yokai-tempo/add_frog_poses.py`，給 29/29 張投影片加 pose；原 deck 備份在 run-dir 的 `deck.before-frog.json`。
+- **又停下了**：權限分類器以「Modify Shared Resources」擋掉三條指令——全套 pytest（前景、背景各一次），以及執行 add_frog_poses.py 改 run-dir 的 deck.json。deck.json 目前跟備份逐位元相同（cmp 驗過）。我沒有換別的工具繞過。merge 之後的全套 pytest **沒有跑** 🔴。
+- 舊的接手方式：Leon 選了選項之後，A 要先改 deck（加 mascot pose）並重審 gate_deck，再執行 `PYTHONPATH=<wt>/src .venv/bin/python scripts/produce.py run --run-dir output/yokai-kyubi-v2 --no-stock --env-file /Users/lileon/project/content-farm/.env`。
