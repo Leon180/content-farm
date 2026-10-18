@@ -91,3 +91,174 @@ thresholds:            # Leon 2026-10-17 先用這組（另定再改）
   homepage_noticed_median: 3   # 首頁情境：被注意名次中位 ≤ 3
   homepage_pick_factor: 2.0    # 被選比例 ≥ 2/N（N＝首頁張數）
   max_rounds: 3
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 句子 id 欄位：由 feat/incremental-render 定義；未定前，deck 沒有此欄位時用「<slide id>.<序號>」（不穩定，僅供指認）
+sentence_id_field: sid
+
+# 每支片的評審流程（Leon 2026-10-17 決策 e0ac3ac36faf；設計稿 claude.ai/artifact/Q6ug8VB3rWc6fBLtorKi6r）
+# 由 src/content_farm/review/config.py 驗證；硬規則（必要角色、事實查核 opus·high、門檻下限、輪數上限）寫在程式裡，
+# 這裡只能「更嚴」不能「更鬆」。每位評審是 pipeline 自己啟動的 `claude -p --model --effort --json-schema` 子程序。
+review:
+  defaults: {max_parallel: 4, timeout_s: 1200, schema_retries: 1}
+  aggregator: {model: haiku, effort: low}      # 修改清單整理、退回路由、彙整
+  roles:
+    viewer: {title: 合成觀眾, kind: viewer}
+    writer_story:
+      title: 編劇（故事）
+      kind: pro
+      brief: >-
+        你是科普節目編劇，偏重故事：開場 15 秒內有沒有鉤子與承諾、每 5–10 秒有沒有留人的點（問題、反轉、數字揭曉、八卦、冷笑話）、
+        艱深名詞是否先用國高中程度的比喻再給定義、八卦是否有來源、冷笑話節拍是否自然、結尾是否回扣開場。
+      rubric: [十五秒鉤子, 留人點密度, 國高中比喻, 八卦與冷笑話節拍, 收尾回扣]
+    writer_density:
+      title: 編劇（資訊密度）
+      kind: pro
+      brief: >-
+        你是科普節目編劇，偏重資訊密度：內容撐不撐得起片長、有沒有灌水句或重講、一段是否丟太多數字、名詞密度、
+        論點是否一路推進、每個數字是否有單位與基準。
+      rubric: [內容撐得起片長, 無灌水重講, 數字密度與單位, 名詞密度, 論點推進]
+    director:
+      title: 導演
+      kind: pro
+      brief: >-
+        你是知識類節目導演：整體敘事、分鏡畫不畫得出來、畫面會不會停太久、畫面有沒有幫講稿說話、主持角色使用、結尾收束。
+      rubric: [敘事結構, 分鏡可行, 畫面節奏, 角色與語氣]
+    fact_checker:
+      title: 事實查核
+      kind: fact
+      tools: [Read, WebFetch, WebSearch]
+      brief: >-
+        你是事實查核員。逐條找出稿中每個數字、日期、引述、因果說法與八卦，回到 sources.json 的原始網址查證（用 WebFetch），
+        不要相信稿子或文章的轉述。不參考其他查核員。
+    producer:
+      title: 製作人
+      kind: producer
+      brief: >-
+        你是頻道製作人：題目與頻道合不合、跟頻道既有片有沒有重複、來源夠不夠；標題與縮圖有沒有誇大、跟內容一致嗎、
+        有沒有投資建議或聳動用語。
+    designer:
+      title: 縮圖設計師
+      kind: designer
+      brief: >-
+        你是 YouTube 縮圖設計師：縮到手機首頁大小（168 px 寬）後字讀不讀得到、對比、構圖、主體大小、角色表情、三款是否真的不同。
+      rubric: [小尺寸可讀, 對比, 構圖與主體, 三款差異]
+    compliance:
+      title: 合規審查
+      kind: compliance
+      brief: >-
+        你是素材合規審查：每張素材有沒有可讀的公司名或 logo、有沒有像真人或官方角色、授權是否可營利（credits.json）。
+    editor_visual:
+      title: 剪輯（畫面）
+      kind: pro
+      brief: >-
+        你是十年經驗的知識類長片剪輯師，只看畫面：換場頻率、靜止畫面、轉場、畫面與旁白同步、素材貼題、字幕可讀、縮圖與影片一致。
+      rubric: [節奏與換場, 畫面與旁白同步, 素材貼題, 字幕與版面]
+    editor_audio:
+      title: 剪輯（聲音）
+      kind: pro
+      brief: >-
+        你是十年經驗的混音與剪輯師，只看聲音（依 audio.txt 的每 10 秒描述與 objective.json）：語速、停頓、念錯、BGM 與人聲比例、
+        ducking、音效位置、死空氣、響度。
+      rubric: [語速與停頓, 念錯, 配樂與人聲比例, 音效位置]
+  stages:
+    topic:
+      gate: topic
+      reviews: [topics/candidates.json]
+      producer: {model: opus, effort: high}
+      rework: topic
+      max_rounds: 2
+      seats:
+        - {role: viewer, count: 3, model: sonnet, effort: medium}
+        - {role: writer_story, count: 1, model: opus, effort: high}
+        - {role: producer, count: 1, model: opus, effort: high}
+      threshold: {top_n_long: 1, top_n_short: 3, topic_min_score: 6.0}
+    article:
+      gate: article
+      reviews: [article.md, sources.json]
+      producer: {model: opus, effort: high}
+      rework: article
+      max_rounds: 2
+      seats:
+        - {role: fact_checker, count: 2, model: opus, effort: high}
+        - {role: writer_story, count: 1, model: opus, effort: medium}
+      threshold: {fact_errors_max: 0}
+    script:
+      gate: deck
+      reviews: [deck.json, slides/contact_sheet.png]
+      producer: {model: opus, effort: high}
+      rework: deck
+      max_rounds: 3
+      seats:
+        - {role: viewer, count: 5, holdout: 1, model: sonnet, effort: medium}
+        - {role: writer_story, count: 1, model: opus, effort: high}
+        - {role: writer_density, count: 1, model: opus, effort: high}
+        - {role: director, count: 1, model: opus, effort: high}
+        - {role: fact_checker, count: 1, model: opus, effort: high}
+      threshold: {leave_median_pct: 0.5, writer_min: 7, fact_errors_max: 0}
+    title_thumb:
+      gate: title
+      reviews: [titles.json, thumbnail.json, thumbnails/variant_*.jpg]
+      producer: {model: sonnet, effort: medium}
+      rework: thumbnail_spec
+      max_rounds: 3
+      seats:
+        - {role: viewer, count: 5, model: sonnet, effort: medium}
+        - {role: designer, count: 1, model: sonnet, effort: medium}
+        - {role: producer, count: 1, model: sonnet, effort: medium}
+      threshold: {noticed_median_max: 3, pick_factor: 2.0, auto_checks: true, producer_honest: true}
+    media:
+      gate: media
+      reviews: [media/media_report.json, credits.json, media/contact_sheet.png, assets/ai_images/*]
+      rework: media
+      max_rounds: 3
+      seats:
+        - {role: compliance, count: 1, model: sonnet, effort: medium}
+      threshold: {compliance_issues_max: 0, licenses_confirmed: true}
+    final:
+      gate: final
+      reviews: [assembly/release.mp4, assembly/final.mp4, qc/qc_report.json, thumbnails/variant_*.jpg]
+      rework: assembly
+      max_rounds: 3
+      seats:
+        - {role: viewer, count: 5, holdout: 1, model: sonnet, effort: medium}
+        - {role: editor_visual, count: 1, model: sonnet, effort: medium}
+        - {role: editor_audio, count: 1, model: sonnet, effort: medium}
+        - {role: director, count: 1, model: sonnet, effort: medium}
+      threshold: {leave_median_pct: 0.5, objective_all_green: true, thumbnail_consistent: true}
+    shorts_topic:
+      gate: topic
+      reviews: [topics/candidates.json]
+      producer: {model: sonnet, effort: medium}
+      rework: topic
+      max_rounds: 1
+      seats:
+        - {role: viewer, count: 3, model: sonnet, effort: medium}
+      threshold: {top_n_long: 0, top_n_short: 3}
+    shorts_script:
+      gate: script
+      reviews: [script.json]
+      producer: {model: sonnet, effort: medium}
+      rework: deck
+      max_rounds: 3
+      seats:
+        - {role: viewer, count: 3, model: sonnet, effort: medium}
+        - {role: writer_story, count: 1, model: sonnet, effort: medium}
+      threshold: {leave_median_pct: 0.5, writer_min: 7}
+    shorts_title:
+      gate: title
+      reviews: [titles.json, thumbnails/variant_*.jpg]
+      rework: thumbnail_spec
+      max_rounds: 3
+      seats:
+        - {role: viewer, count: 3, model: sonnet, effort: medium}
+    shorts_final:
+      gate: final
+      reviews: [assembly/final.mp4, qc/qc_report.json]
+      rework: assembly
+      max_rounds: 3
+      seats:
+        - {role: viewer, count: 3, model: sonnet, effort: medium}
+        - {role: editor_visual, count: 1, model: sonnet, effort: medium}
+      threshold: {leave_median_pct: 0.5}
+  channels: {}      # 頻道覆寫：<code>: {stages: {<stage>: {...}}}，合併後重新驗證（只能更嚴）

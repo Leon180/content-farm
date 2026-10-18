@@ -57,6 +57,8 @@ class Panels(_Strict):
     pros: dict[str, Pro]
     stages: dict[str, Stage]
     thresholds: Thresholds = Thresholds()
+    sentence_id_field: str = "sid"   # deck sentence id (feat/incremental-render); see review/config.py
+    review: dict = {}                # the pipeline review panels; validated by review/config.py
 
 
 @dataclass(frozen=True)
