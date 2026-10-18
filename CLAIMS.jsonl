@@ -1,7 +1,11 @@
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-cowos-facts/REPORT-cowos-facts.md","min_bytes":8000,"why":"派工指定的預期產物"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-cowos-facts/output/cowos-final/review/script/round-3/scorecard.json","min_bytes":1000,"why":"腳本第 3 輪（最後一輪）評分卡存在＝停在第 3 步的依據"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-cowos-facts/src/content_farm/review/arbitration.py","min_bytes":2000,"why":"59fdefb32bd7=D 仲裁實作"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-cowos-facts/src/content_farm/review/article_diff.py","min_bytes":2000,"why":"59fdefb32bd7=D 只准刪改的逐句比對"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-cowos-facts/output/cowos-final/script.json","pattern":"摩根士丹利","why":"旁白：26 萬片的錯誤歸屬已移除"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-cowos-facts/output/cowos-final/script.json","pattern":"提前蓋廠","why":"旁白：2016 推論不再寫成台積電的話（deck.json 的 notes 欄位仍提到這個詞，不是旁白）"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-cowos-facts/output/cowos-final/script.json","pattern":"扛錯","why":"旁白：因果方向相反的扛錯句已刪"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-integrate/REPORT-integrate.md","min_bytes":6000,"why":"派工宣告的交件報告"}
+{"kind":"blob_equal","a":"feat/yokai-tempo:channels/yokai.yaml","b":"feat/integrate:channels/yokai.yaml","why":"yokai-tempo 的 tempo 1.29 已合進本分支"}
+{"kind":"blob_equal","a":"feat/hn-daily:src/content_farm/production/news/render.py","b":"feat/integrate:src/content_farm/production/news/render.py","why":"hn-daily 已合進本分支"}
+{"kind":"blob_equal","a":"feat/mascot-route-a:src/content_farm/explainer/mascot/assets/rig.html","b":"feat/integrate:src/content_farm/explainer/mascot/assets/rig.html","why":"Route A 第一輪 rig 已在本分支（a12b68b cherry-pick），所以不合 mascot-route-a"}
+{"kind":"blob_equal","a":"feat/mascot-route-a:src/content_farm/explainer/mascot/params.py","b":"feat/integrate:src/content_farm/explainer/mascot/params.py","why":"同上：Route A 第一輪參數相同"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-integrate/src/content_farm/lanes/queue.py","pattern":"QUEUE_DIR = ","why":"佇列路徑不再於 import 時固定"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-integrate/src","pattern":"<<<<<<<","why":"沒有殘留的衝突標記"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-integrate/tests/_shared_path_guard.py","min_bytes":3000,"why":"測試寫真實共用路徑就失敗的 guard"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-integrate/src/content_farm/review/usage.py","min_bytes":4000,"why":"produce.py usage 的彙總模組"}
+{"kind":"clean_worktree","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-integrate","why":"所有改動都已 commit"}
+{"kind":"no_unpushed","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-integrate","why":"預期不符：任務明定不 push（public repo），commit 只在本機"}
