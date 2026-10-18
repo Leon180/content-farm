@@ -38,7 +38,13 @@ TASKS = {
 {{"candidates":[{{"id":"t01","title":"標題草案","hook":"一句鉤子","minutes":8,"sources":["可查的來源網址"],"note":"為何適合這頻道"}}]}}
 每題至少 2 個可公開查證的來源網址（用 WebSearch／WebFetch 確認存在）。""",
     "article": """任務：研究與文章。題目在 topic.json 的 chosen[0]。照 {repo}/.claude/skills/article/SKILL.md 的做法（不要停下來等人審），
-寫 article.md 與 sources.json。每個數字和八卦都附來源 id，來源要是你實際打開過的網址。""",
+寫 article.md 與 sources.json。每個數字和八卦都附來源 id，來源要是你實際打開過的網址。
+交出前逐條自我查核（兩位事實查核員會各自回頭查每個來源，任何一條錯誤或無來源就整篇退回）：
+- 每個 [src:] 標記後面的那句話，來源原文要真的這樣說；你的推論、比喻、換算不要掛來源，寫成「換算起來」「也就是說」；
+- 保留來源的限定詞：「據報導」「預定」「據稱」「估計」「規劃」「最先端用」等不能拿掉，範圍（台灣唯一≠全球唯一）不能放大；
+- 報導刊登日≠事件發生日；說話的人要寫對（不同時期的社長是不同人），轉述媒體要寫轉述自誰（例如「日經報導、9to5Mac 轉述」）；
+- 打不開或抽不出文字的來源（PDF、付費牆）不要當唯一依據；查不到就刪掉那句。
+- 寫完跑 `{python} {repo}/scripts/check_article.py --run-dir {run_dir}`，有問題改到 0 problem(s)。""",
     "deck": """任務：腳本。依 article.md，照 {repo}/.claude/skills/deck-outline/SKILL.md 與 {repo}/.claude/skills/deck/SKILL.md 的規則
 （不要停下來等人審），直接寫 deck.json（可先寫 deck_outline.json），並寫 promise.txt：一句「這支片答應觀眾什麼」。
 寫完跑 `{python} {repo}/scripts/deck_to_script.py --run-dir {run_dir} --strict`，有錯就改到通過。
@@ -66,6 +72,7 @@ def _fixes_text(run_dir: Path, gate: str) -> str:
     reasons = "；".join(plan.get("reasons", []))
     return (f"\n這是退回重做（第 {plan.get('round')} 輪評審未過：{reasons}）。修改清單（{path}）：\n" + "\n".join(lines)
             + "\n只改清單與連動範圍列出的地方，其他句子一字不動（沒改到的句子 id 要保持不變）；"
+              "改寫時不要新增沒查證過的說法——新寫的每一句一樣會被查核；"
               "不准為了分數灌水或誇大。fixed 欄位列出你處理了哪些。")
 
 
