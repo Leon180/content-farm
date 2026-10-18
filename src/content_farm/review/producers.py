@@ -45,6 +45,8 @@ TASKS = {
 - 保留來源的限定詞：「據報導」「預定」「據稱」「估計」「規劃」「最先端用」等不能拿掉，範圍（台灣唯一≠全球唯一）不能放大；
 - 報導刊登日≠事件發生日；說話的人要寫對（不同時期的社長是不同人），轉述媒體要寫轉述自誰（例如「日經報導、9to5Mac 轉述」）；
 - 打不開或抽不出文字的來源（PDF、付費牆）不要當唯一依據；查不到就刪掉那句。
+- 論點核心的因果（「因為 A 所以 B」）若來源沒有直接說，就寫成頻道自己的判斷（「我們的判斷是」「看起來」），不要寫成事實；
+  引述要歸屬給來源裡真的說話的人（報導本身的敘述不是「業界主管說」）。
 - 寫完跑 `{python} {repo}/scripts/check_article.py --run-dir {run_dir}`，有問題改到 0 problem(s)。""",
     "deck": """任務：腳本。依 article.md，照 {repo}/.claude/skills/deck-outline/SKILL.md 與 {repo}/.claude/skills/deck/SKILL.md 的規則
 （不要停下來等人審），直接寫 deck.json（可先寫 deck_outline.json），並寫 promise.txt：一句「這支片答應觀眾什麼」。

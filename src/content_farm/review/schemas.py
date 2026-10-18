@@ -62,7 +62,9 @@ TOPIC_PRO = _obj(["role", "scores", "verdict"], role=_STR, verdict=_STR,
                      duplicate_of={"type": ["string", "null"]})})
 
 CLAIM = _obj(["claim", "status", "evidence", "note"],
-             claim=_STR, status={"enum": ["ok", "wrong", "unsourced", "unverifiable"]},
+             claim=_STR, status={"enum": ["ok", "wrong", "unsourced", "unverifiable", "analysis"],
+                                 "description": "analysis = the channel's own calculation/judgement, framed as such "
+                                                "in the text, with math/logic you verified; framed as fact → unsourced"},
              evidence={"type": "string", "description": "verbatim quote of the claim in the material"},
              sentence_ids={"type": "array", "items": _STR}, source_id={"type": ["string", "null"]},
              source_quote={"type": ["string", "null"], "description": "what the source actually says"},

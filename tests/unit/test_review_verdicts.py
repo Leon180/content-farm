@@ -88,6 +88,20 @@ def test_article_needs_both_checkers_clean():
     assert not bad.passed and bad.issues and bad.issues[0]["caused_by"] == "article"
 
 
+def test_labelled_own_analysis_is_not_an_error_but_unlabelled_inference_is():
+    analysis = {"claims": [{"claim": "換算起來每公尺 2.8 微米", "status": "analysis", "evidence": "x", "note": "算式正確"}],
+                "issues": []}
+    inference = {"claims": [{"claim": "前任的謹慎左右了開工時機", "status": "unsourced", "evidence": "x",
+                             "note": "寫成事實"}], "issues": []}
+    writer = seat("writer_story-1", "writer_story", "pro", {"score": 7, "issues": []})
+    ok = judge("article", [seat("fact_checker-1", "fact_checker", "fact", analysis),
+                           seat("fact_checker-2", "fact_checker", "fact", analysis), writer], corpus="x")
+    assert ok.passed
+    bad = judge("article", [seat("fact_checker-1", "fact_checker", "fact", analysis),
+                            seat("fact_checker-2", "fact_checker", "fact", inference), writer], corpus="x")
+    assert not bad.passed
+
+
 def test_topic_ranks_and_vetoes():
     viewers = [seat(f"viewer-{n}", "viewer", "viewer", {"picks": [{"candidate_id": "t1", "click": 9, "why": ""},
                                                                   {"candidate_id": "t2", "click": 8, "why": ""}]})
