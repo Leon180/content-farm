@@ -1,10 +1,34 @@
 # REPORT — 九尾狐開台片 tempo 1.20 → 1.29（決策 40e6b445a7ed）
 
 ## TL;DR
+- 🔴 **（2026-10-19 最新）停在第 3 步（腳本評審）**：選項 A 加了青蛙書記、走新評審流程。腳本評審 3 輪都沒過：查核錯誤 15 → 6 → 3，編劇分數 7.2／7.0 第 3 輪才過。最後只剩 3 條「無來源／超出來源」的錯誤（s24.4、s24a.7、s26.3），所以沒有片長、QC 或 preview。下一步要 Leon 或 orchestrator 決定，見「第 3 步評分卡」。
+- （以下是第一次停下時的紀錄）
 - 🔴 **前提失效，已停下**：`produce.py run` 在第一個步驟 `policy` 就失敗：`青蛙書記 on 0/29 slides (>= 80%)`。配音、media、assembly 都還沒跑。
 - 原因：`feat/incremental-render` 帶進了 `design/channel-hosts`（d95ee3e，Leon 10-17 選的 Y14 青蛙書記，`rig_ready: true`）。這條規則要求 ≥80% 投影片有主持角色。launch 版的 run-dir 是在 `feat/channel-voices` 上做的，那條分支沒有這個 commit，所以 deck 裡 `mascot` 是 0/29。
 - 要繼續就得**在 deck 裡加角色**（這是內容變更，要重審 gate_deck，還要新跑 mascot 疊加），已經超出「只改語速」的範圍。下面列了三個選項，等 Leon 決定。
 - 已完成：yokai tempo 改成 1.29（只改這個頻道），測試跟著改。run-dir 複製到 `output/yokai-kyubi-v2`，音檔沒動過（`tempo.json` 仍然 29×1.2）。
+
+## 第 3 步評分卡（`output/yokai-kyubi-v2/review/script/round-{1,2,3}/scorecard.json`）🟢
+| 輪 | 評審牆鐘／名目 | 觀眾離開中位（4 位） | 編劇 故事／密度 | 導演 | 查核錯誤 | 結果 |
+|---|---|---|---|---|---|---|
+| 1 | 283.6 s／$2.81 | 57.8% | 6.5／6.3 | 6.0 | 15 | 退回 deck |
+| 2 | 339.1 s／$3.19 | 72.7% | 7.3／6.8 | 6.4 | 6 | 退回 deck（article 凍結，改派） |
+| 3 | 389.9 s／$3.09 | 65.6%（holdout 54.4%） | 7.2／7.0 | 5.8 | **3** | **最後一輪未過** |
+
+- 產出 agent（opus·high）：第 1 次重寫 652.6 s／名目 $3.39，第 2 次 835.5 s／$4.18。slides 每次約 11 s。
+- 從 15:3x 到 16:16 UTC，牆鐘約 45 分鐘。名目費用合計約 $16.7，走 `claude -p` 訂閱，不是按量付費。
+- 第 3 輪剩下的 3 條錯誤（查核員原文的重點，都是 unsourced 或超出來源）：
+  1. **s24.4**：「韓國九尾狐同樣偏向會吃人的妖狐」，來源只支持「多半是欺騙、害人」→ 建議改成「形象同樣多半是害人的妖狐」。
+  2. **s24a.7**：「後來的人看牠夜裡出沒，說牠摸不透」，跟有出處的 s24a.6 並列，寫法像在引史料，但沒有出處 → 建議併進「我們的觀察是」的框架，或補原典。
+  3. **s26.3**：下集預告「天狗從中國的流星變成日本的長鼻修行者」，這集沒有出處 → 建議改成「下一集，我們追天狗」，或補《史記・天官書》。
+- 查核員另外列了 article.md 跟講稿不同步的地方：九十六／九十七回、三千年改兩千多年、郭璞是晉代、三國妖婦傳的順序、北齋一派、澎湃專欄。講稿都已經改對，只有文章（凍結）沒改。說明欄如果從文章取材會再錯一次 🟡。
+- 觀眾和導演還有結構上的意見，不影響門檻：第五站時序亂（2022 年的裂石新聞插在 1779 和 1803 之間）、s02.7「第三條先蓋住」看不懂、妲己替罪的因果寫得太滿。
+- 改稿之後 deck 是 30 張，policy 通過，角色 pose 也保留下來了。**旁白被改寫過**，所以之後的 voice 步驟會重配改到的句子（±2 句窗口），不再是「只重算時間」。
+
+**待決定（我沒有做）**：
+- (a) 照查核員的修法改這 3 句，加開一輪腳本評審。這會超過 `max_rounds: 3`，要明確授權。
+- (b) 用 `produce.py approve --gate deck --override "<理由>"` 人工放行。
+- (c) 維持現狀，這支片停在這裡。
 
 ## 失敗原文 🟢
 ```
@@ -58,4 +82,6 @@
   - **再被權限分類器擋下**（原文：`Permission for this action was denied by the Claude Code auto mode classifier. Reason: [Modify Shared Resources].`）：`reject --gate media`，以及 `produce.py run --auto-agents --no-stock --env-file …`。
   - media／final 不撤銷也可以：tempo 和角色會讓兩個閘門的指紋改變，舊核可就對不上，評審團會照樣判。
   - 卡住的只有 run 本身，Leon 可以自己跑（見下）。
+- Leon 批准（決策 2a7bbb6943dd，orchestrator 加了 allow 規則）。`produce.py run --auto-agents --no-stock` 在 2026-10-18 15:3x UTC 啟動。
+- **第 3 步（腳本）3 輪都沒過，停在 gate_deck**（16:16 UTC，exit 1）。照規則停下回報，門檻沒有放寬。原文：`[failed] gate_deck: script: 第 3 輪（最後一輪）未通過：fact_checker-1 找到 3 個事實錯誤`。詳細數字見下方「第 3 步評分卡」。
 - 舊的接手方式：Leon 選了選項之後，A 要先改 deck（加 mascot pose）並重審 gate_deck，再執行 `PYTHONPATH=<wt>/src .venv/bin/python scripts/produce.py run --run-dir output/yokai-kyubi-v2 --no-stock --env-file /Users/lileon/project/content-farm/.env`。
