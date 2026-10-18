@@ -266,6 +266,9 @@ class Slide(_Frozen):
     mascot: Mascot | None = None
     media: Media | None = None  # None = the rendered slide (kind "slide")
     notes: str = ""
+    # One stable id per narration sentence (``s12.3``), stamped by explainer.sentence_ids;
+    # unchanged sentences keep theirs across edits so cached audio/clips can be reused.
+    sentence_ids: tuple[str, ...] = ()
 
     @model_validator(mode="before")
     @classmethod
