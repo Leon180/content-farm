@@ -265,6 +265,8 @@ class Channel(_Strict):
     audio: AudioMix = AudioMix()       # BGM / SFX / mastering (long videos)
     publish: dict = {}                 # release windows; validated by production.publish_slot.PublishPlan
     notes: tuple[str, ...] = ()
+    # Recurring series run by their own modules (e.g. ``hn`` → production/news), validated there.
+    series: dict[str, dict] = Field(default_factory=dict)
 
     @field_validator("publish")
     @classmethod
