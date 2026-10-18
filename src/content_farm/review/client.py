@@ -1,0 +1,148 @@
+"""Run one reviewer as a headless ``claude -p`` subprocess on the Claude subscription.
+
+Never ``--bare`` (it reads only ANTHROPIC_API_KEY = metered billing) and never pass an API key
+to the child: ``ANTHROPIC_API_KEY`` / ``CF_ANTHROPIC_API_KEY`` / ``ANTHROPIC_AUTH_TOKEN`` are
+removed from its environment. model / effort / schema come from review_panels.yaml; output that
+does not match the schema is retried, then counted as a failed seat (the gate stays closed).
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import subprocess
+import time
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any
+
+from content_farm.review.schemas import validate
+
+CLAUDE_BIN = os.environ.get("CF_CLAUDE_BIN", "claude")
+PAID_ENV = ("ANTHROPIC_API_KEY", "CF_ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN")
+
+
+@dataclass(frozen=True)
+class Call:
+    rid: str
+    prompt: str
+    schema: dict[str, Any]
+    model: str
+    effort: str
+    tools: tuple[str, ...] = ("Read",)
+    cwd: Path = Path(".")
+    add_dirs: tuple[Path, ...] = ()
+    timeout_s: int = 1200
+    retries: int = 1
+    write_tools: bool = False          # producer agents may write files in cwd
+
+
+@dataclass(frozen=True)
+class CallResult:
+    rid: str
+    ok: bool
+    output: dict[str, Any] | None
+    errors: tuple[str, ...]
+    model: str
+    effort: str
+    models_used: tuple[str, ...] = ()
+    seconds: float = 0.0
+    cost_usd: float = 0.0              # the CLI's notional figure; billed to the subscription
+    tokens: dict[str, int] = field(default_factory=dict)
+    attempts: int = 1
+
+    def to_json(self) -> dict[str, Any]:
+        return {"rid": self.rid, "ok": self.ok, "errors": list(self.errors), "model": self.model,
+                "effort": self.effort, "models_used": list(self.models_used), "seconds": self.seconds,
+                "cost_usd": self.cost_usd, "tokens": self.tokens, "attempts": self.attempts}
+
+
+Runner = Callable[[list[str], str, Path, dict[str, str], int], tuple[int, str, str]]
+
+
+def _subprocess(argv: list[str], stdin: str, cwd: Path, env: dict[str, str], timeout: int) -> tuple[int, str, str]:
+    try:
+        proc = subprocess.run(argv, input=stdin, cwd=cwd, env=env, capture_output=True, text=True,
+                              timeout=timeout, check=False)
+    except subprocess.TimeoutExpired:
+        return 124, "", f"timeout after {timeout}s"
+    except OSError as exc:
+        return 127, "", f"{type(exc).__name__}: {exc}"
+    return proc.returncode, proc.stdout, proc.stderr
+
+
+def child_env(base: dict[str, str] | None = None) -> dict[str, str]:
+    env = dict(os.environ if base is None else base)
+    for key in PAID_ENV:
+        env.pop(key, None)
+    return env
+
+
+def argv_for(call: Call) -> list[str]:
+    if "--bare" in call.tools:
+        raise ValueError("--bare would bill the API key; never allowed")
+    names = ",".join(dict.fromkeys(t.split("(")[0] for t in call.tools))   # --tools takes bare names
+    allowed = ",".join(call.tools)                                          # --allowed-tools may scope them
+    argv = [CLAUDE_BIN, "-p", "--model", call.model, "--effort", call.effort, "--output-format", "json",
+            "--json-schema", json.dumps(call.schema, ensure_ascii=False), "--no-session-persistence",
+            "--strict-mcp-config", "--disable-slash-commands", "--tools", names, "--allowed-tools", allowed,
+            "--permission-mode", "acceptEdits" if call.write_tools else "dontAsk"]
+    for directory in call.add_dirs:
+        argv += ["--add-dir", str(directory)]
+    return argv
+
+
+def _parse(stdout: str) -> tuple[dict[str, Any] | None, dict[str, Any], str]:
+    try:
+        envelope = json.loads(stdout)
+    except json.JSONDecodeError:
+        return None, {}, f"stdout is not JSON: {stdout[:200]!r}"
+    if not isinstance(envelope, dict):
+        return None, {}, "stdout JSON is not an object"
+    if envelope.get("is_error"):
+        return None, envelope, f"claude error: {str(envelope.get('result'))[:300]}"
+    output = envelope.get("structured_output")
+    if output is None and isinstance(envelope.get("result"), str):
+        try:
+            output = json.loads(envelope["result"])
+        except json.JSONDecodeError:
+            return None, envelope, "no structured_output and result is not JSON"
+    return (output if isinstance(output, dict) else None), envelope, ""
+
+
+def model_matches(requested: str, used: tuple[str, ...]) -> bool:
+    """The requested tier (opus/sonnet/haiku alias) must be among the models that answered."""
+    return any(requested in name for name in used)
+
+
+def run_call(call: Call, *, runner: Runner = _subprocess, log_dir: Path | None = None) -> CallResult:
+    errors: list[str] = []
+    started = time.monotonic()
+    cost, tokens, used = 0.0, {"input": 0, "output": 0, "cache_read": 0, "cache_write": 0}, ()
+    for attempt in range(1, call.retries + 2):
+        code, stdout, stderr = runner(argv_for(call), call.prompt, call.cwd, child_env(), call.timeout_s)
+        if log_dir is not None:
+            log_dir.mkdir(parents=True, exist_ok=True)
+            (log_dir / f"{call.rid}.attempt{attempt}.json").write_text(stdout or stderr, encoding="utf-8")
+        output, envelope, problem = _parse(stdout) if code == 0 else (None, {}, f"exit {code}: {stderr[-300:]}")
+        cost += float(envelope.get("total_cost_usd") or 0)
+        usage = envelope.get("usage") or {}
+        tokens = {"input": tokens["input"] + int(usage.get("input_tokens") or 0),
+                  "output": tokens["output"] + int(usage.get("output_tokens") or 0),
+                  "cache_read": tokens["cache_read"] + int(usage.get("cache_read_input_tokens") or 0),
+                  "cache_write": tokens["cache_write"] + int(usage.get("cache_creation_input_tokens") or 0)}
+        used = tuple(sorted(set(used) | set((envelope.get("modelUsage") or {}).keys())))
+        if output is not None:
+            problems = validate(output, call.schema)
+            if not problems:
+                seconds = round(time.monotonic() - started, 1)
+                if used and not model_matches(call.model, used):
+                    return CallResult(call.rid, False, output, (f"model mismatch: asked {call.model}, got {used}",),
+                                      call.model, call.effort, used, seconds, round(cost, 4), tokens, attempt)
+                return CallResult(call.rid, True, output, (), call.model, call.effort, used, seconds,
+                                  round(cost, 4), tokens, attempt)
+            problem = "schema: " + "; ".join(problems[:5])
+        errors.append(f"attempt {attempt}: {problem}")
+    return CallResult(call.rid, False, None, tuple(errors), call.model, call.effort, used,
+                      round(time.monotonic() - started, 1), round(cost, 4), tokens, call.retries + 1)

@@ -198,7 +198,7 @@ review:
       threshold: {leave_median_pct: 0.5, writer_min: 7, fact_errors_max: 0}
     title_thumb:
       gate: title
-      reviews: [titles.json, thumbnail.json, thumbnails/variant_*.jpg]
+      reviews: [titles.json, thumbnail.json, thumbnail_variants.json, thumbnails/variant_*.jpg]
       producer: {model: sonnet, effort: medium}
       rework: thumbnail_spec
       max_rounds: 3
