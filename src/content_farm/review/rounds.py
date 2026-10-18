@@ -175,18 +175,23 @@ def _arbitrate(run_dir: Path, out: Path, stage_name: str, stage: Stage, seats: l
     """Two fact-checkers disagree → a third (``stage.arbiter``) rules. (None, None) when the stage is
     not arbitrated or a checker has no valid output (the round fails on that anyway)."""
     from content_farm.review import arbitration as arb
-    from content_farm.review.article_diff import split_article
+    from content_farm.review.article_diff import deck_narration, split_article
     from content_farm.review.config import ARBITRATED_STAGES
 
     checkers = [s for s in seats if s.kind == "fact" and not s.holdout]
     if stage_name not in ARBITRATED_STAGES or stage.arbiter is None or not all(s.ok for s in checkers):
         return None, None
-    article = (run_dir / "article.md").read_text(encoding="utf-8") if (run_dir / "article.md").is_file() else ""
-    found = arb.split({s.rid: s.output for s in checkers}, split_article(article))
+    if stage_name == "article":
+        article = (run_dir / "article.md").read_text(encoding="utf-8") if (run_dir / "article.md").is_file() else ""
+        sentences, material = split_article(article), "文章（article.md，來源在 sources.json）"
+    else:
+        sentences = deck_narration(json.loads((run_dir / "deck.json").read_text(encoding="utf-8")))
+        material = "講稿（script.txt 的句子 id，事實依據 article.md，來源在 sources.json）"
+    found = arb.split({s.rid: s.output for s in checkers}, sentences)
     if not found["disputes"]:
         return {**found, "upheld": [], "unanswered": [], "ruled": False}, None
     member = Member(f"{arb.ARBITER_ROLE}-1", arb.ARBITER_ROLE, "fact", False, stage.arbiter.model, stage.arbiter.effort)
-    text = arb.prompt(found["disputes"])
+    text = arb.prompt(found["disputes"], material=material)
     (out / "prompts").mkdir(exist_ok=True)
     (out / "prompts" / f"{member.rid}.md").write_text(text, encoding="utf-8")
     tools = next(r.tools for r in config.roles.values() if r.kind == "fact")

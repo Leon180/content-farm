@@ -32,6 +32,7 @@ CHECKLISTS: dict[Gate, tuple[str, ...]] = {
         "講稿口語、節奏對；冷笑話不尷尬",
         "media 配比合理（stock＋AI 圖不連續缺席）",
     ),
+    Gate.DECK_FACTS: ("講稿每個數字、日期、引述、因果都有 sources.json 的來源；推論標明是判斷（通常由事實段評審團核可）",),
     Gate.SCRIPT: ("笑點成立、不冒犯", "20–50 秒內講完"),
     Gate.MEDIA: (
         "每支 B-roll 整段看過：沒有可讀的公司名／logo、主題相關",
@@ -159,7 +160,8 @@ def _json_section(*names: str) -> Callable[[Path], str]:
 
 SECTIONS = {Gate.TOPIC: _json_section("topics/candidates.json"),
             Gate.TITLE: _json_section("titles.json", "thumbnail_variants.json"),
-            Gate.ARTICLE: _article_section, Gate.DECK: _deck_section, Gate.MEDIA: _media_section,
+            Gate.ARTICLE: _article_section, Gate.DECK: _deck_section, Gate.DECK_FACTS: _deck_section,
+            Gate.MEDIA: _media_section,
             Gate.FINAL: _final_section, Gate.SCRIPT: _script_section}
 
 

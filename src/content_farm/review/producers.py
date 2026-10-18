@@ -25,7 +25,7 @@ SCRIPTS = ("check_article.py", "deck_to_script.py", "make_thumbnail.py", "render
 TIMEOUT_S = {"topic": 1500, "article": 2700, "deck": 3600, "thumbnail_spec": 1800}
 
 # step → (stage whose producer tier applies, gate whose fixes apply)
-STEP_STAGE = {"topic": ("topic", "topic"), "article": ("article", "article"), "deck": ("script", "deck"),
+STEP_STAGE = {"topic": ("topic", "topic"), "article": ("article", "article"), "deck": ("script_structure", "deck"),
               "thumbnail_spec": ("title_thumb", "title")}
 
 COMMON = """你是 content-farm（繁中 YouTube 內容工廠）的製作 agent，工作目錄就是這支片的 run-dir：{run_dir}
@@ -89,10 +89,13 @@ def _fixes_text(run_dir: Path, gate: str) -> str:
         (run_dir / "review" / "article.story_notes.json").write_text(
             json.dumps(deferred, ensure_ascii=False, indent=1), encoding="utf-8")
     delete_only = ""
-    if gate == "article":
-        delete_only = ("\n只准刪改（Leon 規則，程式會比對改稿前後的每一句，違反就拒收並還原）：只能刪除被點名的句子，"
+    if gate in ("article", "deck_facts"):
+        what = "旁白的每一句（句子 id）" if gate == "deck_facts" else "每一句"
+        delete_only = (f"\n只准刪改（Leon 規則，程式會比對改稿前後{what}，違反就拒收並還原）：只能刪除被點名的句子，"
                        "或在被點名的句子裡加限定詞（「據報導」「估計」等）、改正數字與歸屬；不准新增句子、不准把一句拆成兩句、"
                        "沒被點名的句子一字不動。可以在 sources.json 補來源。")
+    if gate == "deck_facts":
+        delete_only += "這是講稿的事實段：結構已經核可，不要改章節、順序、比喻或笑點。"
     return (f"\n這是退回重做（第 {plan.get('round')} 輪評審未過：{reasons}）。修改清單（{path}）：\n" + "\n".join(lines)
             + "\n只改清單與連動範圍列出的地方，其他句子一字不動（沒改到的句子 id 要保持不變）；"
               "改寫時不要新增沒查證過的說法——新寫的每一句一樣會被查核；"
@@ -112,11 +115,12 @@ def producer_tier(config: ReviewConfig, step: str) -> Tier:
 
 
 def produce(step: str, run_dir: Path, *, channel: str, config: ReviewConfig, python: str,
-            client: Callable[[Call], CallResult] | None = None, extra: str = "") -> CallResult:
-    """``extra``: appended to the brief (e.g. why the previous rewrite was refused)."""
+            client: Callable[[Call], CallResult] | None = None, extra: str = "", gate: str | None = None) -> CallResult:
+    """``extra``: appended to the brief (e.g. why the previous rewrite was refused). ``gate``: whose fix
+    list this rework answers (the deck step serves both ``deck`` and ``deck_facts``)."""
     if step not in TASKS:
         raise ValueError(f"no producer agent for step {step!r}")
-    _, gate = STEP_STAGE[step]
+    gate = gate or STEP_STAGE[step][1]
     fmt = {"run_dir": run_dir, "repo": REPO, "channel": channel, "python": python}
     prompt = "\n\n".join(part for part in (COMMON.format(**fmt), TASKS[step].format(**fmt), _fixes_text(run_dir, gate),
                                            extra, "完成後用結構化輸出回報寫了哪些檔。") if part)

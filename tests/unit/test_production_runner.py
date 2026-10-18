@@ -101,7 +101,7 @@ def _approve(run_dir: Path, gate: Gate, **kw: str) -> None:
 
 def _walk_to_final(run_dir: Path, executor: FakeExecutor) -> None:
     runner = _runner(run_dir, executor, mock_voice=True)
-    for gate in (Gate.ARTICLE, Gate.DECK, Gate.TITLE, Gate.MEDIA):
+    for gate in (Gate.ARTICLE, Gate.DECK, Gate.DECK_FACTS, Gate.TITLE, Gate.MEDIA):
         result = runner.run()
         assert result.outcome is Outcome.GATE and result.step == f"gate_{gate.value}"
         assert result.review_page is not None and result.review_page.is_file()
@@ -125,7 +125,8 @@ def test_full_walk_stops_at_each_gate_and_packages(run_dir: Path) -> None:
     assert meta["credentials_env"]["refresh_token"] == "CF_YT_CHIPCAT_REFRESH_TOKEN"
     state = load_state(run_dir, "chipcat")
     assert "OVERRIDE QC" in state.decisions["final"].note
-    assert {state.steps[f"gate_{g}"].status for g in ("article", "deck", "title", "media", "final")} == {"approved"}
+    assert {state.steps[f"gate_{g}"].status
+            for g in ("article", "deck", "deck_facts", "title", "media", "final")} == {"approved"}
     assert "MANUAL OVERRIDE" in state.decisions["final"].note
 
 
@@ -158,6 +159,8 @@ def test_paid_voice_needs_consent(run_dir: Path) -> None:
     runner.run()
     _approve(run_dir, Gate.DECK)
     runner.run()
+    _approve(run_dir, Gate.DECK_FACTS)
+    runner.run()
     _approve(run_dir, Gate.TITLE)
     result = runner.run()
     assert result.outcome is Outcome.PAID and result.step == "voice"
@@ -188,6 +191,8 @@ def _run_through_voice(run_dir: Path, executor: FakeExecutor, env_file: Path) ->
     _approve(run_dir, Gate.ARTICLE)
     runner.run()
     _approve(run_dir, Gate.DECK)
+    runner.run()
+    _approve(run_dir, Gate.DECK_FACTS)
     runner.run()
     _approve(run_dir, Gate.TITLE)
     assert runner.run(until="voice").outcome is Outcome.COMPLETE

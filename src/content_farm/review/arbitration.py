@@ -38,25 +38,29 @@ class Flag:
     sentences: frozenset[str]
 
 
+def _where(claim: dict[str, Any], sentences: list[ArticleSentence]) -> frozenset[str]:
+    """The sentences a claim is about: the ids a script checker named (when they exist) plus the
+    sentences its verbatim evidence overlaps."""
+    known = {s.id for s in sentences}
+    named = {str(i) for i in claim.get("sentence_ids") or [] if str(i) in known}
+    return frozenset(named | set(sentences_for_quote(claim.get("evidence", ""), sentences)))
+
+
 def _flags(rid: str, output: dict[str, Any] | None, sentences: list[ArticleSentence]) -> list[Flag]:
-    out = []
-    for n, claim in enumerate((output or {}).get("claims") or []):
-        if claim.get("status") in ERROR:
-            ids = frozenset(sentences_for_quote(claim.get("evidence", ""), sentences))
-            out.append(Flag(f"{rid}#{n}", rid, claim, ids))
-    return out
+    return [Flag(f"{rid}#{n}", rid, claim, _where(claim, sentences))
+            for n, claim in enumerate((output or {}).get("claims") or []) if claim.get("status") in ERROR]
 
 
 def _counterpart(flag: Flag, other: dict[str, Any] | None, sentences: list[ArticleSentence]) -> list[dict[str, Any]]:
     if not flag.sentences:
         return []
-    return [c for c in (other or {}).get("claims") or []
-            if flag.sentences & set(sentences_for_quote(c.get("evidence", ""), sentences))]
+    return [c for c in (other or {}).get("claims") or [] if flag.sentences & _where(c, sentences)]
 
 
 def split(outputs: dict[str, dict[str, Any] | None], sentences: list[ArticleSentence]) -> dict[str, Any]:
     """Two checkers' outputs → {"agreed": [flag keys both flagged], "disputes": [...]}.
 
+    ``sentences``: the article's (article stage) or the deck narration's (script_facts stage).
     An agreed pair counts once (under the first checker's key)."""
     if len(outputs) != 2:
         raise ValueError(f"arbitration needs exactly two fact-checkers, got {sorted(outputs)}")
@@ -81,7 +85,7 @@ def _dispute(flag: Flag, other_rid: str, others: list[dict[str, Any]]) -> dict[s
             "other": other_rid, "other_claims": others}
 
 
-def prompt(disputes: list[dict[str, Any]]) -> str:
+def prompt(disputes: list[dict[str, Any]], *, material: str = "文章（article.md，來源在 sources.json）") -> str:
     lines = []
     for d in disputes:
         mine = d["claim"]
@@ -90,13 +94,13 @@ def prompt(disputes: list[dict[str, Any]]) -> str:
         lines.append(f"- item {d['item']}：{d['flagged_by']} 判 {mine.get('status')}——說法「{mine.get('claim')}」；"
                      f"文章原文「{mine.get('evidence')}」；理由：{mine.get('note')}；來源 {mine.get('source_id')}："
                      f"{mine.get('source_quote')}\n  {d['other']} 的判定：{other_text}")
-    return ("你是第三位事實查核員，負責仲裁。兩位查核員各自查了同一篇文章（article.md，來源在 sources.json），"
+    return (f"你是第三位事實查核員，負責仲裁。兩位查核員各自查了同一份{material}，"
             "下面每一條是只有一位判成錯誤或無來源、另一位判為正確（或沒列出）的說法。\n"
             "逐條回到 sources.json 的原始網址查證（用 WebFetch），不要相信任何一方的轉述，也不要因為有人判錯就傾向判錯。\n"
             "status：ok＝來源原文支持；wrong＝來源說的不一樣；unsourced＝沒附來源或來源沒有這件事；unverifiable＝來源打不開；"
             "analysis＝頻道自己的換算、推論或觀點，而且文中明確寫成換算／推論／判斷、你驗算過（寫成事實的推論算 unsourced）。"
             "rulings 每條 item 照抄、note 寫理由、source_quote 寫來源原文。\n\n" + "\n".join(lines)
-            + "\n\n只讀目前資料夾的 article.md 與 sources.json，不要修改任何檔案。用繁體中文寫。完成後用結構化輸出回傳。")
+            + "\n\n只讀目前資料夾的檔案（講稿、article.md、sources.json），不要修改任何檔案。用繁體中文寫。完成後用結構化輸出回傳。")
 
 
 def upheld(rulings: dict[str, Any] | None, disputes: list[dict[str, Any]]) -> tuple[list[str], list[str]]:

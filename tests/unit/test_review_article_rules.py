@@ -207,7 +207,7 @@ def test_refused_rewrite_is_restored_and_redone(tmp_path):
     assert panel_flow.run_producer(ctx, "article", lambda _: None) is None
     assert (run_dir / "article.md").read_text(encoding="utf-8") == GOOD
     assert len(prompts) == 2 and "只准刪改" in prompts[0] and "被拒收" in prompts[1] and "新加的一句" in prompts[1]
-    assert (run_dir / "review" / "article.before-round-2.md").read_text(encoding="utf-8") == ARTICLE
+    assert (run_dir / "review" / "article.before-article-round-2.md").read_text(encoding="utf-8") == ARTICLE
 
 
 def test_rewrite_refused_twice_stops_with_the_original(tmp_path):

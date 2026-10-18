@@ -26,10 +26,10 @@ def _seat(raw: dict, stage: str, role: str) -> dict:
 
 def test_shipped_config_is_valid():
     config = ReviewConfig.model_validate(RAW)
-    assert set(config.stages) >= {"topic", "article", "script", "title_thumb", "media", "final"}
+    assert set(config.stages) >= {"topic", "article", "script_structure", "script_facts", "title_thumb", "media", "final"}
 
 
-@pytest.mark.parametrize("stage", ["article", "script"])
+@pytest.mark.parametrize("stage", ["article", "script_structure", "script_facts"])
 def test_fact_checker_must_be_opus_high(stage):
     raw = _with(lambda r: _seat(r, stage, "fact_checker").update(model="sonnet"))
     with pytest.raises(ValidationError, match="fact_checker is sonnet · high, below opus · high"):
@@ -47,9 +47,9 @@ def test_fact_checker_floor_applies_in_late_stages_too():
 
 
 def test_required_roles_cannot_be_removed():
-    raw = _with(lambda r: r["stages"]["script"].update(
-        seats=[s for s in r["stages"]["script"]["seats"] if s["role"] != "director"]))
-    with pytest.raises(ValidationError, match="script: needs director ×1"):
+    raw = _with(lambda r: r["stages"]["script_structure"].update(
+        seats=[s for s in r["stages"]["script_structure"]["seats"] if s["role"] != "director"]))
+    with pytest.raises(ValidationError, match="script_structure: needs director ×1"):
         ReviewConfig.model_validate(raw)
 
 
@@ -60,25 +60,26 @@ def test_viewer_count_cannot_shrink():
 
 
 def test_script_needs_a_holdout_viewer():
-    raw = _with(lambda r: _seat(r, "script", "viewer").update(holdout=0))
-    with pytest.raises(ValidationError, match="script: needs 1 holdout"):
+    raw = _with(lambda r: _seat(r, "script_structure", "viewer").update(holdout=0))
+    with pytest.raises(ValidationError, match="script_structure: needs 1 holdout"):
         ReviewConfig.model_validate(raw)
 
 
 def test_early_stage_writers_must_be_opus():
-    raw = _with(lambda r: _seat(r, "script", "writer_story").update(model="sonnet"))
-    with pytest.raises(ValidationError, match="script: writer_story is sonnet · high"):
+    raw = _with(lambda r: _seat(r, "script_structure", "writer_story").update(model="sonnet"))
+    with pytest.raises(ValidationError, match="script_structure: writer_story is sonnet · high"):
         ReviewConfig.model_validate(raw)
 
 
 def test_producer_agent_floor():
-    raw = _with(lambda r: r["stages"]["script"].update(producer={"model": "sonnet", "effort": "high"}))
-    with pytest.raises(ValidationError, match="script: producer agent"):
+    raw = _with(lambda r: r["stages"]["script_structure"].update(producer={"model": "sonnet", "effort": "high"}))
+    with pytest.raises(ValidationError, match="script_structure: producer agent"):
         ReviewConfig.model_validate(raw)
 
 
 @pytest.mark.parametrize(("stage", "field", "value"), [
-    ("script", "leave_median_pct", 0.4), ("script", "writer_min", 6), ("script", "fact_errors_max", 1),
+    ("script_structure", "leave_median_pct", 0.4), ("script_structure", "writer_min", 6),
+    ("script_facts", "fact_errors_max", 1),
     ("article", "fact_errors_max", 2), ("title_thumb", "noticed_median_max", 5), ("media", "compliance_issues_max", 1),
 ])
 def test_thresholds_cannot_loosen(stage, field, value):
@@ -88,14 +89,14 @@ def test_thresholds_cannot_loosen(stage, field, value):
 
 
 def test_threshold_cannot_be_dropped():
-    raw = _with(lambda r: r["stages"]["script"]["threshold"].pop("writer_min"))
+    raw = _with(lambda r: r["stages"]["script_structure"]["threshold"].pop("writer_min"))
     with pytest.raises(ValidationError, match="writer_min is required"):
         ReviewConfig.model_validate(raw)
 
 
 def test_tighter_threshold_is_fine():
-    raw = _with(lambda r: r["stages"]["script"]["threshold"].update(writer_min=8))
-    assert ReviewConfig.model_validate(raw).stages["script"].threshold.writer_min == 8
+    raw = _with(lambda r: r["stages"]["script_structure"]["threshold"].update(writer_min=8))
+    assert ReviewConfig.model_validate(raw).stages["script_structure"].threshold.writer_min == 8
 
 
 def test_rounds_capped():
@@ -145,11 +146,11 @@ def _write(tmp_path: Path, review: dict) -> Path:
 
 
 def test_channel_override_can_tighten_but_not_loosen(tmp_path):
-    tighter = _with(lambda r: r.update(channels={"yokai": {"stages": {"script": {"threshold": {"writer_min": 8}}}}}))
+    tighter = _with(lambda r: r.update(channels={"yokai": {"stages": {"script_structure": {"threshold": {"writer_min": 8}}}}}))
     config = load_review("yokai", path=_write(tmp_path, tighter))
-    assert config.stages["script"].threshold.writer_min == 8
-    assert load_review("chipcat", path=_write(tmp_path, tighter)).stages["script"].threshold.writer_min == 7
-    looser = _with(lambda r: r.update(channels={"yokai": {"stages": {"script": {"threshold": {"writer_min": 5}}}}}))
+    assert config.stages["script_structure"].threshold.writer_min == 8
+    assert load_review("chipcat", path=_write(tmp_path, tighter)).stages["script_structure"].threshold.writer_min == 7
+    looser = _with(lambda r: r.update(channels={"yokai": {"stages": {"script_structure": {"threshold": {"writer_min": 5}}}}}))
     with pytest.raises(ValidationError, match="writer_min=5"):
         load_review("yokai", path=_write(tmp_path, looser))
 
@@ -159,7 +160,7 @@ def test_raise_tier_lifts_every_seat_and_never_lowers():
     assert all(seat.model == "opus" and seat.effort in ("high", "xhigh", "max")
                for stage in config.stages.values() for seat in stage.seats)
     low = load_review(raise_tier=Tier(model="haiku", effort="low"))
-    assert low.stages["script"].seats == load_review().stages["script"].seats
+    assert low.stages["script_structure"].seats == load_review().stages["script_structure"].seats
 
 
 def test_sentence_id_field(tmp_path):

@@ -175,8 +175,9 @@ class Runner:
         if not _outputs_present(self.run_dir, step) or pending_rework:
             if self.ctx.options.auto_agents and step.name in panel_flow.PRODUCER_STEPS:
                 before = fingerprint(self.run_dir, step.outputs)
+                gate = panel_flow.rework_gate(record.note) if pending_rework and record is not None else None
                 with self._admit(state, step):
-                    failure = panel_flow.run_producer(self.ctx, step.name, self.log)
+                    failure = panel_flow.run_producer(self.ctx, step.name, self.log, gate=gate)
                 if failure is None and not _outputs_present(self.run_dir, step):
                     failure = f"{step.title}：產出 agent 結束但缺 {', '.join(step.outputs)}"
                 if failure is None and pending_rework and fingerprint(self.run_dir, step.outputs) == before:
@@ -231,6 +232,10 @@ class Runner:
             record = StepRecord("approved", decision.at, inputs=current, note=f"by {decision.by}")
             return state.with_step(step.name, record), None
         stage = panel_flow.stage_of(self.ctx, step.gate)
+        if stage == "script_structure":
+            kept = panel_flow.structure_kept(self.ctx, state, current, self.log)
+            if kept is not None:
+                return kept, None
         if stage is not None:
             with self._admit(state, step):
                 return panel_flow.panel_step(self.ctx, state, step, stage, current, self.log)

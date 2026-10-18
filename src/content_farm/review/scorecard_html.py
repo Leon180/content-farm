@@ -12,7 +12,8 @@ from typing import Any
 
 from content_farm.review.rounds import REVIEW_DIR
 
-STAGE_TITLES = {"topic": "1 選題", "article": "2 研究與文章", "script": "3 腳本", "title_thumb": "4 標題與縮圖",
+STAGE_TITLES = {"topic": "1 選題", "article": "2 研究與文章", "script": "3 腳本（舊：未拆段）",
+                "script_structure": "3a 腳本結構", "script_facts": "3b 腳本事實", "title_thumb": "4 標題與縮圖",
                 "media": "5 配音與素材", "final": "6 初剪與成片", "shorts_topic": "Shorts 選題",
                 "shorts_script": "Shorts 腳本", "shorts_title": "Shorts 標題", "shorts_final": "Shorts 成片"}
 DIFFABLE = ("script.txt", "article.md", "titles.txt", "candidates.txt")

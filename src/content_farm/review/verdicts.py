@@ -207,7 +207,11 @@ def script(stage: Stage, seats: list[Seat], *, sentences: list[Sentence], **cont
             reasons.append(f"{rid} 找到 {count} 個事實錯誤")
     holdout = [s for s in seats if s.holdout and s.ok]
     kept, dropped = split_issues(_collect(seats), **_context({**context, "sentences": sentences}))
-    scores = {"leave_median_pct": median, "leave": leave, "writers": writers, "fact_errors": errors,
+    advisory = t.fact_errors_max is None      # script_structure: facts are listed for the fix list, never block
+    if advisory:
+        kept = [{**i, "advisory": True} if i.get("category") == "fact" else i for i in kept]
+    scores = {"leave_median_pct": median, "leave": leave, "writers": writers,
+              ("fact_errors_advisory" if advisory else "fact_errors"): errors,
               "pros": {s.rid: s.output.get("score") for s in regular if s.kind == "pro" and s.output},
               "holdout_leave": _leave(holdout, sentences, 0) if holdout else None}
     return Verdict(not reasons, reasons, scores, kept, dropped)
@@ -327,6 +331,8 @@ def final(stage: Stage, seats: list[Seat], *, sentences: list[Sentence] | None =
     return Verdict(not reasons, reasons, scores, kept, dropped)
 
 
-JUDGES = {"topic": topic, "shorts_topic": topic, "article": article, "script": script, "shorts_script": script,
+# script_facts uses the article judge: two checkers + arbitration, 0 confirmed errors (7afa95870a4e = A)
+JUDGES = {"topic": topic, "shorts_topic": topic, "article": article, "script_structure": script,
+          "script_facts": article, "shorts_script": script,
           "title_thumb": title_thumb, "shorts_title": title_thumb, "media": media, "final": final,
           "shorts_final": final}

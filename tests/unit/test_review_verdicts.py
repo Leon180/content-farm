@@ -40,29 +40,39 @@ def judge(name, seats, **context):
 
 
 def test_script_passes_at_thresholds():
-    verdict = judge("script", script_panel(), sentences=SENTENCES, corpus="一二三四五六七八九十")
+    verdict = judge("script_structure", script_panel(), sentences=SENTENCES, corpus="一二三四五六七八九十")
     assert verdict.passed, verdict.reasons
     assert verdict.scores["leave_median_pct"] == 0.688
     assert verdict.scores["holdout_leave"] == [0.0]          # reported, not judged
 
 
-def test_script_fails_on_leave_writer_and_fact():
-    verdict = judge("script", script_panel(left=("s1.1", "s1.2", "s1.3", None), writers=(6.5, 9),
-                                           fact_status="wrong"), sentences=SENTENCES, corpus="一二三四")
+def test_script_structure_fails_on_leave_and_writer_but_not_on_facts():
+    verdict = judge("script_structure", script_panel(left=("s1.1", "s1.2", "s1.3", None), writers=(6.5, 9),
+                                                     fact_status="wrong"), sentences=SENTENCES, corpus="一二三四")
     assert not verdict.passed
     text = " ".join(verdict.reasons)
-    assert "觀眾離開中位" in text and "writer_story-1 6.5/10 < 7" in text and "fact_checker-1 找到 1 個事實錯誤" in text
+    assert "觀眾離開中位" in text and "writer_story-1 6.5/10 < 7" in text and "事實錯誤" not in text
+
+
+def test_script_structure_lists_facts_without_blocking():
+    """7afa95870a4e = A: the structure stage's fact check is listed (and goes into the fix list) but never blocks."""
+    verdict = judge("script_structure", script_panel(fact_status="wrong"), sentences=SENTENCES,
+                    corpus="一二三四五六七八九十")
+    assert verdict.passed, verdict.reasons
+    assert verdict.scores["fact_errors_advisory"] == {"fact_checker-1": 1}
+    facts = [i for i in verdict.issues if i["category"] == "fact"]
+    assert facts and all(i["advisory"] for i in facts)
 
 
 def test_missing_seat_blocks():
     seats = script_panel()
     seats[-1] = seat("fact_checker-1", "fact_checker", "fact", None, ok=False)
-    verdict = judge("script", seats, sentences=SENTENCES, corpus="一二三四")
+    verdict = judge("script_structure", seats, sentences=SENTENCES, corpus="一二三四")
     assert not verdict.passed and "fact_checker-1" in verdict.reasons[0]
 
 
 def test_holdout_issues_never_feed_fixes():
-    verdict = judge("script", script_panel(), sentences=SENTENCES, corpus="一二三四 holdout only")
+    verdict = judge("script_structure", script_panel(), sentences=SENTENCES, corpus="一二三四 holdout only")
     assert all(i["who"] != "viewer-teacher" for i in verdict.issues)
 
 
