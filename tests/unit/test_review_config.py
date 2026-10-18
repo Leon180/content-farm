@@ -99,8 +99,25 @@ def test_tighter_threshold_is_fine():
 
 
 def test_rounds_capped():
-    raw = _with(lambda r: r["stages"]["article"].update(max_rounds=3))
-    with pytest.raises(ValidationError, match="article: max_rounds 3 > 2"):
+    """Article: 3 rounds since Leon 59fdefb32bd7 = D (was 2); a 4th is still refused."""
+    assert ReviewConfig.model_validate(RAW).stages["article"].max_rounds == 3
+    raw = _with(lambda r: r["stages"]["article"].update(max_rounds=4))
+    with pytest.raises(ValidationError, match="article: max_rounds 4 > 3"):
+        ReviewConfig.model_validate(raw)
+    raw = _with(lambda r: r["stages"]["topic"].update(max_rounds=3))
+    with pytest.raises(ValidationError, match="topic: max_rounds 3 > 2"):
+        ReviewConfig.model_validate(raw)
+
+
+def test_article_needs_an_opus_high_arbiter_and_two_checkers():
+    raw = _with(lambda r: r["stages"]["article"].pop("arbiter"))
+    with pytest.raises(ValidationError, match="article: fact arbiter must be ≥ opus · high"):
+        ReviewConfig.model_validate(raw)
+    raw = _with(lambda r: r["stages"]["article"].update(arbiter={"model": "sonnet", "effort": "high"}))
+    with pytest.raises(ValidationError, match="fact arbiter"):
+        ReviewConfig.model_validate(raw)
+    raw = _with(lambda r: _seat(r, "article", "fact_checker").update(count=3))
+    with pytest.raises(ValidationError, match="exactly 2 fact-checkers, has 3"):
         ReviewConfig.model_validate(raw)
 
 

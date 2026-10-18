@@ -57,8 +57,13 @@ TIER_FLOOR: dict[str, dict[str, tuple[Model, Effort]]] = {
     "shorts_final": {"*": ("sonnet", "medium")},
 }
 FACT_CHECKER_TIER: tuple[Model, Effort] = ("opus", "high")   # every stage: errors are dearest downstream
-MAX_ROUNDS = {"topic": 2, "article": 2, "script": 3, "title_thumb": 3, "media": 3, "final": 3,
+# article 2 → 3: Leon 2026-10-18 decision 59fdefb32bd7 = D (with delete-or-edit-only rewrites and arbitration)
+MAX_ROUNDS = {"topic": 2, "article": 3, "script": 3, "title_thumb": 3, "media": 3, "final": 3,
               "shorts_topic": 2, "shorts_script": 3, "shorts_title": 3, "shorts_final": 3}
+# Stages whose two fact-checkers' disagreements go to a third (``Stage.arbiter``, ≥ FACT_CHECKER_TIER).
+ARBITRATED_STAGES = ("article",)
+# step → first round whose material must be a delete-or-edit-only rewrite (``review.article_diff``).
+DELETE_ONLY_FROM_ROUND = {"article": 2}
 
 # Threshold fields: (direction, floor). "min" = value must be ≥ floor; "max" = value must be ≤ floor.
 THRESHOLD_FLOOR: dict[str, dict[str, tuple[str, float]]] = {
@@ -133,7 +138,8 @@ class Stage(_Strict):
     gate: str                                    # review/<gate>.decision.json
     reviews: tuple[str, ...]                     # run-dir files the panel reads (fingerprint)
     producer: Tier | None = None                 # the agent that makes the stage's output
-    rework: str                                  # step a failed round goes back to by default
+    arbiter: Tier | None = None                  # third fact-checker for disagreements (ARBITRATED_STAGES)
+    rework: str                                 # step a failed round goes back to by default
     max_rounds: int = Field(ge=1, le=5)
     seats: tuple[Seat, ...]
     threshold: Threshold = Threshold()
@@ -220,6 +226,13 @@ def rule_violations(config: ReviewConfig) -> list[str]:
         floor = TIER_FLOOR[name].get("producer_agent")
         if floor and (stage.producer is None or not stage.producer.at_least(floor)):
             errors.append(f"{name}: producer agent must be ≥ {floor[0]} · {floor[1]}")
+        if name in ARBITRATED_STAGES and (stage.arbiter is None or not stage.arbiter.at_least(FACT_CHECKER_TIER)):
+            errors.append(f"{name}: fact arbiter must be ≥ {FACT_CHECKER_TIER[0]} · {FACT_CHECKER_TIER[1]}")
+        if name in ARBITRATED_STAGES:
+            checkers = sum(s.count for s in stage.seats if config.roles.get(s.role, None) is not None
+                           and config.roles[s.role].kind == "fact")
+            if checkers != 2:
+                errors.append(f"{name}: arbitration needs exactly 2 fact-checkers, has {checkers}")
     for role in config.roles.values():
         if role.kind == "fact" and "WebFetch" not in role.tools:
             errors.append(f"fact-checker role {role.title!r} must be able to WebFetch its sources")

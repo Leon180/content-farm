@@ -107,26 +107,40 @@ def range_provider() -> Callable[[list[str], list[Sentence]], dict[str, list[str
     return _provider("rerender_ranges", simple_ranges)
 
 
+def unfrozen(step: str, frozen: frozenset[str]) -> str:
+    """``step``, or the first later pipeline step that is not frozen."""
+    if step not in frozen:
+        return step
+    later = [s for s in PIPELINE_ORDER[PIPELINE_ORDER.index(step) + 1:] if s not in frozen]
+    if not later:
+        raise PlanError(f"{step} is frozen and every later step is frozen too")
+    return later[0]
+
+
 def plan(issues: list[dict[str, Any]], texts: Texts, *, stage: str, round_no: int,
-         default_step: str) -> dict[str, Any]:
+         default_step: str, frozen: frozenset[str] = frozenset()) -> dict[str, Any]:
     scope_of, ranges_of = scope_provider(), range_provider()
     steps: dict[str, dict[str, Any]] = {}
     for issue in issues:
-        step = issue.get("caused_by") or default_step
-        if step not in PIPELINE_ORDER:
-            step = default_step
+        caused = issue.get("caused_by") or default_step
+        if caused not in PIPELINE_ORDER:
+            caused = default_step
+        step = unfrozen(caused, frozen)
         scope = scope_of(issue, texts)
         slot = steps.setdefault(step, {"fixes": [], "sentence_ids": [], "items": []})
-        slot["fixes"].append({**{k: issue.get(k) for k in ("ref", "category", "severity", "problem", "fix",
-                                                            "evidence", "who")}, "scope": scope.to_json()})
+        fix = {**{k: issue.get(k) for k in ("ref", "category", "severity", "problem", "fix", "evidence", "who")},
+               "scope": scope.to_json()}
+        if step != caused:
+            fix["rerouted_from"] = caused
+        slot["fixes"].append(fix)
         slot["sentence_ids"] = sorted(set(slot["sentence_ids"]) | set(scope.sentence_ids))
         item = (issue.get("ref") or {}).get("item")
         if item and item not in slot["items"]:
             slot["items"].append(item)
     for slot in steps.values():
         slot["rerender"] = ranges_of(slot["sentence_ids"], texts.sentences)
-    restart = min(steps, key=PIPELINE_ORDER.index) if steps else default_step
-    result = {"stage": stage, "round": round_no, "restart": restart,
+    restart = min(steps, key=PIPELINE_ORDER.index) if steps else unfrozen(default_step, frozen)
+    result = {"stage": stage, "round": round_no, "restart": restart, "frozen": sorted(frozen),
               "downstream": list(PIPELINE_ORDER[PIPELINE_ORDER.index(restart):]), "steps": steps,
               "chapters_to_rereview": sorted({c for s in steps.values() for f in s["fixes"] for c in f["scope"]["chapters"]})}
     check(result)

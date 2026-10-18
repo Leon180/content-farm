@@ -52,7 +52,13 @@ TASKS = {
 （不要停下來等人審），直接寫 deck.json（可先寫 deck_outline.json），並寫 promise.txt：一句「這支片答應觀眾什麼」。
 若有 review/article.story_notes.json（編劇對文章故事線的建議），在講稿裡處理，但不能新增文章沒有的事實。
 寫完跑 `{python} {repo}/scripts/deck_to_script.py --run-dir {run_dir} --strict`，有錯就改到通過。
-開場 15 秒內要有鉤子；每 5–10 秒要有留人的點；內容要撐得起片長，不要灌水。""",
+開場 15 秒內要有鉤子；每 5–10 秒要有留人的點；內容要撐得起片長，不要灌水。
+事實（腳本的事實查核員會回到 sources.json 的網址逐條查）：
+- 每個數字、日期、引述、因果都要能在 sources.json 的來源原文找到；歸屬寫對（報導是誰發的、話是誰說的），來源的限定詞（據報導、預估、規劃）不能拿掉；
+- 文章或來源已過時的數字，用來源裡最新的狀態並寫出時間點；
+- 查核員說「無來源」時：能找到可靠來源（官方、財報、主要媒體、論文，用 WebFetch 打開確認原文）就把它加進 sources.json
+  （沿用既有欄位格式，新 id 不和舊的重複），投影片的來源列也一起改；找不到就刪掉或改寫成既有來源支持的說法；
+- 頻道自己的推論、換算、判斷要在句子裡標明（「我們的判斷是」「換算起來」「看起來」），不能寫成來源或當事人的話。""",
     "thumbnail_spec": """任務：標題與縮圖。依 deck.json 與 promise.txt：
 1. 寫 titles.json：{{"titles":[{{"id":"T1","text":"…"}}, …]}}，5–6 個標題（中文開頭、不誇大、承諾在講稿裡有兌現）。
 2. 寫 thumbnail.json（主縮圖）與 thumbnail_variants.json（3 款：A 角色大表情、B 主視覺問句、C 數字對比），格式見
@@ -69,24 +75,31 @@ def _fixes_text(run_dir: Path, gate: str) -> str:
     lines, deferred = [], []
     for step, slot in plan.get("steps", {}).items():
         for fix in slot["fixes"]:
-            if gate == "article" and not _is_fact(fix):
+            if gate == "article" and not is_fact(fix):
                 deferred.append(fix)      # story notes: the script stage tells the story, the article stays facts
                 continue
             scope = fix["scope"]
-            lines.append(f"- [{step}] {fix.get('problem')} → {fix.get('fix')}（指認：{json.dumps(fix.get('ref'), ensure_ascii=False)}；"
+            frozen = (f"（原屬 {fix['rerouted_from']}，該步驟本次凍結不重做：在這一步處理——補可靠來源進 sources.json，"
+                      "或刪掉／改寫成既有來源支持的說法）") if fix.get("rerouted_from") else ""
+            lines.append(f"- [{step}]{frozen} {fix.get('problem')} → {fix.get('fix')}（指認：{json.dumps(fix.get('ref'), ensure_ascii=False)}；"
                          f"連動要一起改：句子 {', '.join(scope['sentence_ids']) or '—'}；標題 {', '.join(scope['titles']) or '—'}；"
                          f"縮圖 {'是' if scope['thumbnail'] else '否'}；說明欄 {'是' if scope['description'] else '否'}）")
     reasons = "；".join(plan.get("reasons", []))
     if deferred:
         (run_dir / "review" / "article.story_notes.json").write_text(
             json.dumps(deferred, ensure_ascii=False, indent=1), encoding="utf-8")
+    delete_only = ""
+    if gate == "article":
+        delete_only = ("\n只准刪改（Leon 規則，程式會比對改稿前後的每一句，違反就拒收並還原）：只能刪除被點名的句子，"
+                       "或在被點名的句子裡加限定詞（「據報導」「估計」等）、改正數字與歸屬；不准新增句子、不准把一句拆成兩句、"
+                       "沒被點名的句子一字不動。可以在 sources.json 補來源。")
     return (f"\n這是退回重做（第 {plan.get('round')} 輪評審未過：{reasons}）。修改清單（{path}）：\n" + "\n".join(lines)
             + "\n只改清單與連動範圍列出的地方，其他句子一字不動（沒改到的句子 id 要保持不變）；"
               "改寫時不要新增沒查證過的說法——新寫的每一句一樣會被查核；"
-              "不准為了分數灌水或誇大。fixed 欄位列出你處理了哪些。")
+              "不准為了分數灌水或誇大。fixed 欄位列出你處理了哪些。" + delete_only)
 
 
-def _is_fact(fix: dict) -> bool:
+def is_fact(fix: dict) -> bool:
     """Article reworks carry only fact items (2026-10-18: in attempts 2 and 3 the rewrite for the
     story editor's notes added the new unsourced claims that failed the last round)."""
     return fix.get("category") == "fact" or str(fix.get("who", "")).startswith("fact_checker")
@@ -99,13 +112,14 @@ def producer_tier(config: ReviewConfig, step: str) -> Tier:
 
 
 def produce(step: str, run_dir: Path, *, channel: str, config: ReviewConfig, python: str,
-            client: Callable[[Call], CallResult] | None = None) -> CallResult:
+            client: Callable[[Call], CallResult] | None = None, extra: str = "") -> CallResult:
+    """``extra``: appended to the brief (e.g. why the previous rewrite was refused)."""
     if step not in TASKS:
         raise ValueError(f"no producer agent for step {step!r}")
     _, gate = STEP_STAGE[step]
     fmt = {"run_dir": run_dir, "repo": REPO, "channel": channel, "python": python}
-    prompt = "\n\n".join((COMMON.format(**fmt), TASKS[step].format(**fmt), _fixes_text(run_dir, gate),
-                          "完成後用結構化輸出回報寫了哪些檔。"))
+    prompt = "\n\n".join(part for part in (COMMON.format(**fmt), TASKS[step].format(**fmt), _fixes_text(run_dir, gate),
+                                           extra, "完成後用結構化輸出回報寫了哪些檔。") if part)
     tier = producer_tier(config, step)
     log_dir = run_dir / "review" / "producers"
     log_dir.mkdir(parents=True, exist_ok=True)

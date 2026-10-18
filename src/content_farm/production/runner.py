@@ -27,6 +27,7 @@ from content_farm.production.state import (
     Decision, RunState, StepRecord, fingerprint, load_state, now_iso, save_state,
 )
 from content_farm.production.steps import REPO_ROOT, Command, Context, Step, steps_for
+from content_farm.review.freeze import FROZEN_FILE, frozen_steps
 
 LOCK_PATH = Path.home() / ".cache" / "content-farm" / "render.lock"   # legacy; heavy work goes through lanes.queue
 SCHEDULE_FILE = "production.schedule.json"
@@ -169,6 +170,8 @@ class Runner:
         record = state.steps.get(step.name)
         pending_rework = (record is not None and record.status == "rework"
                           and record.inputs == fingerprint(self.run_dir, step.outputs))
+        if step.name in frozen_steps(self.run_dir) and _outputs_present(self.run_dir, step):
+            return self._frozen_agent(state, step, record, pending_rework), None
         if not _outputs_present(self.run_dir, step) or pending_rework:
             if self.ctx.options.auto_agents and step.name in panel_flow.PRODUCER_STEPS:
                 before = fingerprint(self.run_dir, step.outputs)
@@ -193,9 +196,36 @@ class Runner:
         with self._admit(state, step):
             return self._execute(state, step, step.verify(self.ctx), lambda: fingerprint(self.run_dir, step.outputs))
 
+    def _frozen_agent(self, state: RunState, step: Step, record: StepRecord | None, pending_rework: bool) -> RunState:
+        """Frozen for this run (production.frozen.json): never redone or re-verified. Its outputs may
+        still change through a later step (the script adding a source to sources.json); that is logged."""
+        inputs = fingerprint(self.run_dir, step.outputs)
+        if record is not None and record.status == "done" and record.inputs == inputs and not pending_rework:
+            return state
+        self.log(f"❄ {step.name}: 凍結（{FROZEN_FILE}），不重做、不重驗")
+        _event(self.run_dir, step=step.name, frozen=True, skipped_rework=pending_rework,
+               inputs_before=record.inputs if record else None, inputs_now=inputs)
+        return state.with_step(step.name, StepRecord("done", now_iso(), inputs=inputs, note="frozen"))
+
+    def _frozen_gate(self, state: RunState, step: Step, current: str) -> tuple[RunState, RunResult | None]:
+        """A frozen gate keeps its earlier approval (the panel is not re-run); without one the run stops."""
+        assert step.gate is not None
+        decision = state.decisions.get(step.gate.value)
+        if decision is None or decision.verdict != "approved":
+            message = f"{step.title}：{FROZEN_FILE} 凍結了這個閘門，但它沒有先前的核可"
+            return state, RunResult(Outcome.FAILED, step.name, message)
+        if decision.fingerprint != current:
+            self.log(f"❄ {step.name}: 凍結，沿用 {decision.at} 的核可（輸入已由後面步驟變更）")
+            _event(self.run_dir, step=step.name, frozen=True, approved_fingerprint=decision.fingerprint,
+                   inputs_now=current, by=decision.by)
+        record = StepRecord("approved", decision.at, inputs=current, note=f"frozen; by {decision.by}")
+        return state.with_step(step.name, record), None
+
     def _gate(self, state: RunState, step: Step, forced: bool) -> tuple[RunState, RunResult | None]:
         assert step.gate is not None
         current = gate_fingerprint(self.run_dir, step)
+        if step.name in frozen_steps(self.run_dir):
+            return self._frozen_gate(state, step, current)
         if state.approved(step.gate.value, current):
             decision = state.decisions[step.gate.value]
             record = StepRecord("approved", decision.at, inputs=current, note=f"by {decision.by}")

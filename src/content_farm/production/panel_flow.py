@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -159,15 +160,73 @@ def panel_step(ctx: Context, state: RunState, step: Step, stage: str, current: s
     return state, RunResult(Outcome.FAILED, step.name, result.message)
 
 
+REWORK_ATTEMPTS = 2     # a rewrite that breaks the delete-or-edit-only rule is refused and asked once more
+
+
 def run_producer(ctx: Context, step_name: str, log: Callable[[str], None]) -> str | None:
-    """Run the producer agent for ``step_name``; None on success, else why it failed."""
+    """Run the producer agent for ``step_name``; None on success, else why it failed.
+
+    An article rework from round 2 on must only delete or edit the flagged sentences
+    (``review.article_diff``): a rewrite that breaks it is restored and redone, at most
+    ``REWORK_ATTEMPTS`` times in all."""
     from content_farm.review.producers import produce
 
-    log(f"✎ {step_name}: 產出 agent")
-    result = produce(step_name, ctx.run_dir, channel=ctx.channel.code, config=review_config(ctx),
-                     python=ctx.options.python, client=ctx.options.review_client)
-    _event(ctx.run_dir, step=step_name, producer=result.to_json())
-    if not result.ok:
-        return f"{step_name} 產出 agent 失敗：{'; '.join(result.errors)[:300]}"
-    log(f"✎ {step_name}: {result.seconds}s {(result.output or {}).get('summary', '')[:120]}")
-    return None
+    guard = _delete_only_guard(ctx.run_dir, step_name)
+    extra = ""
+    for attempt in range(1, (REWORK_ATTEMPTS if guard else 1) + 1):
+        log(f"✎ {step_name}: 產出 agent" + (f"（只准刪改，第 {attempt} 次）" if guard else ""))
+        result = produce(step_name, ctx.run_dir, channel=ctx.channel.code, config=review_config(ctx),
+                         python=ctx.options.python, client=ctx.options.review_client, extra=extra)
+        _event(ctx.run_dir, step=step_name, producer=result.to_json())
+        if not result.ok:
+            return f"{step_name} 產出 agent 失敗：{'; '.join(result.errors)[:300]}"
+        log(f"✎ {step_name}: {result.seconds}s {(result.output or {}).get('summary', '')[:120]}")
+        if guard is None:
+            return None
+        problems = guard.check()
+        _event(ctx.run_dir, step=step_name, delete_only=guard.path.name, attempt=attempt, problems=problems)
+        if not problems:
+            return None
+        guard.restore()
+        log(f"✗ {step_name}: 拒收（不是只刪改）：{'；'.join(problems)[:200]}")
+        extra = ("上一次的改稿被拒收，文章已還原成改稿前的版本。原因（程式比對前後版本）：\n- " + "\n- ".join(problems)
+                 + "\n重新改：只准刪除被點名的句子，或在被點名的句子裡加限定詞、改正數字與歸屬；不准新增句子，"
+                   "沒被點名的句子一字不動。")
+    return f"{step_name}：改稿 {REWORK_ATTEMPTS} 次都不是只刪改，已還原並停下（見 production.log.jsonl）"
+
+
+@dataclass(frozen=True)
+class _DeleteOnly:
+    path: Path
+    before: str
+    flagged: frozenset[str]
+
+    def check(self) -> list[str]:
+        from content_farm.review.article_diff import check_rework
+
+        after = self.path.read_text(encoding="utf-8") if self.path.is_file() else ""
+        return check_rework(self.before, after, set(self.flagged))
+
+    def restore(self) -> None:
+        self.path.write_text(self.before, encoding="utf-8")
+
+
+def _delete_only_guard(run_dir: Path, step_name: str) -> _DeleteOnly | None:
+    """The guard for a rework whose next round falls under DELETE_ONLY_FROM_ROUND, else None."""
+    from content_farm.review.article_diff import flagged_sentences, split_article
+    from content_farm.review.config import DELETE_ONLY_FROM_ROUND
+    from content_farm.review.producers import is_fact
+
+    start = DELETE_ONLY_FROM_ROUND.get(step_name)
+    article, plan_path = run_dir / "article.md", run_dir / "review" / f"{step_name}.fixes.json"
+    if start is None or not article.is_file() or not plan_path.is_file():
+        return None
+    plan = json.loads(plan_path.read_text(encoding="utf-8"))
+    if int(plan.get("round", 0)) + 1 < start:
+        return None
+    before = article.read_text(encoding="utf-8")
+    quotes = [str(f.get("evidence") or "") for f in (plan.get("steps", {}).get(step_name) or {}).get("fixes", [])
+              if is_fact(f)]
+    snapshot = run_dir / "review" / f"article.before-round-{int(plan['round']) + 1}.md"
+    snapshot.write_text(before, encoding="utf-8")
+    return _DeleteOnly(article, before, frozenset(flagged_sentences(quotes, split_article(before))))

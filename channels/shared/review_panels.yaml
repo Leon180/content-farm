@@ -177,8 +177,9 @@ review:
       gate: article
       reviews: [article.md, sources.json]
       producer: {model: opus, effort: high}
+      arbiter: {model: opus, effort: high}   # Leon 59fdefb32bd7=D：兩位查核不一致交第 3 位仲裁
       rework: article
-      max_rounds: 2
+      max_rounds: 3                          # 59fdefb32bd7=D：2→3；第 2 輪起只准刪改（程式比對，review/article_diff.py）
       seats:
         - {role: fact_checker, count: 2, model: opus, effort: high}
         - {role: writer_story, count: 1, model: opus, effort: medium}
