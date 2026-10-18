@@ -140,10 +140,12 @@ class LocalWorker:
         """The machine-wide heavy queue (lanes.queue). Under ``produce.py run`` the runner already
         holds the slot (CF_HEAVY_SLOT); run on its own, this worker queues like any other job."""
         from content_farm.lanes.queue import SLOT_ENV, Ticket, heavy_slot
+        from content_farm.lanes.resources import load_config, need_for
 
         if os.environ.get(SLOT_ENV):
             return
-        slot = heavy_slot(Ticket(job=f"local-tts:pid{os.getpid()}", kind="other"), logger.info)
+        slot = heavy_slot(Ticket(job=f"local-tts:pid{os.getpid()}", kind="other"), logger.info,
+                          need=need_for("voice", load_config()))
         await asyncio.to_thread(slot.__enter__)
         self._slot = slot
 

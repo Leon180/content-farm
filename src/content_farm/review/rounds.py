@@ -42,6 +42,18 @@ class Member:
     persona: str = ""
 
 
+def reviewer_parallel(wanted: int, cap: int) -> int:
+    """claude -p reviewers at once: what free memory allows (≈0.6 GB each, 6 GB margin), ≤ cap, ≥ 1
+    (the step itself already passed admission, so one always fits)."""
+    from content_farm.lanes import resources as res
+
+    try:
+        allowed = res.reviewer_parallelism(res.probe_machine(), res.load_config(), wanted)
+    except (OSError, ValueError):
+        allowed = cap
+    return max(1, min(cap, allowed, wanted or 1))
+
+
 def stage_dir(run_dir: Path, stage: str) -> Path:
     return run_dir / REVIEW_DIR / stage
 
@@ -120,7 +132,8 @@ def run_round(run_dir: Path, *, stage_name: str, config: ReviewConfig, channel: 
                           tools=config.roles[member.role].tools, cwd=out, timeout_s=config.defaults.timeout_s,
                           retries=config.defaults.schema_retries))
     invoke = client or (lambda call: run_call(call, log_dir=out / "raw"))
-    with ThreadPoolExecutor(max_workers=config.defaults.max_parallel) as pool:
+    parallel = reviewer_parallel(len(calls), config.defaults.max_parallel)
+    with ThreadPoolExecutor(max_workers=parallel) as pool:
         results = list(pool.map(invoke, calls))
     (out / "results").mkdir(exist_ok=True)
     for result in results:

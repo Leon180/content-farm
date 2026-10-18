@@ -59,7 +59,10 @@ def main() -> int:
     parser.add_argument("--run-dir", type=Path, action="append", required=True)
     parser.add_argument("--env-file", type=Path, required=True)
     args = parser.parse_args()
-    with heavy_slot(Ticket(f"voice-batch:{len(args.run_dir)} runs", kind="long"), print):
+    from content_farm.lanes.resources import load_config, need_for
+
+    with heavy_slot(Ticket(f"voice-batch:{len(args.run_dir)} runs", kind="long"), print,
+                    need=need_for("voice", load_config())):
         asyncio.run(_voice_all([p.resolve() for p in args.run_dir], args.env_file))
     return 0
 

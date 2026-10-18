@@ -57,11 +57,12 @@ class CallResult:
     cost_usd: float = 0.0              # the CLI's notional figure; billed to the subscription
     tokens: dict[str, int] = field(default_factory=dict)
     attempts: int = 1
+    infra: bool = False                # failed because the plumbing failed (network, exit, timeout)
 
     def to_json(self) -> dict[str, Any]:
         return {"rid": self.rid, "ok": self.ok, "errors": list(self.errors), "model": self.model,
                 "effort": self.effort, "models_used": list(self.models_used), "seconds": self.seconds,
-                "cost_usd": self.cost_usd, "tokens": self.tokens, "attempts": self.attempts}
+                "cost_usd": self.cost_usd, "tokens": self.tokens, "attempts": self.attempts, "infra": self.infra}
 
 
 Runner = Callable[[list[str], str, Path, dict[str, str], int], tuple[int, str, str]]
@@ -122,16 +123,42 @@ def model_matches(requested: str, used: tuple[str, ...]) -> bool:
     return any(requested in name for name in used)
 
 
-def run_call(call: Call, *, runner: Runner = _subprocess, log_dir: Path | None = None) -> CallResult:
+INFRA_RETRIES = 3          # network drops (2026-10-18 13:32, 15:59): retried, never counted as a review
+INFRA_BACKOFF_S = 60.0
+_INFRA_HINT = ("ENOTFOUND", "ECONNRESET", "ETIMEDOUT", "ECONNREFUSED", "network", "Connection", "overloaded",
+               "rate limit", "529", "503", "502", "timeout", "socket")
+
+
+def is_infra(code: int, problem: str, envelope: dict[str, Any]) -> bool:
+    """A failure of the plumbing (no answer at all), not of the reviewer's answer."""
+    if problem.startswith("schema:"):
+        return False
+    if code != 0 or problem.startswith("stdout is not JSON"):
+        return True
+    text = f"{problem} {envelope.get('api_error_status') or ''}"
+    return any(hint.lower() in text.lower() for hint in _INFRA_HINT)
+
+
+def run_call(call: Call, *, runner: Runner = _subprocess, log_dir: Path | None = None,
+             sleep: Callable[[float], None] = time.sleep) -> CallResult:
     errors: list[str] = []
     started = time.monotonic()
     cost, tokens, used = 0.0, {"input": 0, "output": 0, "cache_read": 0, "cache_write": 0}, ()
-    for attempt in range(1, call.retries + 2):
+    attempt, answers, infra_left, infra = 0, 0, INFRA_RETRIES, False
+    while answers < call.retries + 1:
+        attempt += 1
         code, stdout, stderr = runner(argv_for(call), call.prompt, call.cwd, child_env(extra=call.env), call.timeout_s)
         if log_dir is not None:
             log_dir.mkdir(parents=True, exist_ok=True)
             (log_dir / f"{call.rid}.attempt{attempt}.json").write_text(stdout or stderr, encoding="utf-8")
         output, envelope, problem = _parse(stdout) if code == 0 else (None, {}, f"exit {code}: {stderr[-300:]}")
+        infra = output is None and is_infra(code, problem, envelope)
+        if infra and infra_left > 0:
+            infra_left -= 1
+            errors.append(f"attempt {attempt}: infrastructure, retrying: {problem[:120]}")
+            sleep(INFRA_BACKOFF_S * (INFRA_RETRIES - infra_left))
+            continue
+        answers += 1
         cost += float(envelope.get("total_cost_usd") or 0)
         usage = envelope.get("usage") or {}
         tokens = {"input": tokens["input"] + int(usage.get("input_tokens") or 0),
@@ -151,4 +178,4 @@ def run_call(call: Call, *, runner: Runner = _subprocess, log_dir: Path | None =
             problem = "schema: " + "; ".join(problems[:5])
         errors.append(f"attempt {attempt}: {problem}")
     return CallResult(call.rid, False, None, tuple(errors), call.model, call.effort, used,
-                      round(time.monotonic() - started, 1), round(cost, 4), tokens, call.retries + 1)
+                      round(time.monotonic() - started, 1), round(cost, 4), tokens, attempt, infra=infra)

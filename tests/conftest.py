@@ -21,6 +21,7 @@ def _no_real_claude(monkeypatch: pytest.MonkeyPatch, tmp_path_factory: pytest.Te
     monkeypatch.setenv("CF_CLAUDE_BIN", str(stub))
     # Unit tests do not wait in the machine-wide heavy queue (tests of the queue clear this).
     monkeypatch.setenv("CF_HEAVY_SLOT", "unit-test")
+    monkeypatch.setenv("CF_ADMISSION_UNIT_TEST", "1")      # only honoured inside pytest (lanes.queue)
 
 
 @pytest.fixture

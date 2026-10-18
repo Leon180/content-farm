@@ -1,15 +1,17 @@
-"""One machine-wide priority queue for heavy local work, replacing the separate render lock,
-``local_tts.lock`` and per-tool pgrep gates (Leon 2026-10-18).
+"""One machine-wide queue in front of every step (Leon 2026-10-18), shared by every channel,
+worker and ``scripts/heavy`` caller.
 
-Every heavy job — any channel, any worker — writes a ticket into ``QUEUE_DIR`` and waits until
-1. it is first by priority among live tickets: HN Shorts / Shorts first, then the long video
-   closest to done (``progress``), then first come;
-2. it holds ``heavy.lock`` (flock — released by the OS if the holder dies);
-3. no heavy process outside the queue is running (``BUSY_PATTERN``) and free memory is ≥ 50 %.
+A ticket = one video × one step (``job``) with its resource need (``lanes.resources.Need``).
+``slot(ticket, need)`` waits until ``resources.decide`` says go, then — for local work — takes
+its locks all-or-nothing in the fixed order gpu → render → local_tts (``heavy.lock`` shared or
+exclusive for the GPU; the legacy ``render.lock`` / ``local_tts.lock`` at their old paths, so
+branches without this queue still see the machine as busy and their holders make us wait), and
+checks no heavy process outside the queue is running. Cloud-lane work only waits for memory.
 
-The holder exports ``CF_HEAVY_SLOT=<ticket>`` to its children, so a child (the TTS worker, a
-render script) that asks for the slot again gets it at once instead of deadlocking.
-``status()`` / ``produce.py queue`` show the queue.
+While waiting the ticket records why (``reason``); ``status()`` / ``scripts/heavy --status`` /
+``produce.py queue`` show it. A need larger than the machine fails at once (``ImpossibleNeed``);
+a wait longer than ``notify_after_s`` sends one orch-mail to the orchestrator.
+The holder exports ``CF_HEAVY_SLOT`` so its children (TTS worker, render scripts) never re-queue.
 """
 
 from __future__ import annotations
@@ -17,6 +19,7 @@ from __future__ import annotations
 import fcntl
 import json
 import os
+import subprocess
 import time
 import uuid
 from collections.abc import Callable, Iterator
@@ -26,20 +29,27 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import IO
 
+from content_farm.lanes import resources as res
+
 QUEUE_DIR = Path(os.environ.get("CF_HEAVY_QUEUE_DIR", Path.home() / ".cache" / "content-farm" / "heavy-queue"))
 SLOT_ENV = "CF_HEAVY_SLOT"
-# "ace" alone (as first drafted) matches unrelated processes (workspace, interface…); name ACE-Step exactly.
-BUSY_PATTERN = "mlx_video|mflux|ffmpeg|qwen3-tts|qwen3_tts|voxcpm|ACE-Step|acestep"
-MIN_FREE_PCT = 50
-POLL_SECONDS = 20
-MAX_WAIT_SECONDS = 6 * 3600
+ORCH_MAIL = Path.home() / "orchestrator" / "orch_mail.py"
+ORCH_MAIL_DIR = Path.home() / ".claude" / "orch-mail-personal"
+
+
+class QueueTimeout(RuntimeError):
+    """Waited longer than ``max_wait_s``."""
+
+
+class ImpossibleNeed(RuntimeError):
+    """The need can never be met on this machine."""
 
 
 @dataclass(frozen=True)
 class Ticket:
-    job: str                    # e.g. "chipcat/cowos-v3:voice"
-    kind: str = "long"          # short | long | other
-    progress: float = 0.0       # share of the run's steps already done (long: closest to done first)
+    job: str                    # "<channel>/<run>:<step>" or a scripts/heavy --label
+    kind: str = "long"          # short | long | other (priority: short, then long closest to done)
+    progress: float = 0.0
     pid: int = field(default_factory=os.getpid)
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:10])
     enqueued_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds"))
@@ -58,68 +68,68 @@ def _alive(pid: int) -> bool:
     return True
 
 
-def tickets(queue_dir: Path = QUEUE_DIR, *, alive: Callable[[int], bool] = _alive) -> list[Ticket]:
-    """Live tickets in priority order; tickets of dead processes are removed."""
+def _ticket_fields() -> set[str]:
+    return set(Ticket.__dataclass_fields__)
+
+
+def records(queue_dir: Path = QUEUE_DIR, *, alive: Callable[[int], bool] = _alive) -> list[dict]:
+    """Live ticket records (ticket fields + state, reason, need, since); dead ones are removed."""
     out = []
     for path in sorted(queue_dir.glob("*.json")):
         try:
-            ticket = Ticket(**json.loads(path.read_text(encoding="utf-8")))
+            data = json.loads(path.read_text(encoding="utf-8"))
+            Ticket(**{k: v for k, v in data.items() if k in _ticket_fields()})
         except (OSError, ValueError, TypeError):
             path.unlink(missing_ok=True)
             continue
-        if not alive(ticket.pid):
+        if not alive(int(data["pid"])):
             path.unlink(missing_ok=True)
             continue
-        out.append(ticket)
-    return sorted(out, key=Ticket.priority)
+        out.append(data)
+    return sorted(out, key=lambda d: Ticket(**{k: v for k, v in d.items() if k in _ticket_fields()}).priority())
 
 
-def _holder(queue_dir: Path) -> str:
-    path = queue_dir / "holder"
-    return path.read_text(encoding="utf-8").strip() if path.is_file() else ""
+def tickets(queue_dir: Path = QUEUE_DIR, *, alive: Callable[[int], bool] = _alive) -> list[Ticket]:
+    return [Ticket(**{k: v for k, v in d.items() if k in _ticket_fields()}) for d in records(queue_dir, alive=alive)]
 
 
-def _holder_job(queue_dir: Path) -> str:
-    holder = _holder(queue_dir)
-    path = queue_dir / f"{holder}.json"
-    if holder and path.is_file():
-        return str(json.loads(path.read_text(encoding="utf-8")).get("job", holder))
-    return "another job"
+def status(queue_dir: Path = QUEUE_DIR, now: float | None = None) -> list[dict]:
+    now = now or time.time()
+    return [{**r, "holding": r.get("state") == "running", "waited_s": int(now - r.get("since", now))}
+            for r in records(queue_dir)]
 
 
-def status(queue_dir: Path = QUEUE_DIR) -> list[dict]:
-    holder = _holder(queue_dir)
-    return [{**asdict(t), "holding": t.id == holder} for t in tickets(queue_dir)]
+def _write(path: Path, data: dict) -> None:
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(path)
 
 
-@dataclass
-class Gate:
-    busy: Callable[[str], list[int]]
-    free: Callable[[], int | None]
-    sleep: Callable[[float], None] = time.sleep
-    min_free_pct: int = MIN_FREE_PCT
-    max_wait_s: int = MAX_WAIT_SECONDS
+def _as_job(record: dict) -> res.Job:
+    need = res.Need(**{**record.get("need", {}), "locks": tuple(record.get("need", {}).get("locks", ()))})
+    ticket = Ticket(**{k: v for k, v in record.items() if k in _ticket_fields()})
+    return res.Job(record["id"], record["job"], need, ticket.priority(), record.get("state", "waiting"),
+                   float(record.get("since", time.time())), bool(record.get("fits", True)))
 
 
-def default_gate() -> Gate:
-    from content_farm.voice.local_worker import busy_pids, free_memory_pct
+# --- locks: all or nothing, fixed order -------------------------------------------------------
 
-    return Gate(busy=busy_pids, free=free_memory_pct)
-
-
-class QueueTimeout(RuntimeError):
-    """Waited longer than ``max_wait_s`` for the heavy slot."""
+def legacy_locks() -> tuple[Path, ...]:
+    """runner.render_lock (``render.lock``) and voice.local_worker (``local_tts.lock``) before the queue."""
+    base = Path.home() / ".cache" / "content-farm"
+    return (base / "render.lock", base / "local_tts.lock")
 
 
-def _flock(path: Path) -> IO[str] | None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    handle = path.open("a")
-    try:
-        fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except BlockingIOError:
-        handle.close()
-        return None
-    return handle
+def _lock_plan(need: res.Need, queue_dir: Path) -> list[tuple[Path, int]]:
+    render, local_tts = legacy_locks()
+    plan: list[tuple[Path, int]] = []
+    if need.gpu != "none":
+        plan.append((queue_dir / "heavy.lock", fcntl.LOCK_EX if need.gpu == "exclusive" else fcntl.LOCK_SH))
+    if "render" in need.locks or need.gpu == "exclusive":
+        plan.append((render, fcntl.LOCK_EX))
+    if "local_tts" in need.locks:
+        plan.append((local_tts, fcntl.LOCK_EX))
+    return plan          # already in LOCK_ORDER: gpu, render, local_tts
 
 
 def _release(handles: list[IO[str]]) -> None:
@@ -128,86 +138,145 @@ def _release(handles: list[IO[str]]) -> None:
         handle.close()
 
 
-def _try_lock(queue_dir: Path) -> list[IO[str]] | None:
-    """heavy.lock plus the legacy locks (same paths, same exclusive flock), all or nothing:
-    code on branches without this queue still sees the machine as busy, and its holders block us."""
+def take_locks(plan: list[tuple[Path, int]]) -> list[IO[str]] | None:
     held: list[IO[str]] = []
-    for path in (queue_dir / "heavy.lock", *legacy_locks()):
-        handle = _flock(path)
-        if handle is None:
+    for path, mode in plan:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        handle = path.open("a")
+        try:
+            fcntl.flock(handle, mode | fcntl.LOCK_NB)
+        except BlockingIOError:
+            handle.close()
             _release(held)
             return None
         held.append(handle)
     return held
 
 
-def legacy_locks() -> tuple[Path, ...]:
-    """runner.render_lock (``render.lock``) and voice.local_worker (``local_tts.lock``) before the queue."""
-    if os.environ.get("CF_HEAVY_QUEUE_NO_LEGACY") == "1":     # tests only
-        return ()
-    base = Path.home() / ".cache" / "content-farm"
-    return (base / "render.lock", base / "local_tts.lock")
+# --- environment (injectable for tests) ------------------------------------------------------
+
+@dataclass
+class Env:
+    probe: Callable[[], res.Probe] = res.probe_machine
+    foreign: Callable[[set[int]], list[tuple[int, str]]] | None = None
+    sleep: Callable[[float], None] = time.sleep
+    clock: Callable[[], float] = time.time
+    notify: Callable[[str, str], None] | None = None
+    config: res.Config | None = None
 
 
-def _not_first(ticket: Ticket, queue_dir: Path) -> str:
-    live = tickets(queue_dir)
-    if live and live[0].id != ticket.id:
-        return f"queue: {live[0].job} ({live[0].kind}) goes first; {len(live)} waiting"
-    return ""
+def default_foreign(config: res.Config) -> Callable[[set[int]], list[tuple[int, str]]]:
+    patterns = [p["pattern"] for p in config.raw.get("processes", [])]
+    return lambda ours: res.foreign_heavy(patterns, ours)
 
 
-def _resources(gate: Gate) -> str:
-    busy = gate.busy(BUSY_PATTERN)
+def orch_mail(summary: str, body: str) -> None:
+    """One report to the orchestrator's personal pointer store; never raises."""
+    if not ORCH_MAIL.is_file():
+        return
+    note = QUEUE_DIR / f"stall-{uuid.uuid4().hex[:8]}.md"
+    note.write_text(f"## TL;DR\n{summary}\n\n{body}\n", encoding="utf-8")
+    try:
+        subprocess.run(["python3", str(ORCH_MAIL), "put", "--kind", "report", "--from", "heavy-queue",
+                        "--to", "orchestrator", "--summary", summary[:100], "--file", str(note)],
+                       env={**os.environ, "ORCH_MAIL_DIR": str(ORCH_MAIL_DIR)}, capture_output=True, timeout=30,
+                       check=False)
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+
+
+def _wait_reasons(me: dict, queue_dir: Path, env: Env, config: res.Config) -> tuple[list[str], bool, list]:
+    others = [r for r in records(queue_dir) if r["id"] != me["id"]]
+    probe = env.probe()
+    job = _as_job(me)
+    reasons = res.decide(job, [_as_job(r) for r in others], probe, config, env.clock())
+    fits = not any(r.startswith(("memory", "swap", "load", "memory pressure")) for r in reasons)
+    if reasons or not job.need.local:
+        return reasons, fits, []
+    handles = take_locks(_lock_plan(job.need, queue_dir))
+    if handles is None:
+        return ["a lock (gpu/render/local_tts) is held, possibly by a branch without this queue"], fits, []
+    ours = {int(r["pid"]) for r in others if r.get("state") == "running"}
+    busy = (env.foreign or default_foreign(config))(ours)
     if busy:
-        return f"heavy process outside the queue running (pids {busy[:5]})"
-    free = gate.free()
-    if free is not None and free < gate.min_free_pct:
-        return f"free memory {free}% < {gate.min_free_pct}%"
-    return ""
+        _release(handles)
+        return [f"heavy process outside the queue: {busy[0][1]} (pid {busy[0][0]})"], fits, []
+    return [], fits, handles
+
+
+def _unit_test_bypass() -> bool:
+    """Unit tests of other modules must not depend on this machine's load (tests of the queue pass
+    an ``Env``). Honoured only inside pytest, so production code cannot switch admission off."""
+    return os.environ.get("CF_ADMISSION_UNIT_TEST") == "1" and "PYTEST_CURRENT_TEST" in os.environ
 
 
 @contextmanager
-def heavy_slot(ticket: Ticket, log: Callable[[str], None] = print, *, gate: Gate | None = None,
-               queue_dir: Path = QUEUE_DIR) -> Iterator[float]:
-    """Hold the machine's one heavy slot; yields the seconds waited."""
-    if os.environ.get(SLOT_ENV):                       # a parent already holds it for us
+def slot(ticket: Ticket, need: res.Need, log: Callable[[str], None] = print, *, env: Env | None = None,
+         queue_dir: Path = QUEUE_DIR) -> Iterator[float]:
+    """Wait for admission (and locks for local work); yields the seconds waited."""
+    if need.local and os.environ.get(SLOT_ENV):        # a parent holds the local slot for us
         yield 0.0
         return
-    gate = gate or default_gate()
+    if env is None and _unit_test_bypass():
+        yield 0.0
+        return
+    env = env or Env()
+    config = env.config or res.load_config()
+    why = res.impossible(need, env.probe(), config)
+    if why:
+        raise ImpossibleNeed(f"{ticket.job}: {why}")
     queue_dir.mkdir(parents=True, exist_ok=True)
     path = queue_dir / f"{ticket.id}.json"
-    path.write_text(json.dumps(asdict(ticket)), encoding="utf-8")
-    started, handle, last = time.monotonic(), None, ""
+    started = env.clock()
+    me = {**asdict(ticket), "need": {**asdict(need), "locks": list(need.locks)}, "state": "waiting",
+          "since": started, "reason": "", "fits": True}
+    _write(path, me)
+    handles: list[IO[str]] = []
+    notified, last = False, ""
     try:
         while True:
-            why = _not_first(ticket, queue_dir)
-            if not why:
-                handle = _try_lock(queue_dir)
-                why = "" if handle else f"slot or a legacy lock held by {_holder_job(queue_dir)}"
-                if handle and (late := _resources(gate)):    # checked with the slot held: nothing of ours runs
-                    _release(handle)
-                    handle, why = None, late
-            if handle:
+            reasons, fits, handles = _wait_reasons(me, queue_dir, env, config)
+            if not reasons:
                 break
-            waited = time.monotonic() - started
-            if waited > gate.max_wait_s:
-                raise QueueTimeout(f"{ticket.job}: waited {waited:.0f}s for the heavy slot ({why})")
-            if why != last:
-                log(f"⏳ {ticket.job}: {why}")
-                last = why
-            gate.sleep(POLL_SECONDS)
-        (queue_dir / "holder").write_text(ticket.id, encoding="utf-8")
-        os.environ[SLOT_ENV] = ticket.id
-        waited = round(time.monotonic() - started, 1)
+            reason = "；".join(reasons)
+            me = {**me, "reason": reason, "fits": fits}
+            _write(path, me)
+            waited = env.clock() - started
+            if reason != last:
+                log(f"⏳ {ticket.job}: {reason}")
+                last = reason
+            if not notified and waited >= config.notify_after_s:
+                (env.notify or orch_mail)(f"{ticket.job} 排隊 {int(waited // 60)} 分：{reason[:60]}",
+                                          json.dumps(status(queue_dir), ensure_ascii=False, indent=1, default=str))
+                notified = True
+            if waited > config.max_wait_s:
+                raise QueueTimeout(f"{ticket.job}: waited {waited:.0f}s ({reason})")
+            env.sleep(config.poll_seconds)
+        waited = round(env.clock() - started, 1)
+        me = {**me, "state": "running", "since": env.clock(), "reason": "", "waited_s": waited}
+        _write(path, me)
+        if need.local:
+            os.environ[SLOT_ENV] = ticket.id
         _record(queue_dir, ticket, "start", waited)
         yield waited
     finally:
-        if handle:
+        if handles or (need.local and os.environ.get(SLOT_ENV) == ticket.id):
             os.environ.pop(SLOT_ENV, None)
-            (queue_dir / "holder").unlink(missing_ok=True)
-            _record(queue_dir, ticket, "end", round(time.monotonic() - started, 1))
-            _release(handle)
+        _release(handles)
+        if me.get("state") == "running":
+            _record(queue_dir, ticket, "end", round(env.clock() - started, 1))
         path.unlink(missing_ok=True)
+
+
+EXCLUSIVE = res.Need(mem_gb=8.0, gpu="exclusive", cpu_cores=4, locks=("render",))
+
+
+@contextmanager
+def heavy_slot(ticket: Ticket, log: Callable[[str], None] = print, *, need: res.Need | None = None,
+               env: Env | None = None, queue_dir: Path = QUEUE_DIR) -> Iterator[float]:
+    """The old single-slot API: exclusive local work (default need ``EXCLUSIVE``)."""
+    with slot(ticket, need or EXCLUSIVE, log, env=env, queue_dir=queue_dir) as waited:
+        yield waited
 
 
 def _record(queue_dir: Path, ticket: Ticket, event: str, seconds: float) -> None:

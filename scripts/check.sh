@@ -34,7 +34,8 @@ else
   "$PY" -m pytest -q -p no:cacheprovider \
     "$ROOT/tests/unit/test_review_config.py" "$ROOT/tests/unit/test_review_verdicts.py" \
     "$ROOT/tests/unit/test_review_gate.py" "$ROOT/tests/unit/test_review_runner.py" \
-    "$ROOT/tests/unit/test_lanes_queue.py" "$ROOT/tests/unit/test_llm_paid.py" \
+    "$ROOT/tests/unit/test_lanes_queue.py" "$ROOT/tests/unit/test_lanes_resources.py" \
+    "$ROOT/tests/unit/test_lanes_heavy_rules.py" "$ROOT/tests/unit/test_llm_paid.py" \
     "$ROOT/tests/unit/test_publish_slot.py" "$ROOT/tests/unit/test_production_runner.py" \
     "$ROOT/tests/unit/test_production_channels.py"
 fi

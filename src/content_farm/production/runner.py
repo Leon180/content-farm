@@ -18,6 +18,7 @@ from pathlib import Path
 
 from content_farm.explainer.deck import load_deck
 from content_farm.lanes.queue import Ticket, heavy_slot
+from content_farm.lanes.resources import Need, load_config, need_for
 from content_farm.production import panel_flow, publish, qc
 from content_farm.production.channels import Channel, Gate
 from content_farm.production.review import write_review
@@ -66,11 +67,12 @@ def subprocess_executor(command: Command, log_path: Path) -> int:
 
 
 @contextmanager
-def render_lock(max_load: float | None, log: Callable[[str], None], ticket: Ticket | None = None) -> Iterator[None]:
-    """The machine's one heavy slot (``lanes.queue``: priority queue shared by every channel and
-    worker — renders, local TTS, image/video models), then wait while the 1-minute load average
-    is above ``max_load``."""
-    with heavy_slot(ticket or Ticket(job=f"pid{os.getpid()}", kind="other"), log):
+def render_lock(max_load: float | None, log: Callable[[str], None], ticket: Ticket | None = None,
+                need: Need | None = None) -> Iterator[None]:
+    """Admission through the machine-wide queue (``lanes.queue``, shared by every channel, worker
+    and ``scripts/heavy``): waits until the step's need fits (memory, swap, load, GPU, locks), then
+    while the 1-minute load average is above ``max_load``. ``need`` defaults to exclusive local work."""
+    with heavy_slot(ticket or Ticket(job=f"pid{os.getpid()}", kind="other"), log, need=need):
         while max_load is not None and os.getloadavg()[0] > max_load:
             log(f"load {os.getloadavg()[0]:.1f} > {max_load}; waiting {LOAD_POLL_SECONDS}s")
             time.sleep(LOAD_POLL_SECONDS)
@@ -168,7 +170,8 @@ class Runner:
         if not _outputs_present(self.run_dir, step) or pending_rework:
             if self.ctx.options.auto_agents and step.name in panel_flow.PRODUCER_STEPS:
                 before = fingerprint(self.run_dir, step.outputs)
-                failure = panel_flow.run_producer(self.ctx, step.name, self.log)
+                with self._admit(state, step):
+                    failure = panel_flow.run_producer(self.ctx, step.name, self.log)
                 if failure is None and not _outputs_present(self.run_dir, step):
                     failure = f"{step.title}：產出 agent 結束但缺 {', '.join(step.outputs)}"
                 if failure is None and pending_rework and fingerprint(self.run_dir, step.outputs) == before:
@@ -185,7 +188,8 @@ class Runner:
             return state, None
         if step.verify is None:
             return state.with_step(step.name, StepRecord("done", now_iso(), inputs=inputs)), None
-        return self._execute(state, step, step.verify(self.ctx), lambda: fingerprint(self.run_dir, step.outputs))
+        with self._admit(state, step):
+            return self._execute(state, step, step.verify(self.ctx), lambda: fingerprint(self.run_dir, step.outputs))
 
     def _gate(self, state: RunState, step: Step, forced: bool) -> tuple[RunState, RunResult | None]:
         assert step.gate is not None
@@ -196,7 +200,8 @@ class Runner:
             return state.with_step(step.name, record), None
         stage = panel_flow.stage_of(self.ctx, step.gate)
         if stage is not None:
-            return panel_flow.panel_step(self.ctx, state, step, stage, current, self.log)
+            with self._admit(state, step):
+                return panel_flow.panel_step(self.ctx, state, step, stage, current, self.log)
         decision = state.decisions.get(step.gate.value)
         unchanged_rejection = (decision is not None and decision.verdict == "rejected"
                                and decision.fingerprint == current)
@@ -213,6 +218,19 @@ class Runner:
             message = f"{step.title}：等待審核"
         record = StepRecord("waiting", now_iso(), inputs=current, note=message)
         return state.with_step(step.name, record), RunResult(Outcome.GATE, step.name, message, page)
+
+    def _need(self, step: Step) -> Need:
+        """The step's declared need (heavy_work.json steps); a local TTS voice is exclusive GPU work,
+        a mock voice is light; an undeclared heavy step is treated as exclusive local work."""
+        config = load_config()
+        if step.name == "voice" and not step.heavy_if(self.ctx):
+            return Need(mem_gb=1.0, cpu_cores=1)
+        default = need_for("heavy_default", config) if step.heavy else Need()
+        return need_for(step.name, config, default=default)
+
+    def _admit(self, state: RunState, step: Step):
+        """Entry check before a step does work (cloud lane too): queue until its need fits."""
+        return render_lock(self.max_load if step.heavy else None, self.log, self._ticket(state, step), self._need(step))
 
     def _ticket(self, state: RunState, step: Step) -> Ticket:
         """Queue ticket: Shorts first, then the long video closest to done."""
@@ -241,9 +259,7 @@ class Runner:
             self.log(f"{step.name}: {identity}")
             _event(self.run_dir, step=step.name, identity=identity)
         command = step.command(self.ctx)
-        if not (step.heavy or step.heavy_if(self.ctx)):
-            return self._execute(state, step, command, lambda: self._cmd_inputs(step))
-        with render_lock(self.max_load, self.log, self._ticket(state, step)):
+        with self._admit(state, step):
             return self._execute(state, step, command, lambda: self._cmd_inputs(step))
 
     def _execute(
@@ -267,7 +283,8 @@ class Runner:
             return state, None
         started = time.monotonic()
         try:
-            ok, note = _internal(self.ctx, step)
+            with self._admit(state, step):
+                ok, note = _internal(self.ctx, step)
         except (OSError, ValueError) as exc:
             ok, note = False, f"{type(exc).__name__}: {exc}"
         seconds = round(time.monotonic() - started, 1)

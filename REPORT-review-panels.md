@@ -3,6 +3,36 @@
 ## TL;DR
 （進行中，完成後改寫）
 
+## 全機佇列與入場檢查（設計）
+- 設定檔 `channels/shared/heavy_work.json`（JSON，`scripts/heavy` 用系統 python3 就能跑）：`admission`（安全邊際 6 GB、swap < 90%、
+  load1 < 1.5×核數、防餓死 20 分、通知 45 分、每位 claude -p 評審 0.6 GB）、`steps`（每步 `mem_gb`／`gpu`／`cpu_cores`／`locks`）、
+  `processes`（pgrep 樣式）、`commands`（hook 樣式）、`allowed_wrappers`、`read_only_commands`。
+- 排隊單位＝「片×step」（ticket job `chipcat/rp3:voice`）。runner 在每個 step 真正開始做事前（cmd 執行、agent 產出、verify、評審團、internal）
+  呼叫 `lanes.queue.slot(ticket, need)`；已是最新而跳過的 step 不排隊。雲端車道的 step 只等記憶體，本機車道另外要鎖與 GPU。
+- `lanes/resources.decide()`（純函式，逐條有測試）：記憶體（扣掉 90 秒內剛開跑的工作已承諾的量）、swap、load、壓力 critical（暫停新 step，正在跑的不殺）、
+  GPU（exclusive 與任何 GPU 工作互斥；shared 只與 exclusive 互斥）、鎖、優先序（HN Shorts > 接近完成的長片 > 其他；
+  排前面的若「現在放得下」就讓它先，放不下就讓小工作補位）、防餓死（本機大工作等滿 20 分，就不再放行比它新／低優先的本機工作，雲端照常）。
+- 鎖：一次全拿或全不拿，固定順序 gpu（`heavy.lock`，shared＝LOCK_SH／exclusive＝LOCK_EX）→ `render.lock` → `local_tts.lock`（後兩把是舊路徑舊語意）。
+- 不可能滿足（`mem_gb + 邊際 > 總記憶體` 或核數不足）→ `ImpossibleNeed` 立即失敗。等超過 45 分 → 一封 orch-mail（personal 指標倉）附佇列快照。
+- 評審並行數＝`min(設定上限, ⌊(可用 GB − 6) / 0.6⌋, 評審人數)`，至少 1（step 本身已過入場檢查）。
+- 記憶體需求是「該工作相對閒置機器的增量」：系統層峰值（VoxCPM2 21.7／Qwen3 24.5／mlx_video ≈26 GB）減閒置 ≈5 GB 🟡。
+  第一版直接用系統層峰值，測試抓到 voice 要 30.5 GB 可用才放行＝32 GB 機器上永遠排不到，已改。
+
+## PreToolUse hook 規則（給 orchestrator）
+- 判斷：`scripts/heavy --check "<整條指令>"` → stdout JSON `{"block", "heavy", "matched", "why"}`，**exit 2＝擋、0＝放行**（`lanes/heavy_rules.py`）。
+- 範圍：cwd 或指令路徑含 `content-farm` 時才判斷。
+- 指令以 `&&`／`||`／`;`／`|` 切段；每段去掉前置 `VAR=…`、`env`、`nohup`、`time`；`python …` 去掉直譯器旗標（`-u`、`-I`、`-X x`）後看腳本。
+- 放行：該段的程式是 `scripts/heavy` 或 `scripts/produce.py`；或是唯讀探測（`ffprobe`、`ffmpeg -version`、`pgrep`、`ps`、`which`、`man`）。
+- 擋下：任一段符合 `commands` 樣式——`ffmpeg`、`mlx_video`、`mflux-*`、`voxcpm`／`qwen3-tts`／`local_tts_worker.py`、`ACE-Step`、`whisper`、
+  repo 的重腳本（`media_to_visual`、`mascot_overlay`、`audio_mix`、`illustrate`、`ai_motion`、`short_from_long`、`render_slides`、`bench_overlap`、
+  `voice_batch`、`run_stage.py --stage voice|assembly|assembly_timeline|visual`）。訊息請改用 `scripts/heavy --label … -- <指令>`。
+- 測試案例（`tests/unit/test_lanes_heavy_rules.py`，22 條）：擋——`ffmpeg -i in.mov … out.mp4`、`/opt/homebrew/bin/ffmpeg …`、`cd output && ffmpeg …`、
+  `PYTHONPATH=src .venv/bin/python scripts/media_to_visual.py …`、`python scripts/run_stage.py --stage voice …`、`python -m mlx_video.generate …`、
+  `mflux-generate …`、`…/qwen3-tts/.venv/bin/python scripts/local_tts_worker.py`、`…/ACE-Step/infer.py`、`mlx_whisper a.mp3`、`echo; nohup python scripts/illustrate.py &`；
+  放行——`scripts/heavy --label t -- ffmpeg …`、`…/scripts/heavy -- python scripts/media_to_visual.py …`、`… scripts/produce.py run …`、`produce.py queue`、
+  `ffprobe …`、`ffmpeg -version`、`pgrep -fl ffmpeg`、`git log`、`python -m pytest`、`grep -rn ffmpeg_path src/`。
+- 已知漏洞（hook 擋不到）：Python 程式內部 `subprocess` 叫 ffmpeg（例如未經 produce.py 的自寫腳本）——這類靠佇列的 pgrep 閘門（外來重工作會讓佇列等），不是 hook。
+
 ## 進度紀錄（append）
 - 2026-10-18 分支 `feat/review-panels` 從 `feat/cowos-v3` d288a04 開（已含 channel-voices a5a4e41、design/channel-hosts a6885eb）。
   `feat/incremental-render` 當下與 cowos-v3 同點（2030c1e 起無新 commit）→ 句子 id 欄位先放 `review_panels.yaml: sentence_id_field`。

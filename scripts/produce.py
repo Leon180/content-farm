@@ -304,7 +304,12 @@ def cmd_queue(_: argparse.Namespace) -> int:
     rows = status()
     for n, row in enumerate(rows, 1):
         mark = "▶" if row["holding"] else f"{n}."
-        print(f"{mark:>3} {row['kind']:<5} {row['progress']:>4.0%}  {row['job']:<40} pid {row['pid']}  since {row['enqueued_at']}")
+        state = "running" if row["holding"] else f"waiting {row['waited_s'] // 60}m"
+        need = row.get("need", {})
+        print(f"{mark:>3} {row['kind']:<5} {row['progress']:>4.0%}  {row['job']:<40} {need.get('mem_gb', '?')} GB "
+              f"gpu={need.get('gpu', '?')}  {state}  pid {row['pid']}")
+        if row.get("reason"):
+            print(f"      ↳ {row['reason']}")
     print(f"{len(rows)} job(s) in {QUEUE_DIR}" if rows else f"queue empty ({QUEUE_DIR})")
     return 0
 

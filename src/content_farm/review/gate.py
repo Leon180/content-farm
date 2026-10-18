@@ -135,6 +135,16 @@ def write_decision(run_dir: Path, gate: str, stage_name: str, card_path: Path, c
     return data
 
 
+def set_aside(run_dir: Path, stage_name: str, label: str) -> Path:
+    """Rename a round whose seats failed for infrastructure reasons so it never counts."""
+    from datetime import datetime
+
+    source = stage_dir(run_dir, stage_name) / label
+    target = source.with_name(f"{label}-incomplete-{datetime.now():%H%M%S}")
+    source.rename(target)
+    return target
+
+
 def _has_holdout(config: ReviewConfig, stage_name: str) -> bool:
     return any(s.holdout for s in config.stages[stage_name].seats)
 
@@ -156,6 +166,11 @@ def panel_gate(run_dir: Path, *, gate: str, stage_name: str, config: ReviewConfi
                          round_no=number, with_holdout=number == stage.max_rounds, competitors=competitors,
                          client=client, vertical=vertical,
                          judge_context=judge_context(run_dir) if judge_context else None)
+        lost = [s["rid"] for s in last["seats"] if not s.get("ok") and s.get("infra")]
+        if lost:   # the plumbing failed, not the work: this round does not count and sends nothing back
+            moved = set_aside(run_dir, stage_name, last["label"])
+            return GateResult("blocked", f"{stage_name} 第 {number} 輪不算：{', '.join(lost)} 沒有回應（網路／程序失敗），"
+                              f"已移到 {moved.name}；網路恢復後重跑 run 會重開這一輪", None)
     card_path = stage_dir(run_dir, stage_name) / last["label"] / "scorecard.json"
     if not last["verdict"]["pass"]:
         reasons = "；".join(last["verdict"]["reasons"])

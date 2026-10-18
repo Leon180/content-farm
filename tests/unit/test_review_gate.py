@@ -64,9 +64,41 @@ def test_wrong_model_answer_fails():
     assert not result.ok and "model mismatch" in result.errors[0]
 
 
-def test_nonzero_exit_fails():
-    result = run_call(Call("r", "p", SCHEMA, "opus", "high", retries=0), runner=lambda *a: (1, "", "boom"))
-    assert not result.ok and "exit 1" in result.errors[0]
+def test_nonzero_exit_is_infrastructure_retried_then_failed():
+    naps = []
+    result = run_call(Call("r", "p", SCHEMA, "opus", "high", retries=0), runner=lambda *a: (1, "", "getaddrinfo ENOTFOUND"),
+                      sleep=naps.append)
+    assert not result.ok and result.infra and "exit 1" in result.errors[-1]
+    assert naps == [60.0, 120.0, 180.0] and result.attempts == 4
+
+
+def test_network_blip_recovers_without_using_a_schema_retry():
+    replies = iter([(1, "", "ENOTFOUND api.anthropic.com"), (0, _envelope({"n": 3}), "")])
+    result = run_call(Call("r", "p", SCHEMA, "opus", "high", retries=0), runner=lambda *a: next(replies),
+                      sleep=lambda s: None)
+    assert result.ok and result.output == {"n": 3} and not result.infra
+
+
+def test_schema_failure_is_not_infrastructure():
+    result = run_call(Call("r", "p", SCHEMA, "opus", "high", retries=0),
+                      runner=lambda *a: (0, _envelope({"n": "x"}), ""), sleep=lambda s: None)
+    assert not result.ok and not result.infra
+
+
+def test_infrastructure_failure_does_not_count_as_a_round(tmp_path):
+    (tmp_path / "deck.json").write_text(json.dumps(_deck("開場第一句。"), ensure_ascii=False), encoding="utf-8")
+    good = FakePanel(writer=9)
+
+    def flaky(call):
+        if call.rid.startswith("fact_checker"):
+            return CallResult(call.rid, False, None, ("exit 1: ENOTFOUND",), call.model, call.effort, infra=True)
+        return good(call)
+    result = _gate(tmp_path, flaky)
+    assert result.status == "blocked" and "不算" in result.message
+    assert not (tmp_path / "review" / "deck.fixes.json").exists()          # nothing routed back
+    assert list((tmp_path / "review" / "script").glob("round-1-incomplete-*"))
+    assert _gate(tmp_path, FakePanel(writer=9)).status == "pass"           # rerun reopens round 1
+    assert (tmp_path / "review" / "script" / "round-1" / "scorecard.json").is_file()
 
 
 def test_issue_schema_requires_ref_evidence_and_cause():
@@ -234,5 +266,5 @@ def test_producer_cannot_read_other_runs_and_runs_only_named_scripts(tmp_path):
 def test_default_client_is_claude_cli_and_tests_use_a_stub():
     assert client_mod.CLAUDE_BIN == "claude"
     assert client_mod.claude_bin().endswith("claude-stub")
-    result = run_call(Call("r", "p", SCHEMA, "haiku", "low", retries=0))
-    assert not result.ok and "exit 97" in result.errors[0]
+    result = run_call(Call("r", "p", SCHEMA, "haiku", "low", retries=0), sleep=lambda s: None)
+    assert not result.ok and "exit 97" in result.errors[-1]
