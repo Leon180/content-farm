@@ -44,7 +44,12 @@ def warnings(kit: Kit) -> list[str]:
 
 def _visibility(meta: dict) -> str:
     if meta.get("publish_at"):
-        return f"「排定時間」：{meta['publish_at']}（先選私人再設排程，到點自動公開）"
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+
+        local = datetime.fromisoformat(meta["publish_at"]).astimezone(ZoneInfo("Asia/Taipei"))
+        return (f"「排定時間」——在 Studio 排程：{local:%Y-%m-%d %H:%M} 台灣時間，先設私人→排程公開"
+                f"（建議時段來自頻道設定 publish:，見 production.schedule.json）")
     return f"「{PRIVACY_NAMES.get(meta.get('privacy_status'), '私人')}」（Leon 看過成片再改）"
 
 

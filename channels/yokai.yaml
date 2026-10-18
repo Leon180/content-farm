@@ -69,3 +69,8 @@ notes:
   - 讀原典自己寫；現代白話譯注另有著作權，不可照抄
   - 媽祖、城隍等講「來歷」，不稱神話、不嘲諷、不生成神像
   - 原住民族題材只走共製路線，不進這條自動 pipeline
+# 上片時段（research/upload-timing-2026-10.md；🟡 推論，有數據後由 channels/analytics/yokai.json 覆寫）
+publish:
+  timezone: Asia/Taipei
+  long: {days: [fri], window: "20:00-21:00"}           # 每週 1 支；週五或週日擇一固定
+  source: research/upload-timing-2026-10.md

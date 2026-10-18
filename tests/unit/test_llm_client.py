@@ -10,6 +10,12 @@ from pydantic import BaseModel
 from content_farm.llm.client import LLMClient, LLMOutputError
 
 
+@pytest.fixture(autouse=True)
+def _paid_consent(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The SDK is mocked here; consent only lets LLMClient be constructed."""
+    monkeypatch.setenv("CF_ALLOW_PAID", "1")
+
+
 class SampleOutput(BaseModel):
     name: str
     value: int

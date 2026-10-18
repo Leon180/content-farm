@@ -67,3 +67,8 @@ identity:   # 政策審查 2026-10 D3：不得與晶片貓共用開場句、說�
 notes:
   - 講產業結構，不複述劇情
   - 作品名稱可提，但畫面不放官方角色、截圖或近似 AI 圖
+# 上片時段（research/upload-timing-2026-10.md；🟡 推論，有數據後由 channels/analytics/cel.json 覆寫）
+publish:
+  timezone: Asia/Taipei
+  long: {days: [wed], window: "20:00-21:00"}           # 每週 1 支；週三或週日擇一固定
+  source: research/upload-timing-2026-10.md

@@ -9,6 +9,8 @@ from typing import TypeVar
 import anthropic
 from pydantic import BaseModel
 
+from content_farm.llm import paid
+
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
@@ -22,6 +24,7 @@ class LLMClient:
     """Async LLM client wrapping anthropic.AsyncAnthropic."""
 
     def __init__(self, api_key: str, max_retries: int = 3) -> None:
+        paid.check()   # metered API: needs CF_ALLOW_PAID=1 / --allow-paid
         self._client = anthropic.AsyncAnthropic(
             api_key=api_key,
             max_retries=max_retries,

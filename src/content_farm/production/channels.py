@@ -262,7 +262,17 @@ class Channel(_Strict):
     youtube: YouTube
     identity: Identity | None = None   # opening / sign-off / description per channel
     audio: AudioMix = AudioMix()       # BGM / SFX / mastering (long videos)
+    publish: dict = {}                 # release windows; validated by production.publish_slot.PublishPlan
     notes: tuple[str, ...] = ()
+
+    @field_validator("publish")
+    @classmethod
+    def _publish_plan(cls, value: dict) -> dict:
+        if value:
+            from content_farm.production.publish_slot import PublishPlan
+
+            PublishPlan.model_validate(value)
+        return value
 
     @field_validator("brand")
     @classmethod

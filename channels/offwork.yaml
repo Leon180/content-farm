@@ -44,3 +44,8 @@ youtube:
 notes:
   - 不做合集、不搬運、不配音描述別人的影片（YPP reused content）
   - 笑話好不好笑只能靠前幾支的數據回答，先測再擴產
+# 上片時段（research/upload-timing-2026-10.md；🟡 推論，有數據後由 channels/analytics/offwork.json 覆寫）
+publish:
+  timezone: Asia/Taipei
+  shorts: {days: [mon, tue, wed, thu, fri], windows: ["21:00-23:00"], per_day: 1, min_gap_hours: 0}
+  source: research/upload-timing-2026-10.md

@@ -92,3 +92,10 @@ audio:      # 2026-10-17 cowos-v3：本機 ACE-Step 1.5 生成（授權筆記 ~/
 notes:
   - 不給投資建議；財報數字一律附來源
   - 八卦必須有來源
+# 上片時段（research/upload-timing-2026-10.md；時段是 🟡 推論，頻道有數據後由 channels/analytics/chipcat.json 覆寫）
+publish:
+  timezone: Asia/Taipei
+  long: {days: [thu], window: "20:00-21:00"}           # 每週 1 支；週四或週六擇一固定
+  shorts: {windows: ["12:00-13:00", "20:00-21:00"], per_day: 2, min_gap_hours: 4}   # HN Shorts 先 1–2 支／天
+  urgent_news_asap: true                               # 時效新聞盡快發
+  source: research/upload-timing-2026-10.md

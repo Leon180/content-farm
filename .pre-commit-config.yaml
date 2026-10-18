@@ -1,0 +1,11 @@
+# Install once: pip install pre-commit && pre-commit install
+# Without pre-commit: ln -s ../../scripts/check.sh .git/hooks/pre-commit (main checkout).
+repos:
+  - repo: local
+    hooks:
+      - id: content-farm-rules
+        name: review panels / gates / queue / paid-API rules (scripts/check.sh)
+        entry: scripts/check.sh
+        language: system
+        pass_filenames: false
+        always_run: true
