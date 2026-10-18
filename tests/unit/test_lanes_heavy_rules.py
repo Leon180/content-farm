@@ -25,6 +25,14 @@ BLOCK = [
     "python ~/.local/share/content-farm-music/ACE-Step/infer.py",
     "mlx_whisper audio.mp3",
     "echo start; nohup python scripts/illustrate.py --run-dir x &",
+    # added at feat/integrate: hn-daily render, and older scripts that run ffmpeg / mlx-video torch models
+    "PYTHONPATH=src .venv/bin/python scripts/news.py render --run-dir output/hn-2026-10-18-1",
+    "python scripts/news.py --run-dir output/hn-x render",
+    "~/.local/share/mlx-video/.venv/bin/python scripts/motion_parallax_worker.py --job j.json",
+    "python scripts/host_depth_worker.py --in a.png",
+    "python scripts/seam_check.py output/x/assembly/final.mp4",
+    "python scripts/render_slide_styles.py --out docs/design/x",
+    "python scripts/record_slide_style_motion.py",
 ]
 ALLOW = [
     "scripts/heavy --label transcode -- ffmpeg -i in.mov out.mp4",
@@ -37,6 +45,11 @@ ALLOW = [
     "git log --oneline",
     "python -m pytest tests/unit",
     "grep -rn ffmpeg_path src/",
+    "python scripts/news.py lint --run-dir output/hn-x",
+    "python scripts/news.py prepare --run-dir output/hn-x",
+    "python scripts/produce.py news daily --pick 2,5",
+    "python scripts/produce.py usage --run-dir output/cowos-final",
+    "scripts/heavy --label hn -- python scripts/news.py render --run-dir output/hn-x",
 ]
 
 

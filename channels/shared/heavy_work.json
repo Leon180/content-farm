@@ -37,6 +37,8 @@
     "skit_render": {"mem_gb": 0.3},
     "skit_script": {"mem_gb": 0.6},
     "short_script": {"mem_gb": 0.3},
+    "news_script": {"mem_gb": 0.6}, "news_prepare": {"mem_gb": 0.3}, "weekly_check": {"mem_gb": 0.3},
+    "news_render": {"mem_gb": 6.0, "gpu": "shared", "cpu_cores": 4, "locks": ["render"]},
     "heavy_default": {"mem_gb": 8.0, "gpu": "exclusive", "cpu_cores": 4, "locks": ["render"]}
   },
   "legacy_locks": ["~/.cache/content-farm/render.lock", "~/.cache/content-farm/local_tts.lock"],
@@ -58,7 +60,7 @@
     {"name": "voxcpm / qwen3-tts", "pattern": "voxcpm|qwen3[-_]tts|local_tts_worker\\.py"},
     {"name": "ace-step", "pattern": "ACE-Step|acestep|ace_step"},
     {"name": "whisper", "pattern": "mlx_whisper|faster_whisper|whisper\\.cpp|(^|[\\s/;&|(])whisper(\\s|$)"},
-    {"name": "heavy repo scripts", "pattern": "scripts/(media_to_visual|mascot_overlay|audio_mix|illustrate|ai_motion|short_from_long|render_slides|bench_overlap|voice_batch)\\.py|run_stage\\.py\\s+--stage\\s+(voice|assembly|assembly_timeline|visual)"}
+    {"name": "heavy repo scripts", "pattern": "scripts/(media_to_visual|mascot_overlay|audio_mix|illustrate|ai_motion|short_from_long|render_slides|render_slide_styles|record_slide_style_motion|bench_overlap|voice_batch|motion_parallax_worker|host_depth_worker|seam_check)\\.py|scripts/news\\.py\\b.*\\brender\\b|run_stage\\.py\\s+--stage\\s+(voice|assembly|assembly_timeline|visual)"}
   ],
   "allowed_wrappers": ["scripts/heavy", "scripts/produce.py"],
   "read_only_commands": ["ffprobe", "ffmpeg -version", "ffmpeg -hide_banner -version", "which ", "pgrep", "ps ", "man "]
