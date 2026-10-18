@@ -40,7 +40,11 @@ def spans(cues: Sequence[SceneCue], fps: float, n_frames: int, seed: int,
     firsts = [min(n_frames, max(0, int(round(c.start * fps)))) for c in cues]
     firsts[0] = 0
     out = []
-    for i, cue in enumerate(cues):
+    for i, raw in enumerate(cues):
+        # 10 ms: cue lengths come from ms-rounded cumulative timeline names (±1 ms after an edit
+        # upstream); the voice step measures scene lengths to 10 ms, so this recovers them exactly.
+        cue = SceneCue(index=raw.index, start=raw.start, end=raw.start + round(raw.duration, 2),
+                       pose=raw.pose, say=raw.say)
         first = firsts[i]
         end = firsts[i + 1] if i + 1 < len(cues) else n_frames
         # offset 0: a scene starts on the frame nearest its cue (≤ half a frame, 17 ms at 30 fps).

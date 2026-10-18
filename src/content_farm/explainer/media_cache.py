@@ -65,7 +65,9 @@ def job_identity(deck: Deck, job: SlideJob, *, run_dir: Path, brand: str | None,
     return digest({
         "v": MEDIA_CACHE_VERSION, "code": code, "slide": slide, "section": job.section.title,
         "index": job.index, "total": len(deck.slides), "deck": _deck_frame_fields(deck),
-        "brand": brand, "seconds": round(job.seconds, 3), "static_png_ok": static_png_ok,
+        # 10 ms: slot lengths come from ms-rounded cumulative timeline names, so a slot after a
+        # changed scene jitters by ±1 ms; voice durations themselves are 10 ms precise.
+        "brand": brand, "seconds": round(job.seconds, 2), "static_png_ok": static_png_ok,
         "stage": asdict(job.stage) if job.stage else None, "page_html": page_html,
         "motion": repr(motion), "files": _external_files(run_dir, job),
     })
@@ -73,7 +75,7 @@ def job_identity(deck: Deck, job: SlideJob, *, run_dir: Path, brand: str | None,
 
 def final_identity(key: str, next_key: str | None, transition: str, seconds: float) -> str:
     return digest({"v": MEDIA_CACHE_VERSION, "clip": key, "next": next_key, "transition": transition,
-                   "seconds": round(seconds, 3)})
+                   "seconds": round(seconds, 2)})
 
 
 def _result_meta(result: ClipResult) -> dict:

@@ -77,3 +77,9 @@ def test_a_scene_that_only_moves_keeps_its_identity() -> None:
     key = [scene_identity(s, None, FPS, render="r", code="c") for s in (before[1], after[1])]
     assert key[0] == key[1]
     assert compose_scene(before[1], np.zeros(before[1].count), FPS) == compose_scene(after[1], np.zeros(after[1].count), FPS)
+
+
+def test_millisecond_jitter_in_slot_length_keeps_identity() -> None:
+    a = spans((SceneCue(1, 0.0, 4.0, "idle"), SceneCue(2, 4.0, 7.52, "point")), FPS, 226, seed=7, keys=["a", "b"])
+    b = spans((SceneCue(1, 0.0, 4.001, "idle"), SceneCue(2, 4.001, 7.52, "point")), FPS, 226, seed=7, keys=["a", "b"])
+    assert scene_identity(a[1], None, FPS, render="r", code="c") == scene_identity(b[1], None, FPS, render="r", code="c")
