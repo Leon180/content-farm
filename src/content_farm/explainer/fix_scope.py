@@ -178,7 +178,7 @@ def _slide_fields(deck: Mapping) -> dict[str, str]:
             for section in deck.get("sections", []) for s in section.get("slides", [])}
 
 
-def analyse(old: Mapping, new: Mapping, *, radius: int = 1, extra_terms: Sequence[str] = (),
+def analyse(old: Mapping, new: Mapping, *, radius: int = 2, extra_terms: Sequence[str] = (),
             outside: Sequence[tuple[str, str]] = (), ledger: Mapping[str, LedgerEntry] | None = None) -> Scope:
     """``old``/``new``: raw deck dicts; ``outside``: (where, text) from :func:`load_texts`."""
     old_ids = _old_ids(old, ledger)

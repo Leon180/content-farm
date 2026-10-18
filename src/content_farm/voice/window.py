@@ -12,7 +12,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 # Re-voicing more than this share of a scene's sentences is a re-take, not a patch.
-MAX_WINDOW_SHARE = 0.6
+MAX_WINDOW_SHARE = 0.75
 
 
 @dataclass(frozen=True)

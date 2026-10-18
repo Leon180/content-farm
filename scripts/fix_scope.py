@@ -30,7 +30,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--run-dir", type=Path, required=True)
     parser.add_argument("--old", type=Path, help=f"deck before the edit (default <run-dir>/{APPROVED_DECK})")
     parser.add_argument("--term", action="append", default=[], help="wording to chase everywhere (repeatable)")
-    parser.add_argument("--radius", type=int, default=1, help="neighbour sentences re-voiced on each side")
+    parser.add_argument("--radius", type=int, default=2, help="neighbour sentences re-voiced on each side")
     return parser.parse_args(argv)
 
 

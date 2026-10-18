@@ -34,6 +34,6 @@ def test_insertion_replaces_a_neighbour_even_at_radius_zero():
 
 
 def test_large_edits_fall_back_to_a_full_take():
-    new = ["甲。", "乙。", "丙。", "丁。", "戊。", "六。", "七。", "八。"]
+    new = ["甲。", "乙。", "丙。", "丁。", "戊。", "己。", "七。", "八。"]
     assert plan(OLD, new, 1) is None
     assert plan([], OLD, 1) is None and plan(OLD, OLD, -1) is None

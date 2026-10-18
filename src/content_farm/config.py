@@ -58,7 +58,7 @@ class Settings(BaseSettings):
     # scene changed, re-voice them plus this many neighbours each side (same scene) and splice
     # into the old take. -1 = always re-voice the whole scene. Default from the CoWoS v3
     # experiment, see REPORT-incremental-render.md.
-    tts_splice_radius: int = Field(default=1, ge=-1, le=5)
+    tts_splice_radius: int = Field(default=2, ge=-1, le=5)
     # Resource gate before a local model loads: wait while these run or free memory is low.
     local_tts_busy_pattern: str = "mlx_video|mflux|ffmpeg"
     local_tts_min_free_pct: int = Field(default=25, ge=0, le=100)
