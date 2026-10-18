@@ -10,7 +10,23 @@
   **Leon 59fdefb32bd7＝D 文章查核新規則**（3 輪、第 2 輪起只准刪改＋逐句 diff、opus·high 仲裁）。pytest 1480 passed（僅既有 `test_multi_provider` 失敗）。
 - 要 Leon 決定：腳本第 4 輪（目前硬上限 3）或把剩下 4 條事實＋結構問題交人改，之後再從第 3 步重跑。
 
-## 卡在哪（第 3 步腳本，`output/cowos-final/review/script/round-3/scorecard.json`）🟢
+## 腳本拆兩段（Leon 決策 7afa95870a4e＝A；commit 06772a1）🟢 單元測試
+| 規則 | 實作 | 測試（`tests/unit/test_review_script_stages.py` 等） |
+|---|---|---|
+| 結構段 `script_structure`（gate `deck`） | 觀眾 5（含 holdout 最後一輪）、編劇故事／密度、導演、查核 1；門檻離開中位 ≥50%、編劇 ≥7；3 輪；查核結果記在 `fact_errors_advisory`、事實項以 `advisory: true` 進修改清單，**不擋** | 結構段事實錯不擋、不過時只因觀眾／編劇 |
+| 事實段 `script_facts`（新 gate `deck_facts`、步驟 `gate_deck_facts` 在 gate_deck 之後） | 查核 opus·high ×2＋仲裁（同文章規則，以旁白句子 id＋evidence 配對）、0 確認錯誤、3 輪 | 結構段沒過時事實段不跑；兩段都過；一致的錯誤→退回 deck 且 note 指向 `deck_facts.fixes.json` |
+| 事實段只准刪改 | 退回改稿以旁白句子（穩定 id）逐句 diff，被點名＝事實項的 ref＋連動範圍句子 id；違反就還原、重做 1 次、再違反就停；brief 加「結構已核可，不改章節、順序、比喻、笑點」 | 新增句被拒、改未點名句被拒並還原、結構段的退回不受限 |
+| 事實鎖定 | 兩段任一核可時存 `review/deck.locked.json`；之後 deck 變動若只刪改旁白→結構段沿用核可（只重跑事實段）；新增句子（或改寫幅度 <0.5）→結構段核可失效，兩段舊輪次移到 `cycle-N/`、從第 1 輪重走 | 鎖定後加限定詞只重審事實段；鎖定後新寫一句→兩段重走、舊輪次在 cycle-1 |
+- 硬規則（`review/config.py`）：兩段都在 `REQUIRED_ROLES`／`TIER_FLOOR`／`THRESHOLD_FLOOR`／`MAX_ROUNDS`（各 3），事實段必須剛好 2 位查核＋≥ opus·high 仲裁；yaml 只能更嚴。
+- 🟡 我的解讀：(1)「重新走兩段」＝新一輪循環，輪數從 1 重算（舊輪次保留在 cycle-N/）；否則結構段 3 輪用完後永遠無法重走。
+  (2) 只檢查旁白句子；投影片上的標題、條列、圖說改動不在逐句比對內（事實段查核員仍會讀整份講稿與總覽圖）。
+- 全套 pytest 1491 passed／1 skipped，唯一失敗仍是既有的 `test_multi_provider`；`scripts/check.sh` 過。
+
+## CoWoS 用兩段規則重跑（2026-10-18 22:4x 開始，用量已過 21:40 重置）
+- 起點＝上一次第 3 輪後的 deck（第 1 輪 8 條已修、剩第 3 輪 4 條）；舊的單段 `review/script/` 三輪保留不動（不算新兩段的輪數）。
+  舊的 `review/deck.fixes.json`（舊單段第 2 輪）改名 `deck.fixes.legacy-script.json`，避免新結構段第 2 輪誤用同輪號的舊清單。
+
+## 卡在哪——舊的單段腳本評審（第 3 步腳本，`output/cowos-final/review/script/round-3/scorecard.json`）🟢
 | 指標 | 門檻 | 第 1 輪 | 第 2 輪 | 第 3 輪（最後） |
 |---|---|---|---|---|
 | 觀眾離開中位 | ≥ 50% | 30.6% | 19.7% | **42.4%**（commuter 16.6、investor 42.4、student 42.4、engineer 100；holdout teacher 73.6） |
