@@ -10,6 +10,7 @@ from html import escape
 from pathlib import Path
 from typing import Any
 
+from content_farm.review import usage
 from content_farm.review.rounds import REVIEW_DIR
 
 STAGE_TITLES = {"topic": "1 選題", "article": "2 研究與文章", "script": "3 腳本（舊：未拆段）",
@@ -73,14 +74,52 @@ def _diff(before: Path, after: Path) -> str:
     return "<pre>" + "\n".join(lines) + "</pre>" if lines else "<p class='muted'>內容沒有變</p>"
 
 
+def _token_cells(tokens: dict[str, Any]) -> tuple[str, ...]:
+    return tuple(f"{int(tokens.get(k) or 0):,}" for k in usage.TOKEN_KEYS)
+
+
+def _tokens_text(tokens: dict[str, Any]) -> str:
+    return " / ".join(f"{name} {int(tokens.get(k) or 0):,}" for k, name in
+                      zip(usage.TOKEN_KEYS, ("input", "output", "cache 讀", "cache 寫")))
+
+
+def _usage_section(run_dir: Path) -> str:
+    """每階段（評審各輪＋產出 agent）小計與整支片總計，來源同 ``produce.py usage``。"""
+    data = usage.report(run_dir)["cloud"]
+    rows = [(STAGE_TITLES.get(stage, stage), e["review"]["calls"], e["producer"]["calls"],
+             *_token_cells(e["total"]["tokens"]), e["total"]["cost_usd"], round(e["total"]["seconds"] / 60, 1))
+            for stage, e in data["stages"].items()]
+    t = data["total"]
+    rows.append(("整支片總計", data["review"]["calls"], data["producer"]["calls"], *_token_cells(t["tokens"]),
+                 t["cost_usd"], round(t["seconds"] / 60, 1)))
+    return ("<h2>用量（claude -p 回報；名目費用，訂閱計費）</h2>"
+            + _table(("階段", "評審席次", "產出次數", "input", "output", "cache 讀", "cache 寫", "名目 $", "agent 分鐘"), rows)
+            + f"<p class='muted'>模型：{escape(', '.join(t['models']) or '—')}</p>")
+
+
+def _producers(run_dir: Path, stage: str) -> str:
+    rows = [(r.get("rid"), r.get("step"), r.get("at", ""), f"{r.get('model')} · {r.get('effort')}",
+             ",".join(r.get("models_used") or []), "✓" if r.get("ok") else "✗", r.get("seconds"),
+             *_token_cells(r.get("tokens") or {}), r.get("cost_usd"))
+            for r in usage.producers(run_dir) if usage.PRODUCER_STAGE.get(str(r.get("step"))) == stage]
+    if not rows:
+        return ""
+    return (f"<details><summary>產出 agent（{len(rows)} 次）</summary>"
+            + _table(("rid", "步驟", "時間", "model · effort", "實際模型", "合格", "秒", "input", "output", "cache 讀",
+                      "cache 寫", "名目 $"), rows) + "</details>")
+
+
 def _round(card: dict[str, Any], previous: Path | None, current: Path) -> str:
     verdict = card["verdict"]
     status = "<span class='ok'>通過</span>" if verdict["pass"] else "<span class='bad'>未過</span>"
     reasons = "；".join(verdict.get("reasons", [])) or "—"
-    seats = _table(("評審", "角色", "model · effort", "實際模型", "合格", "秒", "保留觀眾"),
+    seats = _table(("評審", "角色", "model · effort", "實際模型", "合格", "秒", "input", "output", "cache 讀", "cache 寫",
+                    "名目 $", "保留觀眾"),
                    [(s["rid"], s["role"], f"{s['model']} · {s['effort']}", ",".join(s.get("models_used") or []),
                      "✓" if s["ok"] else "✗ " + "; ".join(s.get("errors", []))[:80], s.get("seconds"),
+                     *_token_cells((s.get("tokens") or {})), s.get("cost_usd"),
                      "是" if s.get("holdout") else "") for s in card["seats"]])
+    subtotal = usage.card_tally(card).to_json()
     diffs = ""
     if previous is not None:
         for name in DIFFABLE:
@@ -90,7 +129,8 @@ def _round(card: dict[str, Any], previous: Path | None, current: Path) -> str:
     dropped = verdict.get("dropped") or []
     return (f"<div class='card'><h3>{escape(card['label'])} · {status}</h3><p>{escape(reasons)}</p>"
             f"<p class='muted'>{card.get('at')} · 牆鐘 {card.get('seconds')} s · 評審合計 {card.get('reviewer_seconds')} s · "
-            f"tokens {json.dumps(card.get('tokens'), ensure_ascii=False)} · 名目費用 ${card.get('cost_usd')}（訂閱）</p>"
+            f"本輪小計：{subtotal['calls']} 席 · {_tokens_text(subtotal['tokens'])} · "
+            f"名目費用 ${subtotal['cost_usd']}（訂閱）</p>"
             f"{_scores(verdict.get('scores', {}))}<details><summary>評審與模型（{len(card['seats'])}）</summary>{seats}</details>"
             f"<details open><summary>修改清單（{len(verdict.get('issues', []))}；不可驗證而剔除 {len(dropped)}）</summary>"
             f"{_issues(verdict.get('issues', []))}</details>{diffs}</div>")
@@ -113,11 +153,12 @@ def render(run_dir: Path, title: str) -> Path:
             body += _round(card, previous, path)
             if not card.get("holdout_only"):
                 previous = path
-        sections.append(f"<h2>{escape(STAGE_TITLES[stage])}</h2>{body}")
+        sections.append(f"<h2>{escape(STAGE_TITLES[stage])}</h2>{_producers(run_dir, stage)}{body}")
     page = (f"<!doctype html><html lang='zh-Hant'><head><meta charset='utf-8'><meta name='viewport' "
             f"content='width=device-width,initial-scale=1'><title>評分卡</title><style>{_CSS}</style></head><body><main>"
             f"<h1>{escape(title)} · 評分卡</h1><p class='muted'>{escape(str(run_dir))}</p>"
-            + _table(("階段", "輪數", "結果", "分鐘", "評審次數"), summary) + "".join(sections) + "</main></body></html>")
+            + _table(("階段", "輪數", "結果", "分鐘", "評審次數"), summary) + _usage_section(run_dir)
+            + "".join(sections) + "</main></body></html>")
     out = root / "scorecard.html"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(page, encoding="utf-8")
