@@ -30,7 +30,8 @@ logger = logging.getLogger(__name__)
 MEDIA_CACHE_VERSION = 1
 EXPLAINER_DIR = Path(__file__).parent
 # The mascot / PNGtuber hosts are drawn by their own step; editing them must not redo media.
-_CODE_SKIP = ("mascot/", "pngtuber/", "media_cache.py", "scene_cache.py", "sentence_ids.py", "fix_scope.py")
+_CODE_SKIP = ("mascot/", "pngtuber/", "media_cache.py", "media_run.py", "scene_cache.py", "sentence_ids.py",
+              "fix_scope.py")
 
 
 def renderer_digest() -> str:
