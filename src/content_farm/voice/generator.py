@@ -6,9 +6,11 @@ import asyncio
 import hashlib
 import json
 import logging
+import subprocess
 from pathlib import Path
 
 from content_farm.config import Settings
+from content_farm.retention.timing import normalise, split_sentences
 from content_farm.script_gen.schemas import Script
 from content_farm.voice import tempo
 from content_farm.voice.checked_synthesis import CheckedSynthesizer, load_checks, record_check
@@ -52,6 +54,15 @@ def _identity(provider: str, voice_id: str, tts_text: str, model: str = "") -> d
     text_sha = hashlib.sha256(tts_text.encode("utf-8")).hexdigest()[:16]
     identity = {"provider": provider, "voice_id": voice_id, "text_sha": text_sha}
     return {**identity, "model": model} if model else identity
+
+
+def _without_sentences(record: object) -> object:
+    """Identity records also list the take's sentences (window re-voicing); not part of the match."""
+    return {k: v for k, v in record.items() if k != "sentences"} if isinstance(record, dict) else record
+
+
+def _spoken(text: str) -> str:
+    return normalise(text)
 
 
 def _with_legacy_model(record: object) -> object:
@@ -114,13 +125,21 @@ class VoiceGenerator:
         path.write_text(json.dumps(updated, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
 
     async def _ensure_take(self, take: Path, *, narration: str, tts_text: str,
-                           previous_text: str | None, next_text: str | None) -> None:
-        """The synthesized take at ``take``: reused when made by this voice from this text (I-1)."""
+                           previous_text: str | None, next_text: str | None,
+                           sentences: tuple[str, ...] = (), spoken: tuple[str, ...] = ()) -> None:
+        """The synthesized take at ``take``: reused when made by this voice from this text (I-1);
+        patched sentence by sentence when only some sentences changed (voice.window)."""
         identity = _identity(self._settings.tts_provider, self._voice_id, tts_text, self._model)
         exists = take.exists() and take.stat().st_size > 0
-        if exists and _with_legacy_model(self._load_identities().get(take.name)) == identity:
+        record = self._load_identities().get(take.name)
+        if exists and _without_sentences(_with_legacy_model(record)) == identity:
             logger.info("Reusing existing audio: %s", take)
+            if sentences and (not isinstance(record, dict) or "sentences" not in record):
+                self._record_identity(take.name, {**identity, "sentences": list(sentences)})
             self._reassess(take.name, narration)
+            return
+        if exists and await self._patch_take(take, record, identity, narration=narration, sentences=sentences,
+                                             spoken=spoken or sentences):
             return
         if exists:
             logger.info("Re-synthesizing %s: voice or text differs from the recorded audio", take)
@@ -134,7 +153,55 @@ class VoiceGenerator:
                 narration=narration, tts_text=tts_text, output_path=take,
                 previous_text=previous_text, next_text=next_text, voice_id=voice_id)
             record_check(self._output_dir, take.name, {**check.to_json(), "tts_text": tts_text})
-        self._record_identity(take.name, identity)
+        self._record_identity(take.name, {**identity, "sentences": list(sentences)} if sentences else identity)
+
+    async def _patch_take(self, take: Path, record: object, identity: dict[str, str], *,
+                          narration: str, sentences: tuple[str, ...], spoken: tuple[str, ...]) -> bool:
+        """Re-voice only the changed sentence windows of an existing take; False = do a full take."""
+        from content_farm.voice import splice
+        from content_farm.voice.window import plan
+
+        same_voice = (isinstance(record, dict) and
+                      {k: v for k, v in _with_legacy_model(record).items() if k not in ("text_sha", "sentences")}
+                      == {k: v for k, v in identity.items() if k != "text_sha"})
+        old = tuple(record.get("sentences") or ()) if isinstance(record, dict) else ()
+        windows = plan(old, sentences, self._settings.tts_splice_radius) if same_voice else None
+        if not windows:
+            return False
+        try:
+            samples = splice.decode(take)
+            cuts = splice.sentence_cuts(samples, [len(_spoken(s)) for s in old])
+            for w in reversed(windows):   # right to left: earlier cut times stay valid
+                text = "".join(sentences[w.new_first:w.new_last + 1])
+                said = "".join(spoken[w.new_first:w.new_last + 1])
+                part = take.with_name(f"{take.stem}.window{w.new_first}-{w.new_last}{take.suffix}")
+                await self._synthesize(part, narration=said, tts_text=text, previous_text=None, next_text=None)
+                samples = splice.splice(samples, cuts, w.old_first, w.old_last, splice.decode(part))
+                part.unlink(missing_ok=True)
+        except (splice.SpliceError, OSError, subprocess.CalledProcessError) as exc:
+            logger.warning("Window re-voice of %s failed (%s); re-voicing the whole scene", take.name, exc)
+            return False
+        splice.encode(samples, take)
+        logger.info("Re-voiced %s: %s of %d sentence(s) (radius %d)", take.name,
+                    ", ".join(f"{w.new_first + 1}-{w.new_last + 1}" for w in windows), len(sentences),
+                    self._settings.tts_splice_radius)
+        if self._checker is not None:
+            check = await self._checker.check_file(narration, take)
+            record_check(self._output_dir, take.name, {**check.to_json(), "tts_text": "".join(sentences),
+                                                       "windows": [list(vars(w).values()) for w in windows]})
+        self._record_identity(take.name, {**identity, "sentences": list(sentences)})
+        return True
+
+    async def _synthesize(self, path: Path, *, narration: str, tts_text: str,
+                          previous_text: str | None, next_text: str | None) -> None:
+        voice_id = self._settings.tts_voice_id or None
+        if self._checker is None:
+            await self._tts.generate_speech_with_context(
+                text=tts_text, output_path=path, previous_text=previous_text, next_text=next_text,
+                voice_id=voice_id)
+        else:
+            await self._checker.synthesize(narration=narration, tts_text=tts_text, output_path=path,
+                                           previous_text=previous_text, next_text=next_text, voice_id=voice_id)
 
     def _reassess(self, filename: str, narration: str) -> None:
         record = load_checks(self._output_dir).get(filename) if self._checker else None
@@ -245,10 +312,14 @@ class VoiceGenerator:
         """Generate audio for a single scene with continuity context."""
         async with self._semaphore:
             output_path = self._output_dir / f"scene_{scene_number:03d}.mp3"
-            tts_text = normalize_for_tts(narration, merged_map(self._table, pronunciation_map))
+            mapping = merged_map(self._table, pronunciation_map)
+            tts_text = normalize_for_tts(narration, mapping)
+            # per-sentence TTS text: what a later edit is compared against (window re-voicing)
+            sentences = tuple(normalize_for_tts(part, mapping) for part in split_sentences(narration))
             take = tempo.place_take(self._output_dir, output_path.name, self._tempo)
             await self._ensure_take(take, narration=narration, tts_text=tts_text,
-                                    previous_text=previous_text, next_text=next_text)
+                                    previous_text=previous_text, next_text=next_text, sentences=sentences,
+                                    spoken=tuple(split_sentences(narration)))
             if take != output_path and (tempo.applied(self._output_dir, output_path.name) != self._tempo
                                         or not output_path.is_file()
                                         or output_path.stat().st_mtime < take.stat().st_mtime):
