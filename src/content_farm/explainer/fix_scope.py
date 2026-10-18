@@ -151,6 +151,8 @@ def _strings(value: object, where: str = "") -> list[tuple[str, str]]:
 # --- the analysis ----------------------------------------------------------------------------
 
 REWRITE_SIMILARITY = 0.5
+# Deck fields every frame shows (templates: meta row "series", as-of / draft badge, sources line).
+FRAME_FIELDS = ("title", "as_of", "draft_data", "sources")
 
 
 def _closest(text: str, candidates: Sequence[str]) -> str | None:
@@ -220,12 +222,16 @@ def analyse(old: Mapping, new: Mapping, *, radius: int = 2, extra_terms: Sequenc
     order = [slide_id for slide_id, _ in deck_sentences(new)]
     flagged_slides = {o.where.split(" ", 1)[1] for o in occurrences
                       if o.where.split(" ", 1)[0] in ("heading", "body", "mascot", "media.headline", "media.summary")}
+    notes = []
+    every_frame = [k for k in FRAME_FIELDS if old.get(k) != new.get(k)]
+    if every_frame or any(o.where in ("title",) for o in occurrences):
+        notes.append(f"deck {', '.join(every_frame or ['title'])} is printed on every frame: every slide redraws")
+        flagged_slides |= set(order)
+    if [s for s, _ in deck_sentences(old)] != [s for s, _ in deck_sentences(new)]:
+        notes.append("slide order or count changed: page numbers on every frame move, those slides redraw")
     redraw = [s for s in order if s in ordered_windows or old_fields.get(s) != new_fields.get(s) or s in flagged_slides]
     first_redraw = min((order.index(s) for s in redraw), default=len(order))
     shifted = [s for s in order[first_redraw + 1:] if s not in redraw]
-    notes = []
-    if [s for s, _ in deck_sentences(old)] != [s for s, _ in deck_sentences(new)]:
-        notes.append("slide order or count changed: page numbers on every frame move, those slides redraw")
     return Scope(changed=tuple(changed), added=tuple(s for s in stamp.added if s not in changed),
                  removed=stamp.retired, terms=tuple(terms), occurrences=tuple(occurrences),
                  voice_windows=ordered_windows, redraw_scenes=tuple(redraw), shifted_scenes=tuple(shifted),

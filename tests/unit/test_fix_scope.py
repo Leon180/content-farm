@@ -70,7 +70,9 @@ def test_named_term_is_flagged_everywhere_it_appears():
     assert "heading k1" not in where  # 「晶片不一定翻倍」 is worded differently: not the same term
     assert set(scope.voice_windows) == {"k1", "s01", "s24"}
     assert scope.voice_windows["s01"] == ("s01.1", "s01.2", "s01.3")
-    assert set(scope.redraw_scenes) == {"s01", "k1", "s24"}
+    # the term is in the deck title, which every frame prints: fixing it redraws every slide
+    assert set(scope.redraw_scenes) == {"s01", "s02", "k1", "s24"}
+    assert any("every frame" in note for note in scope.notes)
 
 
 def test_slide_only_change_redraws_one_scene_and_revoices_nothing():
@@ -87,3 +89,11 @@ def test_reorder_is_noted():
     new["sections"][0]["slides"].reverse()
     scope = analyse(old, new)
     assert scope.changed == () and scope.notes
+
+
+def test_title_change_redraws_every_slide():
+    old = _deck()
+    new = copy.deepcopy(old)
+    new["title"] = "新標題"
+    scope = analyse(old, new)
+    assert scope.redraw_scenes == ("s01", "s02", "k1", "s24") and scope.voice_windows == {}

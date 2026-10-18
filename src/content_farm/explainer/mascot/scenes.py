@@ -33,7 +33,7 @@ def render_count(duration: float, fps: float) -> int:
 
 
 def spans(cues: Sequence[SceneCue], fps: float, n_frames: int, seed: int,
-          keys: Sequence[str] | None = None) -> list[SceneSpan]:
+          keys: Sequence[str] | None = None, lengths: Sequence[float] | None = None) -> list[SceneSpan]:
     """Cut ``n_frames`` into one span per cue at the frames nearest the cue starts.
     ``keys`` (one per cue, e.g. slide ids) seed each scene's idle motion."""
     keys = list(keys) if keys is not None else [str(c.index) for c in cues]
@@ -43,8 +43,10 @@ def spans(cues: Sequence[SceneCue], fps: float, n_frames: int, seed: int,
     for i, raw in enumerate(cues):
         # 10 ms: cue lengths come from ms-rounded cumulative timeline names (±1 ms after an edit
         # upstream); the voice step measures scene lengths to 10 ms, so this recovers them exactly.
-        cue = SceneCue(index=raw.index, start=raw.start, end=raw.start + round(raw.duration, 2),
-                       pose=raw.pose, say=raw.say)
+        # ``lengths`` (each scene audio's own measured length) is exact; the 10 ms snap is the
+        # fallback when there is no per-scene audio.
+        own = lengths[i] if lengths is not None and len(lengths) == len(cues) else round(raw.duration, 2)
+        cue = SceneCue(index=raw.index, start=raw.start, end=raw.start + own, pose=raw.pose, say=raw.say)
         first = firsts[i]
         end = firsts[i + 1] if i + 1 < len(cues) else n_frames
         # offset 0: a scene starts on the frame nearest its cue (≤ half a frame, 17 ms at 30 fps).
@@ -89,7 +91,7 @@ def scene_identity(span: SceneSpan, audio: Path | None, fps: float, *, render: s
     """``render`` names the capture settings (tile layout, GPU or not) that shape the pixels."""
     return digest({
         "v": MASCOT_CACHE_VERSION, "code": code, "render": render, "fps": fps, "count": span.count,
-        "offset": span.offset, "duration": round(span.cue.duration, 4), "pose": span.cue.pose,
+        "offset": span.offset, "duration": round(span.cue.duration, 6), "pose": span.cue.pose,
         "previous_pose": span.previous_pose, "say": span.cue.say, "seed": span.seed,
         "audio": file_digest(audio) if audio is not None else None,
     })

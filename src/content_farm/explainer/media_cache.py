@@ -65,17 +65,23 @@ def job_identity(deck: Deck, job: SlideJob, *, run_dir: Path, brand: str | None,
     return digest({
         "v": MEDIA_CACHE_VERSION, "code": code, "slide": slide, "section": job.section.title,
         "index": job.index, "total": len(deck.slides), "deck": _deck_frame_fields(deck),
-        # 10 ms: slot lengths come from ms-rounded cumulative timeline names, so a slot after a
-        # changed scene jitters by ±1 ms; voice durations themselves are 10 ms precise.
-        "brand": brand, "seconds": round(job.seconds, 2), "static_png_ok": static_png_ok,
+        # The slot length follows the scene's own audio, whose digest stands in for it: lengths
+        # read off ms-rounded cumulative timeline names jitter by ±1 ms after any edit upstream
+        # (CoWoS run (c), 2026-10-18: 3 untouched scenes flipped a 10 ms rounding).
+        "brand": brand, "seconds": _slot_key(run_dir, job), "static_png_ok": static_png_ok,
         "stage": asdict(job.stage) if job.stage else None, "page_html": page_html,
         "motion": repr(motion), "files": _external_files(run_dir, job),
     })
 
 
-def final_identity(key: str, next_key: str | None, transition: str, seconds: float) -> str:
-    return digest({"v": MEDIA_CACHE_VERSION, "clip": key, "next": next_key, "transition": transition,
-                   "seconds": round(seconds, 2)})
+def _slot_key(run_dir: Path, job: SlideJob) -> object:
+    audio = file_digest(run_dir / "audio" / f"scene_{job.index:03d}.mp3")
+    return {"audio": audio} if audio else round(job.seconds, 2)
+
+
+def final_identity(key: str, next_key: str | None, transition: str) -> str:
+    """The clip key already covers the slot length; the transition only adds the next head."""
+    return digest({"v": MEDIA_CACHE_VERSION, "clip": key, "next": next_key, "transition": transition})
 
 
 def _result_meta(result: ClipResult) -> dict:
@@ -117,7 +123,7 @@ def cached_transitions(results: Sequence[ClipResult], keys: Sequence[str], work_
             finals.append(result.path)
             final_keys.append(keys[i])
             continue
-        fkey = final_identity(keys[i], keys[i + 1], f"{style}:{length}", result.seconds)
+        fkey = final_identity(keys[i], keys[i + 1], f"{style}:{length}")
         final_keys.append(fkey)
         if cache.get(fkey) is None:
             head = ffmpeg_ops.first_frame(results[i + 1].path, work_dir / "heads" / f"head_{i + 2:03d}.png")

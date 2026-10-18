@@ -26,6 +26,7 @@ from content_farm.explainer.mascot.overlay import FRAME_H, FRAME_W, overlay
 from content_farm.explainer.mascot.render import RenderStats, _concat, render_scene_parts, render_settings
 from content_farm.explainer.mascot.scenes import renderer_digest, scene_frames, scene_identity, spans
 from content_farm.explainer.scene_cache import SceneCache
+from content_farm.explainer.timeline import TimelineError, durations_from_audio
 
 logger = logging.getLogger(__name__)
 
@@ -94,8 +95,12 @@ def _slide_keys(run_dir: Path, count: int) -> list[str]:
 
 def scene_plan(run_dir: Path, info: VideoInfo, seed: int) -> list[tuple[SceneSpan, Path | None]]:
     cues = cues_from_run(run_dir)
-    plan = spans(cues, info.fps, info.frames, seed, _slide_keys(run_dir, len(cues)))
     audio = run_dir / "audio"
+    try:   # each scene's own audio length: exact, unlike differences of ms-rounded timeline names
+        lengths = durations_from_audio(audio, len(cues))
+    except TimelineError:
+        lengths = None
+    plan = spans(cues, info.fps, info.frames, seed, _slide_keys(run_dir, len(cues)), lengths)
     # A scene shorter than half a frame owns no frame: nothing to draw for it.
     return [(span, audio / f"scene_{span.cue.index:03d}.mp3") for span in plan if span.used > 0]
 
