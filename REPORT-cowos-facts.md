@@ -26,6 +26,25 @@
 - 起點＝上一次第 3 輪後的 deck（第 1 輪 8 條已修、剩第 3 輪 4 條）；舊的單段 `review/script/` 三輪保留不動（不算新兩段的輪數）。
   舊的 `review/deck.fixes.json`（舊單段第 2 輪）改名 `deck.fixes.legacy-script.json`，避免新結構段第 2 輪誤用同輪號的舊清單。
 
+| 結構段 | 離開中位（≥50%） | 編劇故事／密度（≥7） | 導演 | 查核（只列不擋） | 牆鐘／名目 |
+|---|---|---|---|---|---|
+| 第 1 輪 | 32.9%（23.3／42.4／61.5／19.9） | 7.0／**6.3** | 6.0 | 2 | 318.8 s／$3.08 |
+| 改寫 1（產出 agent） | — | — | — | — | 970.3 s（27 張／7 章、估 9.9 分） |
+| 第 2 輪 | 29.8%（17.9／41.8／17.9／43.3） | 7.0／**6.4** | 6.8 | 4 | 346.6 s／$2.95 |
+
+- **交接點（Token 規則，對話約 30 萬 token）**：2026-10-18 約 23:3x，結構段第 2 輪未過、runner 已自動退回 deck（rework 2）並啟動腳本產出 agent；
+  之後會自動跑結構段**第 3 輪（最後一輪，含 holdout）**。`produce.py run` 仍在背景跑（pid 85151，由本 session 的背景 shell 啟動；
+  本 session 結束時可能一併被終止）。
+- **接手的人**：
+  1. `pgrep -fl "produce.py run"` 看 85151 還在不在；在就等它結束（看 `output/cowos-final/production.log.jsonl` 的最後幾行，不要輪詢）。
+  2. 不在了（或結束了）：`env PYTHONPATH=<worktree>/src <venv python> scripts/produce.py status --run-dir output/cowos-final`；
+     若 gate_deck 停在 rework／waiting 且第 3 輪還沒跑，重跑同一條 `produce.py run --run-dir output/cowos-final --auto-agents --no-stock --competitors <cf-review-panels>/output/eval-competitors/chipcat`
+     （runner 會從斷點續：deck 產出 → policy → slides → 結構段第 3 輪）。
+  3. 結構段第 3 輪沒過＝依任務第 4 點停在結構段回報；過了就自動進事實段（`gate_deck_facts`，最多 3 輪）→ 標題縮圖 → 素材合規 → 配音／渲染（本機車道，經全機佇列）→ 成片。
+  4. 凍結檔 `output/cowos-final/production.frozen.json`（article、gate_article）要保留；gate_final 留給 Leon，不要人工核可任何閘門。
+- 觀察 🟡：結構段兩輪都卡在同一處——觀眾在 k 章（3:30–5:30 的郵票／乘法段）與商業段離開、資訊密度編劇 6.3–6.4（重講與數字牆）；
+  故事編劇已到 7.0。
+
 ## 卡在哪——舊的單段腳本評審（第 3 步腳本，`output/cowos-final/review/script/round-3/scorecard.json`）🟢
 | 指標 | 門檻 | 第 1 輪 | 第 2 輪 | 第 3 輪（最後） |
 |---|---|---|---|---|
