@@ -73,7 +73,7 @@ def _source_ids(path: Path) -> list[str]:
     return [str(i.get("id")) for i in items if isinstance(i, dict)]
 
 
-def script(run_dir: Path, out: Path, *, id_field: str = "sid", **_: Any) -> Materials:
+def script(run_dir: Path, out: Path, *, id_field: str = "sentence_ids", **_: Any) -> Materials:
     deck = _read_json(run_dir / "deck.json")
     sentences = deck_sentences(deck, id_field)
     text = f"# {deck.get('title', '')}\n\n" + listing(sentences)

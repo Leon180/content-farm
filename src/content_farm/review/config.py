@@ -262,4 +262,4 @@ def _lift(raw: dict, config: ReviewConfig, tier: Tier) -> ReviewConfig:
 
 def sentence_id_field(path: Path = PANELS_FILE) -> str:
     """deck.json sentence id field; owned by feat/incremental-render, configurable until it lands."""
-    return str(yaml.safe_load(path.read_text(encoding="utf-8")).get("sentence_id_field", "sid"))
+    return str(yaml.safe_load(path.read_text(encoding="utf-8")).get("sentence_id_field", "sentence_ids"))

@@ -94,7 +94,7 @@ thresholds:            # Leon 2026-10-17 先用這組（另定再改）
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 句子 id 欄位：由 feat/incremental-render 定義；未定前，deck 沒有此欄位時用「<slide id>.<序號>」（不穩定，僅供指認）
-sentence_id_field: sid
+sentence_id_field: sentence_ids   # feat/incremental-render ec2c126: slide.sentence_ids, one per split_sentences(narration)
 
 # 每支片的評審流程（Leon 2026-10-17 決策 e0ac3ac36faf；設計稿 claude.ai/artifact/Q6ug8VB3rWc6fBLtorKi6r）
 # 由 src/content_farm/review/config.py 驗證；硬規則（必要角色、事實查核 opus·high、門檻下限、輪數上限）寫在程式裡，

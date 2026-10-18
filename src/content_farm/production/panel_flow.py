@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from content_farm.production.steps import Context, Step
 
 PRODUCER_STEPS = ("topic", "article", "deck", "thumbnail_spec")
+APPROVED_DECK = "review/deck.approved.json"   # same path as feat/incremental-render's runner.APPROVED_DECK
 EVENTS = "production.log.jsonl"
 
 
@@ -144,6 +145,11 @@ def panel_step(ctx: Context, state: RunState, step: Step, stage: str, current: s
         note = f"{result.message}; {result.scorecard}"
         decision = Decision(step.gate.value, "approved", current, now_iso(), by=PANEL_BY + stage, note=note)
         record = StepRecord("approved", decision.at, inputs=current, note=f"by {decision.by}")
+        if step.gate is Gate.DECK and (ctx.run_dir / "deck.json").is_file():
+            # the baseline the next edit is diffed against (feat/incremental-render scripts/fix_scope.py)
+            import shutil
+
+            shutil.copy2(ctx.run_dir / "deck.json", ctx.run_dir / APPROVED_DECK)
         return state.with_decision(decision).with_step(step.name, record), None
     record = StepRecord("waiting", now_iso(), inputs=current, note=result.message)
     state = state.with_step(step.name, record)

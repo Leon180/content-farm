@@ -27,19 +27,29 @@ def _split(text: str) -> list[str]:
     return [part.strip() for part in _SPLIT.split(text) if part.strip()]
 
 
-def deck_sentences(deck: dict[str, Any], id_field: str = "sid") -> list[Sentence]:
+def _split_like_ids(text: str) -> list[str]:
+    """The split the stable ids are stamped against (feat/incremental-render: retention.timing)."""
+    try:
+        from content_farm.retention.timing import split_sentences
+    except ImportError:          # pragma: no cover — older trees
+        return _split(text)
+    return [s for s in split_sentences(text) if s.strip()]
+
+
+def deck_sentences(deck: dict[str, Any], id_field: str = "sentence_ids") -> list[Sentence]:
+    """Sentences with the deck's stable ids (``slide[id_field]``, one per narration sentence) when
+    they line up with the narration; otherwise ``<slide>.<n>`` marked ``stable=False``."""
     out: list[Sentence] = []
     for section in deck.get("sections", []):
         title = str(section.get("title", ""))
         for slide in section.get("slides", []):
             sid = str(slide.get("id", ""))
-            given = slide.get("sentences")
-            if isinstance(given, list) and given and all(isinstance(s, dict) and s.get(id_field) for s in given):
-                out += [Sentence(str(s[id_field]), sid, title, str(s.get("text") or s.get("tts") or ""), True)
-                        for s in given]
+            texts = _split_like_ids(str(slide.get("narration", "")))
+            given = slide.get(id_field)
+            if isinstance(given, list) and len(given) == len(texts) and all(given):
+                out += [Sentence(str(i), sid, title, text, True) for i, text in zip(given, texts)]
                 continue
-            out += [Sentence(f"{sid}.{n}", sid, title, text, False)
-                    for n, text in enumerate(_split(str(slide.get("narration", ""))), 1)]
+            out += [Sentence(f"{sid}.{n}", sid, title, text, False) for n, text in enumerate(texts, 1)]
     return out
 
 

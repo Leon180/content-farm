@@ -115,6 +115,16 @@ def test_plan_routes_to_earliest_cause_and_lists_downstream():
     assert plan["steps"]["deck"]["rerender"]["scenes"] == ["s1", "s5", "s9"]
 
 
+def test_stable_sentence_ids_are_used_when_they_line_up():
+    from content_farm.review.sentences import deck_sentences
+
+    deck = {"sections": [{"title": "開場", "slides": [
+        {"id": "s1", "narration": "第一句。第二句？", "sentence_ids": ["s1.4", "s1.7"]},
+        {"id": "s2", "narration": "只有一句。", "sentence_ids": ["s2.1", "s2.2"]}]}]}   # stale ids: fall back
+    got = deck_sentences(deck)
+    assert [(s.id, s.stable) for s in got] == [("s1.4", True), ("s1.7", True), ("s2.1", False)]
+
+
 def test_plan_without_scope_is_refused():
     with pytest.raises(routing.PlanError, match="no linked scope"):
         routing.check({"steps": {"deck": {"fixes": [{"problem": "x"}]}}})
