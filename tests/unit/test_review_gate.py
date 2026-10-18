@@ -263,6 +263,22 @@ def test_producer_cannot_read_other_runs_and_runs_only_named_scripts(tmp_path):
     assert dict(call.env)["PYTHONPATH"] == str(REPO / "src")
 
 
+def test_article_rework_carries_only_fact_items(tmp_path):
+    from content_farm.review.producers import _fixes_text
+
+    plan = {"round": 1, "reasons": ["x"], "steps": {"article": {"fixes": [
+        {"problem": "來源沒有這個數字", "fix": "刪掉", "category": "fact", "who": "fact_checker-1", "ref": {},
+         "scope": {"sentence_ids": [], "titles": [], "thumbnail": False, "description": False}},
+        {"problem": "開頭不夠戲劇化", "fix": "加鉤子", "category": "structure", "who": "writer_story-1", "ref": {},
+         "scope": {"sentence_ids": [], "titles": [], "thumbnail": False, "description": False}}]}}}
+    (tmp_path / "review").mkdir()
+    (tmp_path / "review" / "article.fixes.json").write_text(json.dumps(plan, ensure_ascii=False), encoding="utf-8")
+    text = _fixes_text(tmp_path, "article")
+    assert "來源沒有這個數字" in text and "開頭不夠戲劇化" not in text
+    notes = json.loads((tmp_path / "review" / "article.story_notes.json").read_text(encoding="utf-8"))
+    assert notes[0]["problem"] == "開頭不夠戲劇化"
+
+
 def test_default_client_is_claude_cli_and_tests_use_a_stub():
     assert client_mod.CLAUDE_BIN == "claude"
     assert client_mod.claude_bin().endswith("claude-stub")

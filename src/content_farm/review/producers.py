@@ -50,6 +50,7 @@ TASKS = {
 - 寫完跑 `{python} {repo}/scripts/check_article.py --run-dir {run_dir}`，有問題改到 0 problem(s)。""",
     "deck": """任務：腳本。依 article.md，照 {repo}/.claude/skills/deck-outline/SKILL.md 與 {repo}/.claude/skills/deck/SKILL.md 的規則
 （不要停下來等人審），直接寫 deck.json（可先寫 deck_outline.json），並寫 promise.txt：一句「這支片答應觀眾什麼」。
+若有 review/article.story_notes.json（編劇對文章故事線的建議），在講稿裡處理，但不能新增文章沒有的事實。
 寫完跑 `{python} {repo}/scripts/deck_to_script.py --run-dir {run_dir} --strict`，有錯就改到通過。
 開場 15 秒內要有鉤子；每 5–10 秒要有留人的點；內容要撐得起片長，不要灌水。""",
     "thumbnail_spec": """任務：標題與縮圖。依 deck.json 與 promise.txt：
@@ -65,18 +66,30 @@ def _fixes_text(run_dir: Path, gate: str) -> str:
     if not path.is_file():
         return ""
     plan = json.loads(path.read_text(encoding="utf-8"))
-    lines = []
+    lines, deferred = [], []
     for step, slot in plan.get("steps", {}).items():
         for fix in slot["fixes"]:
+            if gate == "article" and not _is_fact(fix):
+                deferred.append(fix)      # story notes: the script stage tells the story, the article stays facts
+                continue
             scope = fix["scope"]
             lines.append(f"- [{step}] {fix.get('problem')} → {fix.get('fix')}（指認：{json.dumps(fix.get('ref'), ensure_ascii=False)}；"
                          f"連動要一起改：句子 {', '.join(scope['sentence_ids']) or '—'}；標題 {', '.join(scope['titles']) or '—'}；"
                          f"縮圖 {'是' if scope['thumbnail'] else '否'}；說明欄 {'是' if scope['description'] else '否'}）")
     reasons = "；".join(plan.get("reasons", []))
+    if deferred:
+        (run_dir / "review" / "article.story_notes.json").write_text(
+            json.dumps(deferred, ensure_ascii=False, indent=1), encoding="utf-8")
     return (f"\n這是退回重做（第 {plan.get('round')} 輪評審未過：{reasons}）。修改清單（{path}）：\n" + "\n".join(lines)
             + "\n只改清單與連動範圍列出的地方，其他句子一字不動（沒改到的句子 id 要保持不變）；"
               "改寫時不要新增沒查證過的說法——新寫的每一句一樣會被查核；"
               "不准為了分數灌水或誇大。fixed 欄位列出你處理了哪些。")
+
+
+def _is_fact(fix: dict) -> bool:
+    """Article reworks carry only fact items (2026-10-18: in attempts 2 and 3 the rewrite for the
+    story editor's notes added the new unsourced claims that failed the last round)."""
+    return fix.get("category") == "fact" or str(fix.get("who", "")).startswith("fact_checker")
 
 
 def producer_tier(config: ReviewConfig, step: str) -> Tier:
