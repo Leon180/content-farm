@@ -1,6 +1,7 @@
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-yokai-tempo/REPORT-yokai-tempo.md","min_bytes":2000,"why":"派工指定產物；內容為前提失效回報"}
 {"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-yokai-tempo/channels/yokai.yaml","pattern":"tempo: 1.20","why":"yokai tempo 已改成 1.29"}
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-yokai-tempo/output/yokai-kyubi-v2/review/script/round-3/scorecard.json","min_bytes":2000,"why":"腳本評審第 3 輪（最後一輪）未過：查核 3 錯"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-yokai-tempo/output/yokai-kyubi-v2/review/script_structure/round-3/scorecard.json","min_bytes":2000,"why":"兩段制結構段第 3 輪（最後一輪）未過"}
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-yokai-tempo/output/yokai-kyubi-v2/deck.before-frog.json","min_bytes":2000,"why":"加角色前的原 deck 備份"}
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-yokai-tempo/output/yokai-kyubi-v2/upload/manual/preview.html","min_bytes":1,"why":"注意：這是複製來的 1.20 舊版 preview，不是 1.29 成品；任務要求的新 preview 尚未產生"}
 {"kind":"clean_worktree","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-yokai-tempo","why":"可能不通過：graft/ 是開工前就存在的 untracked 目錄（不是我建的）"}

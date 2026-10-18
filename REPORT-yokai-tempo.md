@@ -1,6 +1,9 @@
 # REPORT — 九尾狐開台片 tempo 1.20 → 1.29（決策 40e6b445a7ed）
 
 ## TL;DR
+- 🔴 **（2026-10-19 最新）照 7afa95870a4e＝A 改走兩段制，結構段 3 輪也沒過，停在 gate_deck**：編劇分數在 6.3–7.1 來回；第 3 輪觀眾離開中位 49.6%（門檻 50%），編劇 6.8／6.8（門檻 7）。事實段沒有跑。
+  - 到現在兩套腳本評審共 6 輪，產出 agent 重寫 4 次，都沒有收斂。
+  - 沒有片長、QC 或 preview。需要 Leon 決定，見「兩段制」一節。
 - 🔴 **（2026-10-19 最新）停在第 3 步（腳本評審）**：選項 A 加了青蛙書記、走新評審流程。腳本評審 3 輪都沒過：查核錯誤 15 → 6 → 3，編劇分數 7.2／7.0 第 3 輪才過。最後只剩 3 條「無來源／超出來源」的錯誤（s24.4、s24a.7、s26.3），所以沒有片長、QC 或 preview。下一步要 Leon 或 orchestrator 決定，見「第 3 步評分卡」。
 - （以下是第一次停下時的紀錄）
 - 🔴 **前提失效，已停下**：`produce.py run` 在第一個步驟 `policy` 就失敗：`青蛙書記 on 0/29 slides (>= 80%)`。配音、media、assembly 都還沒跑。
@@ -8,7 +11,26 @@
 - 要繼續就得**在 deck 裡加角色**（這是內容變更，要重審 gate_deck，還要新跑 mascot 疊加），已經超出「只改語速」的範圍。下面列了三個選項，等 Leon 決定。
 - 已完成：yokai tempo 改成 1.29（只改這個頻道），測試跟著改。run-dir 複製到 `output/yokai-kyubi-v2`，音檔沒動過（`tempo.json` 仍然 29×1.2）。
 
-## 第 3 步評分卡（`output/yokai-kyubi-v2/review/script/round-{1,2,3}/scorecard.json`）🟢
+## 第 3 步兩段制：結構段 3 輪也沒過（2026-10-18 16:1x–17:10 UTC）🟢
+`review/script_structure/round-{1,2,3}/scorecard.json`。門檻：離開中位 ≥50%、兩位編劇都 ≥7。查核在這一段只列出、不擋。
+
+| 輪 | 牆鐘／名目 | 離開中位（4 位） | 編劇 故事／密度 | 導演 | 未過原因 |
+|---|---|---|---|---|---|
+| 1 | 298.5 s／$3.11 | 72.7% | 6.4／6.5 | 6.3 | 兩位編劇 |
+| 2 | 395.9 s／$3.13 | 70.7% | 7.1／**6.3** | 6.4 | 密度 |
+| 3 | 435.5 s／$3.44 | **49.6%**（holdout 41.9%） | 6.8／6.8 | 6.5 | 觀眾＋兩位編劇 |
+
+- 產出 agent 兩次重寫：882.6 s／$4.57、1002.7 s／$5.26。結構段牆鐘約 55 分鐘，名目約 $19.5（訂閱）。
+- **結構段起點就沒過**：orchestrator 預期「單段第 3 輪的 65.6%／7.2／7.0 已達門檻」，但結構段第 1 輪是新的評審，兩位編劇給 6.4／6.5，沒有沿用舊分數。三輪之間編劇分數在 6.3–7.1 來回，第 3 輪的觀眾反而掉到 49.6%。重寫沒有讓分數穩定往上 🟡。
+- 錯誤訊息顯示「觀眾離開中位 50% < 50%」，實際值是 0.496，只是四捨五入後看起來像相等。這是顯示問題，沒有影響判定。
+- 結構段查核另外列了 8 條事實項（只列不擋）：s01.12「同一個時代」、s17.13 清代冊頁、s14.16 宋代拆廟、s21a 斑足／班足、s19.9 玉藻前被射殺、s20.9 能面、s15.2 封神演義成書年代、s16.10。原本的 s24.4、s26.3 已經不在清單上；s24a.7／s24a.9 被判為常識、風險低。
+- 事實段（`gate_deck_facts`）沒有跑，因為結構段沒過，事實段就不跑。
+
+**article.md 和講稿不同步的地方**（說明欄要以講稿為準；article 凍結沒改）：第九十六回／第九十七回、「三千年」應為「兩千多年」、郭璞是晉代人不是漢代、《繪本三國妖婦傳》的巡迴順序、「北齋一派」（大都會標 School of Katsushika Hokusai）、thepaper-2018 是澎湃文化專欄不是學者著作。
+
+**待決定**：照規則停在結構段，沒有 override、沒有動門檻。
+
+## 第 3 步評分卡（單段制，`output/yokai-kyubi-v2/review/script/round-{1,2,3}/scorecard.json`）🟢
 | 輪 | 評審牆鐘／名目 | 觀眾離開中位（4 位） | 編劇 故事／密度 | 導演 | 查核錯誤 | 結果 |
 |---|---|---|---|---|---|---|
 | 1 | 283.6 s／$2.81 | 57.8% | 6.5／6.3 | 6.0 | 15 | 退回 deck |
@@ -84,4 +106,8 @@
   - 卡住的只有 run 本身，Leon 可以自己跑（見下）。
 - Leon 批准（決策 2a7bbb6943dd，orchestrator 加了 allow 規則）。`produce.py run --auto-agents --no-stock` 在 2026-10-18 15:3x UTC 啟動。
 - **第 3 步（腳本）3 輪都沒過，停在 gate_deck**（16:16 UTC，exit 1）。照規則停下回報，門檻沒有放寬。原文：`[failed] gate_deck: script: 第 3 輪（最後一輪）未通過：fact_checker-1 找到 3 個事實錯誤`。詳細數字見下方「第 3 步評分卡」。
+- orchestrator 轉達 Leon 7afa95870a4e＝A：腳本拆成結構段＋事實段。merge `feat/cowos-facts`（拿到 06772a1，CLAIMS 衝突保留本分支版本）。
+  - 舊單段的 `review/deck.fixes.json` 改名為 `deck.fixes.legacy-script.json`；`review/script/` 三輪保留不動，不算新兩段的輪數。
+  - 同一條 `produce.py run --auto-agents --no-stock` 在背景重跑。
+  - 接手：等它結束，看 `production.log.jsonl` 的最後幾行。中斷了就重跑同一條指令，runner 會從斷點續跑。
 - 舊的接手方式：Leon 選了選項之後，A 要先改 deck（加 mascot pose）並重審 gate_deck，再執行 `PYTHONPATH=<wt>/src .venv/bin/python scripts/produce.py run --run-dir output/yokai-kyubi-v2 --no-stock --env-file /Users/lileon/project/content-farm/.env`。
