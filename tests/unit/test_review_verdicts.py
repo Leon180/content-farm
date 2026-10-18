@@ -144,6 +144,16 @@ def test_title_thumb_homepage_auto_and_producer():
     assert any("被注意名次" in r for r in verdict.reasons) and any("被選比例" in r for r in verdict.reasons)
 
 
+def test_feed_names_match_loosely_but_only_within_the_viewer():
+    from content_farm.review.verdicts import feed_key
+
+    keys = {"viewer-a_feed1.jpg": {"v": "A"}, "viewer-b_feed1.jpg": {"v": "B"}}
+    assert feed_key("viewer-a", "feeds/viewer-a_feed1.jpg", keys) == {"v": "A"}
+    assert feed_key("viewer-a", "viewer-a_feed1", keys) == {"v": "A"}
+    assert feed_key("viewer-b", "feed1", keys) == {"v": "B"}
+    assert feed_key("viewer-a", "feed9", keys) is None
+
+
 def test_media_compliance_and_pending():
     good = seat("compliance-1", "compliance", "compliance", {"assets": [
         {"asset": "s03", "logo": False, "real_person": False, "official_character": False, "license_ok": True,

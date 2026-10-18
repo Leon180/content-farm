@@ -56,7 +56,8 @@ STAGE_TASK = {
     },
     "title_thumb": {
         "viewer": "先做首頁一眼（做完前不要看 thumbnails/ 和 titles.txt）：依序打開每張首頁截圖，每張只捲過一眼，"
-                  "不知道哪一張是我們的；記下最先注意到的 3 張卡號（noticed）、最可能點的 1 張（picked）。"
+                  "不知道哪一張是我們的；記下最先注意到的 3 張卡號（noticed）、最可能點的 1 張（picked），"
+                  "feed 欄位照抄首頁截圖的檔名（含 .jpg）。"
                   "然後打開 titles.txt 給每個標題點擊意願 0–10（titles），再看 thumbnails/ 每款給點擊意願（thumbnails：{\"A\":n,…}）。",
         "designer": "把每款縮圖想像縮到手機首頁 168 px 寬：字讀不讀得到、對比、構圖、主體大小、角色表情、三款差異夠不夠。"
                     "variants 給每款 0–10。",

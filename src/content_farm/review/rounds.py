@@ -140,6 +140,10 @@ def run_round(run_dir: Path, *, stage_name: str, config: ReviewConfig, channel: 
         if result.output is not None:
             (out / "results" / f"{result.rid}.json").write_text(
                 json.dumps(result.output, ensure_ascii=False, indent=1), encoding="utf-8")
+    if keys:   # homepage answer key: outside the round folder, which reviewers can read
+        key_dir = run_dir / REVIEW_DIR / ".keys"
+        key_dir.mkdir(parents=True, exist_ok=True)
+        (key_dir / f"{stage_name}-{name}.json").write_text(json.dumps(keys, indent=1), encoding="utf-8")
     seats = [verdicts.Seat(m.rid, m.role, m.kind, m.holdout, r.ok, r.output) for m, r in zip(members, results)]
     context = {"corpus": materials.corpus, "sentences": materials.sentences, "duration": materials.duration,
                **materials.extra, **(judge_context or {}), "keys": keys}

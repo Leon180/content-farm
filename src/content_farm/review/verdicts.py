@@ -195,11 +195,24 @@ def script(stage: Stage, seats: list[Seat], *, sentences: list[Sentence], **cont
     return Verdict(not reasons, reasons, scores, kept, dropped)
 
 
+_FEED_NO = re.compile(r"feed\s*(\d+)", re.IGNORECASE)
+
+
+def feed_key(rid: str, answer: str, keys: dict[str, dict]) -> dict | None:
+    """The answer key for a viewer's feed, however loosely they named it (``feeds/x_feed1.jpg``,
+    ``x_feed1``, ``feed1``): only that viewer's own feeds can match."""
+    name = str(answer).split("/")[-1]
+    if name in keys:
+        return keys[name]
+    match = _FEED_NO.search(name)
+    return keys.get(f"{rid}_feed{match.group(1)}.jpg") if match else None
+
+
 def homepage_stats(viewers: list[Seat], keys: dict[str, dict]) -> dict[str, dict]:
     slots: dict[str, dict[str, list]] = {}
     for seat in viewers:
         for answer in (seat.output or {}).get("homepage") or []:
-            key = keys.get(str(answer.get("feed", "")).split("/")[-1])
+            key = feed_key(seat.rid, answer.get("feed", ""), keys)
             if key is None:
                 continue
             noticed = [int(n) for n in answer.get("noticed") or []]
