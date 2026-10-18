@@ -96,9 +96,9 @@ def test_infrastructure_failure_does_not_count_as_a_round(tmp_path):
     result = _gate(tmp_path, flaky)
     assert result.status == "blocked" and "不算" in result.message
     assert not (tmp_path / "review" / "deck.fixes.json").exists()          # nothing routed back
-    assert list((tmp_path / "review" / "script").glob("round-1-incomplete-*"))
+    assert list((tmp_path / "review" / "script_structure").glob("round-1-incomplete-*"))
     assert _gate(tmp_path, FakePanel(writer=9)).status == "pass"           # rerun reopens round 1
-    assert (tmp_path / "review" / "script" / "round-1" / "scorecard.json").is_file()
+    assert (tmp_path / "review" / "script_structure" / "round-1" / "scorecard.json").is_file()
 
 
 def test_issue_schema_requires_ref_evidence_and_cause():
@@ -184,7 +184,7 @@ def test_gate_replans_when_the_freeze_changes(tmp_path):
     (tmp_path / "production.frozen.json").write_text('{"steps": ["article"]}', encoding="utf-8")
     again = _gate(tmp_path, FakePanel(writer=9))          # same round, no new reviews: only the plan changes
     assert again.status == "rework" and again.rework["restart"] == "deck"
-    assert len(list((tmp_path / "review" / "script").glob("round-*"))) == 1
+    assert len(list((tmp_path / "review" / "script_structure").glob("round-*"))) == 1
 
 
 def test_frozen_rework_text_says_where_to_fix(tmp_path):
@@ -237,7 +237,7 @@ class FakePanel:
 
 
 def _gate(run_dir: Path, panel: FakePanel):
-    return panel_gate(run_dir, gate="deck", stage_name="script", config=CONFIG, channel="chipcat",
+    return panel_gate(run_dir, gate="deck", stage_name="script_structure", config=CONFIG, channel="chipcat",
                       channel_name="晶片貓", client=panel)
 
 
@@ -253,9 +253,9 @@ def test_gate_rework_then_pass(tmp_path):
     second = _gate(tmp_path, panel)
     assert second.status == "pass", second.message
     decision = json.loads((tmp_path / "review" / "deck.decision.json").read_text(encoding="utf-8"))
-    assert decision["by"] == "agent-panel:script" and decision["round"] == 2
+    assert decision["by"] == "agent-panel:script_structure" and decision["round"] == 2
     assert {c.model for c in panel.calls if c.rid.startswith("fact_checker")} == {"opus"}
-    assert (tmp_path / "review" / "script" / "round-2-holdout" / "scorecard.json").is_file()
+    assert (tmp_path / "review" / "script_structure" / "round-2-holdout" / "scorecard.json").is_file()
     from content_farm.review.scorecard_html import render
 
     html = render(tmp_path, "晶片貓<script>").read_text(encoding="utf-8")
@@ -264,12 +264,12 @@ def test_gate_rework_then_pass(tmp_path):
 
 
 def test_gate_exhausts_after_max_rounds(tmp_path):
-    for n in range(CONFIG.stages["script"].max_rounds):
+    for n in range(CONFIG.stages["script_structure"].max_rounds):
         (tmp_path / "deck.json").write_text(json.dumps(_deck(f"版本{n}。開場第二句。"), ensure_ascii=False),
                                             encoding="utf-8")
         result = _gate(tmp_path, FakePanel(writer=5))
     assert result.status == "exhausted" and "最後一輪" in result.message
-    last = json.loads((tmp_path / "review" / "script" / "round-3" / "scorecard.json").read_text(encoding="utf-8"))
+    last = json.loads((tmp_path / "review" / "script_structure" / "round-3" / "scorecard.json").read_text(encoding="utf-8"))
     assert any(s["holdout"] for s in last["seats"])                      # holdout sits in the last round
 
 
@@ -281,9 +281,9 @@ def test_gate_blocks_wrong_model(tmp_path):
 
 
 def test_enforce_rejects_missing_and_stale_cards():
-    assert enforce(None, CONFIG, "script", "x") == ["no scorecard"]
-    card = {"stage": "script", "inputs": "old", "seats": [], "verdict": {"pass": True, "reasons": []}}
-    problems = enforce(card, CONFIG, "script", "new")
+    assert enforce(None, CONFIG, "script_structure", "x") == ["no scorecard"]
+    card = {"stage": "script_structure", "inputs": "old", "seats": [], "verdict": {"pass": True, "reasons": []}}
+    problems = enforce(card, CONFIG, "script_structure", "new")
     assert "reviewed inputs changed since the scorecard" in problems
     assert any(p.startswith("viewer: 0/4") for p in problems) and any(p.startswith("fact_checker: 0/1") for p in problems)
 

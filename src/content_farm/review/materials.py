@@ -151,6 +151,7 @@ def media(run_dir: Path, out: Path, **_: Any) -> Materials:
     return Materials(files, notes, corpus=corpus, extra={"pending": credits.get("pending", [])})
 
 
-BUILDERS = {"topic": topic, "shorts_topic": topic, "article": article, "script": script,
+BUILDERS = {"topic": topic, "shorts_topic": topic, "article": article, "script_structure": script,
+            "script_facts": script,
             "shorts_script": short_script, "title_thumb": title_thumb, "shorts_title": title_thumb,
             "media": media}

@@ -24,8 +24,8 @@ from content_farm.review.rounds import expected_seats, rounds_of, run_round, sta
 from content_farm.review.sentences import deck_sentences, script_sentences
 
 PANEL_BY = "agent-panel:"
-LONG_STAGE_FOR_GATE = {"topic": "topic", "article": "article", "deck": "script", "title": "title_thumb",
-                       "media": "media", "final": "final"}
+LONG_STAGE_FOR_GATE = {"topic": "topic", "article": "article", "deck": "script_structure",
+                       "deck_facts": "script_facts", "title": "title_thumb", "media": "media", "final": "final"}
 SHORT_STAGE_FOR_GATE = {"topic": "shorts_topic", "script": "shorts_script", "title": "shorts_title",
                         "final": "shorts_final"}
 

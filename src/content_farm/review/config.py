@@ -24,7 +24,8 @@ Effort = Literal["low", "medium", "high", "xhigh", "max"]
 MODEL_RANK = {"haiku": 0, "sonnet": 1, "opus": 2}
 EFFORT_RANK = {"low": 0, "medium": 1, "high": 2, "xhigh": 3, "max": 4}
 
-LONG_STAGES = ("topic", "article", "script", "title_thumb", "media", "final")
+# script → script_structure + script_facts: Leon 2026-10-18 decision 7afa95870a4e = A
+LONG_STAGES = ("topic", "article", "script_structure", "script_facts", "title_thumb", "media", "final")
 SHORT_STAGES = ("shorts_topic", "shorts_script", "shorts_title", "shorts_final")
 STAGES = LONG_STAGES + SHORT_STAGES
 
@@ -32,7 +33,8 @@ STAGES = LONG_STAGES + SHORT_STAGES
 REQUIRED_ROLES: dict[str, dict[str, int]] = {
     "topic": {"viewer": 3, "writer_story": 1, "producer": 1},
     "article": {"fact_checker": 2, "writer_story": 1},
-    "script": {"viewer": 5, "writer_story": 1, "writer_density": 1, "director": 1, "fact_checker": 1},
+    "script_structure": {"viewer": 5, "writer_story": 1, "writer_density": 1, "director": 1, "fact_checker": 1},
+    "script_facts": {"fact_checker": 2},
     "title_thumb": {"viewer": 5, "designer": 1, "producer": 1},
     "media": {"compliance": 1},
     "final": {"viewer": 5, "editor_visual": 1, "editor_audio": 1, "director": 1},
@@ -41,13 +43,14 @@ REQUIRED_ROLES: dict[str, dict[str, int]] = {
     "shorts_title": {"viewer": 3},
     "shorts_final": {"viewer": 3, "editor_visual": 1},
 }
-REQUIRED_HOLDOUT = {"script": 1, "final": 1}
+REQUIRED_HOLDOUT = {"script_structure": 1, "final": 1}
 
 # (model, effort) floors per stage × role (Leon 2026-10-18 table). "*" = any role in that stage.
 TIER_FLOOR: dict[str, dict[str, tuple[Model, Effort]]] = {
     "topic": {"producer_agent": ("opus", "high"), "viewer": ("sonnet", "medium"), "*": ("opus", "high")},
     "article": {"producer_agent": ("opus", "high"), "writer_story": ("opus", "medium"), "*": ("opus", "high")},
-    "script": {"producer_agent": ("opus", "high"), "viewer": ("sonnet", "medium"), "*": ("opus", "high")},
+    "script_structure": {"producer_agent": ("opus", "high"), "viewer": ("sonnet", "medium"), "*": ("opus", "high")},
+    "script_facts": {"*": ("opus", "high")},
     "title_thumb": {"*": ("sonnet", "medium")},
     "media": {"*": ("sonnet", "medium")},
     "final": {"*": ("sonnet", "medium")},
@@ -58,17 +61,22 @@ TIER_FLOOR: dict[str, dict[str, tuple[Model, Effort]]] = {
 }
 FACT_CHECKER_TIER: tuple[Model, Effort] = ("opus", "high")   # every stage: errors are dearest downstream
 # article 2 → 3: Leon 2026-10-18 decision 59fdefb32bd7 = D (with delete-or-edit-only rewrites and arbitration)
-MAX_ROUNDS = {"topic": 2, "article": 3, "script": 3, "title_thumb": 3, "media": 3, "final": 3,
-              "shorts_topic": 2, "shorts_script": 3, "shorts_title": 3, "shorts_final": 3}
+MAX_ROUNDS = {"topic": 2, "article": 3, "script_structure": 3, "script_facts": 3, "title_thumb": 3, "media": 3,
+              "final": 3, "shorts_topic": 2, "shorts_script": 3, "shorts_title": 3, "shorts_final": 3}
 # Stages whose two fact-checkers' disagreements go to a third (``Stage.arbiter``, ≥ FACT_CHECKER_TIER).
-ARBITRATED_STAGES = ("article",)
-# step → first round whose material must be a delete-or-edit-only rewrite (``review.article_diff``).
-DELETE_ONLY_FROM_ROUND = {"article": 2}
+ARBITRATED_STAGES = ("article", "script_facts")
+# Stages whose fact-check results are listed (and go into the fix list) but never block (7afa95870a4e = A).
+ADVISORY_FACT_STAGES = ("script_structure",)
+# gate → first round whose material must be a delete-or-edit-only rewrite of the previous one
+# (``review.article_diff``): the article from round 2 (59fdefb32bd7 = D), the script's fact stage from
+# its first rework on (7afa95870a4e = A: the structure stage already approved the shape).
+DELETE_ONLY_FROM_ROUND = {"article": 2, "deck_facts": 2}
 
 # Threshold fields: (direction, floor). "min" = value must be ≥ floor; "max" = value must be ≤ floor.
 THRESHOLD_FLOOR: dict[str, dict[str, tuple[str, float]]] = {
     "article": {"fact_errors_max": ("max", 0)},
-    "script": {"leave_median_pct": ("min", 0.5), "writer_min": ("min", 7), "fact_errors_max": ("max", 0)},
+    "script_structure": {"leave_median_pct": ("min", 0.5), "writer_min": ("min", 7)},
+    "script_facts": {"fact_errors_max": ("max", 0)},
     "title_thumb": {"noticed_median_max": ("max", 3), "pick_factor": ("min", 2.0)},
     "media": {"compliance_issues_max": ("max", 0)},
     "final": {"leave_median_pct": ("min", 0.5)},

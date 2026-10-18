@@ -155,6 +155,9 @@ EXPLAINER_STEPS: tuple[Step, ...] = (
          command=lambda c: _py(c, "render_slides.py", "--run-dir", _run_dir(c), "--brand", c.channel.brand)),
     Step("gate_deck", "gate", "deck 審稿", gate=Gate.DECK,
          artifacts=("deck.json", "slides/contact_sheet.png"), applies=_gate_enabled(Gate.DECK)),
+    # 事實段（Leon 7afa95870a4e＝A）：結構段（gate_deck）過了才到這裡；跟著 deck 閘門啟用
+    Step("gate_deck_facts", "gate", "講稿事實查核", gate=Gate.DECK_FACTS,
+         artifacts=("deck.json",), applies=_gate_enabled(Gate.DECK)),
     Step("thumbnail_spec", "agent", "標題 5–6 個＋縮圖 3 款文案", outputs=THUMB_SPECS,
          hint="寫 titles.json、thumbnail.json、thumbnail_variants.json（承諾＝前 60 秒的講稿原句），見 /deck 縮圖規則"),
     Step("thumbnail", "cmd", "頻道縮圖（角色／畫作＋大字）", outputs=("thumbnails/thumbnail.png",),

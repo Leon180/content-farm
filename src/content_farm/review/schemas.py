@@ -129,7 +129,7 @@ AGGREGATE = _obj(["fixes"], fixes={"type": "array", "items": _obj(
 SCHEMAS: dict[tuple[str, str], dict[str, Any]] = {
     ("topic", "viewer"): TOPIC_VIEWER, ("topic", "pro"): TOPIC_PRO, ("topic", "producer"): TOPIC_PRO,
     ("shorts_topic", "viewer"): TOPIC_VIEWER,
-    ("script", "viewer"): SCRIPT_VIEWER, ("shorts_script", "viewer"): SCRIPT_VIEWER,
+    ("script_structure", "viewer"): SCRIPT_VIEWER, ("shorts_script", "viewer"): SCRIPT_VIEWER,
     ("title_thumb", "viewer"): TITLE_VIEWER, ("shorts_title", "viewer"): TITLE_VIEWER,
     ("title_thumb", "producer"): PRODUCER_TITLE, ("title_thumb", "designer"): DESIGNER,
     ("final", "viewer"): FINAL_VIEWER, ("shorts_final", "viewer"): FINAL_VIEWER,

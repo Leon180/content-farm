@@ -45,6 +45,13 @@ def split_article(markdown: str) -> list[ArticleSentence]:
     return out
 
 
+def deck_narration(deck: dict) -> list[ArticleSentence]:
+    """A deck's narration sentences under their stable ids (``review.sentences.deck_sentences``)."""
+    from content_farm.review.sentences import deck_sentences
+
+    return [ArticleSentence(s.id, s.text) for s in deck_sentences(deck)]
+
+
 def sentences_for_quote(quote: str, sentences: list[ArticleSentence]) -> list[str]:
     """Ids of the sentences a verbatim quote overlaps ([] when the quote is not in the article)."""
     needle = normalize(quote)
@@ -73,7 +80,17 @@ def _similar(a: str, b: str) -> float:
 
 def check_rework(before: str, after: str, flagged: set[str]) -> list[str]:
     """Why ``after`` is not a delete-or-edit-only rewrite of ``before`` ([] = it is)."""
-    old, new = split_article(before), split_article(after)
+    return check_sentences(split_article(before), split_article(after), flagged)
+
+
+def added_sentences(old: list[ArticleSentence], new: list[ArticleSentence]) -> list[str]:
+    """Sentences ``new`` adds over ``old`` (in place or as a rewrite too large to be an edit); [] when
+    ``new`` only deletes or edits. The fact lock: an addition sends the script back to its structure stage."""
+    return [p for p in check_sentences(old, new, {s.id for s in old}) if "沒有被點名" not in p]
+
+
+def check_sentences(old: list[ArticleSentence], new: list[ArticleSentence], flagged: set[str]) -> list[str]:
+    """Why ``new`` is not a delete-or-edit-only rewrite of ``old`` ([] = it is)."""
     matcher = difflib.SequenceMatcher(None, [normalize(s.text) for s in old], [normalize(s.text) for s in new],
                                       autojunk=False)
     problems = []

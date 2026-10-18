@@ -19,6 +19,8 @@ if TYPE_CHECKING:
 
 PRODUCER_STEPS = ("topic", "article", "deck", "thumbnail_spec")
 APPROVED_DECK = "review/deck.approved.json"   # same path as feat/incremental-render's runner.APPROVED_DECK
+LOCKED_DECK = "review/deck.locked.json"       # deck at the last structure / facts approval (the fact lock's baseline)
+SCRIPT_STAGES = ("script_structure", "script_facts")
 EVENTS = "production.log.jsonl"
 
 
@@ -146,11 +148,13 @@ def panel_step(ctx: Context, state: RunState, step: Step, stage: str, current: s
         note = f"{result.message}; {result.scorecard}"
         decision = Decision(step.gate.value, "approved", current, now_iso(), by=PANEL_BY + stage, note=note)
         record = StepRecord("approved", decision.at, inputs=current, note=f"by {decision.by}")
-        if step.gate is Gate.DECK and (ctx.run_dir / "deck.json").is_file():
-            # the baseline the next edit is diffed against (feat/incremental-render scripts/fix_scope.py)
+        if step.gate in (Gate.DECK, Gate.DECK_FACTS) and (ctx.run_dir / "deck.json").is_file():
+            # the baselines the next edit is diffed against: feat/incremental-render's fix scope
+            # (scripts/fix_scope.py) and the fact lock (structure_kept)
             import shutil
 
             shutil.copy2(ctx.run_dir / "deck.json", ctx.run_dir / APPROVED_DECK)
+            shutil.copy2(ctx.run_dir / "deck.json", ctx.run_dir / LOCKED_DECK)
         return state.with_decision(decision).with_step(step.name, record), None
     record = StepRecord("waiting", now_iso(), inputs=current, note=result.message)
     state = state.with_step(step.name, record)
@@ -163,20 +167,27 @@ def panel_step(ctx: Context, state: RunState, step: Step, stage: str, current: s
 REWORK_ATTEMPTS = 2     # a rewrite that breaks the delete-or-edit-only rule is refused and asked once more
 
 
-def run_producer(ctx: Context, step_name: str, log: Callable[[str], None]) -> str | None:
-    """Run the producer agent for ``step_name``; None on success, else why it failed.
+def rework_gate(note: str) -> str | None:
+    """The gate whose fix list a rework record points at (``review/<gate>.fixes.json``)."""
+    name = Path(note).name
+    return name.removesuffix(".fixes.json") if name.endswith(".fixes.json") else None
 
-    An article rework from round 2 on must only delete or edit the flagged sentences
-    (``review.article_diff``): a rewrite that breaks it is restored and redone, at most
-    ``REWORK_ATTEMPTS`` times in all."""
+
+def run_producer(ctx: Context, step_name: str, log: Callable[[str], None], *, gate: str | None = None) -> str | None:
+    """Run the producer agent for ``step_name``; None on success, else why it failed. ``gate``: the
+    gate whose fix list sent this rework (default: the step's own gate).
+
+    A rework under DELETE_ONLY_FROM_ROUND (the article from round 2, the script's fact stage) must
+    only delete or edit the flagged sentences (``review.article_diff``): a rewrite that breaks it is
+    restored and redone, at most ``REWORK_ATTEMPTS`` times in all."""
     from content_farm.review.producers import produce
 
-    guard = _delete_only_guard(ctx.run_dir, step_name)
+    guard = _delete_only_guard(ctx.run_dir, step_name, gate)
     extra = ""
     for attempt in range(1, (REWORK_ATTEMPTS if guard else 1) + 1):
         log(f"✎ {step_name}: 產出 agent" + (f"（只准刪改，第 {attempt} 次）" if guard else ""))
         result = produce(step_name, ctx.run_dir, channel=ctx.channel.code, config=review_config(ctx),
-                         python=ctx.options.python, client=ctx.options.review_client, extra=extra)
+                         python=ctx.options.python, client=ctx.options.review_client, extra=extra, gate=gate)
         _event(ctx.run_dir, step=step_name, producer=result.to_json())
         if not result.ok:
             return f"{step_name} 產出 agent 失敗：{'; '.join(result.errors)[:300]}"
@@ -189,7 +200,8 @@ def run_producer(ctx: Context, step_name: str, log: Callable[[str], None]) -> st
             return None
         guard.restore()
         log(f"✗ {step_name}: 拒收（不是只刪改）：{'；'.join(problems)[:200]}")
-        extra = ("上一次的改稿被拒收，文章已還原成改稿前的版本。原因（程式比對前後版本）：\n- " + "\n- ".join(problems)
+        extra = (f"上一次的改稿被拒收，{guard.path.name} 已還原成改稿前的版本。原因（程式比對前後版本）：\n- "
+                 + "\n- ".join(problems)
                  + "\n重新改：只准刪除被點名的句子，或在被點名的句子裡加限定詞、改正數字與歸屬；不准新增句子，"
                    "沒被點名的句子一字不動。")
     return f"{step_name}：改稿 {REWORK_ATTEMPTS} 次都不是只刪改，已還原並停下（見 production.log.jsonl）"
@@ -200,33 +212,94 @@ class _DeleteOnly:
     path: Path
     before: str
     flagged: frozenset[str]
+    deck: bool = False          # compare deck narration sentences (stable ids), not article lines
 
     def check(self) -> list[str]:
-        from content_farm.review.article_diff import check_rework
+        from content_farm.review.article_diff import check_rework, check_sentences, deck_narration
 
         after = self.path.read_text(encoding="utf-8") if self.path.is_file() else ""
-        return check_rework(self.before, after, set(self.flagged))
+        if not self.deck:
+            return check_rework(self.before, after, set(self.flagged))
+        try:
+            new = deck_narration(json.loads(after))
+        except json.JSONDecodeError as exc:
+            return [f"deck.json 不是合法 JSON：{exc}"]
+        return check_sentences(deck_narration(json.loads(self.before)), new, set(self.flagged))
 
     def restore(self) -> None:
         self.path.write_text(self.before, encoding="utf-8")
 
 
-def _delete_only_guard(run_dir: Path, step_name: str) -> _DeleteOnly | None:
-    """The guard for a rework whose next round falls under DELETE_ONLY_FROM_ROUND, else None."""
+def _delete_only_guard(run_dir: Path, step_name: str, gate: str | None = None) -> _DeleteOnly | None:
+    """The guard for a rework whose next round falls under DELETE_ONLY_FROM_ROUND, else None.
+    Flagged sentences: the article sentences the fact items' quotes point at, or the deck sentence ids
+    the fact items and their linked scope name."""
     from content_farm.review.article_diff import flagged_sentences, split_article
     from content_farm.review.config import DELETE_ONLY_FROM_ROUND
     from content_farm.review.producers import is_fact
 
-    start = DELETE_ONLY_FROM_ROUND.get(step_name)
-    article, plan_path = run_dir / "article.md", run_dir / "review" / f"{step_name}.fixes.json"
-    if start is None or not article.is_file() or not plan_path.is_file():
+    gate = gate or step_name
+    start = DELETE_ONLY_FROM_ROUND.get(gate)
+    target = run_dir / ("article.md" if step_name == "article" else "deck.json")
+    plan_path = run_dir / "review" / f"{gate}.fixes.json"
+    if start is None or not target.is_file() or not plan_path.is_file():
         return None
     plan = json.loads(plan_path.read_text(encoding="utf-8"))
     if int(plan.get("round", 0)) + 1 < start:
         return None
-    before = article.read_text(encoding="utf-8")
-    quotes = [str(f.get("evidence") or "") for f in (plan.get("steps", {}).get(step_name) or {}).get("fixes", [])
-              if is_fact(f)]
-    snapshot = run_dir / "review" / f"article.before-round-{int(plan['round']) + 1}.md"
+    before = target.read_text(encoding="utf-8")
+    fixes = [f for slot in plan.get("steps", {}).values() for f in slot.get("fixes", []) if is_fact(f)]
+    snapshot = run_dir / "review" / f"{target.stem}.before-{gate}-round-{int(plan['round']) + 1}{target.suffix}"
     snapshot.write_text(before, encoding="utf-8")
-    return _DeleteOnly(article, before, frozenset(flagged_sentences(quotes, split_article(before))))
+    if step_name == "article":
+        quotes = [str(f.get("evidence") or "") for f in fixes]
+        return _DeleteOnly(target, before, frozenset(flagged_sentences(quotes, split_article(before))))
+    ids = {str(i) for f in fixes for i in [*((f.get("ref") or {}).get("sentence_ids") or []),
+                                           *(f.get("scope") or {}).get("sentence_ids", [])]}
+    return _DeleteOnly(target, before, frozenset(ids), deck=True)
+
+
+def structure_kept(ctx: Context, state: RunState, current: str, log: Callable[[str], None]) -> RunState | None:
+    """The fact lock (7afa95870a4e = A). The structure stage's approval survives a deck change that only
+    deletes or edits narration sentences (the fact stage's fixes, or a later stage's trims): the state
+    with the gate kept approved. A change that adds sentences voids it — both script stages start a new
+    cycle (their earlier rounds move to ``cycle-N/``) — and None is returned so the panel runs again."""
+    from content_farm.review.article_diff import added_sentences, deck_narration
+    from content_farm.review.gate import PANEL_BY
+
+    decision = state.decisions.get(Gate.DECK.value)
+    locked, deck = ctx.run_dir / LOCKED_DECK, ctx.run_dir / "deck.json"
+    if (decision is None or decision.verdict != "approved" or not decision.by.startswith(PANEL_BY)
+            or not locked.is_file() or not deck.is_file()):
+        return None
+    added = added_sentences(deck_narration(json.loads(locked.read_text(encoding="utf-8"))),
+                            deck_narration(json.loads(deck.read_text(encoding="utf-8"))))
+    if added:
+        moved = _new_cycle(ctx.run_dir)
+        log(f"🔓 gate_deck: 講稿新增句子，結構段核可失效、兩段重走（{len(added)} 處；舊輪次移到 {moved}）")
+        _event(ctx.run_dir, step="gate_deck", fact_lock="reopened", added=added[:20], moved=moved)
+        return None
+    _event(ctx.run_dir, step="gate_deck", fact_lock="kept", approved_fingerprint=decision.fingerprint, inputs_now=current)
+    record = StepRecord("approved", decision.at, inputs=current, note=f"structure kept (only deletes/edits); by {decision.by}")
+    return state.with_step("gate_deck", record)
+
+
+def _new_cycle(run_dir: Path) -> str:
+    """Move both script stages' rounds (and the lock baseline) aside so the next rounds start at 1."""
+    from content_farm.review.rounds import stage_dir
+
+    root = stage_dir(run_dir, SCRIPT_STAGES[0])
+    number = 1 + len(list(root.glob("cycle-*"))) if root.is_dir() else 1
+    for stage in SCRIPT_STAGES:
+        here = stage_dir(run_dir, stage)
+        rounds = sorted(here.glob("round-*")) if here.is_dir() else []
+        if rounds:
+            (here / f"cycle-{number}").mkdir(parents=True, exist_ok=True)
+            for path in rounds:
+                path.rename(here / f"cycle-{number}" / path.name)
+    for gate in (Gate.DECK.value, Gate.DECK_FACTS.value):
+        plan = run_dir / "review" / f"{gate}.fixes.json"
+        if plan.is_file():
+            plan.rename(plan.with_name(f"{gate}.fixes.cycle-{number}.json"))
+    (run_dir / LOCKED_DECK).rename(run_dir / f"review/deck.locked.cycle-{number}.json")
+    return f"cycle-{number}"

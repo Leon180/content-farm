@@ -91,7 +91,7 @@ STAGE_INTRO = {
 
 
 BASE_STAGE = {"shorts_topic": "topic", "shorts_script": "script", "shorts_title": "title_thumb",
-              "shorts_final": "final"}
+              "shorts_final": "final", "script_structure": "script", "script_facts": "script"}
 
 
 def _task(stage: str, kind: str) -> str:

@@ -33,7 +33,8 @@ class Pipeline(str, Enum):
 class Gate(str, Enum):
     TOPIC = "topic"      # 選題：評審團從候選挑前 N 題
     ARTICLE = "article"  # 文章審稿：論點、來源、八卦出處
-    DECK = "deck"        # deck 審稿：contact sheet＋講稿
+    DECK = "deck"        # deck 審稿：contact sheet＋講稿（評審團的結構段 script_structure）
+    DECK_FACTS = "deck_facts"   # 講稿事實段（script_facts）：結構段過了才開始；隨 deck 閘門啟用（Leon 7afa95870a4e＝A）
     SCRIPT = "script"    # 短劇本審稿（沒有文章階段的頻道用）
     TITLE = "title"      # 標題與縮圖：首頁情境＋設計師＋製作人＋自動檢查
     MEDIA = "media"      # B-roll／AI 圖／artwork 授權
