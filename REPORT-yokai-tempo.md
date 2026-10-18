@@ -50,4 +50,12 @@
 - 已 merge：`feat/review-panels`（376208e；CLAIMS.jsonl 衝突，保留本分支版本）、`feat/cowos-facts`（dcfc682，沒有衝突）。
 - 已寫好 `docs/yokai-tempo/add_frog_poses.py`，給 29/29 張投影片加 pose；原 deck 備份在 run-dir 的 `deck.before-frog.json`。
 - **又停下了**：權限分類器以「Modify Shared Resources」擋掉三條指令——全套 pytest（前景、背景各一次），以及執行 add_frog_poses.py 改 run-dir 的 deck.json。deck.json 目前跟備份逐位元相同（cmp 驗過）。我沒有換別的工具繞過。merge 之後的全套 pytest **沒有跑** 🔴。
+- Leon 回「放行」之後：
+  - 全套 pytest：1480 passed／1 skipped／1 failed。失敗的是既有的 `test_multi_provider::test_returns_first_provider_results[asyncio]`：`--deselect` 沒寫參數後綴所以沒排除掉，它在基準就失敗 🟢。
+  - deck 加 pose：29/29 張（`docs/yokai-tempo/add_frog_poses.py`，docs/ 在 gitignore，沒有 commit）🟢。
+  - 寫了 `production.frozen.json`（article＋gate_article）。
+  - `reject --gate deck` 成功（`deck: rejected @ d4c76e66c19d0713`）。
+  - **再被權限分類器擋下**（原文：`Permission for this action was denied by the Claude Code auto mode classifier. Reason: [Modify Shared Resources].`）：`reject --gate media`，以及 `produce.py run --auto-agents --no-stock --env-file …`。
+  - media／final 不撤銷也可以：tempo 和角色會讓兩個閘門的指紋改變，舊核可就對不上，評審團會照樣判。
+  - 卡住的只有 run 本身，Leon 可以自己跑（見下）。
 - 舊的接手方式：Leon 選了選項之後，A 要先改 deck（加 mascot pose）並重審 gate_deck，再執行 `PYTHONPATH=<wt>/src .venv/bin/python scripts/produce.py run --run-dir output/yokai-kyubi-v2 --no-stock --env-file /Users/lileon/project/content-farm/.env`。
