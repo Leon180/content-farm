@@ -80,8 +80,8 @@ async def test_retime_rejects_out_of_range(tmp_path: Path) -> None:
 
 
 def test_channel_tempo_follows_decision_and_enters_identity(tmp_path: Path) -> None:
-    assert load_channel("yokai").voice.tempo == 1.20 and load_channel("cel").voice.tempo == 1.12
+    assert load_channel("yokai").voice.tempo == 1.29 and load_channel("cel").voice.tempo == 1.12
     assert load_channel("chipcat").voice.tempo == 1.15 and load_channel("offwork").voice.tempo == 1.0
     yokai = choose_voice(load_channel("yokai"), tmp_path / "none.env", mock=False)
-    assert yokai.env()["CF_TTS_TEMPO"] == "1.2" and "tempo=1.2" in yokai.describe()
+    assert yokai.env()["CF_TTS_TEMPO"] == "1.29" and "tempo=1.29" in yokai.describe()
     assert "tempo=" not in choose_voice(load_channel("offwork"), tmp_path / "none.env", mock=False).describe()

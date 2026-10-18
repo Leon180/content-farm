@@ -12,7 +12,7 @@ mascot:
   rig_ready: true
 voice:                  # Leon 2026-10-17：本機 VoxCPM2（Apache-2.0）複製參考聲
   provider: voxcpm2
-  tempo: 1.20             # Leon 2026-10-17 944769e1fc01：參考聲語速慢，整片加速（音高不變）
+  tempo: 1.29             # Leon 2026-10-17 944769e1fc01：參考聲語速慢，整片加速（音高不變）；2026-10-18 40e6b445a7ed：1.20→1.29 壓進 10:00
   reference:
     audio: ~/.local/share/content-farm-voices/yokai-take1.wav
     text: 很久很久以前，在一座沒有名字的山裡，住著一位老獵人。每到黃昏，他都會聽見林子深處，傳來像是有人在哼歌的聲音。他從來不敢回頭看。因為村裡的老人說過，回頭的人，就再也走不出那座山了。
