@@ -68,6 +68,31 @@ def test_frozen_step_marked_for_rework_is_not_redone(run_dir: Path) -> None:  # 
     assert result.step != "article"                      # the runner moved on instead of waiting for the agent
 
 
+def test_frozen_article_survives_a_later_source_addition(run_dir: Path) -> None:  # noqa: F811
+    """The script step may add a source to sources.json; the frozen article is not re-verified and
+    its gate keeps the earlier approval (no new article panel round)."""
+    assert _runner(run_dir, ArticlePanel()).run(until="gate_article").outcome is Outcome.COMPLETE
+    (run_dir / "production.frozen.json").write_text('{"steps": ["article", "gate_article"]}', encoding="utf-8")
+    sources = json.loads((run_dir / "sources.json").read_text(encoding="utf-8"))
+    (run_dir / "sources.json").write_text(json.dumps([*sources, {"id": "added-by-script", "url": "https://x"}]),
+                                          encoding="utf-8")
+    panel = ArticlePanel(status="wrong")
+    executor = FakeExecutor(run_dir)
+    options = RunOptions(mock_voice=True, review_client=panel)
+    result = Runner(Context(_fish_chipcat(), run_dir, options), executor=executor, log=lambda _: None).run(
+        until="gate_article")
+    assert result.outcome is Outcome.COMPLETE, result.message
+    assert panel.calls == [] and "check_article.py" not in executor.calls
+    state = load_state(run_dir, "chipcat")
+    assert state.steps["gate_article"].note.startswith("frozen; by agent-panel:article")
+
+
+def test_frozen_gate_without_an_earlier_approval_stops(run_dir: Path) -> None:  # noqa: F811
+    (run_dir / "production.frozen.json").write_text('{"steps": ["gate_article"]}', encoding="utf-8")
+    result = _runner(run_dir, ArticlePanel()).run()
+    assert result.outcome is Outcome.FAILED and result.step == "gate_article" and "沒有先前的核可" in result.message
+
+
 def test_manual_approve_is_a_logged_back_door(run_dir: Path) -> None:  # noqa: F811
     with pytest.raises(ValueError, match="--override"):
         decide(run_dir, _fish_chipcat(), Gate.ARTICLE, "approved")
