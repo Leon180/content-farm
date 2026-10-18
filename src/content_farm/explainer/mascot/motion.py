@@ -117,10 +117,12 @@ def compose_frames(
 def _base_frame(
     cues: Sequence[SceneCue], mouth: float, t: float, seed: int,
     blinks: tuple[idle.Blink, ...], slow: tuple[idle.Blink, ...], heads: tuple[idle.HeadEvent, ...],
+    env: float = 1.0,
 ) -> dict[str, float]:
+    """``env`` scales the idle life (scene edges, see compose_scene); 1 = the whole-video clock."""
     pose = pose_blend(cues, t)
-    breath = idle.breath(t)
-    dx, dy, dz = idle.head_drift(t, seed, heads)
+    breath = idle.breath(t) * env
+    dx, dy, dz = (env * v for v in idle.head_drift(t, seed, heads))
     sway = pose["Sway"]
     closure = max(idle.blink_closure(t, blinks) * pose["BlinkMul"], idle.blink_closure(t, slow))
     eye_open = pose["EyeOpen"] * (1.0 - closure)
@@ -145,7 +147,7 @@ def _base_frame(
         "ParamMouthO": pose["MouthO"],
         "ParamTailPuff": pose["TailPuff"],
         "ParamArmR": pose["ArmR"],
-        "ParamArmRWave": pose["WaveAmp"] * math.sin(2 * math.pi * WAVE_HZ * t),
+        "ParamArmRWave": env * pose["WaveAmp"] * math.sin(2 * math.pi * WAVE_HZ * t),
         "ParamBubble": bubble_level(cue, t),
         "ParamSweat": pose["Sweat"],
         "ParamBurst": pose["Burst"],
@@ -155,8 +157,11 @@ def _base_frame(
 
 def _secondary(
     base: Sequence[Mapping[str, float]], dt: float, twitches: tuple[idle.Twitch, ...], fps: float,
+    env: Sequence[float] | None = None,
 ) -> dict[str, list[float]]:
-    """Ears, tail and pendant: spring lag behind head/body motion (+ ear flicks)."""
+    """Ears, tail and pendant: spring lag behind head/body motion (+ ear flicks); ``env``
+    (per frame) fades the swing out at scene edges."""
+    env = env if env is not None else [1.0] * len(base)
     head = [f["ParamAngleZ"] + 0.4 * f["ParamAngleX"] for f in base]
     body = [f["ParamBodyAngleX"] + 0.3 * f["ParamAngleX"] + 0.2 * f["ParamBodyY"] for f in base]
     ear_lag = physics.lag(head, physics.EAR, dt)
@@ -171,13 +176,75 @@ def _secondary(
     tail2 = physics.follow(tail1, physics.TAIL_TIP, dt)
     chip = physics.lag([b + 6.0 * f["ParamBreath"] for b, f in zip(body, base)], physics.CHIP, dt)
     return {
-        "ParamEarL": [f["_EarBase"] + EAR_LAG_GAIN * e + fl for f, e, fl in zip(base, ear_lag, flick["L"])],
-        "ParamEarR": [f["_EarBase"] - EAR_LAG_GAIN * e + fl for f, e, fl in zip(base, ear_lag, flick["R"])],
-        "ParamTail": [_clamp(v, -1.0, 1.0) for v in tail1],
-        "ParamTail2": [_clamp(1.4 * v, -1.0, 1.0) for v in tail2],
-        "ParamChip": [_clamp(-2.5 * c, -25.0, 25.0) for c in chip],
+        "ParamEarL": [f["_EarBase"] + w * (EAR_LAG_GAIN * e + fl)
+                      for f, e, fl, w in zip(base, ear_lag, flick["L"], env)],
+        "ParamEarR": [f["_EarBase"] + w * (-EAR_LAG_GAIN * e + fl)
+                      for f, e, fl, w in zip(base, ear_lag, flick["R"], env)],
+        "ParamTail": [_clamp(w * v, -1.0, 1.0) for v, w in zip(tail1, env)],
+        "ParamTail2": [_clamp(1.4 * w * v, -1.0, 1.0) for v, w in zip(tail2, env)],
+        "ParamChip": [_clamp(-2.5 * w * c, -25.0, 25.0) for c, w in zip(chip, env)],
     }
 
 
 def _clamp(v: float, lo: float, hi: float) -> float:
     return min(hi, max(lo, v))
+
+
+# --- Scene-local motion (incremental render) -------------------------------------------------
+# Each scene's frames depend only on that scene (its pose, the pose it blends from, its audio,
+# its length and its own seed), never on where it sits in the video. Idle life and secondary
+# motion fade in over EDGE_S after the cut and settle back to the pose's rest values over the
+# last EDGE_S, so consecutive scenes meet at the same parameters whichever was rendered when.
+EDGE_S = 0.4
+
+
+@dataclass(frozen=True)
+class SceneSpan:
+    """One scene on the frame grid: frames [first, first + count), cue start at ``offset``
+    seconds relative to frame ``first`` (sub-frame, from the ms-precision timeline)."""
+
+    cue: SceneCue
+    previous_pose: str | None
+    first: int
+    count: int
+    offset: float
+    seed: int
+
+
+def edge_envelope(t: float, length: float, edge: float = EDGE_S) -> float:
+    """0 at both ends of a scene, 1 in the middle (smoothstep ramps of ``edge`` seconds)."""
+    if length <= 0:
+        return 0.0
+    edge = min(edge, length / 2)
+    return smoothstep(t / edge) * smoothstep((length - t) / edge)
+
+
+def compose_scene(span: SceneSpan, mouth: np.ndarray, fps: float) -> tuple[Frame, ...]:
+    """Frames of one scene from scene-local time only (see the block comment above)."""
+    n = span.count
+    if n <= 0:
+        return ()
+    if mouth.size < n:
+        mouth = np.concatenate([mouth, np.zeros(n - mouth.size)])
+    dt = 1.0 / fps
+    length = n * dt
+    cue = SceneCue(index=span.cue.index, start=span.offset, end=span.offset + span.cue.duration,
+                   pose=span.cue.pose, say=span.cue.say)
+    cues = ([SceneCue(index=0, start=-1e9, end=cue.start, pose=span.previous_pose)]
+            if span.previous_pose else []) + [cue]
+    blinks = tuple(b for b in idle.blink_schedule(length, span.seed) if b.end <= length - 0.05)
+    slow = tuple(b for b in deadpan_blinks([cue], mouth, fps) if b.end <= length - 0.05)
+    heads = tuple(h for h in idle.head_events(length, span.seed) if h.start + h.duration <= length)
+    env = [edge_envelope(i * dt, length) for i in range(n)]
+    base = []
+    for i in range(n):
+        frame = _base_frame(cues, mouth[i], i * dt, span.seed, blinks, slow, heads, env[i])
+        base.append(frame)
+    twitches = tuple(tw for tw in idle.twitch_schedule(length, span.seed) if tw.time <= length - EDGE_S)
+    secondary = _secondary(base, dt, twitches, fps, env)
+    frames = []
+    for i, params in enumerate(base):
+        merged = {**params, **{k: v[i] for k, v in secondary.items()}}
+        frames.append(Frame(params={k: round(float(merged[k]), 4) for k in PARAM_NAMES},
+                            say=cue.say if merged["ParamBubble"] > 0 else None))
+    return tuple(frames)

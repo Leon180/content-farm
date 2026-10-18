@@ -134,3 +134,15 @@ def test_three_second_smoke(run_dir: Path) -> None:
     final = probe_video(result.final)
     assert final.frames == 90 and (final.width, final.height) == (1920, 1080)
     assert (run_dir / "assembly" / "draft.mp4").is_file()
+
+
+def test_scene_cache_redraws_only_the_changed_scene(run_dir: Path) -> None:
+    first = run_overlay(run_dir, workers=2)
+    assert (first.scenes, first.reused_scenes) == (2, 0)
+    again = run_overlay(run_dir, workers=2)
+    assert (again.reused_scenes, again.render.frames) == (2, 0)
+    _ffmpeg("-f", "lavfi", "-i", "sine=frequency=500:duration=1.5", "-af", "volume=0.9",
+            str(run_dir / "audio" / "scene_002.mp3"))
+    third = run_overlay(run_dir, workers=2)
+    assert third.reused_scenes == 1 and third.render.frames == 45
+    assert probe_video(third.alpha_video).frames == 90
