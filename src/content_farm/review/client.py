@@ -19,7 +19,12 @@ from typing import Any
 
 from content_farm.review.schemas import validate
 
-CLAUDE_BIN = os.environ.get("CF_CLAUDE_BIN", "claude")
+CLAUDE_BIN = "claude"
+
+
+def claude_bin() -> str:
+    """``CF_CLAUDE_BIN`` overrides the binary (tests point it at a stub so nothing is ever billed)."""
+    return os.environ.get("CF_CLAUDE_BIN", CLAUDE_BIN)
 PAID_ENV = ("ANTHROPIC_API_KEY", "CF_ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN")
 
 
@@ -84,7 +89,7 @@ def argv_for(call: Call) -> list[str]:
         raise ValueError("--bare would bill the API key; never allowed")
     names = ",".join(dict.fromkeys(t.split("(")[0] for t in call.tools))   # --tools takes bare names
     allowed = ",".join(call.tools)                                          # --allowed-tools may scope them
-    argv = [CLAUDE_BIN, "-p", "--model", call.model, "--effort", call.effort, "--output-format", "json",
+    argv = [claude_bin(), "-p", "--model", call.model, "--effort", call.effort, "--output-format", "json",
             "--json-schema", json.dumps(call.schema, ensure_ascii=False), "--no-session-persistence",
             "--strict-mcp-config", "--disable-slash-commands", "--tools", names, "--allowed-tools", allowed,
             "--permission-mode", "acceptEdits" if call.write_tools else "dontAsk"]

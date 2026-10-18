@@ -198,5 +198,8 @@ def test_enforce_rejects_missing_and_stale_cards():
     assert any(p.startswith("viewer: 0/4") for p in problems) and any(p.startswith("fact_checker: 0/1") for p in problems)
 
 
-def test_default_client_is_claude_cli():
-    assert client_mod.CLAUDE_BIN.endswith("claude")
+def test_default_client_is_claude_cli_and_tests_use_a_stub():
+    assert client_mod.CLAUDE_BIN == "claude"
+    assert client_mod.claude_bin().endswith("claude-stub")
+    result = run_call(Call("r", "p", SCHEMA, "haiku", "low", retries=0))
+    assert not result.ok and "exit 97" in result.errors[0]

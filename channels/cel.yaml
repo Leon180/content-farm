@@ -46,7 +46,7 @@ ai_illustration:          # Leon 2026-10-16 cc801e14fbc2：預設 FLUX.2 klein 4
   seed: 42
   width: 1280
   height: 720
-gates: [article, deck, media, final]
+gates: [topic, article, deck, title, media, final]   # 全部由評審團核可（review_panels.yaml），不可關
 youtube:
   refresh_token_env: CF_YT_CEL_REFRESH_TOKEN
   channel_id_env: CF_YT_CEL_CHANNEL_ID

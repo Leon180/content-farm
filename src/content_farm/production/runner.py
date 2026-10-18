@@ -4,7 +4,6 @@ steps whose inputs did not change are skipped."""
 
 from __future__ import annotations
 
-import fcntl
 import hashlib
 import json
 import os
@@ -18,7 +17,8 @@ from enum import Enum
 from pathlib import Path
 
 from content_farm.explainer.deck import load_deck
-from content_farm.production import publish, qc
+from content_farm.lanes.queue import Ticket, heavy_slot
+from content_farm.production import panel_flow, publish, qc
 from content_farm.production.channels import Channel, Gate
 from content_farm.production.review import write_review
 from content_farm.production.state import (
@@ -26,7 +26,7 @@ from content_farm.production.state import (
 )
 from content_farm.production.steps import REPO_ROOT, Command, Context, Step, steps_for
 
-LOCK_PATH = Path.home() / ".cache" / "content-farm" / "render.lock"
+LOCK_PATH = Path.home() / ".cache" / "content-farm" / "render.lock"   # legacy; heavy work goes through lanes.queue
 SCHEDULE_FILE = "production.schedule.json"
 LOAD_POLL_SECONDS = 30
 
@@ -36,6 +36,7 @@ class Outcome(str, Enum):
     GATE = "waiting_gate"
     AGENT = "waiting_agent"
     PAID = "needs_paid_consent"
+    REWORK = "rework"            # a review panel sent work back to an earlier step
     FAILED = "failed"
 
 
@@ -65,23 +66,15 @@ def subprocess_executor(command: Command, log_path: Path) -> int:
 
 
 @contextmanager
-def render_lock(max_load: float | None, log: Callable[[str], None]) -> Iterator[None]:
-    """One heavy render (Chromium capture, ffmpeg encode, mascot) on the machine at a time,
-    and wait while the 1-minute load average is above ``max_load``."""
-    LOCK_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with LOCK_PATH.open("w") as handle:
-        try:
-            fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
-            log("render lock held by another run; waiting")
-            fcntl.flock(handle, fcntl.LOCK_EX)
-        try:
-            while max_load is not None and os.getloadavg()[0] > max_load:
-                log(f"load {os.getloadavg()[0]:.1f} > {max_load}; waiting {LOAD_POLL_SECONDS}s")
-                time.sleep(LOAD_POLL_SECONDS)
-            yield
-        finally:
-            fcntl.flock(handle, fcntl.LOCK_UN)
+def render_lock(max_load: float | None, log: Callable[[str], None], ticket: Ticket | None = None) -> Iterator[None]:
+    """The machine's one heavy slot (``lanes.queue``: priority queue shared by every channel and
+    worker — renders, local TTS, image/video models), then wait while the 1-minute load average
+    is above ``max_load``."""
+    with heavy_slot(ticket or Ticket(job=f"pid{os.getpid()}", kind="other"), log):
+        while max_load is not None and os.getloadavg()[0] > max_load:
+            log(f"load {os.getloadavg()[0]:.1f} > {max_load}; waiting {LOAD_POLL_SECONDS}s")
+            time.sleep(LOAD_POLL_SECONDS)
+        yield
 
 
 def _event(run_dir: Path, **fields: object) -> None:
@@ -163,8 +156,23 @@ class Runner:
                 and record.inputs == inputs and _outputs_present(self.run_dir, step))
 
     def _agent(self, state: RunState, step: Step, forced: bool) -> tuple[RunState, RunResult | None]:
-        if not _outputs_present(self.run_dir, step):
-            message = f"{step.title}：缺 {', '.join(step.outputs)}。{step.hint}"
+        record = state.steps.get(step.name)
+        pending_rework = (record is not None and record.status == "rework"
+                          and record.inputs == fingerprint(self.run_dir, step.outputs))
+        if not _outputs_present(self.run_dir, step) or pending_rework:
+            if self.ctx.options.auto_agents and step.name in panel_flow.PRODUCER_STEPS:
+                before = fingerprint(self.run_dir, step.outputs)
+                failure = panel_flow.run_producer(self.ctx, step.name, self.log)
+                if failure is None and not _outputs_present(self.run_dir, step):
+                    failure = f"{step.title}：產出 agent 結束但缺 {', '.join(step.outputs)}"
+                if failure is None and pending_rework and fingerprint(self.run_dir, step.outputs) == before:
+                    failure = f"{step.title}：退回重做後檔案沒有改變"
+                if failure is not None:
+                    return state, RunResult(Outcome.FAILED, step.name, failure)
+                return self._agent(state.with_step(step.name, StepRecord("produced", now_iso())), step, forced)
+            what = f"退回重做：見 {record.note}" if pending_rework and record is not None else \
+                f"缺 {', '.join(step.outputs)}"
+            message = f"{step.title}：{what}。{step.hint}"
             return state, RunResult(Outcome.AGENT, step.name, message)
         inputs = fingerprint(self.run_dir, step.outputs)
         if self._fresh(state, step, inputs, forced):
@@ -180,6 +188,9 @@ class Runner:
             decision = state.decisions[step.gate.value]
             record = StepRecord("approved", decision.at, inputs=current, note=f"by {decision.by}")
             return state.with_step(step.name, record), None
+        stage = panel_flow.stage_of(self.ctx, step.gate)
+        if stage is not None:
+            return panel_flow.panel_step(self.ctx, state, step, stage, current, self.log)
         decision = state.decisions.get(step.gate.value)
         unchanged_rejection = (decision is not None and decision.verdict == "rejected"
                                and decision.fingerprint == current)
@@ -196,6 +207,14 @@ class Runner:
             message = f"{step.title}：等待審核"
         record = StepRecord("waiting", now_iso(), inputs=current, note=message)
         return state.with_step(step.name, record), RunResult(Outcome.GATE, step.name, message, page)
+
+    def _ticket(self, state: RunState, step: Step) -> Ticket:
+        """Queue ticket: Shorts first, then the long video closest to done."""
+        names = [s.name for s in steps_for(self.ctx.channel, self.run_dir)]
+        done = sum(1 for n in names if (r := state.steps.get(n)) is not None and r.status in ("done", "approved"))
+        kind = "short" if panel_flow._short(self.ctx) else "long"  # noqa: SLF001
+        return Ticket(job=f"{self.ctx.channel.code}/{self.run_dir.name}:{step.name}", kind=kind,
+                      progress=round(done / max(len(names), 1), 3))
 
     def _cmd_inputs(self, step: Step) -> str:
         files = fingerprint(self.run_dir, step.inputs)
@@ -218,7 +237,7 @@ class Runner:
         command = step.command(self.ctx)
         if not (step.heavy or step.heavy_if(self.ctx)):
             return self._execute(state, step, command, lambda: self._cmd_inputs(step))
-        with render_lock(self.max_load, self.log):
+        with render_lock(self.max_load, self.log, self._ticket(state, step)):
             return self._execute(state, step, command, lambda: self._cmd_inputs(step))
 
     def _execute(
@@ -257,23 +276,29 @@ def decide(
     run_dir: Path, channel: Channel, gate: Gate, verdict: str, *, note: str = "", override: str = "",
     by: str = "leon",
 ) -> Decision:
-    """Record approve/reject for a gate against the artifacts as they are now."""
+    """Record approve/reject for a gate against the artifacts as they are now.
+
+    Gates are opened by review panels; a manual approval is the back door and needs
+    ``override`` (a reason), which is written to production.log.jsonl."""
     step = next((s for s in steps_for(channel, run_dir) if s.gate is gate), None)
     if step is None:
         raise ValueError(f"channel {channel.code} has no gate {gate.value!r}")
+    if verdict == "approved" and not override.strip():
+        raise ValueError(f"gate {gate.value} is approved by its review panel; a manual approve needs "
+                         f'--override "reason"')
+    if verdict == "approved":
+        note = f"MANUAL OVERRIDE of the review panel: {override}. {note}".strip()
     if verdict == "approved" and gate is Gate.FINAL:
         report = json.loads((run_dir / qc.QC_REPORT).read_text(encoding="utf-8")) \
             if (run_dir / qc.QC_REPORT).is_file() else None
         if report is None:
             raise ValueError("no qc/qc_report.json yet; run the pipeline to the final gate first")
-        if report["errors"] and not override:
-            raise ValueError(f"QC has {report['errors']} error(s); fix them or pass --override \"reason\"")
         if report["errors"]:
-            note = f"OVERRIDE QC ({report['errors']} errors): {override}. {note}".strip()
+            note = f"OVERRIDE QC ({report['errors']} errors): {note}".strip()
     decision = Decision(gate.value, verdict, gate_fingerprint(run_dir, step), now_iso(), by=by, note=note)
     state = load_state(run_dir, channel.code).with_decision(decision)
     save_state(run_dir, state)
-    _event(run_dir, gate=gate.value, verdict=verdict, note=note)
+    _event(run_dir, gate=gate.value, verdict=verdict, note=note, by=by, override=override or None)
     item = run_dir / "review" / f"{gate.value}.decision.json"
     if item.is_file():
         data = json.loads(item.read_text(encoding="utf-8"))
