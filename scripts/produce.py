@@ -41,6 +41,9 @@ from content_farm.production.state import STATE_FILE, load_state, read_channel_c
 from content_farm.production.steps import Context, RunOptions, steps_for
 
 
+MAX_REWORK_LOOPS = 12   # every stage caps its own rounds; this only stops a runaway loop
+
+
 def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -149,6 +152,11 @@ def cmd_run(args: argparse.Namespace) -> int:
                          **({"env_file": args.env_file} if args.env_file else {}))
     runner = Runner(Context(channel, args.run_dir.resolve(), options), max_load=args.max_load)
     result = runner.run(until=args.until, force=frozenset(args.force))
+    loops = 0
+    while args.auto_agents and result.outcome is Outcome.REWORK and loops < MAX_REWORK_LOOPS:
+        loops += 1   # rework routed back by a panel: the producer agents redo it, then the run goes on
+        print(f"[rework {loops}] {result.step}: {result.message}")
+        result = runner.run(until=args.until)
     print(f"[{result.outcome.value}] {result.step}: {result.message}")
     if result.review_page:
         print(f"審核頁：{result.review_page}")

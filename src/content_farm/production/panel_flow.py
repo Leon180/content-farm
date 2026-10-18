@@ -136,6 +136,9 @@ def panel_step(ctx: Context, state: RunState, step: Step, stage: str, current: s
                         client=ctx.options.review_client)
     _event(ctx.run_dir, step=step.name, panel=stage, status=result.status, message=result.message,
            scorecard=result.scorecard)
+    from content_farm.review.scorecard_html import render
+
+    render(ctx.run_dir, ctx.channel.name)
     log(f"⚖ {step.name}: {result.message}")
     if result.status == "pass":
         note = f"{result.message}; {result.scorecard}"

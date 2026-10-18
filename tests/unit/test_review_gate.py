@@ -171,6 +171,11 @@ def test_gate_rework_then_pass(tmp_path):
     assert decision["by"] == "agent-panel:script" and decision["round"] == 2
     assert {c.model for c in panel.calls if c.rid.startswith("fact_checker")} == {"opus"}
     assert (tmp_path / "review" / "script" / "round-2-holdout" / "scorecard.json").is_file()
+    from content_farm.review.scorecard_html import render
+
+    html = render(tmp_path, "晶片貓<script>").read_text(encoding="utf-8")
+    assert "前後對照：script.txt" in html and "改過的開場" in html and "<script>" not in html
+    assert "未過" in html and "通過" in html
 
 
 def test_gate_exhausts_after_max_rounds(tmp_path):
