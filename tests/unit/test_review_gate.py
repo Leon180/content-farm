@@ -213,6 +213,24 @@ def test_enforce_rejects_missing_and_stale_cards():
     assert any(p.startswith("viewer: 0/4") for p in problems) and any(p.startswith("fact_checker: 0/1") for p in problems)
 
 
+def test_producer_cannot_read_other_runs_and_runs_only_named_scripts(tmp_path):
+    from content_farm.review.producers import REPO, produce
+
+    seen = []
+
+    def fake(call):
+        seen.append(call)
+        return CallResult(call.rid, True, {"files": [], "summary": "ok"}, (), call.model, call.effort,
+                          ("claude-opus-5-5",))
+    produce("article", tmp_path, channel="chipcat", config=CONFIG, python="/py", client=fake)
+    call = seen[0]
+    assert call.model == "opus" and call.effort == "high"
+    assert all("output" not in Path(d).parts for d in call.add_dirs) and REPO not in call.add_dirs
+    bash = [t for t in call.tools if t.startswith("Bash(")]
+    assert bash and all(t.startswith(f"Bash(/py {REPO}/scripts/") and t.endswith(".py:*)") for t in bash)
+    assert dict(call.env)["PYTHONPATH"] == str(REPO / "src")
+
+
 def test_default_client_is_claude_cli_and_tests_use_a_stub():
     assert client_mod.CLAUDE_BIN == "claude"
     assert client_mod.claude_bin().endswith("claude-stub")

@@ -21,6 +21,7 @@ RECEIPT = {"type": "object", "additionalProperties": False, "required": ["files"
                           "fixed": {"type": "array", "items": {"type": "string"}}}}
 TOOLS = ("Read", "Write", "Edit", "Glob", "Grep", "WebSearch", "WebFetch")   # + Bash scoped to the repo python
 
+SCRIPTS = ("check_article.py", "deck_to_script.py", "make_thumbnail.py", "render_slides.py")
 TIMEOUT_S = {"topic": 1500, "article": 2700, "deck": 3600, "thumbnail_spec": 1800}
 
 # step → (stage whose producer tier applies, gate whose fixes apply)
@@ -95,8 +96,12 @@ def produce(step: str, run_dir: Path, *, channel: str, config: ReviewConfig, pyt
     log_dir.mkdir(parents=True, exist_ok=True)
     rid = f"{step}-{len(list(log_dir.glob(f'{step}-*.prompt.md'))) + 1}"
     (log_dir / f"{rid}.prompt.md").write_text(prompt, encoding="utf-8")
-    tools = (*TOOLS, f"Bash({python} {REPO}/scripts/:*)")   # prefix rule: only the repo's own scripts
-    call = Call(rid, prompt, RECEIPT, tier.model, tier.effort, tools=tools, cwd=run_dir, add_dirs=(REPO,),
+    # Claude Code matches Bash prefixes word by word, so each allowed script is named (a "scripts/" prefix never matched).
+    tools = (*TOOLS, *(f"Bash({python} {REPO}/scripts/{name}:*)" for name in SCRIPTS))
+    # Read access: the repo's rules and code, never output/ (2026-10-18: an attempt-2 agent read attempt 1's
+    # reviewer results through a repo-wide --add-dir).
+    dirs = tuple(REPO / d for d in (".claude/skills", "channels", "src", "scripts", "assets"))
+    call = Call(rid, prompt, RECEIPT, tier.model, tier.effort, tools=tools, cwd=run_dir, add_dirs=dirs,
                 env=(("PYTHONPATH", str(REPO / "src")),),
                 timeout_s=TIMEOUT_S[step], retries=1, write_tools=True)   # one retry: network drops (2026-10-18)
     result = (client or (lambda c: run_call(c, log_dir=log_dir)))(call)
