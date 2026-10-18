@@ -75,7 +75,7 @@ def _fixes_text(run_dir: Path, gate: str) -> str:
     lines, deferred = [], []
     for step, slot in plan.get("steps", {}).items():
         for fix in slot["fixes"]:
-            if gate == "article" and not _is_fact(fix):
+            if gate == "article" and not is_fact(fix):
                 deferred.append(fix)      # story notes: the script stage tells the story, the article stays facts
                 continue
             scope = fix["scope"]
@@ -88,13 +88,18 @@ def _fixes_text(run_dir: Path, gate: str) -> str:
     if deferred:
         (run_dir / "review" / "article.story_notes.json").write_text(
             json.dumps(deferred, ensure_ascii=False, indent=1), encoding="utf-8")
+    delete_only = ""
+    if gate == "article":
+        delete_only = ("\n只准刪改（Leon 規則，程式會比對改稿前後的每一句，違反就拒收並還原）：只能刪除被點名的句子，"
+                       "或在被點名的句子裡加限定詞（「據報導」「估計」等）、改正數字與歸屬；不准新增句子、不准把一句拆成兩句、"
+                       "沒被點名的句子一字不動。可以在 sources.json 補來源。")
     return (f"\n這是退回重做（第 {plan.get('round')} 輪評審未過：{reasons}）。修改清單（{path}）：\n" + "\n".join(lines)
             + "\n只改清單與連動範圍列出的地方，其他句子一字不動（沒改到的句子 id 要保持不變）；"
               "改寫時不要新增沒查證過的說法——新寫的每一句一樣會被查核；"
-              "不准為了分數灌水或誇大。fixed 欄位列出你處理了哪些。")
+              "不准為了分數灌水或誇大。fixed 欄位列出你處理了哪些。" + delete_only)
 
 
-def _is_fact(fix: dict) -> bool:
+def is_fact(fix: dict) -> bool:
     """Article reworks carry only fact items (2026-10-18: in attempts 2 and 3 the rewrite for the
     story editor's notes added the new unsourced claims that failed the last round)."""
     return fix.get("category") == "fact" or str(fix.get("who", "")).startswith("fact_checker")
@@ -107,13 +112,14 @@ def producer_tier(config: ReviewConfig, step: str) -> Tier:
 
 
 def produce(step: str, run_dir: Path, *, channel: str, config: ReviewConfig, python: str,
-            client: Callable[[Call], CallResult] | None = None) -> CallResult:
+            client: Callable[[Call], CallResult] | None = None, extra: str = "") -> CallResult:
+    """``extra``: appended to the brief (e.g. why the previous rewrite was refused)."""
     if step not in TASKS:
         raise ValueError(f"no producer agent for step {step!r}")
     _, gate = STEP_STAGE[step]
     fmt = {"run_dir": run_dir, "repo": REPO, "channel": channel, "python": python}
-    prompt = "\n\n".join((COMMON.format(**fmt), TASKS[step].format(**fmt), _fixes_text(run_dir, gate),
-                          "完成後用結構化輸出回報寫了哪些檔。"))
+    prompt = "\n\n".join(part for part in (COMMON.format(**fmt), TASKS[step].format(**fmt), _fixes_text(run_dir, gate),
+                                           extra, "完成後用結構化輸出回報寫了哪些檔。") if part)
     tier = producer_tier(config, step)
     log_dir = run_dir / "review" / "producers"
     log_dir.mkdir(parents=True, exist_ok=True)

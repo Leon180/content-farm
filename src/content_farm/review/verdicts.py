@@ -90,13 +90,14 @@ def _collect(seats: list[Seat]) -> list[dict[str, Any]]:
             continue
         for issue in [*(seat.output.get("issues") or []), *(seat.output.get("top_fixes") or [])]:
             out.append({**issue, "who": seat.rid})
-        for claim in seat.output.get("claims") or []:
+        for n, claim in enumerate(seat.output.get("claims") or []):
             if claim.get("status") in ("wrong", "unsourced"):
                 out.append({"ref": {"target": "script" if claim.get("sentence_ids") else "article",
                                     "sentence_ids": claim.get("sentence_ids") or []},
                             "category": "fact", "severity": "high", "problem": f"{claim['status']}：{claim['claim']}",
                             "fix": claim.get("note", ""), "evidence": claim.get("evidence", ""),
-                            "caused_by": "article" if not claim.get("sentence_ids") else "deck", "who": seat.rid})
+                            "caused_by": "article" if not claim.get("sentence_ids") else "deck", "who": seat.rid,
+                            "claim_key": f"{seat.rid}#{n}"})
     return out
 
 
@@ -141,16 +142,33 @@ def topic(stage: Stage, seats: list[Seat], *, candidate_ids: list[str], short: b
     return Verdict(not reasons, reasons, {"ranking": ranking}, extra={"chosen": chosen})
 
 
-def article(stage: Stage, seats: list[Seat], **context: Any) -> Verdict:
+def article(stage: Stage, seats: list[Seat], *, arbitration: dict[str, Any] | None = None,
+            **context: Any) -> Verdict:
     reasons, regular = _base(seats)
-    errors = {s.rid: _fact_errors(s) for s in regular if s.kind == "fact"}
+    checkers = [s for s in regular if s.kind == "fact"]
+    errors = {s.rid: _fact_errors(s) for s in checkers}
     limit = stage.threshold.fact_errors_max or 0
-    for rid, count in errors.items():
-        if count > limit:
-            reasons.append(f"{rid} 找到 {count} 個錯誤或無來源說法（門檻 {limit}）")
-    kept, dropped = split_issues(_collect(seats), **_context(context))
-    writers = {s.rid: s.output.get("score") for s in regular if s.kind == "pro" and s.output}
-    return Verdict(not reasons, reasons, {"fact_errors": errors, "writers": writers}, kept, dropped)
+    scores: dict[str, Any] = {"fact_errors": errors}
+    if arbitration is None:
+        for rid, count in errors.items():
+            if count > limit:
+                reasons.append(f"{rid} 找到 {count} 個錯誤或無來源說法（門檻 {limit}）")
+        raw = _collect(seats)
+    else:
+        confirmed = set(arbitration["agreed"]) | set(arbitration["upheld"]) | set(arbitration["unanswered"])
+        scores.update(confirmed_errors=len(confirmed), agreed=len(arbitration["agreed"]),
+                      disputes=len(arbitration["disputes"]), upheld=len(arbitration["upheld"]),
+                      unanswered=len(arbitration["unanswered"]), arbiter_ruled=arbitration["ruled"])
+        if arbitration["disputes"] and not arbitration["ruled"]:
+            reasons.append("仲裁查核員沒有合格輸出")
+        if len(confirmed) > limit:
+            reasons.append(f"確認 {len(confirmed)} 個錯誤或無來源說法（兩位一致 {len(arbitration['agreed'])}、"
+                           f"仲裁維持 {len(arbitration['upheld'])}、仲裁未答 {len(arbitration['unanswered'])}；門檻 {limit}）")
+        raw = [i for i in _collect(seats) if i.get("category") != "fact" or i.get("claim_key") in confirmed]
+    kept, dropped = split_issues(raw, **_context(context))
+    scores["writers"] = {s.rid: s.output.get("score") for s in regular if s.kind == "pro" and s.output}
+    return Verdict(not reasons, reasons, scores, kept, dropped,
+                   extra={"arbitration": arbitration} if arbitration is not None else {})
 
 
 def _context(context: dict[str, Any]) -> dict[str, Any]:

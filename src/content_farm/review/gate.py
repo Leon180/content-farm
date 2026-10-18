@@ -69,6 +69,18 @@ def enforce(card: dict[str, Any] | None, config: ReviewConfig, stage_name: str, 
                 problems.append(f"{seat['rid']}: ran {seat.get('model')} · {seat.get('effort')}, config {model} · {effort}")
             if seat.get("models_used") and not model_matches(model, tuple(seat["models_used"])):
                 problems.append(f"{seat['rid']}: answered by {seat['models_used']}, not {model}")
+    disputes = ((card.get("verdict") or {}).get("scores") or {}).get("disputes") or 0
+    arbiters = [s for s in card.get("seats", []) if s.get("role") == "fact_arbiter"]
+    if disputes and (stage.arbiter is None or not arbiters):
+        problems.append(f"{disputes} disputed fact claim(s) but no arbiter seat")
+    for seat in arbiters:
+        if stage.arbiter is None or seat.get("model") != stage.arbiter.model or seat.get("effort") != stage.arbiter.effort:
+            problems.append(f"{seat['rid']}: ran {seat.get('model')} · {seat.get('effort')}, config "
+                            f"{stage.arbiter.label() if stage.arbiter else 'none'}")
+        if not seat.get("ok"):
+            problems.append(f"{seat['rid']}: no valid output")
+        if stage.arbiter and seat.get("models_used") and not model_matches(stage.arbiter.model, tuple(seat["models_used"])):
+            problems.append(f"{seat['rid']}: answered by {seat['models_used']}, not {stage.arbiter.model}")
     if not (card.get("verdict") or {}).get("pass"):
         problems.append("verdict: " + "；".join((card.get("verdict") or {}).get("reasons", [])))
     return problems

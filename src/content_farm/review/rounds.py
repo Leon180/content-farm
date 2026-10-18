@@ -145,8 +145,12 @@ def run_round(run_dir: Path, *, stage_name: str, config: ReviewConfig, channel: 
         key_dir.mkdir(parents=True, exist_ok=True)
         (key_dir / f"{stage_name}-{name}.json").write_text(json.dumps(keys, indent=1), encoding="utf-8")
     seats = [verdicts.Seat(m.rid, m.role, m.kind, m.holdout, r.ok, r.output) for m, r in zip(members, results)]
+    arbitration, arbiter = _arbitrate(run_dir, out, stage_name, stage, seats, invoke, config)
+    if arbiter is not None:
+        members, results = [*members, arbiter[0]], [*results, arbiter[1]]
     context = {"corpus": materials.corpus, "sentences": materials.sentences, "duration": materials.duration,
-               **materials.extra, **(judge_context or {}), "keys": keys}
+               **materials.extra, **(judge_context or {}), "keys": keys,
+               **({"arbitration": arbitration} if arbitration is not None else {})}
     context["items"] = list(context.get("candidate_ids", [])) + list(context.get("title_ids", [])) \
         + list(context.get("variants", []))
     verdict = verdicts.JUDGES[stage_name](stage, seats, **context)
@@ -163,6 +167,38 @@ def run_round(run_dir: Path, *, stage_name: str, config: ReviewConfig, channel: 
     }
     (out / "scorecard.json").write_text(json.dumps(card, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
     return card
+
+
+def _arbitrate(run_dir: Path, out: Path, stage_name: str, stage: Stage, seats: list[verdicts.Seat],
+               invoke: Callable[[Call], CallResult], config: ReviewConfig,
+               ) -> tuple[dict[str, Any] | None, tuple[Member, CallResult] | None]:
+    """Two fact-checkers disagree → a third (``stage.arbiter``) rules. (None, None) when the stage is
+    not arbitrated or a checker has no valid output (the round fails on that anyway)."""
+    from content_farm.review import arbitration as arb
+    from content_farm.review.article_diff import split_article
+    from content_farm.review.config import ARBITRATED_STAGES
+
+    checkers = [s for s in seats if s.kind == "fact" and not s.holdout]
+    if stage_name not in ARBITRATED_STAGES or stage.arbiter is None or not all(s.ok for s in checkers):
+        return None, None
+    article = (run_dir / "article.md").read_text(encoding="utf-8") if (run_dir / "article.md").is_file() else ""
+    found = arb.split({s.rid: s.output for s in checkers}, split_article(article))
+    if not found["disputes"]:
+        return {**found, "upheld": [], "unanswered": [], "ruled": False}, None
+    member = Member(f"{arb.ARBITER_ROLE}-1", arb.ARBITER_ROLE, "fact", False, stage.arbiter.model, stage.arbiter.effort)
+    text = arb.prompt(found["disputes"])
+    (out / "prompts").mkdir(exist_ok=True)
+    (out / "prompts" / f"{member.rid}.md").write_text(text, encoding="utf-8")
+    tools = next(r.tools for r in config.roles.values() if r.kind == "fact")
+    result = invoke(Call(member.rid, text, arb.SCHEMA, member.model, member.effort, tools=tools, cwd=out,
+                         timeout_s=config.defaults.timeout_s, retries=config.defaults.schema_retries))
+    if result.output is not None:
+        (out / "results").mkdir(exist_ok=True)
+        (out / "results" / f"{member.rid}.json").write_text(json.dumps(result.output, ensure_ascii=False, indent=1),
+                                                            encoding="utf-8")
+    upheld, unanswered = arb.upheld(result.output if result.ok else None, found["disputes"])
+    return {**found, "upheld": upheld, "unanswered": unanswered, "ruled": result.ok,
+            "arbiter_model": stage.arbiter.model, "arbiter_effort": stage.arbiter.effort}, (member, result)
 
 
 def expected_seats(stage: Stage, config: ReviewConfig, *, with_holdout: bool) -> dict[str, tuple[int, str, str]]:
