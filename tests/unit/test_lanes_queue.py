@@ -13,9 +13,32 @@ from content_farm.lanes import queue as q
 
 
 @pytest.fixture(autouse=True)
-def _real_queue(monkeypatch: pytest.MonkeyPatch) -> None:
+def _real_queue(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.delenv(q.SLOT_ENV, raising=False)
     monkeypatch.setattr(q, "POLL_SECONDS", 0.01)
+    legacy = (tmp_path / "legacy" / "render.lock", tmp_path / "legacy" / "local_tts.lock")
+    monkeypatch.setattr(q, "legacy_locks", lambda: legacy)
+
+
+def test_legacy_lock_holder_blocks_and_slot_holds_legacy_locks(tmp_path):
+    import fcntl
+
+    legacy = q.legacy_locks()
+    legacy[0].parent.mkdir(parents=True, exist_ok=True)
+    old_code = legacy[0].open("w")                      # a branch without the queue: runner.render_lock
+    fcntl.flock(old_code, fcntl.LOCK_EX)
+    gate = q.Gate(busy=lambda p: [], free=lambda: 90, sleep=lambda s: None, max_wait_s=-1)
+    with pytest.raises(q.QueueTimeout, match="legacy lock"):
+        with q.heavy_slot(q.Ticket("new"), lambda _: None, gate=gate, queue_dir=tmp_path / "queue"):
+            pass
+    fcntl.flock(old_code, fcntl.LOCK_UN)
+    old_code.close()
+    with q.heavy_slot(q.Ticket("new"), lambda _: None, gate=idle_gate(), queue_dir=tmp_path / "queue"):
+        for path in legacy:                              # old code now sees the machine as busy
+            probe = path.open("a")
+            with pytest.raises(BlockingIOError):
+                fcntl.flock(probe, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            probe.close()
 
 
 def idle_gate(**kw) -> q.Gate:

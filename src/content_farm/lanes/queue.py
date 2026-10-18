@@ -111,14 +111,42 @@ class QueueTimeout(RuntimeError):
     """Waited longer than ``max_wait_s`` for the heavy slot."""
 
 
-def _try_lock(queue_dir: Path) -> IO[str] | None:
-    handle = (queue_dir / "heavy.lock").open("w")
+def _flock(path: Path) -> IO[str] | None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    handle = path.open("a")
     try:
         fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:
         handle.close()
         return None
     return handle
+
+
+def _release(handles: list[IO[str]]) -> None:
+    for handle in handles:
+        fcntl.flock(handle, fcntl.LOCK_UN)
+        handle.close()
+
+
+def _try_lock(queue_dir: Path) -> list[IO[str]] | None:
+    """heavy.lock plus the legacy locks (same paths, same exclusive flock), all or nothing:
+    code on branches without this queue still sees the machine as busy, and its holders block us."""
+    held: list[IO[str]] = []
+    for path in (queue_dir / "heavy.lock", *legacy_locks()):
+        handle = _flock(path)
+        if handle is None:
+            _release(held)
+            return None
+        held.append(handle)
+    return held
+
+
+def legacy_locks() -> tuple[Path, ...]:
+    """runner.render_lock (``render.lock``) and voice.local_worker (``local_tts.lock``) before the queue."""
+    if os.environ.get("CF_HEAVY_QUEUE_NO_LEGACY") == "1":     # tests only
+        return ()
+    base = Path.home() / ".cache" / "content-farm"
+    return (base / "render.lock", base / "local_tts.lock")
 
 
 def _not_first(ticket: Ticket, queue_dir: Path) -> str:
@@ -155,10 +183,9 @@ def heavy_slot(ticket: Ticket, log: Callable[[str], None] = print, *, gate: Gate
             why = _not_first(ticket, queue_dir)
             if not why:
                 handle = _try_lock(queue_dir)
-                why = "" if handle else f"slot held by {_holder_job(queue_dir)}"
+                why = "" if handle else f"slot or a legacy lock held by {_holder_job(queue_dir)}"
                 if handle and (late := _resources(gate)):    # checked with the slot held: nothing of ours runs
-                    fcntl.flock(handle, fcntl.LOCK_UN)
-                    handle.close()
+                    _release(handle)
                     handle, why = None, late
             if handle:
                 break
@@ -179,8 +206,7 @@ def heavy_slot(ticket: Ticket, log: Callable[[str], None] = print, *, gate: Gate
             os.environ.pop(SLOT_ENV, None)
             (queue_dir / "holder").unlink(missing_ok=True)
             _record(queue_dir, ticket, "end", round(time.monotonic() - started, 1))
-            fcntl.flock(handle, fcntl.LOCK_UN)
-            handle.close()
+            _release(handle)
         path.unlink(missing_ok=True)
 
 

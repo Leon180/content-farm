@@ -36,4 +36,13 @@
     「預定完工」寫成已完工、報導刊登日當成事件日、自己的 ppm 換算掛了來源標記。第 2 輪新增的錯誤多來自改寫時新加的句子。
   - 歸因：產出 agent 沒有交件前自我查核，且 `check_article.py` 因 Bash 允許規則太窄跑不了（已修：絕對 PYTHONPATH＋前綴規則）。
     修正（程式，不動門檻）：文章 brief 加逐條自我查核清單；退回 brief 加「新寫的句子一樣會被查」。
-  - 第 2 次嘗試在 `output/chipcat-rp2`，沿用同一批 12 個候選，選題由評審團重新決定。
+  - 第 2 次嘗試在 `output/chipcat-rp2`，沿用同一批 12 個候選，選題由評審團重新決定（重選結果仍是 t03，7.79）。
+  - ⚠ 第 2 次的文章 agent 透過全 repo 的 `--add-dir` 讀到第 1 次的查核結果（log 中有 `cd ../chipcat-rp1/review/article/round-2` 被擋，
+    但 Read 工具可讀）→ **第 2 次的文章不是獨立重試**。已修：產出 agent 只能讀 `.claude/skills`、`channels`、`src`、`scripts`、`assets`，不能讀 `output/`（有測試）。
+    同一支 run 的 process 在修正前就載入了舊程式，所以這次的 deck／標題產出仍是舊權限（第 1 次沒有 deck／標題可讀，影響有限）。
+  - 文章第 1 輪：2 個／1 個錯誤（第 1 次是 3／3）→ 退回 → 重寫 521 s → 第 2 輪進行中。
+- 15:04 orchestrator：記憶體 critical（swap 95%），本機同時有 38415991 的 cowos-inc（本機 TTS＋media）。15:1x 我查到時 free 82%，
+  我的 rp2 當時在雲端車道（只有 claude -p），沒有本機重工作。**相容修正**：佇列取得 slot 時，同時以相同路徑、相同語意（exclusive flock）
+  取得舊的 `~/.cache/content-farm/render.lock` 與 `local_tts.lock`，三把全拿到才算拿到，持有到結束——
+  沒有這個佇列的分支（舊 `render_lock`／`LocalWorker`）會看到機器忙；它們持有時佇列會等（訊息「slot or a legacy lock held」）。
+  拿到 slot 後仍照舊跑 pgrep（`mlx_video|mflux|ffmpeg|qwen3-tts|qwen3_tts|voxcpm|ACE-Step|acestep`）＋`memory_pressure -Q`（free < 50% 就等）。有測試。
