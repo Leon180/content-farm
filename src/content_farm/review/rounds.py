@@ -96,9 +96,10 @@ def _feeds(run_dir: Path, out: Path, member: Member, channel_name: str, competit
 def run_round(run_dir: Path, *, stage_name: str, config: ReviewConfig, channel: str, channel_name: str,
               round_no: int, with_holdout: bool, holdout_only: bool = False, competitors: Path | None = None,
               client: Callable[[Call], CallResult] | None = None, vertical: bool = False,
-              judge_context: dict[str, Any] | None = None) -> dict[str, Any]:
+              judge_context: dict[str, Any] | None = None, suffix: str = "") -> dict[str, Any]:
+    """``suffix``: a side round (e.g. ``-opus`` comparison) that never counts for the gate."""
     stage = config.stages[stage_name]
-    name = f"round-{round_no}" + ("-holdout" if holdout_only else "")
+    name = f"round-{round_no}" + ("-holdout" if holdout_only else "") + suffix
     out = stage_dir(run_dir, stage_name) / name
     out.mkdir(parents=True, exist_ok=True)
     started = time.monotonic()

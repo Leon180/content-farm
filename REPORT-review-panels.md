@@ -22,3 +22,8 @@
   全機重工作佇列 `lanes/queue.py`＋`produce.py queue`；全套 1357 passed（基準失敗 1 個已排除）。
 - 付費路徑擋下（`llm/paid.py`、LLMClient 建構時檢查 `CF_ALLOW_PAID=1`、三支腳本需 `--allow-paid`）、上片排程（`publish_slot.py`＋四頻道 `publish:`）、
   `scripts/check.sh`＋`.pre-commit-config.yaml`（負控制：把 article 事實查核改 sonnet → check.sh 退出 1，已還原）。
+- 13:32 斷網：選題產出 agent（claude -p）卡住 1 小時無輸出 → 14:2x kill（runner 正確回報 `exit 143`）、加逐步 timeout＋重試 1 次後重開。
+- 14:3x **ffmpeg × TTS 重疊實測**（`scripts/bench_overlap.py`，持有佇列 slot、無其他重工作、free 85%；VoxCPM2 6 句＋libx264 medium 60 s 片段，n=1）🟢：
+  TTS 單獨 93.4 s（暖機後每句中位 13.4 s）、重疊 107.1 s（16.4 s／句）＝ **TTS 慢 1.22×**；ffmpeg 單獨 7.6–8.0 s、重疊 9.5–25.0 s（中位 ≈22 s）＝ **ffmpeg 慢 2.86×**。
+  沒有出現 mflux×TTS 那種 20 倍崩潰；同樣的工作串行要 ≈140 s、重疊 107 s（省 ≈24%）。結論見報告「兩條車道」。
+- `voice_batch.py`（同 provider 共用一個 TTS worker）、`produce.py review --tier`（全 opus 對照用的旁輪，不影響閘門）。

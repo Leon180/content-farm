@@ -118,6 +118,13 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     plan.add_argument("--week", required=True, help="ISO week, e.g. 2026-W43")
     plan.add_argument("--today", type=date.fromisoformat, default=date.today())
     sub.add_parser("channels")
+    review = sub.add_parser("review", help="side round of one stage's panel (e.g. all-opus comparison); never opens a gate")
+    review.add_argument("--run-dir", type=Path, required=True)
+    review.add_argument("--stage", required=True, help="topic|article|script|title_thumb|media|final")
+    review.add_argument("--tier", default="", help='lift every reviewer, e.g. "opus:high"')
+    review.add_argument("--round", type=int, default=1, help="round number to mirror (holdout sits in the last)")
+    review.add_argument("--suffix", default="-compare")
+    review.add_argument("--competitors", type=Path)
     sub.add_parser("queue", help="machine-wide heavy-work queue (renders, local TTS, image/video models)")
     return parser.parse_args(argv)
 
@@ -270,6 +277,27 @@ def cmd_channels(_: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_review(args: argparse.Namespace) -> int:
+    from content_farm.production import panel_flow
+    from content_farm.review.rounds import run_round
+    from content_farm.review.scorecard_html import render
+
+    channel = load_channel(read_channel_code(args.run_dir))
+    ctx = Context(channel, args.run_dir.resolve(), RunOptions(review_tier=args.tier, competitors=args.competitors))
+    config = panel_flow.review_config(ctx)
+    stage = config.stages[args.stage]
+    competitors = panel_flow.competitors_for(ctx)
+    card = run_round(ctx.run_dir, stage_name=args.stage, config=config, channel=channel.code, channel_name=channel.name,
+                     round_no=args.round, with_holdout=args.round == stage.max_rounds, competitors=competitors,
+                     vertical=panel_flow._short(ctx), suffix=args.suffix,  # noqa: SLF001
+                     judge_context=panel_flow._judge_context(ctx, args.stage, competitors)(ctx.run_dir))  # noqa: SLF001
+    render(ctx.run_dir, channel.name)
+    verdict = card["verdict"]
+    print(f"[{'pass' if verdict['pass'] else 'fail'}] {card['label']}: {'；'.join(verdict['reasons']) or 'all thresholds met'}")
+    print(json.dumps(verdict["scores"], ensure_ascii=False, default=str)[:1500])
+    return 0
+
+
 def cmd_queue(_: argparse.Namespace) -> int:
     from content_farm.lanes.queue import QUEUE_DIR, status
 
@@ -285,7 +313,7 @@ def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
     handlers = {"run": cmd_run, "status": cmd_status, "inbox": cmd_inbox, "plan": cmd_plan,
                 "channels": cmd_channels, "short-from-long": cmd_short_from_long,
-                "manual-kit": cmd_manual_kit, "eval-loop": cmd_eval_loop, "queue": cmd_queue,
+                "manual-kit": cmd_manual_kit, "eval-loop": cmd_eval_loop, "queue": cmd_queue, "review": cmd_review,
                 "approve": lambda a: cmd_decide(a, "approved"),
                 "reject": lambda a: cmd_decide(a, "rejected")}
     try:

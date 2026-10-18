@@ -9,6 +9,7 @@ caused each issue; after ``max_rounds`` the stage is exhausted and the run stops
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -144,7 +145,7 @@ def panel_gate(run_dir: Path, *, gate: str, stage_name: str, config: ReviewConfi
                judge_context: Callable[[Path], dict[str, Any]] | None = None) -> GateResult:
     stage = config.stages[stage_name]
     current = fingerprint(run_dir, stage.reviews)
-    done = [p for p in rounds_of(run_dir, stage_name) if "holdout" not in p.name]
+    done = [p for p in rounds_of(run_dir, stage_name) if re.fullmatch(r"round-\d+", p.name)]   # no addenda / side rounds
     last = _load(done[-1] / "scorecard.json") if done else None
     if last is None or last.get("inputs") != current:
         number = (last["round"] + 1) if last else 1
