@@ -79,7 +79,9 @@ def _fixes_text(run_dir: Path, gate: str) -> str:
                 deferred.append(fix)      # story notes: the script stage tells the story, the article stays facts
                 continue
             scope = fix["scope"]
-            lines.append(f"- [{step}] {fix.get('problem')} → {fix.get('fix')}（指認：{json.dumps(fix.get('ref'), ensure_ascii=False)}；"
+            frozen = (f"（原屬 {fix['rerouted_from']}，該步驟本次凍結不重做：在這一步處理——補可靠來源進 sources.json，"
+                      "或刪掉／改寫成既有來源支持的說法）") if fix.get("rerouted_from") else ""
+            lines.append(f"- [{step}]{frozen} {fix.get('problem')} → {fix.get('fix')}（指認：{json.dumps(fix.get('ref'), ensure_ascii=False)}；"
                          f"連動要一起改：句子 {', '.join(scope['sentence_ids']) or '—'}；標題 {', '.join(scope['titles']) or '—'}；"
                          f"縮圖 {'是' if scope['thumbnail'] else '否'}；說明欄 {'是' if scope['description'] else '否'}）")
     reasons = "；".join(plan.get("reasons", []))

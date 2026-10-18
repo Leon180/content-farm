@@ -27,6 +27,7 @@ from content_farm.production.state import (
     Decision, RunState, StepRecord, fingerprint, load_state, now_iso, save_state,
 )
 from content_farm.production.steps import REPO_ROOT, Command, Context, Step, steps_for
+from content_farm.review.freeze import FROZEN_FILE, frozen_steps
 
 LOCK_PATH = Path.home() / ".cache" / "content-farm" / "render.lock"   # legacy; heavy work goes through lanes.queue
 SCHEDULE_FILE = "production.schedule.json"
@@ -169,6 +170,13 @@ class Runner:
         record = state.steps.get(step.name)
         pending_rework = (record is not None and record.status == "rework"
                           and record.inputs == fingerprint(self.run_dir, step.outputs))
+        if pending_rework and step.name in frozen_steps(self.run_dir) and _outputs_present(self.run_dir, step):
+            # frozen for this run (production.frozen.json): its issues are re-planned onto a later step
+            self.log(f"❄ {step.name}: 凍結（{FROZEN_FILE}），不重做")
+            _event(self.run_dir, step=step.name, frozen=True, skipped_rework=record.note if record else "")
+            inputs = fingerprint(self.run_dir, step.outputs)
+            state = state.with_step(step.name, StepRecord("done", now_iso(), inputs=inputs, note="frozen"))
+            pending_rework = False
         if not _outputs_present(self.run_dir, step) or pending_rework:
             if self.ctx.options.auto_agents and step.name in panel_flow.PRODUCER_STEPS:
                 before = fingerprint(self.run_dir, step.outputs)

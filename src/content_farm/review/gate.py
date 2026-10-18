@@ -19,6 +19,7 @@ from content_farm.production.state import fingerprint, now_iso
 from content_farm.review import routing
 from content_farm.review.client import Call, CallResult, model_matches
 from content_farm.review.config import ReviewConfig
+from content_farm.review.freeze import frozen_steps
 from content_farm.review.rounds import expected_seats, rounds_of, run_round, stage_dir
 from content_farm.review.sentences import deck_sentences, script_sentences
 
@@ -101,7 +102,8 @@ def _rework(run_dir: Path, gate: str, stage_name: str, card: dict[str, Any], def
         issues = [{"ref": {"target": "script"}, "category": "content", "severity": "high",
                    "problem": "；".join(verdict.get("reasons", [])), "fix": "依評分卡改善", "evidence": "",
                    "caused_by": default_step}]
-    plan = routing.plan(issues, _texts(run_dir), stage=stage_name, round_no=card["round"], default_step=default_step)
+    plan = routing.plan(issues, _texts(run_dir), stage=stage_name, round_no=card["round"], default_step=default_step,
+                        frozen=frozen_steps(run_dir))
     plan["reasons"] = verdict.get("reasons", [])
     plan["scorecard"] = str(stage_dir(run_dir, stage_name) / card["label"] / "scorecard.json")
     routing.write(run_dir, gate, plan)
@@ -178,8 +180,9 @@ def panel_gate(run_dir: Path, *, gate: str, stage_name: str, config: ReviewConfi
             return GateResult("exhausted", f"{stage_name}: 第 {last['round']} 輪（最後一輪）未通過：{reasons}", card_path,
                               scores=last["verdict"]["scores"])
         plan_path = run_dir / "review" / f"{gate}.fixes.json"
-        plan = _load(plan_path) if plan_path.is_file() and _load(plan_path).get("round") == last["round"] \
-            else _rework(run_dir, gate, stage_name, last, stage.rework)
+        old = _load(plan_path) if plan_path.is_file() else {}
+        reuse = old.get("round") == last["round"] and old.get("frozen", []) == sorted(frozen_steps(run_dir))
+        plan = old if reuse else _rework(run_dir, gate, stage_name, last, stage.rework)
         return GateResult("rework", f"{stage_name} 第 {last['round']} 輪未過（{reasons}）→ 退回 {plan['restart']}",
                           card_path, plan, last["verdict"]["scores"])
     if _has_holdout(config, stage_name) and not any(s.get("holdout") for s in last["seats"]):

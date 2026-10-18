@@ -157,6 +157,49 @@ def test_stable_sentence_ids_are_used_when_they_line_up():
     assert [(s.id, s.stable) for s in got] == [("s1.4", True), ("s1.7", True), ("s2.1", False)]
 
 
+def test_frozen_step_issues_go_to_the_next_unfrozen_step():
+    issues = [{"ref": {"target": "script", "sentence_ids": ["s1.1"]}, "evidence": "62 個", "caused_by": "article",
+               "problem": "來源沒有"},
+              {"ref": {"target": "script", "sentence_ids": ["s5.1"]}, "evidence": "13 萬片", "caused_by": "deck",
+               "problem": "歸屬錯"}]
+    plan = routing.plan(issues, TEXTS, stage="script", round_no=1, default_step="deck", frozen=frozenset({"article"}))
+    assert plan["restart"] == "deck" and "article" not in plan["steps"] and plan["frozen"] == ["article"]
+    fixes = plan["steps"]["deck"]["fixes"]
+    assert [f.get("rerouted_from") for f in fixes] == ["article", None]
+    with pytest.raises(routing.PlanError, match="frozen"):
+        routing.unfrozen("mix", frozenset({"mix"}))
+
+
+def test_gate_replans_when_the_freeze_changes(tmp_path):
+    (tmp_path / "deck.json").write_text(json.dumps(_deck("開場第一句。開場第二句。"), ensure_ascii=False), encoding="utf-8")
+    panel = FakePanel(writer=6)
+    original = panel.__call__
+
+    def article_blamed(call):
+        result = original(call)
+        if call.rid.startswith("viewer-"):
+            result.output["top_fixes"][0]["caused_by"] = "article"
+        return result
+    assert _gate(tmp_path, article_blamed).rework["restart"] == "article"
+    (tmp_path / "production.frozen.json").write_text('{"steps": ["article"]}', encoding="utf-8")
+    again = _gate(tmp_path, FakePanel(writer=9))          # same round, no new reviews: only the plan changes
+    assert again.status == "rework" and again.rework["restart"] == "deck"
+    assert len(list((tmp_path / "review" / "script").glob("round-*"))) == 1
+
+
+def test_frozen_rework_text_says_where_to_fix(tmp_path):
+    from content_farm.review.producers import _fixes_text
+
+    plan = {"round": 1, "reasons": ["x"], "steps": {"deck": {"fixes": [
+        {"problem": "結構沒有來源", "fix": "補來源", "category": "fact", "who": "fact_checker-1", "ref": {},
+         "rerouted_from": "article",
+         "scope": {"sentence_ids": [], "titles": [], "thumbnail": False, "description": False}}]}}}
+    (tmp_path / "review").mkdir()
+    (tmp_path / "review" / "deck.fixes.json").write_text(json.dumps(plan, ensure_ascii=False), encoding="utf-8")
+    text = _fixes_text(tmp_path, "deck")
+    assert "原屬 article" in text and "sources.json" in text
+
+
 def test_plan_without_scope_is_refused():
     with pytest.raises(routing.PlanError, match="no linked scope"):
         routing.check({"steps": {"deck": {"fixes": [{"problem": "x"}]}}})

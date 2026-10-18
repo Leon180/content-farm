@@ -58,6 +58,16 @@ def test_failed_round_routes_rework_and_waits_for_the_article_agent(run_dir: Pat
     assert again.outcome is Outcome.AGENT and again.step == "article" and "退回重做" in again.message
 
 
+def test_frozen_step_marked_for_rework_is_not_redone(run_dir: Path) -> None:  # noqa: F811
+    _runner(run_dir, ArticlePanel(status="wrong")).run()
+    assert load_state(run_dir, "chipcat").steps["article"].status == "rework"
+    (run_dir / "production.frozen.json").write_text('{"steps": ["article"]}', encoding="utf-8")
+    result = _runner(run_dir, ArticlePanel(status="wrong")).run()
+    article = load_state(run_dir, "chipcat").steps["article"]
+    assert article.status == "done" and article.note == "frozen"
+    assert result.step != "article"                      # the runner moved on instead of waiting for the agent
+
+
 def test_manual_approve_is_a_logged_back_door(run_dir: Path) -> None:  # noqa: F811
     with pytest.raises(ValueError, match="--override"):
         decide(run_dir, _fish_chipcat(), Gate.ARTICLE, "approved")
