@@ -97,7 +97,7 @@ def scene_plan(run_dir: Path, info: VideoInfo, seed: int) -> list[tuple[SceneSpa
     plan = spans(cues, info.fps, info.frames, seed, _slide_keys(run_dir, len(cues)))
     audio = run_dir / "audio"
     # A scene shorter than half a frame owns no frame: nothing to draw for it.
-    return [(span, audio / f"scene_{span.cue.index:03d}.mp3") for span in plan if span.count > 0]
+    return [(span, audio / f"scene_{span.cue.index:03d}.mp3") for span in plan if span.used > 0]
 
 
 def frames_for_run(run_dir: Path, info: VideoInfo, seed: int, limit: int | None = None) -> tuple[Frame, ...]:
@@ -106,7 +106,7 @@ def frames_for_run(run_dir: Path, info: VideoInfo, seed: int, limit: int | None 
     for span, audio in scene_plan(run_dir, info, seed):
         if limit is not None and span.first >= limit:
             break
-        frames.extend(scene_frames(span, audio, info.fps))
+        frames.extend(scene_frames(span, audio, info.fps)[:span.used])
     return tuple(frames[:limit] if limit else frames)
 
 
@@ -122,8 +122,8 @@ def _remember(cache: SceneCache, keys: list[str]) -> None:
 
 
 def render_scenes(run_dir: Path, info: VideoInfo, *, seed: int, workers: int,
-                  use_cache: bool = True) -> tuple[list[Path], RenderStats, int]:
-    """Alpha clip per scene (cached by identity); returns (clips in order, stats, reused count)."""
+                  use_cache: bool = True) -> tuple[list[tuple[Path, int]], RenderStats, int]:
+    """Alpha clip per scene (cached by identity); returns ((clip, frames used) in order, stats, reused)."""
     plan = scene_plan(run_dir, info, seed)
     cache = SceneCache(run_dir / "assembly" / CACHE_DIR)
     code, settings = renderer_digest(), render_settings()
@@ -137,7 +137,8 @@ def render_scenes(run_dir: Path, info: VideoInfo, *, seed: int, workers: int,
         cache.put(keys[i], {"alpha.mov": part}, {"identity": keys[i], "scene": span.cue.index,
                                                  "frames": span.count, "pose": span.cue.pose}, move=True)
     _remember(cache, keys)
-    return [cache.path(key, "alpha.mov") for key in keys], stats, len(plan) - len(missing)
+    clips = [(cache.path(key, "alpha.mov"), span.used) for key, (span, _audio) in zip(keys, plan)]
+    return clips, stats, len(plan) - len(missing)
 
 
 def _preview_alpha(run_dir: Path, info: VideoInfo, seed: int, workers: int, limit: int, out: Path) -> RenderStats:
@@ -171,7 +172,7 @@ def run_overlay(
     else:
         clips, stats, reused = render_scenes(run_dir, info, seed=seed, workers=workers, use_cache=use_cache)
         t_join = time.monotonic()
-        _concat_copy(clips, alpha)
+        _concat_copy(clips, alpha, info.fps)
         timings["join"] = time.monotonic() - t_join
         scenes, total = len(clips), info.frames
     timings["render"] = stats.seconds
@@ -184,10 +185,12 @@ def run_overlay(
     return OverlayResult(final, alpha, info, total, timings, stats, scenes, reused)
 
 
-def _concat_copy(clips: list[Path], out: Path) -> None:
-    """Join scene clips without re-encoding (all are ProRes 4444 from the same settings)."""
+def _concat_copy(clips: list[tuple[Path, int]], out: Path, fps: float) -> None:
+    """Join scene clips without re-encoding (all ProRes 4444, intra-only), each cut to the frames
+    its slot uses (a scene renders one spare frame; see scenes.render_count)."""
     listing = out.parent / f".{out.stem}_scenes.txt"
-    listing.write_text("".join(f"file '{p.resolve()}'\n" for p in clips), encoding="utf-8")
+    listing.write_text("".join(f"file '{p.resolve()}'\noutpoint {(used - 0.5) / fps:.6f}\n"
+                               for p, used in clips), encoding="utf-8")
     try:
         result = subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(listing),
                                  "-c", "copy", str(out)], capture_output=True, text=True, timeout=900)

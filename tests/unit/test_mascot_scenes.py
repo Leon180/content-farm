@@ -20,9 +20,10 @@ def test_spans_partition_the_video() -> None:
     cues = (SceneCue(1, 0.0, 2.517, "idle"), SceneCue(2, 2.517, 5.2, "point"), SceneCue(3, 5.2, 9.0, "smug"))
     out = spans(cues, FPS, 270, seed=7, keys=["a", "b", "c"])
     assert [s.first for s in out] == [0, 76, 156]
-    assert sum(s.count for s in out) == 270
+    assert sum(s.used for s in out) == 270          # slots partition the video
+    assert [s.count for s in out] == [77, 82, 115]   # rendered: own length + 1 spare frame
     assert out[1].previous_pose == "idle" and out[0].previous_pose is None
-    assert abs(out[1].offset) <= 0.5 / FPS
+    assert out[1].offset == 0.0   # snapped to the frame grid: position never leaks into identity
 
 
 def test_frames_do_not_depend_on_position_in_the_video() -> None:
@@ -68,3 +69,11 @@ def test_identity_follows_content_not_position(tmp_path) -> None:
     other_prev = SceneSpan(cue=cue, previous_pose="shocked", first=300, count=90, offset=0.0, seed=1)
     assert scene_identity(other_prev, None, FPS, render="r", code="c") != scene_identity(span, None, FPS,
                                                                                      render="r", code="c")
+
+
+def test_a_scene_that_only_moves_keeps_its_identity() -> None:
+    before = spans((SceneCue(1, 0.0, 4.0, "idle"), SceneCue(2, 4.0, 7.517, "point")), FPS, 226, seed=7, keys=["a", "b"])
+    after = spans((SceneCue(1, 0.0, 4.013, "idle"), SceneCue(2, 4.013, 7.53, "point")), FPS, 226, seed=7, keys=["a", "b"])
+    key = [scene_identity(s, None, FPS, render="r", code="c") for s in (before[1], after[1])]
+    assert key[0] == key[1]
+    assert compose_scene(before[1], np.zeros(before[1].count), FPS) == compose_scene(after[1], np.zeros(after[1].count), FPS)

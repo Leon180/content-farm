@@ -136,6 +136,34 @@ def cached_frame(cache: SceneCache, key: str, make) -> Path:
 
 
 GENERATIONS = 3
+TIMING_FILE = "narration_timing.json"
+
+
+def stable_narration(run_dir: Path, work_dir: Path, deck: Deck,
+                     narration: dict[str, list[tuple[float, str]]] | None) -> dict[str, list[tuple[float, str]]] | None:
+    """Per-slide sentence timings, kept from the last run while the slide's audio and narration
+    are unchanged. The aligned SRT is absolute: when an earlier scene's length changes, ms
+    rounding moves later scenes' sentence offsets by 0.01 s and their stage plans (hence their
+    identities) would change for nothing (CoWoS run (a), 2026-10-18: 4 untouched slides redrawn)."""
+    if narration is None:
+        return None
+    path = work_dir / TIMING_FILE
+    try:
+        stored = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+    except json.JSONDecodeError:
+        stored = {}
+    out: dict[str, list[tuple[float, str]]] = {}
+    for index, slide in enumerate(deck.slides, start=1):
+        key = digest({"audio": file_digest(run_dir / "audio" / f"scene_{index:03d}.mp3"), "text": slide.narration})
+        previous = stored.get(slide.id)
+        if previous and previous.get("key") == key:
+            out[slide.id] = [(float(t), str(text)) for t, text in previous["timing"]]
+        else:
+            out[slide.id] = list(narration.get(slide.id, []))
+            stored[slide.id] = {"key": key, "timing": out[slide.id]}
+    work_dir.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(stored, ensure_ascii=False, indent=1), encoding="utf-8")
+    return out
 
 
 def remember_generation(work_dir: Path, keys: Sequence[str], cache: SceneCache) -> list[str]:

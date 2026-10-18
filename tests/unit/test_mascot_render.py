@@ -144,5 +144,5 @@ def test_scene_cache_redraws_only_the_changed_scene(run_dir: Path) -> None:
     _ffmpeg("-f", "lavfi", "-i", "sine=frequency=500:duration=1.5", "-af", "volume=0.9",
             str(run_dir / "audio" / "scene_002.mp3"))
     third = run_overlay(run_dir, workers=2)
-    assert third.reused_scenes == 1 and third.render.frames == 45
+    assert third.reused_scenes == 1 and third.render.frames == 46   # 1.5 s + one spare frame
     assert probe_video(third.alpha_video).frames == 90

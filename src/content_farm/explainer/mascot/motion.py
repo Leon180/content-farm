@@ -206,9 +206,14 @@ class SceneSpan:
     cue: SceneCue
     previous_pose: str | None
     first: int
-    count: int
+    count: int          # frames rendered: from the scene's own length only (cache identity)
     offset: float
     seed: int
+    keep: int = -1      # frames the video uses from it (its slot on the frame grid); -1 = count
+
+    @property
+    def used(self) -> int:
+        return self.count if self.keep < 0 else min(self.keep, self.count)
 
 
 def edge_envelope(t: float, length: float, edge: float = EDGE_S) -> float:

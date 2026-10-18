@@ -32,6 +32,7 @@ from content_farm.explainer.media_cache import (
     job_identity,
     remember_generation,
     renderer_digest,
+    stable_narration,
 )
 from content_farm.explainer.media import USED_PLACEHOLDER, ClipResult, MediaContext, SlideJob, build_clip
 from content_farm.explainer.motion_cache import MotionPaths
@@ -116,8 +117,10 @@ def media_to_visual(
 ) -> MediaRun:
     work_dir = run_dir / "media"
     write_prompt_files(deck, run_dir)
-    jobs = jobs_for(deck, clips, brand=options.brand,
-                    narration=narration_by_slide(run_dir) if options.staged else None)
+    narration = narration_by_slide(run_dir) if options.staged else None
+    if options.cache:
+        narration = stable_narration(run_dir, work_dir, deck, narration)
+    jobs = jobs_for(deck, clips, brand=options.brand, narration=narration)
     static_png_ok = options.transition == "none"
     cache = SceneCache(work_dir / "cache")
     code = renderer_digest()

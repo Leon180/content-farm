@@ -8,6 +8,7 @@ position is deliberately not part of it, so a scene that only moved in time is r
 from __future__ import annotations
 
 import hashlib
+import math
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -27,6 +28,10 @@ def scene_seed(seed: int, slide_key: str) -> int:
     return int(hashlib.sha256(f"{seed}:{slide_key}".encode()).hexdigest()[:8], 16)
 
 
+def render_count(duration: float, fps: float) -> int:
+    return max(1, math.ceil(duration * fps - 1e-6) + 1)
+
+
 def spans(cues: Sequence[SceneCue], fps: float, n_frames: int, seed: int,
           keys: Sequence[str] | None = None) -> list[SceneSpan]:
     """Cut ``n_frames`` into one span per cue at the frames nearest the cue starts.
@@ -38,9 +43,14 @@ def spans(cues: Sequence[SceneCue], fps: float, n_frames: int, seed: int,
     for i, cue in enumerate(cues):
         first = firsts[i]
         end = firsts[i + 1] if i + 1 < len(cues) else n_frames
+        # offset 0: a scene starts on the frame nearest its cue (≤ half a frame, 17 ms at 30 fps).
+        # Keeping the sub-frame remainder made every scene after a length change a new identity
+        # (CoWoS run (a), 2026-10-18: 10 of 24 scenes redrawn for one changed scene).
+        # count: rendered length from the cue's own duration (+1 spare frame), so a scene that only
+        # moved renders the same frames; keep: its slot on the grid, which rounding moves by ±1.
         out.append(SceneSpan(cue=cue, previous_pose=cues[i - 1].pose if i else None, first=first,
-                             count=max(0, end - first), offset=round(cue.start - first / fps, 4),
-                             seed=scene_seed(seed, keys[i])))
+                             count=render_count(cue.duration, fps), offset=0.0, seed=scene_seed(seed, keys[i]),
+                             keep=max(0, end - first)))
     return out
 
 
