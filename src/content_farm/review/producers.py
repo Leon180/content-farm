@@ -21,6 +21,8 @@ RECEIPT = {"type": "object", "additionalProperties": False, "required": ["files"
                           "fixed": {"type": "array", "items": {"type": "string"}}}}
 TOOLS = ("Read", "Write", "Edit", "Glob", "Grep", "WebSearch", "WebFetch")   # + Bash scoped to the repo python
 
+TIMEOUT_S = {"topic": 1500, "article": 2700, "deck": 3600, "thumbnail_spec": 1800}
+
 # step → (stage whose producer tier applies, gate whose fixes apply)
 STEP_STAGE = {"topic": ("topic", "topic"), "article": ("article", "article"), "deck": ("script", "deck"),
               "thumbnail_spec": ("title_thumb", "title")}
@@ -88,7 +90,7 @@ def produce(step: str, run_dir: Path, *, channel: str, config: ReviewConfig, pyt
     (log_dir / f"{rid}.prompt.md").write_text(prompt, encoding="utf-8")
     tools = (*TOOLS, f"Bash({python} {REPO}/scripts/*)")
     call = Call(rid, prompt, RECEIPT, tier.model, tier.effort, tools=tools, cwd=run_dir, add_dirs=(REPO,),
-                timeout_s=3600, retries=0, write_tools=True)
+                timeout_s=TIMEOUT_S[step], retries=1, write_tools=True)   # one retry: network drops (2026-10-18)
     result = (client or (lambda c: run_call(c, log_dir=log_dir)))(call)
     with (log_dir / "producers.jsonl").open("a", encoding="utf-8") as handle:
         handle.write(json.dumps({"step": step, **result.to_json(), "receipt": result.output}, ensure_ascii=False) + "\n")
