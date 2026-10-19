@@ -26,6 +26,7 @@
     "thumbnail": {"mem_gb": 1.5, "cpu_cores": 1},
     "thumbnail_variants": {"mem_gb": 2.0, "cpu_cores": 1},
     "voice": {"mem_gb": 18.0, "gpu": "exclusive", "cpu_cores": 2, "locks": ["local_tts"]},
+    "voice_retime": {"mem_gb": 1.0, "gpu": "shared", "cpu_cores": 2},
     "illustrate": {"mem_gb": 7.0, "gpu": "exclusive", "cpu_cores": 2, "locks": ["render"]},
     "ai_motion": {"mem_gb": 21.0, "gpu": "exclusive", "cpu_cores": 2, "locks": ["render"]},
     "bgm": {"mem_gb": 17.0, "gpu": "exclusive", "cpu_cores": 2, "locks": ["render"]},

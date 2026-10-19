@@ -115,6 +115,46 @@ def _voice_local(ctx: Context) -> bool:
     return not ctx.options.mock_voice and ctx.channel.voice.provider in LOCAL_TTS_PROVIDERS
 
 
+VOICE_SPOKEN_FILE = "audio/voice_spoken.json"   # the spoken key the last successful voice run voiced
+
+
+def voice_spoken_key(ctx: Context) -> str:
+    """What the voice step depends on, spoken words only (orchestrator 2026-10-19): every slide's narration
+    and sentence ids, the scene narration, the deck's and the pronunciation table's mappings and the voice
+    itself. Screen edits — titles, bullets, an AI image's prompt — leave it unchanged, so they never re-voice
+    (deck.json / script.json as a whole also carry those)."""
+    import hashlib
+    import json
+
+    def load(name: str) -> dict:
+        path = ctx.run_dir / name
+        return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+
+    deck, script = load("deck.json"), load("script.json")
+    slides = [[s.get("id"), s.get("narration"), s.get("sentence_ids")]
+              for sec in deck.get("sections", []) for s in sec.get("slides", [])]
+    choice = voice_choice(ctx)
+    pron = Path(choice.env().get("CF_PRONUNCIATION_FILE", "") or "/nonexistent")
+    view = {"slides": slides, "deck_pron": deck.get("pronunciation_map"),
+            "scenes": [sc.get("narration") for sc in script.get("scenes", [])],
+            "script_pron": script.get("pronunciation_map"),
+            "pron_table": hashlib.sha256(pron.read_bytes()).hexdigest() if pron.is_file() else "",
+            "voice": choice.describe()}
+    digest = hashlib.sha256(json.dumps(view, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()[:16]
+    return f"{choice.describe()} spoken={digest}"
+
+
+def voice_nothing_to_synthesize(ctx: Context) -> bool:
+    """The last successful voice run voiced exactly these words with this voice: the step will only
+    re-time and re-align (no TTS model loads), so it must not queue for the model's memory."""
+    import json
+
+    path = ctx.run_dir / VOICE_SPOKEN_FILE
+    if not path.is_file():
+        return False
+    return json.loads(path.read_text(encoding="utf-8")).get("key") == voice_spoken_key(ctx)
+
+
 def _voice_env(ctx: Context) -> dict[str, str]:
     env = {"CF_SUBTITLE_MAX_CHARS_PER_LINE_LANDSCAPE": EXPLAINER_SUBTITLE_MAX}
     if ctx.options.mock_voice:
@@ -175,10 +215,10 @@ EXPLAINER_STEPS: tuple[Step, ...] = (
          artifacts=("titles.json", "thumbnail.json", "thumbnail_variants.json", "thumbnails/variant_*.jpg"),
          applies=_gate_enabled(Gate.TITLE)),
     Step("voice", "cmd", "配音＋字幕對齊", outputs=("audio/scene_*.mp3", "subtitles/subtitles.srt"),
-         inputs=("deck.json", "script.json"),
+         inputs=(),   # spoken words only (voice_spoken_key): screen and image-prompt edits never re-voice
          command=lambda c: _py(c, "run_stage.py", "--stage", "voice", "--run-dir", _run_dir(c),
                                env=_voice_env(c)),
-         paid=_voice_paid, heavy_if=_voice_local, identity=lambda c: voice_choice(c).describe()),
+         paid=_voice_paid, heavy_if=_voice_local, identity=voice_spoken_key),
     Step("illustrate", "cmd", "AI 插圖（本機模型，一次一張）", inputs=("deck.json",),
          command=lambda c: _py(c, "illustrate.py", "--run-dir", _run_dir(c), "--channel", c.channel.code,
                                "--env-file", str(c.options.env_file)),

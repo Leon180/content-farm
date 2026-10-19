@@ -27,7 +27,8 @@ from content_farm.production.review import write_review
 from content_farm.production.state import (
     Decision, RunState, StepRecord, fingerprint, load_state, now_iso, save_state,
 )
-from content_farm.production.steps import REPO_ROOT, Command, Context, Step, steps_for
+from content_farm.production.steps import (REPO_ROOT, VOICE_SPOKEN_FILE, Command, Context, Step, steps_for,
+                                           voice_nothing_to_synthesize)
 from content_farm.review.freeze import FROZEN_FILE, frozen_steps
 
 LOCK_PATH = paths.render_lock_path()   # legacy, unused; heavy work goes through lanes.queue
@@ -267,6 +268,9 @@ class Runner:
         config = load_config()
         if step.name == "voice" and not step.heavy_if(self.ctx):
             return Need(mem_gb=1.0, cpu_cores=1)
+        if step.name == "voice" and voice_nothing_to_synthesize(self.ctx):
+            # 0 sentences to synthesize: re-time and re-align only, the TTS model never loads
+            return need_for("voice_retime", config, default=Need(mem_gb=1.0, cpu_cores=1))
         default = need_for("heavy_default", config) if step.heavy else Need()
         return need_for(step.name, config, default=default)
 
@@ -302,7 +306,12 @@ class Runner:
             _event(self.run_dir, step=step.name, identity=identity)
         command = step.command(self.ctx)
         with self._admit(state, step):
-            return self._execute(state, step, command, lambda: self._cmd_inputs(step))
+            state, result = self._execute(state, step, command, lambda: self._cmd_inputs(step))
+        if step.name == "voice" and result is None and step.identity is not None:
+            (self.run_dir / VOICE_SPOKEN_FILE).parent.mkdir(parents=True, exist_ok=True)
+            (self.run_dir / VOICE_SPOKEN_FILE).write_text(json.dumps({"key": step.identity(self.ctx), "at": now_iso()},
+                                                                     ensure_ascii=False), encoding="utf-8")
+        return state, result
 
     def _execute(
         self, state: RunState, step: Step, command: Command, inputs_after: Callable[[], str],
