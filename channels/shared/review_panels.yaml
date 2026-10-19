@@ -218,7 +218,7 @@ review:
         - {role: viewer, count: 5, model: sonnet, effort: medium}
         - {role: designer, count: 1, model: sonnet, effort: medium}
         - {role: producer, count: 1, model: sonnet, effort: medium}
-      threshold: {noticed_median_max: 3, pick_factor: 2.0, auto_checks: true, producer_honest: true}
+      threshold: {noticed_median_max: 3, pick_factor: 2.0, auto_checks: true, producer_honest: true}   # 競品色相差只列出不擋（Leon 31134b307b3e=A；hue_blocks 預設 false）
     media:
       gate: media
       reviews: [media/media_report.json, credits.json, media/contact_sheet.png, assets/ai_images/*]

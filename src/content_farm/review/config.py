@@ -131,6 +131,7 @@ class Threshold(_Strict):
     noticed_median_max: float | None = None     # homepage: noticed rank median ≤ this
     pick_factor: float | None = None            # homepage: pick rate ≥ factor × chance
     auto_checks: bool = False                   # thumbnail auto checks must all pass
+    hue_blocks: bool = False                    # competitor hue distance gates too (Leon 31134b307b3e=A: listed only)
     producer_honest: bool = False               # producer finds no exaggeration
     compliance_issues_max: int | None = None
     licenses_confirmed: bool = False            # credits.json pending empty

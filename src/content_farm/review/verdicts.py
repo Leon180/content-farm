@@ -249,7 +249,8 @@ def homepage_stats(viewers: list[Seat], keys: dict[str, dict]) -> dict[str, dict
 
 
 def title_thumb(stage: Stage, seats: list[Seat], *, keys: dict[str, dict] | None = None,
-                auto: dict[str, list[str]] | None = None, **context: Any) -> Verdict:
+                auto: dict[str, list[str]] | None = None, auto_advisory: dict[str, list[str]] | None = None,
+                **context: Any) -> Verdict:
     reasons, regular = _base(seats)
     viewers = [s for s in regular if s.kind == "viewer"]
     home = homepage_stats(viewers, keys or {})
@@ -263,6 +264,9 @@ def title_thumb(stage: Stage, seats: list[Seat], *, keys: dict[str, dict] | None
                 reasons.append(f"首頁被注意名次中位 {best['noticed_median']} > {t.noticed_median_max:g}")
             if t.pick_factor is not None and best["pick_rate"] < t.pick_factor * best["chance"]:
                 reasons.append(f"首頁被選比例 {best['pick_rate']:.0%} < {t.pick_factor:g}×{best['chance']:.0%}")
+    advisory = {k: v for k, v in (auto_advisory or {}).items() if v}
+    if t.hue_blocks:            # opt-in only (Leon 31134b307b3e=A made competitor hue distance advisory)
+        auto = {k: [*(auto or {}).get(k, []), *advisory.get(k, [])] for k in {*(auto or {}), *advisory}}
     failed_auto = {k: v for k, v in (auto or {}).items() if v}
     if t.auto_checks and failed_auto:
         reasons += [f"縮圖 {k} 自動檢查未過：{'、'.join(v)}" for k, v in sorted(failed_auto.items())]
@@ -279,6 +283,7 @@ def title_thumb(stage: Stage, seats: list[Seat], *, keys: dict[str, dict] | None
     best_title = max(honest, key=titles.get) if honest else None
     kept, dropped = split_issues(_collect(seats), **_context(context))
     scores = {"homepage": home, "titles": titles, "best_title": best_title, "auto": auto or {},
+              "auto_advisory": advisory,
               "designer": {s.rid: (s.output or {}).get("variants") for s in regular if s.kind == "designer"}}
     return Verdict(not reasons, reasons, scores, kept, dropped)
 

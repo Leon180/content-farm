@@ -61,28 +61,30 @@ def competitors_for(ctx: Context) -> Path | None:
     return guess if (guess / "competitors.json").is_file() else None
 
 
-def title_auto_checks(run_dir: Path, competitors: Path | None) -> dict[str, list[str]]:
-    """Per variant, the automatic checks it fails: 168 px glyph, contrast, subject share,
-    hue distance from the competitors (salience), blank blocks / broken image."""
+def title_auto_checks(run_dir: Path, competitors: Path | None) -> dict[str, dict[str, list[str]]]:
+    """Per variant, the automatic checks it fails: ``blocking`` (168 px glyph, contrast, subject share,
+    blank blocks / broken image) and ``advisory`` (hue distance from the competitors — listed on the
+    scorecard but gating only with ``threshold.hue_blocks``; Leon 31134b307b3e=A)."""
     from content_farm.evaluation.flow import thumbs_for
     from content_farm.evaluation.homepage import CONTRAST_MIN, HUE_DISTANCE_MIN, SMALL_GLYPH_MIN, SUBJECT_MIN
 
     failed: dict[str, list[str]] = {}
+    advisory: dict[str, list[str]] = {}
     for key, m in thumbs_for(run_dir, competitors).items():
         out = []
+        advisory[key] = ([f"與競品色相差 {m['hue_distance']}° < {HUE_DISTANCE_MIN:g}°"]
+                         if m.get("hue_distance") is not None and m["hue_distance"] < HUE_DISTANCE_MIN else [])
         if (m.get("glyph_px_at_168") or 0) < SMALL_GLYPH_MIN:
             out.append(f"168px 字高 {m.get('glyph_px_at_168')} < {SMALL_GLYPH_MIN:g}")
         if (m.get("contrast") or 0) < CONTRAST_MIN:
             out.append(f"對比 {m.get('contrast')} < {CONTRAST_MIN}")
         if (m.get("subject_share") or 0) < SUBJECT_MIN:
             out.append(f"主體佔比 {m.get('subject_share')} < {SUBJECT_MIN}")
-        if m.get("hue_distance") is not None and m["hue_distance"] < HUE_DISTANCE_MIN:
-            out.append(f"與競品色相差 {m['hue_distance']}° < {HUE_DISTANCE_MIN:g}°")
         blank = blank_share(run_dir / "thumbnails" / f"variant_{key.lower()}.jpg")
         if blank > 0.35:
             out.append(f"空白方塊 {blank:.0%}")
         failed[key] = out
-    return failed
+    return {"blocking": failed, "advisory": advisory}
 
 
 def blank_share(image_path: Path) -> float:
@@ -102,7 +104,8 @@ def blank_share(image_path: Path) -> float:
 def _judge_context(ctx: Context, stage: str, competitors: Path | None) -> Callable[[Path], dict[str, Any]]:
     def build(run_dir: Path) -> dict[str, Any]:
         if stage in ("title_thumb",):
-            return {"auto": title_auto_checks(run_dir, competitors)}
+            checks = title_auto_checks(run_dir, competitors)
+            return {"auto": checks["blocking"], "auto_advisory": checks["advisory"]}
         if stage in ("topic", "shorts_topic"):
             return {"short": _short(ctx)}
         if stage in ("final", "shorts_final"):

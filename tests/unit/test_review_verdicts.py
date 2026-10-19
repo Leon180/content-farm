@@ -161,6 +161,36 @@ def test_title_thumb_homepage_auto_and_producer():
     assert any("被注意名次" in r for r in verdict.reasons) and any("被選比例" in r for r in verdict.reasons)
 
 
+def test_competitor_hue_distance_is_listed_but_does_not_block():
+    """Leon 31134b307b3e=A: the hue check only shows on the scorecard; homepage rank / pick rate still gate."""
+    keys = {f"viewer-{n}_feed1.jpg": {"variant": "A", "ours_card": 4, "cards": 12} for n in range(5)}
+    viewers = [_title_viewer(n, [4, 1, 2], 4) for n in range(5)]
+    designer = seat("designer-1", "designer", "designer", {"score": 7, "variants": {"A": 7}, "issues": []})
+    honest = seat("producer-1", "producer", "producer", {"checks": [], "issues": []})
+    hue = {"A": ["與競品色相差 5.2° < 40°"]}
+    verdict = judge("title_thumb", [*viewers, designer, honest], keys=keys, auto={"A": []}, auto_advisory=hue)
+    assert verdict.passed, verdict.reasons
+    assert verdict.scores["auto_advisory"] == hue
+    unseen = [_title_viewer(n, [1, 2, 3], 1) for n in range(5)]
+    verdict = judge("title_thumb", [*unseen, designer, honest], keys=keys, auto={"A": []}, auto_advisory=hue)
+    assert not verdict.passed and not any("色相" in r for r in verdict.reasons)
+    assert any("被注意名次" in r for r in verdict.reasons)
+
+
+def test_hue_blocks_opt_in_makes_it_gate_again():
+    from content_farm.review.verdicts import title_thumb
+
+    stage = CONFIG.stages["title_thumb"]
+    strict = stage.model_copy(update={"threshold": stage.threshold.model_copy(update={"hue_blocks": True})})
+    keys = {f"viewer-{n}_feed1.jpg": {"variant": "A", "ours_card": 4, "cards": 12} for n in range(5)}
+    viewers = [_title_viewer(n, [4, 1, 2], 4) for n in range(5)]
+    designer = seat("designer-1", "designer", "designer", {"score": 7, "variants": {"A": 7}, "issues": []})
+    honest = seat("producer-1", "producer", "producer", {"checks": [], "issues": []})
+    verdict = title_thumb(strict, [*viewers, designer, honest], keys=keys, auto={"A": []},
+                          auto_advisory={"A": ["與競品色相差 5.2° < 40°"]})
+    assert not verdict.passed and any("色相" in r for r in verdict.reasons)
+
+
 def test_feed_names_match_loosely_but_only_within_the_viewer():
     from content_farm.review.verdicts import feed_key
 
