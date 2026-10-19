@@ -219,5 +219,19 @@
     - 原因：`edited_sentences` 用 id 比對，換了 id 的改寫被當成刪除。修正：改用文字比對；`added_sentences` 已經排除新增的情況下，對不到原文的句子一律當作改寫。
     - 加了測試（用 s14 的實例）。拿實際的 deck 比對，修正後找出 `s14.27`。
     - 已撤銷那次錯誤的核可：`production.json` 的 decisions.deck_facts 指紋改回第 3 輪核可的 `d0df4bec03747780`；錯寫的基準檔改名成 `review/deck_facts.locked.invalid-e02675f.json`；原檔備份在 `production.before-delta-undo.json`。下次 run 會對 `s14.27` 跑差異查核。
+- Leon 31134b307b3e＝A，加上 token 上限降級（orch-mail 1b44229ecd36197d，已 ack）：
+  - **45b3884** 🟢：縮圖「與競品色相差」只列出、不擋。
+    - `title_auto_checks` 分成會擋的（字高、對比、主體佔比、空白）和只列出的（色相差）兩組；評分卡記在 `scores.auto_advisory`。
+    - `threshold.hue_blocks` 預設 false，設成 true 才會再擋。首頁名次和被選率照舊是門檻。
+    - 測試 2 支，全套 1585 過。
+  - **7798def** 🟢：economy 模式。
+    - `CF_REVIEW_TIER=economy`，或在 run-dir 放 `review/tier.json` 寫 `{"tier":"economy"}`。用檔案是為了讓 allow 規則的指令形狀不變。
+    - 這個模式下，所有評審席次、產出 agent、仲裁都用 sonnet；查核與仲裁是 high，其餘 medium。
+    - 硬規則的下限只在這個模式改用 economy 的下限，預設設定仍然要先通過驗證。
+    - 評分卡和 production.log 會記錄 `tier_mode`。
+    - 測試 6 支，全套 1591 過（排除既有的 multi_provider）。
+  - yokai run：寫了 `review/tier.json`，改用 economy。標題縮圖開新循環：舊的 3 輪搬到 `review/title_thumb/cycle-1/`，`title.fixes.json` 改名為 `title.fixes.cycle-1.json`。背景重跑中。
+    - 新循環第 1 輪會先審現有的標題縮圖，T6 和 B 大概會再被點名，然後才退回 thumbnail_spec 修改。這會多用 1 輪，換來不用手改 run 的狀態。
+    - 接下來事實段會先對 `s14.27` 跑差異查核。
   - 子代理的暫存檔在 `/private/tmp/yokai_probe/`（對照腳本、frame、HTML），worktree 外，要清 🟡。
 - 舊的接手方式：Leon 選了選項之後，A 要先改 deck（加 mascot pose）並重審 gate_deck，再執行 `PYTHONPATH=<wt>/src .venv/bin/python scripts/produce.py run --run-dir output/yokai-kyubi-v2 --no-stock --env-file /Users/lileon/project/content-farm/.env`。
