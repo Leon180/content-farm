@@ -293,6 +293,23 @@
     - mflux 的 venv 和權重還放在別的 job 的 tmp（`~/.claude/jobs/d3bbd556/tmp/`，見 REPORT-ai-illustration §195），沒有放到持久位置。
     - 要決定：搬到 `~/.local/share/mflux/{venv,hf}`，再把兩個路徑寫進 `.env`。這會動到 worktree 外，所以我沒做。
 
+## 素材階段（2026-10-19 晚，economy）：3 輪沒過，停在 gate_media 🟢
+- orchestrator 把 mflux 搬到 `~/.local/share/mflux/`，也寫進 `.env` 了（`grep -c` 確認存在）。
+- illustrate 214.9 s，生成 s08b、s10。media 第 1 次 1,477.6 s（24.6 分），之後兩次 61.5 s、8.3 s。
+- 素材評審（`review/media/round-1..3`，每輪約 27–45 s、名目約 $0.16–0.23）三輪都判合規問題 1／3／1 個，**每輪都有 s08b**：
+  - 天空有紅色方印，印文是不成字的亂碼，屋簷匾額也有偽字。評審認為觀眾會把它當成真的官印或落款。
+  - 原因在提示詞本身：同時寫了「no seal」和「a large red square seal impression … like a stamp of approval」。這個提示詞是 deck agent 寫在 deck.json 的 media.prompt 裡。
+- **pipeline 缺口：素材退回其實什麼都沒改** 🟢：
+  - 修改清單的 restart 是 `illustrate`，但 illustrate 只生「缺的圖」，所以兩次退回都是 0.3 s 就結束，s08b 沒有重生。
+  - 就算強制重生，提示詞和 seed（42）都一樣，結果也會一樣。要修，必須改 deck.json 裡的提示詞。
+  - 另外，未過原因的訊息「合規問題 1 個：」後面是空的，問題內容沒有帶進理由 🟡。
+- 其他意見（第 1 輪，沒有擋）：s06、s09、s10 的尾巴數量不到九條；s24a 的墓地不像墓；credits.json 裡 Commons 條目只寫通用的 PD Mark，沒有逐檔查證；s11a 的墓名和 Commons 檔名不一致。
+- **要決定**：
+  - (a) 素材階段如果點名 ai_image，退回時先把被點名的圖移到 `assets/ai_images/rejected/`，再由 deck agent 只改那幾張的 `media.prompt`。旁白有 delete-only 與頻道規則守住，不會動到；
+  - (b) illustrate 重生時換 seed；
+  - (c) 合規理由的訊息要帶問題摘要。
+  - 這些會改 routing，影響所有頻道，所以我沒有自己做。
+
 ## 時間表（2026-10-18 15:33 → 10-19 13:08 UTC，`production.log.jsonl` 加評分卡）🟡
 - 總牆鐘 1,294.8 分鐘。有紀錄的工作時間 230.8 分；其餘 1,064 分是 run 和 run 之間的空檔，包括等決定、等核可、佇列等待、隔夜。
 - 標題各輪的秒數，是從評分卡依時間對到 cycle-N 取的；cycle 搬動之後可能有少數對錯 🟡。
