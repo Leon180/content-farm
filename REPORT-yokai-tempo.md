@@ -119,4 +119,9 @@
      - 本機只有 `deck.round2.json`（00:06，deck-2 的輸入）和 `deck.round3.before.json`（00:55，結構段第 2 輪那份），兩份都不含那一版的 s02.7「第三條先蓋住」。
      - 那一版只剩旁白文字和 storyboard 一行一張的摘要，還留在 `review/script/round-3/script.txt`、`storyboard.txt`；條列、media、角色欄位都沒有，沒辦法逐欄還原。
      - 另外，同一份稿（`cmp` 確認 `script/round-3/script.txt` 與 `script_structure/round-1/script.txt` 完全相同）在結構段第 1 輪被重新評成 6.4／6.5。新門檻 6.5 之下，故事 6.4 仍然不過，所以它不一定是「最好的稿」🟡。
+- orchestrator 後續：起點改用結構段第 3 輪的 deck（已備份成 `deck.structure-r3.json`）；先補快照功能，Leon 放行門檻之前不跑評審。
+  - **快照**（commit e3bb581）🟢：`review/snapshot.py` 的 `snapshot_reviewed()`。每一輪開評前，把該階段 `reviews` 列出的文字檔（.json／.md／.txt，≤5 MB）複製到 `review/<stage>/round-N/snapshot/<原路徑>`，所以腳本階段會有 `round-N/snapshot/deck.json`；圖片和影片不存。另外有 `restore(round_dir, run_dir)` 可以放回去。
+    - 測試 `tests/unit/test_review_snapshot.py` 4 支：只存文字檔、還原、沒有快照時明確報錯、runner 跑結構段時真的存下被審的那份 deck（逐位元比對）。
+    - 全套 pytest：1569 passed／1 skipped／1 failed，失敗的是既有的 `test_multi_provider`。
+  - 門檻 commit：等 Leon 在本 session 放行。
 - 舊的接手方式：Leon 選了選項之後，A 要先改 deck（加 mascot pose）並重審 gate_deck，再執行 `PYTHONPATH=<wt>/src .venv/bin/python scripts/produce.py run --run-dir output/yokai-kyubi-v2 --no-stock --env-file /Users/lileon/project/content-farm/.env`。
