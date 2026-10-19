@@ -243,5 +243,14 @@
     - 依照「青蛙書記」那次的先例，頻道規則應該優先，但這是內容取捨，我沒有自己改。
     - 另外，標題階段的退回會改到 deck（講稿），在事實鎖之後還是會動到旁白；只要新增一句，兩段就要重走。
     - 建議：(a) 頻道規則優先，把 deck 還原成 `review/deck.approved.json`（含「最早的原典」×3；改過的版本存在 `deck.title-rework-1.json`）；(b) 標題階段的退回只改 thumbnail_spec，觀眾對講稿的意見只列出、不退回 deck。(b) 要改 routing。
+  - orchestrator 決定 a＋b，**a88b8f6** 🟢：
+    - 標題階段（title_thumb、shorts_title）的退回只改 thumbnail_spec；改到講稿或素材的意見放進 plan 的 `advisory`，只列出。
+    - 產出 agent（deck、thumbnail_spec）交稿前先跑頻道規則，跟 policy 是同一套檢查：違反就還原，把違反的規則附進 brief 重做 1 次，不算輪數；第二次還違反就還原並停下。
+    - 不合法的 deck 交給 deck 步驟自己的 `--strict` 驗證，這裡不重複擋。
+    - 測試 4 支，全套 1595 過。
+  - 還原 yokai run：
+    - `deck.json` ← `review/deck.approved.json`（含「最早的原典」×3）；改過的版本存在 `deck.title-rework-1.json`。
+    - 舊 routing 產生的 `title.fixes.json` 改名為 `title.fixes.round1-old-routing.json`，下次會依新規則重產。
+    - 用 economy 背景重跑。
   - 子代理的暫存檔在 `/private/tmp/yokai_probe/`（對照腳本、frame、HTML），worktree 外，要清 🟡。
 - 舊的接手方式：Leon 選了選項之後，A 要先改 deck（加 mascot pose）並重審 gate_deck，再執行 `PYTHONPATH=<wt>/src .venv/bin/python scripts/produce.py run --run-dir output/yokai-kyubi-v2 --no-stock --env-file /Users/lileon/project/content-farm/.env`。
