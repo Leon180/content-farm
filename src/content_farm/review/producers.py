@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable
+from datetime import datetime, timezone
 from pathlib import Path
 
 from content_farm.review.client import Call, CallResult, run_call
@@ -139,5 +140,6 @@ def produce(step: str, run_dir: Path, *, channel: str, config: ReviewConfig, pyt
                 timeout_s=TIMEOUT_S[step], retries=1, write_tools=True)   # one retry: network drops (2026-10-18)
     result = (client or (lambda c: run_call(c, log_dir=log_dir)))(call)
     with (log_dir / "producers.jsonl").open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps({"step": step, **result.to_json(), "receipt": result.output}, ensure_ascii=False) + "\n")
+        handle.write(json.dumps({"at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "step": step,
+                                 **result.to_json(), "receipt": result.output}, ensure_ascii=False) + "\n")
     return result

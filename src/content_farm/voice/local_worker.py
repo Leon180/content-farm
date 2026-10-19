@@ -19,9 +19,11 @@ import os
 import re
 import subprocess
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import IO
+
+from content_farm import paths
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +52,7 @@ class GateConfig:
     busy_pattern: str = "mlx_video|mflux|ffmpeg"
     min_free_pct: int = 25
     max_wait_s: int = 1800
-    lock_path: str = "~/.cache/content-farm/local_tts.lock"
+    lock_path: str = field(default_factory=lambda: str(paths.local_tts_lock_path()))
 
 
 _SHELLS = ("sh", "bash", "zsh", "pgrep", "grep", "timeout")

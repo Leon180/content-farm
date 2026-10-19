@@ -17,6 +17,7 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 
+from content_farm import paths
 from content_farm.explainer.deck import load_deck
 from content_farm.lanes.queue import Ticket, heavy_slot
 from content_farm.lanes.resources import Need, load_config, need_for
@@ -29,7 +30,7 @@ from content_farm.production.state import (
 from content_farm.production.steps import REPO_ROOT, Command, Context, Step, steps_for
 from content_farm.review.freeze import FROZEN_FILE, frozen_steps
 
-LOCK_PATH = Path.home() / ".cache" / "content-farm" / "render.lock"   # legacy; heavy work goes through lanes.queue
+LOCK_PATH = paths.render_lock_path()   # legacy, unused; heavy work goes through lanes.queue
 SCHEDULE_FILE = "production.schedule.json"
 APPROVED_DECK = "review/deck.approved.json"   # snapshot at deck approval (fix scope baseline)
 LOAD_POLL_SECONDS = 30

@@ -65,6 +65,17 @@ class CallResult:
                 "cost_usd": self.cost_usd, "tokens": self.tokens, "attempts": self.attempts, "infra": self.infra}
 
 
+TOKEN_KEYS = ("input", "output", "cache_read", "cache_write")
+
+
+def call_usage(result: dict[str, Any]) -> dict[str, Any]:
+    """The usage part of a ``CallResult.to_json()`` (a seat in a scorecard, a producers.jsonl line)."""
+    return {"model": result.get("model", ""), "effort": result.get("effort", ""),
+            "models_used": list(result.get("models_used") or []), "seconds": float(result.get("seconds") or 0),
+            "cost_usd": float(result.get("cost_usd") or 0), "attempts": int(result.get("attempts") or 1),
+            "tokens": {k: int((result.get("tokens") or {}).get(k) or 0) for k in TOKEN_KEYS}}
+
+
 Runner = Callable[[list[str], str, Path, dict[str, str], int], tuple[int, str, str]]
 
 

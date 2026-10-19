@@ -22,7 +22,7 @@ from content_farm.evaluation.panel import load_panels, persona_set, word_persona
 from content_farm.production.state import fingerprint
 from content_farm.review import materials as mat
 from content_farm.review import prompts, verdicts
-from content_farm.review.client import Call, CallResult, run_call
+from content_farm.review.client import Call, CallResult, call_usage, run_call
 from content_farm.review.config import ReviewConfig, Stage, sentence_id_field
 from content_farm.review.schemas import schema_for
 
@@ -56,6 +56,17 @@ def reviewer_parallel(wanted: int, cap: int) -> int:
 
 def stage_dir(run_dir: Path, stage: str) -> Path:
     return run_dir / REVIEW_DIR / stage
+
+
+def write_result(round_dir: Path, result: CallResult) -> Path:
+    """``results/<rid>.json``: the seat's answer plus ``_usage`` (the CLI's token / cost report). A seat
+    without a valid answer still gets a file (``_failed``, ``_errors``) so its usage is never lost."""
+    body = dict(result.output) if result.output is not None else {"_failed": True, "_errors": list(result.errors)}
+    path = round_dir / "results" / f"{result.rid}.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({**body, "_usage": call_usage(result.to_json())}, ensure_ascii=False, indent=1),
+                    encoding="utf-8")
+    return path
 
 
 def rounds_of(run_dir: Path, stage: str) -> list[Path]:
@@ -137,9 +148,7 @@ def run_round(run_dir: Path, *, stage_name: str, config: ReviewConfig, channel: 
         results = list(pool.map(invoke, calls))
     (out / "results").mkdir(exist_ok=True)
     for result in results:
-        if result.output is not None:
-            (out / "results" / f"{result.rid}.json").write_text(
-                json.dumps(result.output, ensure_ascii=False, indent=1), encoding="utf-8")
+        write_result(out, result)
     if keys:   # homepage answer key: outside the round folder, which reviewers can read
         key_dir = run_dir / REVIEW_DIR / ".keys"
         key_dir.mkdir(parents=True, exist_ok=True)
@@ -197,10 +206,7 @@ def _arbitrate(run_dir: Path, out: Path, stage_name: str, stage: Stage, seats: l
     tools = next(r.tools for r in config.roles.values() if r.kind == "fact")
     result = invoke(Call(member.rid, text, arb.SCHEMA, member.model, member.effort, tools=tools, cwd=out,
                          timeout_s=config.defaults.timeout_s, retries=config.defaults.schema_retries))
-    if result.output is not None:
-        (out / "results").mkdir(exist_ok=True)
-        (out / "results" / f"{member.rid}.json").write_text(json.dumps(result.output, ensure_ascii=False, indent=1),
-                                                            encoding="utf-8")
+    write_result(out, result)
     upheld, unanswered = arb.upheld(result.output if result.ok else None, found["disputes"])
     return {**found, "upheld": upheld, "unanswered": unanswered, "ruled": result.ok,
             "arbiter_model": stage.arbiter.model, "arbiter_effort": stage.arbiter.effort}, (member, result)

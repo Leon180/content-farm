@@ -13,7 +13,10 @@ Usage:
     python scripts/produce.py short-from-long --from output/cowos --slide s09 --channel offwork \
         --run-dir output/offwork-7722 --title "…" --number 7,722 --unit mm²   # 9:16 Short (R5)
     python scripts/produce.py manual-kit --run-dir output/cowos [--out DIR]  # Studio upload kit + preview.html
+    python scripts/produce.py usage --run-dir output/cowos [--json]   # tokens / notional $ / step times so far
     python scripts/produce.py eval-loop --run-dir output/cowos --max-rounds 3  # review panel → fix loop (one step)
+    python scripts/produce.py news daily [--date D] [--pick 2,5] --allow-paid  # HN 快報 Shorts (production/news)
+    python scripts/produce.py news weekly [--week 2026-W42]                     # HN 快報 weekly long video
 
 Exit codes for ``run``: 0 all steps done, 1 a step failed, 3 waiting (gate, agent
 step, or paid step without --allow-paid). Each stop prints the next command.
@@ -34,6 +37,7 @@ from pydantic import ValidationError
 
 from content_farm.production.channels import Gate, load_all, load_channel
 from content_farm.production.manual_kit import KitOptions, write_kit
+from content_farm.production.news import cli as news_cli
 from content_farm.production.runner import SCHEDULE_FILE, Outcome, Runner, decide
 from content_farm.production.schedule import load_backlog, plan_week
 from content_farm.production.shorts_cut import short_spec_from_long, write_spec
@@ -118,6 +122,9 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     plan.add_argument("--week", required=True, help="ISO week, e.g. 2026-W43")
     plan.add_argument("--today", type=date.fromisoformat, default=date.today())
     sub.add_parser("channels")
+    use = sub.add_parser("usage", help="cloud-lane usage (claude -p) and local-lane step times of one run")
+    use.add_argument("--run-dir", type=Path, required=True)
+    use.add_argument("--json", action="store_true", help="machine-readable report")
     review = sub.add_parser("review", help="side round of one stage's panel (e.g. all-opus comparison); never opens a gate")
     review.add_argument("--run-dir", type=Path, required=True)
     review.add_argument("--stage", required=True, help="topic|article|script|title_thumb|media|final")
@@ -126,6 +133,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     review.add_argument("--suffix", default="-compare")
     review.add_argument("--competitors", type=Path)
     sub.add_parser("queue", help="machine-wide heavy-work queue (renders, local TTS, image/video models)")
+    news_cli.add_parser(sub)
     return parser.parse_args(argv)
 
 
@@ -298,8 +306,21 @@ def cmd_review(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_usage(args: argparse.Namespace) -> int:
+    """Read-only: totals from review/*/round-*/scorecard.json, review/producers/producers.jsonl and
+    production.log.jsonl. Nothing in the run-dir is written."""
+    from content_farm.review.usage import format_report, report
+
+    if not args.run_dir.is_dir():
+        print(f"no run-dir: {args.run_dir}", file=sys.stderr)
+        return 1
+    data = report(args.run_dir)
+    print(json.dumps(data, ensure_ascii=False, indent=1) if args.json else format_report(data))
+    return 0
+
+
 def cmd_queue(_: argparse.Namespace) -> int:
-    from content_farm.lanes.queue import QUEUE_DIR, status
+    from content_farm.lanes.queue import default_queue_dir, status
 
     rows = status()
     for n, row in enumerate(rows, 1):
@@ -310,7 +331,7 @@ def cmd_queue(_: argparse.Namespace) -> int:
               f"gpu={need.get('gpu', '?')}  {state}  pid {row['pid']}")
         if row.get("reason"):
             print(f"      ↳ {row['reason']}")
-    print(f"{len(rows)} job(s) in {QUEUE_DIR}" if rows else f"queue empty ({QUEUE_DIR})")
+    print(f"{len(rows)} job(s) in {default_queue_dir()}" if rows else f"queue empty ({default_queue_dir()})")
     return 0
 
 
@@ -319,6 +340,7 @@ def main(argv: list[str] | None = None) -> int:
     handlers = {"run": cmd_run, "status": cmd_status, "inbox": cmd_inbox, "plan": cmd_plan,
                 "channels": cmd_channels, "short-from-long": cmd_short_from_long,
                 "manual-kit": cmd_manual_kit, "eval-loop": cmd_eval_loop, "queue": cmd_queue, "review": cmd_review,
+                "news": news_cli.run, "usage": cmd_usage,
                 "approve": lambda a: cmd_decide(a, "approved"),
                 "reject": lambda a: cmd_decide(a, "rejected")}
     try:

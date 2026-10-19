@@ -1,0 +1,86 @@
+"""Step commands for HN 快報 Shorts (called by the production runner, not by hand).
+
+    python scripts/news.py lint    --run-dir output/hn-2026-10-16-hn-50117451
+    python scripts/news.py prepare --run-dir …     # news_script.json → script.json
+    python scripts/news.py render  --run-dir …     # pages + mascot + subtitles → assembly/final.mp4
+
+The daily/weekly entry point is ``produce.py news daily|weekly``.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+from pydantic import ValidationError
+
+from content_farm.production.channels import load_channel
+from content_farm.production.news import script as ns
+from content_farm.production.state import read_channel_code
+
+
+def cmd_lint(run_dir: Path) -> int:
+    news = ns.load_script(run_dir)
+    problems = ns.lint(news, ns.load_item(run_dir))
+    for problem in problems:
+        print(f"✗ {problem}")
+    print(f"{'FAIL' if problems else 'OK'}: {len(problems)} problem(s), ≈{ns.estimate_seconds(news)}s narration")
+    return 1 if problems else 0
+
+
+def cmd_prepare(run_dir: Path) -> int:
+    """script.json + voice_text.json. An edit that does not touch the spoken words (on-screen
+    text, title, sources) keeps voice_text.json byte-identical and the measured durations, so
+    the paid voice step does not re-run."""
+    from content_farm.script_gen.schemas import Script
+
+    path = run_dir / "script.json"
+    previous = Script.model_validate_json(path.read_text(encoding="utf-8")) if path.is_file() else None
+    script = ns.keep_measured(ns.to_script(ns.load_script(run_dir)), previous)
+    path.write_text(json.dumps(script.model_dump(mode="json"), ensure_ascii=False, indent=2), encoding="utf-8")
+    voice_text = run_dir / ns.VOICE_TEXT_FILE
+    text = ns.voice_text(script)
+    if not voice_text.is_file() or voice_text.read_text(encoding="utf-8") != text:
+        voice_text.write_text(text, encoding="utf-8")
+    print(f"script.json: {len(script.scenes)} scenes, ≈{script.total_duration_seconds}s")
+    return 0
+
+
+def cmd_render(run_dir: Path) -> int:
+    from content_farm.production.news.render import render_news_short
+
+    result = render_news_short(run_dir, load_channel(read_channel_code(run_dir)))
+    print(f"{result.video} ({result.seconds}s, {result.cues} subtitle cues)")
+    return 0
+
+
+def cmd_weekly_check(run_dir: Path) -> int:
+    from content_farm.explainer.deck import load_deck
+    from content_farm.production.news.weekly import WEEKLY_FILE, check_deck
+
+    plan = json.loads((run_dir / WEEKLY_FILE).read_text(encoding="utf-8"))
+    problems = check_deck(load_deck(run_dir / "deck.json"), plan)
+    for problem in problems:
+        print(f"✗ {problem}")
+    print(f"{'FAIL' if problems else 'OK'}: weekly deck, {len(plan['items'])} stories")
+    return 1 if problems else 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("command", choices=("lint", "prepare", "render", "weekly-check"))
+    parser.add_argument("--run-dir", type=Path, required=True)
+    args = parser.parse_args(argv)
+    handler = {"lint": cmd_lint, "prepare": cmd_prepare, "render": cmd_render,
+               "weekly-check": cmd_weekly_check}[args.command]
+    try:
+        return handler(args.run_dir.resolve())
+    except (OSError, ValueError, ValidationError, json.JSONDecodeError, RuntimeError) as exc:
+        print(f"Error: {type(exc).__name__}: {exc}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
