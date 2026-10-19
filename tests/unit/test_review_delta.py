@@ -24,6 +24,16 @@ def test_edited_sentences_ignores_deletions_and_spacing():
     assert edited_sentences(old, new) == ["a"]
 
 
+def test_an_edit_that_changes_the_sentence_id_is_still_an_edit():
+    """九尾狐 s14 (2026-10-19): a title rework cut a phrase and re-numbered the sentence; matching by
+    id read it as a deletion and the delta check skipped it."""
+    old = [ArticleSentence("s14.3", "至於唐宋之間確切哪一年轉壞，只靠一篇二手專欄，我們還沒查到。"),
+           ArticleSentence("s14.4", "真正讓這隻狐狸精家喻戶曉的，是下一站。")]
+    new = [ArticleSentence("s14.5", "唐宋之間確切哪一年轉壞，我們還沒查到。"),
+           ArticleSentence("s14.4", "真正讓這隻狐狸精家喻戶曉的，是下一站。")]
+    assert edited_sentences(old, new) == ["s14.5"]
+
+
 def _qualify_first(run_dir: Path) -> str:
     sid, text = _first_sentence(run_dir)
     _edit_first_slide(run_dir, lambda narration, ids: (narration.replace(text, "據報導，" + text, 1), ids))

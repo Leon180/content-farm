@@ -29,9 +29,11 @@ DELTA_MAX = 2
 
 
 def edited_sentences(old: list[ArticleSentence], new: list[ArticleSentence]) -> list[str]:
-    """Ids kept in ``new`` whose text changed (a deletion is not an edit)."""
-    before = {s.id: normalize(s.text) for s in old}
-    return [s.id for s in new if s.id in before and before[s.id] != normalize(s.text)]
+    """Ids in ``new`` whose text is not in ``old`` — matched by text, not id, because a rework may
+    re-id an edited sentence (a deletion is not an edit). Only meaningful once ``added_sentences``
+    found no additions: every remaining unmatched sentence is then an edit."""
+    before = {normalize(s.text) for s in old}
+    return [s.id for s in new if normalize(s.text) not in before]
 
 
 def baseline_hash(locked_deck: Path) -> str:
