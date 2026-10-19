@@ -278,5 +278,44 @@
     2. 改測真的 voice 步驟：先把 voice 的 mem_gb 暫時改成 8 讓它排得進去，再用取樣器（`mem_sampler.py`）量。但改 `heavy_work.json` 被權限分類器擋下，原文：`Reason: [Modify Shared Resources]`。
     - 兩支背景程序都停了（佇列是空的），沒有留下 ticket 擋到別人。`output/voice-probe/` 是空目錄，可以刪。
     - 要決定：(a) 核准修改 `heavy_work.json`，我就照第 2 條量；(b) 由 Leon 自己跑探針（指令見回報）。
+  - **voice 實測**（Leon 在本 session 放行，暫時把 mem_gb 改成 8；系統取樣器每 0.5 s 記 vm_stat 的 active＋wired＋compressor，log 在 job tmp `mem2.jsonl`）：
+    - voice 本身：12:20:35–13:07:35 UTC，**2,819.9 s**。旁白被改寫過，所以大部分場景重新合成。
+    - 系統用量在每個 10 分鐘區間裡都在約 10–12 GB 和約 29 GB 之間擺盪：
+      - 峰值 **29.45 GB**（12:29:28）；
+      - voice 剛開始時 18.5 GB，結束後掉到 10.35 GB；
+      - 區間中位數約 18.5 GB。
+    - 同一時段 load avg 約 20，其他 session 也很忙；TTS worker 的記憶體在 Metal 那一側，`ps` 的 RSS 看不到（前三名只有 0.4 GB 的 Chrome），所以拆不出哪些是 voice 用的。
+    - 結論 🟡：voice 增量的上界約 **19 GB**（29.45 − 10.4），典型約 8 GB。上界接近 18 GB，依指示**不改小**：`heavy_work.json` 已還原成 18，**沒有 commit**。
+    - 要量準，得在機器閒置時量，或對 worker pid 用 `footprint`／`vmmap --summary` 看 IOAccelerator 的記憶體。
+  - **illustrate 失敗，停下** 🔴：
+    - 原文：`illustrate failed: local_mflux needs CF_MFLUX_BIN_DIR, CF_MFLUX_HF_HOME (venv bin dir / HF cache)`；`2 image(s) to generate with z-image-turbo: s08b, s10`。
+    - 原因：腳本重寫時新增了兩張 ai_image 投影片，需要本機出圖。這兩個變數 `.env` 裡沒有（grep -c 是 0）。
+    - mflux 的 venv 和權重還放在別的 job 的 tmp（`~/.claude/jobs/d3bbd556/tmp/`，見 REPORT-ai-illustration §195），沒有放到持久位置。
+    - 要決定：搬到 `~/.local/share/mflux/{venv,hf}`，再把兩個路徑寫進 `.env`。這會動到 worktree 外，所以我沒做。
+
+## 時間表（2026-10-18 15:33 → 10-19 13:08 UTC，`production.log.jsonl` 加評分卡）🟡
+- 總牆鐘 1,294.8 分鐘。有紀錄的工作時間 230.8 分；其餘 1,064 分是 run 和 run 之間的空檔，包括等決定、等核可、佇列等待、隔夜。
+- 標題各輪的秒數，是從評分卡依時間對到 cycle-N 取的；cycle 搬動之後可能有少數對錯 🟡。
+
+| 類別 | 合計分鐘 | 次數 | 單次 |
+|---|---|---|---|
+| 產出 agent 重寫（deck 9 次、thumbnail_spec 6 次） | 96.5 | 15 | deck 134–1,003 s；thumbnail_spec 42–150 s |
+| 本機步驟（大多是 voice） | 48.9 | 33 | voice 2,820 s；slides 約 11 s |
+| 評審 script_structure | 28.8 | 5 | 274–436 s |
+| 評審 script_facts（含差異查核 31 s） | 24.9 | 5 | 31–378 s |
+| 評審 script（舊單段） | 16.9 | 3 | 284–390 s |
+| 評審 title_thumb | 14.7 | 8 | 102–114 s |
+
+**前 5 大瓶頸**：
+1. **等人／等決定／等核可（約 1,064 分）**：
+   - 隔夜 10.6 小時（17:10→03:46）；
+   - voice 在佇列等 3.3 小時（09:02→12:20，記憶體需求寫成 18 GB）；
+   - 每次規則缺口（標題門檻、競品、分類器、`.env` 守門）都要往返一次決定。
+2. **腳本產出 agent 重寫（約 80 分，9 次）**：一次 deck 重寫 11–17 分，評審沒過就再來一輪。
+3. **voice 47 分**：腳本被改寫，大多數場景重新合成；不是只調速。
+4. **腳本評審 13 輪（約 71 分）**：每輪 4.5–7 分，三種規則各自跑滿 3 輪。
+5. **標題縮圖 3 個循環（約 15 分評審＋約 9 分重寫）**：前兩個循環是被規則卡住（競品色相、producer_honest 要全部乾淨），不是內容問題。
+
+→ 要達到「一部片 ≤ 1 小時」：(1) 規則缺口已經修了 6 個（delta、色相、routing、頻道規則、producer_honest、economy 門檻），下一支片應該不會再撞到同樣的問題；(2) voice 的記憶體需求要用乾淨的量測定案；(3) deck 重寫是最大的單項，要降輪數，就要讓產出 agent 第一次就看到評審的評分標準 🟡。
   - 子代理的暫存檔在 `/private/tmp/yokai_probe/`（對照腳本、frame、HTML），worktree 外，要清 🟡。
 - 舊的接手方式：Leon 選了選項之後，A 要先改 deck（加 mascot pose）並重審 gate_deck，再執行 `PYTHONPATH=<wt>/src .venv/bin/python scripts/produce.py run --run-dir output/yokai-kyubi-v2 --no-stock --env-file /Users/lileon/project/content-farm/.env`。
