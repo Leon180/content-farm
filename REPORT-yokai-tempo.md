@@ -252,5 +252,18 @@
     - `deck.json` ← `review/deck.approved.json`（含「最早的原典」×3）；改過的版本存在 `deck.title-rework-1.json`。
     - 舊 routing 產生的 `title.fixes.json` 改名為 `title.fixes.round1-old-routing.json`，下次會依新規則重產。
     - 用 economy 背景重跑。
+  - 41cf0ac：修 a88b8f6 的 bug。thumbnail_spec 的規則檢查拿 `Path` 去跟字串比，觸發 TypeError；已補測試，全套 1596 過。
+  - **標題縮圖新循環（economy）3 輪也沒過，停下** 🟢（`review/title_thumb/round-{1,2,3}`，每輪約 120 s、名目約 $1.0–1.1）：
+
+    | 輪 | 首頁 被注意名次中位（最佳）／被選率 | 標題分數（T1 最高） | 未過原因 |
+    |---|---|---|---|
+    | 1 | C 2／0.6 ✓ | T1 7.0 | 製作人判 T6、B |
+    | 2 | A／B／C 2／0.4–0.6 ✓ | T1 6.6 | 製作人判 T6、B、C；C 主體佔比 0.0 |
+    | 3 | A 2／0.4 ✓ | T1 7.0 | 製作人判 T2、T4、T5、A、B；A 字高 11.9 < 12 |
+
+    - 首頁情境 3 輪都通過；T1 三輪都沒被製作人點名，一直是最高分。
+    - 每輪不過的原因都是製作人點名「另一個」標題或縮圖。規則是 6 個標題加 3 款縮圖**全部**都要沒被點名才算過（`producer_honest`），而 agent 每次改稿又會產生新的候選讓製作人挑。三輪都卡在這裡，沒有收斂 🟡（只有這一支片的觀察）。
+    - 建議（要決定，我沒改）：`producer_honest` 改成只要求最後選用的標題（best_title，本來就會排除被點名的）和選用的縮圖沒被點名；被點名的候選直接拿掉，不擋。
+    - 第 2 輪 C 的主體佔比 0.0 是另一個版型，040f2d5 沒涵蓋到，沒有追 🔴。
   - 子代理的暫存檔在 `/private/tmp/yokai_probe/`（對照腳本、frame、HTML），worktree 外，要清 🟡。
 - 舊的接手方式：Leon 選了選項之後，A 要先改 deck（加 mascot pose）並重審 gate_deck，再執行 `PYTHONPATH=<wt>/src .venv/bin/python scripts/produce.py run --run-dir output/yokai-kyubi-v2 --no-stock --env-file /Users/lileon/project/content-farm/.env`。
