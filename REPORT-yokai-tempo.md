@@ -123,5 +123,10 @@
   - **快照**（commit e3bb581）🟢：`review/snapshot.py` 的 `snapshot_reviewed()`。每一輪開評前，把該階段 `reviews` 列出的文字檔（.json／.md／.txt，≤5 MB）複製到 `review/<stage>/round-N/snapshot/<原路徑>`，所以腳本階段會有 `round-N/snapshot/deck.json`；圖片和影片不存。另外有 `restore(round_dir, run_dir)` 可以放回去。
     - 測試 `tests/unit/test_review_snapshot.py` 4 支：只存文字檔、還原、沒有快照時明確報錯、runner 跑結構段時真的存下被審的那份 deck（逐位元比對）。
     - 全套 pytest：1569 passed／1 skipped／1 failed，失敗的是既有的 `test_multi_provider`。
-  - 門檻 commit：等 Leon 在本 session 放行。
+  - 門檻 commit：Leon 在本 session 回「放行」→ **6ea7ae0**（Leon 80bd30689ee7=C）。改了 `config.py`、`review_panels.yaml`（script_structure、shorts_script）、兩支測試，另外加一支「剛好 6.5 也算過」的測試。全套 pytest 1570 passed／1 skipped／1 failed（既有的 multi_provider）🟢。commit id 已經回報 orchestrator。
+  - 新結構循環（手動，跟 `panel_flow._new_cycle` 同樣的搬法）：`_new_cycle` 要求 lock 檔存在，這裡沒有，所以沒辦法直接呼叫。
+    - `review/script_structure/round-{1,2,3}` 搬到 `cycle-1/`。
+    - `review/deck.fixes.json` 改名為 `deck.fixes.cycle-1.json`。
+    - 起點 deck 就是結構段第 3 輪那份，`cmp` 確認跟 `deck.structure-r3.json` 相同。
+  - 同一條 `produce.py run --auto-agents --no-stock` 在背景重跑。
 - 舊的接手方式：Leon 選了選項之後，A 要先改 deck（加 mascot pose）並重審 gate_deck，再執行 `PYTHONPATH=<wt>/src .venv/bin/python scripts/produce.py run --run-dir output/yokai-kyubi-v2 --no-stock --env-file /Users/lileon/project/content-farm/.env`。
