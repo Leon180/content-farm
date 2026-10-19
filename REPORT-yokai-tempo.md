@@ -1,6 +1,9 @@
 # REPORT — 九尾狐開台片 tempo 1.20 → 1.29（決策 40e6b445a7ed）
 
 ## TL;DR
+- ⏸ **（2026-10-19 晚）依 Leon 指示暫停**（token 用量）。voice 的子程序讓它跑完，之後就停掉 runner，不開下一步。接手方法見「暫停交接」。
+- 第一次走完到成片：economy 模式下，素材第 3 輪通過，assembly、角色、QC 都跑完。**片長 735.2 s（12:15），超過 10:00**。腳本經過多輪評審重寫，比 launch 版長，語速 1.29 抵不過。
+- QC 2 error／5 warn。成片評審第 1 輪三欄客觀指標都是紅燈，退回 deck；deck 重寫時新增了句子，兩段腳本評審重走，現在 voice 在重新合成。
 - 🔴 **（2026-10-19 最新）標題縮圖 3 輪用完，停在 gate_title**。有了競品資料之後，首頁情境測試能跑了：縮圖 A 被注意名次中位 3、被選率 0.6（隨機 0.083），通過。
   - 但三款縮圖和 14 支競品的色相差都只有 4–10°（門檻 40°）。這是頻道配色的問題，標題改稿解決不了。
   - 製作人另外判 T6、B 誇大。
@@ -292,6 +295,41 @@
     - 原因：腳本重寫時新增了兩張 ai_image 投影片，需要本機出圖。這兩個變數 `.env` 裡沒有（grep -c 是 0）。
     - mflux 的 venv 和權重還放在別的 job 的 tmp（`~/.claude/jobs/d3bbd556/tmp/`，見 REPORT-ai-illustration §195），沒有放到持久位置。
     - 要決定：搬到 `~/.local/share/mflux/{venv,hf}`，再把兩個路徑寫進 `.env`。這會動到 worktree 外，所以我沒做。
+
+## 暫停交接（2026-10-19 約 16:0x UTC）
+**程式（都已 commit 在 `feat/yokai-tempo`，沒有 push）**，本輪 orchestrator 要 cherry-pick 的：
+- e3bb581 每輪快照
+- 6ea7ae0 編劇門檻 6.5
+- cf94744＋e02675f 差異查核
+- 040f2d5 主體佔比偵測
+- 45b3884 色相只列出
+- 7798def economy 模式
+- a88b8f6＋41cf0ac 標題只修 thumbnail_spec、頻道規則檢查
+- 3e4e321 producer_honest 只看會上架的
+- 0ee8ef2 economy 觀眾門檻 ×0.8、parallel 8
+- 5ba20ce AI 圖退回只改提示詞、換 seed
+- 4effae7 voice 只看旁白、0 句合成時輕量入場
+
+**run-dir `output/yokai-kyubi-v2` 的狀態**：
+- 凍結：article、gate_article。economy：`review/tier.json`。
+- 腳本：final 第 1 輪退回 deck，新增了 23 句，所以結構段核可失效，舊輪次搬到 `review/script_structure/cycle-2`、`script_facts/cycle-2`。重走後結構段第 1 輪通過，事實段第 3 輪通過（15:49 UTC）。
+- voice：暫停時正在重新合成（pid 34998，spoken key `dd5230c75aeeb220`）。
+- 之後要重跑：illustrate、media（新 seed；被拒的圖在 `assets/ai_images/rejected/`）、gate_media、assembly、mascot、mix、qc、gate_final。
+- 標題縮圖：第 3 個循環第 2 輪已通過（09:02），舊循環在 `title_thumb/cycle-1`、`cycle-2`。素材：新循環第 3 輪已通過，舊循環在 `media/cycle-1`。
+- **成片評審第 1 輪**（`review/final/round-1/scorecard.json`，194 s／名目 $3.19）：
+  - 觀眾離開中位 64.3% ✓；縮圖與內容相符 4/4；剪輯（聲音）4.5、剪輯（畫面）5.8、導演 6.4。
+  - 客觀指標三欄都紅燈：visual 16/21、audio 6/9、content 1/5。
+- **QC**（`qc/qc_report.json`）：
+  - error：縮圖 B 的承諾「但山海經裡，牠會吃人」不在前 60 s；死區 9 段超過 10 s（256–333 s、421–470 s 等）。
+  - warn：片長 735.2 s；s06 的 Wan 動畫沒有 bake，退回 parallax；scene_002 CER 0.15；鉤子最長間隔 57.8 s；最長靜止 15.25 s。
+- 沒有 commit 的東西：都在 gitignore 的 `output/` 裡，包括 run-dir、`eval-competitors/yokai/`（14 支競品，第三方縮圖不可 commit）、`output/voice-probe/`（空目錄，可刪）。job tmp 有量測腳本與 `mem*.jsonl`。
+
+**接手指令**（在 worktree 根目錄執行，指令形狀符合 allow 規則）：
+```
+PYTHONPATH=/Users/lileon/project/content-farm/.claude/worktrees/cf-yokai-tempo/src /Users/lileon/project/content-farm/.venv/bin/python scripts/produce.py run --run-dir output/yokai-kyubi-v2 --auto-agents --no-stock --env-file /Users/lileon/project/content-farm/.env
+```
+- runner 會從 voice 接著跑。
+- gate_final 是第 2 輪；成片評審的退回會改 deck，每次都可能讓兩段腳本評審重走。這個迴圈要先討論再繼續（片長、死區、成片退回的範圍）🟡。
 
 ## 素材階段（2026-10-19 晚，economy）：3 輪沒過，停在 gate_media 🟢
 - orchestrator 把 mflux 搬到 `~/.local/share/mflux/`，也寫進 `.env` 了（`grep -c` 確認存在）。
