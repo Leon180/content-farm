@@ -190,6 +190,7 @@ def run_round(run_dir: Path, *, stage_name: str, config: ReviewConfig, channel: 
         "stage": stage_name, "round": round_no, "label": name, "holdout_only": holdout_only,
         "at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "inputs": fingerprint(run_dir, stage.reviews), "max_rounds": stage.max_rounds,
+        "tier_mode": config.tier_mode,
         **({"only_sentences": sorted(only_sentences)} if only_sentences is not None else {}),
         "seats": [{**{"role": m.role, "kind": m.kind, "holdout": m.holdout}, **r.to_json()}
                   for m, r in zip(members, results)],

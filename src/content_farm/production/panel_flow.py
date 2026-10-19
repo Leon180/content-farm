@@ -45,13 +45,13 @@ def stage_of(ctx: Context, gate: Gate) -> str | None:
 
 
 def review_config(ctx: Context):
-    from content_farm.review.config import Tier, load_review
+    from content_farm.review.config import Tier, economy_requested, load_review
 
     tier = None
     if ctx.options.review_tier:
         model, effort = ctx.options.review_tier.split(":")
         tier = Tier(model=model, effort=effort)
-    return load_review(ctx.channel.code, raise_tier=tier)
+    return load_review(ctx.channel.code, raise_tier=tier, economy=economy_requested(ctx.run_dir))
 
 
 def competitors_for(ctx: Context) -> Path | None:
@@ -188,7 +188,7 @@ def _apply(ctx: Context, state: RunState, step: Step, stage: str, current: str, 
 
     assert step.gate is not None
     _event(ctx.run_dir, step=step.name, panel=stage, status=result.status, message=result.message,
-           scorecard=result.scorecard, **({"delta": True} if delta else {}))
+           scorecard=result.scorecard, tier_mode=review_config(ctx).tier_mode, **({"delta": True} if delta else {}))
     from content_farm.review.scorecard_html import render
 
     render(ctx.run_dir, ctx.channel.name)
@@ -237,9 +237,10 @@ def run_producer(ctx: Context, step_name: str, log: Callable[[str], None], *, ga
     extra = ""
     for attempt in range(1, (REWORK_ATTEMPTS if guard else 1) + 1):
         log(f"✎ {step_name}: 產出 agent" + (f"（只准刪改，第 {attempt} 次）" if guard else ""))
-        result = produce(step_name, ctx.run_dir, channel=ctx.channel.code, config=review_config(ctx),
+        config = review_config(ctx)
+        result = produce(step_name, ctx.run_dir, channel=ctx.channel.code, config=config,
                          python=ctx.options.python, client=ctx.options.review_client, extra=extra, gate=gate)
-        _event(ctx.run_dir, step=step_name, producer=result.to_json())
+        _event(ctx.run_dir, step=step_name, producer=result.to_json(), tier_mode=config.tier_mode)
         if not result.ok:
             return f"{step_name} 產出 agent 失敗：{'; '.join(result.errors)[:300]}"
         log(f"✎ {step_name}: {result.seconds}s {(result.output or {}).get('summary', '')[:120]}")

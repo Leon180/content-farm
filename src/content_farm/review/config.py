@@ -60,6 +60,14 @@ TIER_FLOOR: dict[str, dict[str, tuple[Model, Effort]]] = {
     "shorts_final": {"*": ("sonnet", "medium")},
 }
 FACT_CHECKER_TIER: tuple[Model, Effort] = ("opus", "high")   # every stage: errors are dearest downstream
+# Economy mode (Leon 2026-10-19, token limit): every seat, producer and arbiter runs on sonnet; fact-checkers
+# and arbiters keep high effort, the rest medium. Selected by CF_REVIEW_TIER=economy or the run-dir file
+# REVIEW_TIER_FILE; only in that mode do these floors replace TIER_FLOOR / FACT_CHECKER_TIER.
+ECONOMY = "economy"
+ECONOMY_TIER: tuple[Model, Effort] = ("sonnet", "medium")
+ECONOMY_FACT_TIER: tuple[Model, Effort] = ("sonnet", "high")
+REVIEW_TIER_ENV = "CF_REVIEW_TIER"
+REVIEW_TIER_FILE = "review/tier.json"   # {"tier": "economy", "why": "..."}
 # article 2 → 3: Leon 2026-10-18 decision 59fdefb32bd7 = D (with delete-or-edit-only rewrites and arbitration)
 MAX_ROUNDS = {"topic": 2, "article": 3, "script_structure": 3, "script_facts": 3, "title_thumb": 3, "media": 3,
               "final": 3, "shorts_topic": 2, "shorts_script": 3, "shorts_title": 3, "shorts_final": 3}
@@ -171,6 +179,7 @@ class ReviewConfig(_Strict):
     roles: dict[str, Role]
     stages: dict[str, Stage]
     channels: dict[str, dict] = {}
+    tier_mode: Literal["default", "economy"] = "default"
 
     @model_validator(mode="after")
     def _rules(self) -> ReviewConfig:
@@ -180,7 +189,14 @@ class ReviewConfig(_Strict):
         return self
 
 
-def _seat_errors(name: str, stage: Stage, roles: dict[str, Role]) -> list[str]:
+def _floor(name: str, role: str, kind: str, economy: bool) -> tuple[Model, Effort]:
+    if economy:
+        return ECONOMY_FACT_TIER if kind == "fact" else ECONOMY_TIER
+    floors = TIER_FLOOR[name]
+    return FACT_CHECKER_TIER if kind == "fact" else floors.get(role, floors["*"])
+
+
+def _seat_errors(name: str, stage: Stage, roles: dict[str, Role], economy: bool = False) -> list[str]:
     errors = []
     counts: dict[str, int] = {}
     holdouts = 0
@@ -194,8 +210,7 @@ def _seat_errors(name: str, stage: Stage, roles: dict[str, Role]) -> list[str]:
             errors.append(f"{name}: only viewers can be held out ({seat.role})")
         if seat.holdout >= seat.count:
             errors.append(f"{name}: {seat.role} holdout {seat.holdout} must leave regular viewers")
-        floors = TIER_FLOOR[name]
-        floor = FACT_CHECKER_TIER if roles[seat.role].kind == "fact" else floors.get(seat.role, floors["*"])
+        floor = _floor(name, seat.role, roles[seat.role].kind, economy)
         if not seat.tier.at_least(floor):
             errors.append(f"{name}: {seat.role} is {seat.tier.label()}, below {floor[0]} · {floor[1]}")
     for role, need in REQUIRED_ROLES[name].items():
@@ -219,6 +234,8 @@ def _threshold_errors(name: str, threshold: Threshold) -> list[str]:
 
 def rule_violations(config: ReviewConfig) -> list[str]:
     errors = []
+    economy = config.tier_mode == ECONOMY
+    fact_floor = ECONOMY_FACT_TIER if economy else FACT_CHECKER_TIER
     for name in STAGES:
         if name not in config.stages:
             errors.append(f"stage {name!r} missing")
@@ -226,17 +243,18 @@ def rule_violations(config: ReviewConfig) -> list[str]:
         if name not in STAGES:
             errors.append(f"unknown stage {name!r}")
             continue
-        errors += _seat_errors(name, stage, config.roles)
+        errors += _seat_errors(name, stage, config.roles, economy)
         errors += _threshold_errors(name, stage.threshold)
         if stage.max_rounds > MAX_ROUNDS[name]:
             errors.append(f"{name}: max_rounds {stage.max_rounds} > {MAX_ROUNDS[name]}")
         if stage.rework not in REWORK_STEPS:
             errors.append(f"{name}: rework target {stage.rework!r} not in {REWORK_STEPS}")
         floor = TIER_FLOOR[name].get("producer_agent")
+        floor = ECONOMY_TIER if economy and floor else floor
         if floor and (stage.producer is None or not stage.producer.at_least(floor)):
             errors.append(f"{name}: producer agent must be ≥ {floor[0]} · {floor[1]}")
-        if name in ARBITRATED_STAGES and (stage.arbiter is None or not stage.arbiter.at_least(FACT_CHECKER_TIER)):
-            errors.append(f"{name}: fact arbiter must be ≥ {FACT_CHECKER_TIER[0]} · {FACT_CHECKER_TIER[1]}")
+        if name in ARBITRATED_STAGES and (stage.arbiter is None or not stage.arbiter.at_least(fact_floor)):
+            errors.append(f"{name}: fact arbiter must be ≥ {fact_floor[0]} · {fact_floor[1]}")
         if name in ARBITRATED_STAGES:
             checkers = sum(s.count for s in stage.seats if config.roles.get(s.role, None) is not None
                            and config.roles[s.role].kind == "fact")
@@ -256,17 +274,52 @@ def _merge(base: dict, override: dict) -> dict:
 
 
 def load_review(channel: str | None = None, *, path: Path = PANELS_FILE,
-                raise_tier: Tier | None = None) -> ReviewConfig:
+                raise_tier: Tier | None = None, economy: bool = False) -> ReviewConfig:
     """The validated review config, with ``channel``'s overrides merged in. ``raise_tier`` lifts
-    every seat to at least that tier (the all-opus comparison run); it can never lower one."""
+    every seat to at least that tier (the all-opus comparison run); it can never lower one.
+    ``economy``: the economy tier (see ``ECONOMY_TIER``) — the default config must still validate
+    first, so a yaml that breaks the normal floors is rejected in economy mode too."""
     raw = yaml.safe_load(path.read_text(encoding="utf-8"))["review"]
     config = ReviewConfig.model_validate(raw)
     if channel and channel in config.channels:
         raw = {**raw, "stages": _merge(raw["stages"], config.channels[channel].get("stages", {}))}
         config = ReviewConfig.model_validate(raw)
+    if economy:
+        raw = _economize(raw, config)
+        config = ReviewConfig.model_validate(raw)
     if raise_tier is not None:
         config = _lift(raw, config, raise_tier)
     return config
+
+
+def _economize(raw: dict, config: ReviewConfig) -> dict:
+    def seat_tier(seat: dict) -> dict:
+        model, effort = ECONOMY_FACT_TIER if config.roles[seat["role"]].kind == "fact" else ECONOMY_TIER
+        return {**seat, "model": model, "effort": effort}
+
+    stages = {}
+    for name, stage in raw["stages"].items():
+        new = {**stage, "seats": [seat_tier(s) for s in stage["seats"]]}
+        if stage.get("producer") is not None:
+            new["producer"] = {"model": ECONOMY_TIER[0], "effort": ECONOMY_TIER[1]}
+        if stage.get("arbiter") is not None:
+            new["arbiter"] = {"model": ECONOMY_FACT_TIER[0], "effort": ECONOMY_FACT_TIER[1]}
+        stages[name] = new
+    return {**raw, "stages": stages, "tier_mode": ECONOMY}
+
+
+def economy_requested(run_dir: Path | None = None) -> bool:
+    """CF_REVIEW_TIER=economy, or ``<run_dir>/review/tier.json`` saying so (keeps the run command's
+    shape unchanged for the permission allow rule)."""
+    import json
+    import os
+
+    if os.environ.get(REVIEW_TIER_ENV, "").strip().lower() == ECONOMY:
+        return True
+    marker = run_dir / REVIEW_TIER_FILE if run_dir is not None else None
+    if marker is None or not marker.is_file():
+        return False
+    return str(json.loads(marker.read_text(encoding="utf-8")).get("tier", "")).lower() == ECONOMY
 
 
 def _lift(raw: dict, config: ReviewConfig, tier: Tier) -> ReviewConfig:
