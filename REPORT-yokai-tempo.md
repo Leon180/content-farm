@@ -265,5 +265,11 @@
     - 每輪不過的原因都是製作人點名「另一個」標題或縮圖。規則是 6 個標題加 3 款縮圖**全部**都要沒被點名才算過（`producer_honest`），而 agent 每次改稿又會產生新的候選讓製作人挑。三輪都卡在這裡，沒有收斂 🟡（只有這一支片的觀察）。
     - 建議（要決定，我沒改）：`producer_honest` 改成只要求最後選用的標題（best_title，本來就會排除被點名的）和選用的縮圖沒被點名；被點名的候選直接拿掉，不擋。
     - 第 2 輪 C 的主體佔比 0.0 是另一個版型，040f2d5 沒涵蓋到，沒有追 🔴。
+  - orchestrator 決定「會上架的才要乾淨」，**3e4e321** 🟢：
+    - 被點名的標題移出候選（記在 `scores.titles_dropped`），只有一個乾淨標題都沒有時才不過。
+    - 縮圖 3 款都會上 A/B 測試，所以仍然要全部沒被點名。
+    - 測試涵蓋三種情況：只有 T2 被點名→過；全部標題被點名→不過；縮圖 B 被點名→不過。全套 1597 過。
+  - 用新規則重判 cycle-2 第 3 輪（不重跑評審，看評分卡）：T1 乾淨，標題可以過；但縮圖 A、B 被點名，A 的字高 11.9 也不到 12，所以仍然不過。
+  - 開第 3 個標題循環只修縮圖：舊的 3 輪搬到 `title_thumb/cycle-2/`，`title.fixes.json` 改名為 `title.fixes.cycle-2.json`。用 economy 背景重跑。
   - 子代理的暫存檔在 `/private/tmp/yokai_probe/`（對照腳本、frame、HTML），worktree 外，要清 🟡。
 - 舊的接手方式：Leon 選了選項之後，A 要先改 deck（加 mascot pose）並重審 gate_deck，再執行 `PYTHONPATH=<wt>/src .venv/bin/python scripts/produce.py run --run-dir output/yokai-kyubi-v2 --no-stock --env-file /Users/lileon/project/content-farm/.env`。
