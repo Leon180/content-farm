@@ -246,7 +246,7 @@ def channel_rule_violations(ctx: Context, step_name: str) -> list[str]:
         from content_farm.production.thumbnail import OUT_FILE, thumbnail_findings
 
         return [f.message for f in thumbnail_findings(ctx.run_dir, ctx.channel)
-                if f.level == "error" and OUT_FILE not in f.message]
+                if f.level == "error" and str(OUT_FILE) not in f.message]
     return []
 
 

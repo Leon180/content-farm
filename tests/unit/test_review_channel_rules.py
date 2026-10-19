@@ -71,6 +71,20 @@ def test_a_rework_that_breaks_a_channel_rule_is_restored_and_redone(run_dir: Pat
     assert json.loads((run_dir / "deck.json").read_text(encoding="utf-8")) == good
 
 
+def test_thumbnail_spec_rules_skip_the_not_yet_rendered_image(run_dir: Path) -> None:  # noqa: F811
+    """The spec is checked before rendering: 'thumbnail.png not rendered' is not a rule break, but a
+    channel host missing from the main thumbnail is (yokai 2026-10-19 crashed on this branch)."""
+    ctx = SimpleNamespace(run_dir=run_dir, channel=_fish_chipcat(), options=SimpleNamespace())
+    broken = panel_flow.channel_rule_violations(ctx, "thumbnail_spec")
+    assert not any("not rendered" in b for b in broken), broken
+    spec = json.loads((run_dir / "thumbnail.json").read_text(encoding="utf-8"))
+    if spec.get("visual", {}).get("kind") == "mascot":       # the fixture's host thumbnail: swap it out
+        (run_dir / "thumbnail.json").write_text(json.dumps({**spec, "visual": {"kind": "none"}}, ensure_ascii=False),
+                                                encoding="utf-8")
+        assert any("must be on the thumbnail" in b or "invalid" in b
+                   for b in panel_flow.channel_rule_violations(ctx, "thumbnail_spec"))
+
+
 def test_breaking_the_rule_twice_stops_with_the_output_restored(run_dir: Path) -> None:  # noqa: F811
     good = json.loads((run_dir / "deck.json").read_text(encoding="utf-8"))
     bad = _without_opening(good)
