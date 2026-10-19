@@ -75,7 +75,7 @@ DELETE_ONLY_FROM_ROUND = {"article": 2, "deck_facts": 2}
 # Threshold fields: (direction, floor). "min" = value must be ≥ floor; "max" = value must be ≤ floor.
 THRESHOLD_FLOOR: dict[str, dict[str, tuple[str, float]]] = {
     "article": {"fact_errors_max": ("max", 0)},
-    "script_structure": {"leave_median_pct": ("min", 0.5), "writer_min": ("min", 7)},
+    "script_structure": {"leave_median_pct": ("min", 0.5), "writer_min": ("min", 6.5)},  # Leon 80bd30689ee7=C: 7 → 6.5
     "script_facts": {"fact_errors_max": ("max", 0)},
     "title_thumb": {"noticed_median_max": ("max", 3), "pick_factor": ("min", 2.0)},
     "media": {"compliance_issues_max": ("max", 0)},

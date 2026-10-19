@@ -47,11 +47,18 @@ def test_script_passes_at_thresholds():
 
 
 def test_script_structure_fails_on_leave_and_writer_but_not_on_facts():
-    verdict = judge("script_structure", script_panel(left=("s1.1", "s1.2", "s1.3", None), writers=(6.5, 9),
+    verdict = judge("script_structure", script_panel(left=("s1.1", "s1.2", "s1.3", None), writers=(6.4, 9),
                                                      fact_status="wrong"), sentences=SENTENCES, corpus="一二三四")
     assert not verdict.passed
     text = " ".join(verdict.reasons)
-    assert "觀眾離開中位" in text and "writer_story-1 6.5/10 < 7" in text and "事實錯誤" not in text
+    assert "觀眾離開中位" in text and "writer_story-1 6.4/10 < 6.5" in text and "事實錯誤" not in text
+
+
+def test_script_structure_writer_at_the_floor_passes():
+    """Leon 80bd30689ee7=C: writer floor 7 → 6.5; exactly 6.5 is enough."""
+    verdict = judge("script_structure", script_panel(writers=(6.5, 6.5)), sentences=SENTENCES,
+                    corpus="一二三四五六七八九十")
+    assert verdict.passed, verdict.reasons
 
 
 def test_script_structure_lists_facts_without_blocking():

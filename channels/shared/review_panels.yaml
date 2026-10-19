@@ -198,7 +198,7 @@ review:
         - {role: writer_density, count: 1, model: opus, effort: high}
         - {role: director, count: 1, model: opus, effort: high}
         - {role: fact_checker, count: 1, model: opus, effort: high}   # 只列出、不擋（寫進修改清單供參考）
-      threshold: {leave_median_pct: 0.5, writer_min: 7}
+      threshold: {leave_median_pct: 0.5, writer_min: 6.5}   # Leon 80bd30689ee7=C: 7 → 6.5
     script_facts:
       gate: deck_facts
       reviews: [deck.json]
@@ -256,7 +256,7 @@ review:
       seats:
         - {role: viewer, count: 3, model: sonnet, effort: medium}
         - {role: writer_story, count: 1, model: sonnet, effort: medium}
-      threshold: {leave_median_pct: 0.5, writer_min: 7}
+      threshold: {leave_median_pct: 0.5, writer_min: 6.5}   # Leon 80bd30689ee7=C: 7 → 6.5
     shorts_title:
       gate: title
       reviews: [titles.json, thumbnails/variant_*.jpg]

@@ -149,7 +149,7 @@ def test_channel_override_can_tighten_but_not_loosen(tmp_path):
     tighter = _with(lambda r: r.update(channels={"yokai": {"stages": {"script_structure": {"threshold": {"writer_min": 8}}}}}))
     config = load_review("yokai", path=_write(tmp_path, tighter))
     assert config.stages["script_structure"].threshold.writer_min == 8
-    assert load_review("chipcat", path=_write(tmp_path, tighter)).stages["script_structure"].threshold.writer_min == 7
+    assert load_review("chipcat", path=_write(tmp_path, tighter)).stages["script_structure"].threshold.writer_min == 6.5
     looser = _with(lambda r: r.update(channels={"yokai": {"stages": {"script_structure": {"threshold": {"writer_min": 5}}}}}))
     with pytest.raises(ValidationError, match="writer_min=5"):
         load_review("yokai", path=_write(tmp_path, looser))
