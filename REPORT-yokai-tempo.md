@@ -110,4 +110,13 @@
   - 舊單段的 `review/deck.fixes.json` 改名為 `deck.fixes.legacy-script.json`；`review/script/` 三輪保留不動，不算新兩段的輪數。
   - 同一條 `produce.py run --auto-agents --no-stock` 在背景重跑。
   - 接手：等它結束，看 `production.log.jsonl` 的最後幾行。中斷了就重跑同一條指令，runner 會從斷點續跑。
+- 2026-10-19 orchestrator（fa762192）轉達 Leon 80bd30689ee7＝C（編劇門檻 7→6.5）：
+  1. merge `feat/integrate`（08d5b79）→ 529cf76（CLAIMS 衝突保留本分支版本）🟢。
+  2. 改門檻（`review/config.py` 的 `THRESHOLD_FLOOR` script_structure writer_min 7→6.5）**被權限分類器擋下**，原文：`Permission for this action was denied by the Claude Code auto mode classifier. Reason: [Modify Shared Resources].`。
+     - 已經改好的測試改動（test_review_verdicts）我還原了，worktree 是乾淨的。沒有 commit。
+     - 要改的地方：`review/config.py:78`、`channels/shared/review_panels.yaml:201`（script_structure）與 `:259`（shorts_script，「所有階段」），`tests/unit/test_review_config.py:152`（chipcat 預設 ==7）、`tests/unit/test_review_verdicts.py:50-54`（6.5 改成 6.4，訊息改成 `< 6.5`）。
+  3. **起點那份 deck 不存在** 🟢：舊單段第 3 輪（7.2／7.0／65.6%）審的那份 deck 是 deck-2 產出 agent 的成品，沒有任何備份。
+     - 本機只有 `deck.round2.json`（00:06，deck-2 的輸入）和 `deck.round3.before.json`（00:55，結構段第 2 輪那份），兩份都不含那一版的 s02.7「第三條先蓋住」。
+     - 那一版只剩旁白文字和 storyboard 一行一張的摘要，還留在 `review/script/round-3/script.txt`、`storyboard.txt`；條列、media、角色欄位都沒有，沒辦法逐欄還原。
+     - 另外，同一份稿（`cmp` 確認 `script/round-3/script.txt` 與 `script_structure/round-1/script.txt` 完全相同）在結構段第 1 輪被重新評成 6.4／6.5。新門檻 6.5 之下，故事 6.4 仍然不過，所以它不一定是「最好的稿」🟡。
 - 舊的接手方式：Leon 選了選項之後，A 要先改 deck（加 mascot pose）並重審 gate_deck，再執行 `PYTHONPATH=<wt>/src .venv/bin/python scripts/produce.py run --run-dir output/yokai-kyubi-v2 --no-stock --env-file /Users/lileon/project/content-farm/.env`。
