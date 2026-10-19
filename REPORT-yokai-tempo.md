@@ -313,7 +313,7 @@
 **run-dir `output/yokai-kyubi-v2` 的狀態**：
 - 凍結：article、gate_article。economy：`review/tier.json`。
 - 腳本：final 第 1 輪退回 deck，新增了 23 句，所以結構段核可失效，舊輪次搬到 `review/script_structure/cycle-2`、`script_facts/cycle-2`。重走後結構段第 1 輪通過，事實段第 3 輪通過（15:49 UTC）。
-- voice：暫停時正在重新合成（pid 34998，spoken key `dd5230c75aeeb220`）。
+- voice：等它跑完才停（16:20:58 UTC 完成，1,867.2 s，exit 0，spoken key `dd5230c75aeeb220`）。runner 在 illustrate 只記下 identity、還沒開始執行時就停了；沒有殘留的程序（`pgrep` 是空的）。
 - 之後要重跑：illustrate、media（新 seed；被拒的圖在 `assets/ai_images/rejected/`）、gate_media、assembly、mascot、mix、qc、gate_final。
 - 標題縮圖：第 3 個循環第 2 輪已通過（09:02），舊循環在 `title_thumb/cycle-1`、`cycle-2`。素材：新循環第 3 輪已通過，舊循環在 `media/cycle-1`。
 - **成片評審第 1 輪**（`review/final/round-1/scorecard.json`，194 s／名目 $3.19）：
