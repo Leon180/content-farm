@@ -210,6 +210,10 @@ def _apply(ctx: Context, state: RunState, step: Step, stage: str, current: str, 
     record = StepRecord("waiting", now_iso(), inputs=current, note=result.message)
     state = state.with_step(step.name, record)
     if result.status == "rework" and result.rework is not None:
+        if result.rework.get("prompt_only"):    # regenerate these: illustrate only draws missing images
+            from content_farm.review.prompt_rework import reject_images
+
+            _event(ctx.run_dir, step=step.name, rejected_images=reject_images(ctx.run_dir, result.rework["prompt_only"]))
         state = _mark_rework(ctx, state, result.rework, step.gate.value)
         return state, RunResult(Outcome.REWORK, step.name, result.message)
     return state, RunResult(Outcome.FAILED, step.name, result.message)
@@ -250,6 +254,23 @@ def channel_rule_violations(ctx: Context, step_name: str) -> list[str]:
     return []
 
 
+def _prompt_only_violations(ctx: Context, step_name: str, gate: str | None, before: dict[str, str]) -> list[str]:
+    """A media-panel rework of AI illustrations may change only the flagged slides' media.prompt, and the
+    new prompt must not contradict the channel style prefix or itself (``review.prompt_rework``)."""
+    plan_path = ctx.run_dir / "review" / f"{gate}.fixes.json"
+    if step_name != "deck" or gate is None or not plan_path.is_file() or "deck.json" not in before:
+        return []
+    ids = json.loads(plan_path.read_text(encoding="utf-8")).get("prompt_only") or []
+    if not ids:
+        return []
+    from content_farm.review.prompt_rework import prompt_only_problems
+
+    style = (ctx.channel.ai_illustration.style_prefix
+             if getattr(ctx.channel, "ai_illustration", None) is not None else "")
+    after = json.loads((ctx.run_dir / "deck.json").read_text(encoding="utf-8"))
+    return prompt_only_problems(json.loads(before["deck.json"]), after, set(ids), style)
+
+
 def run_producer(ctx: Context, step_name: str, log: Callable[[str], None], *, gate: str | None = None) -> str | None:
     """Run the producer agent for ``step_name``; None on success, else why it failed. ``gate``: the
     gate whose fix list sent this rework (default: the step's own gate).
@@ -263,7 +284,7 @@ def run_producer(ctx: Context, step_name: str, log: Callable[[str], None], *, ga
     for attempt in (1, 2):
         if failure is not None:
             return failure
-        broken = channel_rule_violations(ctx, step_name)
+        broken = channel_rule_violations(ctx, step_name) + _prompt_only_violations(ctx, step_name, gate, before)
         _event(ctx.run_dir, step=step_name, channel_rules=broken, attempt=attempt)
         if not broken:
             return None

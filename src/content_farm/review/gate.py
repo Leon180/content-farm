@@ -115,6 +115,11 @@ def _rework(run_dir: Path, gate: str, stage_name: str, card: dict[str, Any], def
                        "problem": f"素材 {asset} 合規未過", "fix": "換素材或重生這一張", "evidence": asset,
                        "caused_by": "media"})
     advisory: list[dict[str, Any]] = []
+    prompt_only = _ai_image_ids(run_dir, issues) if stage_name == "media" else []
+    if prompt_only:   # the picture comes from deck.json's media.prompt: the deck agent rewrites only those
+        issues = [{**i, "caused_by": "deck", "prompt_only": True}
+                  if (i.get("ref") or {}).get("item") in prompt_only and i.get("caused_by") in (None, "illustrate", "media")
+                  else i for i in issues]
     if stage_name in TITLE_ONLY_STAGES:   # a title panel never sends the script (or media) back: listed only
         advisory = [i for i in issues if (i.get("caused_by") or default_step) != default_step]
         issues = [i for i in issues if (i.get("caused_by") or default_step) == default_step]
@@ -124,6 +129,8 @@ def _rework(run_dir: Path, gate: str, stage_name: str, card: dict[str, Any], def
                    "caused_by": default_step}]
     plan = routing.plan(issues, _texts(run_dir), stage=stage_name, round_no=card["round"], default_step=default_step,
                         frozen=frozen_steps(run_dir))
+    if prompt_only:
+        plan["prompt_only"] = prompt_only
     if advisory:
         plan["advisory"] = [{k: i.get(k) for k in ("ref", "category", "problem", "fix", "who", "caused_by")}
                             for i in advisory]
@@ -131,6 +138,18 @@ def _rework(run_dir: Path, gate: str, stage_name: str, card: dict[str, Any], def
     plan["scorecard"] = str(stage_dir(run_dir, stage_name) / card["label"] / "scorecard.json")
     routing.write(run_dir, gate, plan)
     return plan
+
+
+def _ai_image_ids(run_dir: Path, issues: list[dict[str, Any]]) -> list[str]:
+    """Slides the media panel flagged whose picture is a generated ``ai_image`` (prompt in deck.json)."""
+    if not (run_dir / "deck.json").is_file():
+        return []
+    deck = _load(run_dir / "deck.json")
+    generated = {s["id"] for sec in deck.get("sections", []) for s in sec.get("slides", [])
+                 if (s.get("media") or {}).get("kind") == "ai_image"}
+    flagged = {str((i.get("ref") or {}).get("item")) for i in issues
+               if i.get("caused_by") in (None, "illustrate", "media")}
+    return sorted(flagged & generated)
 
 
 def _after_pass(run_dir: Path, stage_name: str, card: dict[str, Any]) -> None:

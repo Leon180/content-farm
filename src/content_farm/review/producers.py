@@ -97,6 +97,11 @@ def _fixes_text(run_dir: Path, gate: str) -> str:
                        "沒被點名的句子一字不動。可以在 sources.json 補來源。")
     if gate == "deck_facts":
         delete_only += "這是講稿的事實段：結構已經核可，不要改章節、順序、比喻或笑點。"
+    if plan.get("prompt_only"):
+        delete_only += (f"\n這次只改 AI 插圖的提示詞（素材評審點名）：只准改投影片 {', '.join(plan['prompt_only'])} 的 "
+                        "media.prompt，旁白、標題、條列、其他投影片與其他欄位一字不動（程式會比對，違反就拒收並還原）。"
+                        "提示詞不能自相矛盾：頻道風格前綴已經寫了 no text, no seal 這類禁令，提示詞裡就不能再要求印章、"
+                        "文字、題字等同一樣東西；被點名的舊圖已經移走，改完會換 seed 重畫。")
     return (f"\n這是退回重做（第 {plan.get('round')} 輪評審未過：{reasons}）。修改清單（{path}）：\n" + "\n".join(lines)
             + "\n只改清單與連動範圍列出的地方，其他句子一字不動（沒改到的句子 id 要保持不變）；"
               "改寫時不要新增沒查證過的說法——新寫的每一句一樣會被查核；"

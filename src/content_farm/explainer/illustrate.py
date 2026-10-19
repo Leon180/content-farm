@@ -27,6 +27,7 @@ import subprocess
 import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from dataclasses import replace as replace_request
 from pathlib import Path
 from typing import Protocol
 
@@ -229,11 +230,18 @@ def illustrate(deck: Deck, run_dir: Path, settings: Settings, provider: Illustra
     """
     image_dir = run_dir / AI_IMAGE_DIR
     requests = requests_for(deck, settings)
+    from content_farm.review.prompt_rework import contradictions, seed_for
+
+    todo = set(missing_images(deck, run_dir, settings, replace=replace))
     for request in requests:
         bad = forbidden_prompt_terms(request.prompt)
         if bad:
             raise ValueError(f"slide {request.slide_id}: prompt asks for {bad} (rule: 非擬真、不模仿畫家)")
-    todo = set(missing_images(deck, run_dir, settings, replace=replace))
+        clash = contradictions(request.prompt) if request.slide_id in todo else []
+        if clash:
+            raise ValueError(f"slide {request.slide_id}: prompt both forbids and asks for {clash}")
+    # a redraw after a rejection uses a new seed (base + rejected attempts), never the rejected picture's
+    requests = [replace_request(r, seed=seed_for(run_dir, r.slide_id, r.seed)) for r in requests]
     image_dir.mkdir(parents=True, exist_ok=True)
     records = []
     for request in requests:

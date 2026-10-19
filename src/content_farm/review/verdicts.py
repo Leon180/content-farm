@@ -304,7 +304,10 @@ def media(stage: Stage, seats: list[Seat], *, pending: list | None = None, **con
     count = len(bad) + len([i for i in kept if i.get("category") == "compliance"])
     t = stage.threshold
     if t.compliance_issues_max is not None and count > t.compliance_issues_max:
-        reasons.append(f"合規問題 {count} 個：" + "、".join(str(a.get("asset")) for a in bad[:8]))
+        summary = [str(a.get("asset")) for a in bad[:8]] + [
+            f"{(i.get('ref') or {}).get('item') or '?'}：{str(i.get('problem', ''))[:40]}"
+            for i in kept if i.get("category") == "compliance"][:8]
+        reasons.append(f"合規問題 {count} 個：" + "、".join(summary))
     if t.licenses_confirmed and pending:
         reasons.append(f"credits.json 還有 {len(pending)} 筆授權未確定")
     rework = sorted({str(a.get("asset")) for a in bad})
