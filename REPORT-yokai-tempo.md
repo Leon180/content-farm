@@ -173,5 +173,18 @@
     - 同一個基準最多跑 2 次，超過就停。新增句子照舊讓兩段重走。
     - 修掉一個缺口：原本結構段核可時會覆寫共用的 lock，事實段因此看不到改動。現在事實段改用自己的基準 `review/deck_facts.locked.json`，新一輪循環時一起搬走；在這個 commit 之前就核可的 run 用核可那一輪的快照當基準（要先有 e3bb581）。
     - 測試 `tests/unit/test_review_delta.py` 8 支。全套 1582 passed／1 skipped／1 failed（既有的 multi_provider）。
-  - 競品縮圖集＋畫作主體偵測：交給子代理在做（只動 evaluation／新測試，不 commit，做完由我審過再 commit）。
+  - **主體佔比偵測**（commit **040f2d5**，子代理做、我審過 diff 並重跑測試）🟢：
+    - 原因不在「畫作或照片」，而在版型。`panel` 版型的圖片沒有 class，但量測只算 `img.visual, img.art`，所以任何 panel 縮圖都是 0.0。
+    - 6 張對照組（3 張畫作、3 張照片），用 yokai 實際的 thumbnail_html 渲染：
+      - panel 版型：修正前全部 0.0，修正後 0.19–0.30；
+      - keyart 版型：前後都是 1.0；
+      - character 版型：前後都是 0.531。
+    - 另外改了兩處：`object-fit: contain` 只算實際畫到的面積；`thumbs_for` 在大小寫敏感的檔案系統也找得到 `variant_A.html`。
+    - 測試 `test_thumb_subject_share.py` 4 支，用 headless 瀏覽器。用舊的 selector 跑時，3 支 panel 測試會失敗。
+    - 3 張「照片」裡有 1 張是另一張的裁切，不完全獨立；偵測器不看像素，所以不影響結論 🟡。
+  - **yokai 競品縮圖集：做不了** 🔴。原文：`which yt-dlp` → `yt-dlp not found`；`.venv/bin/python -c "import yt_dlp"` → `ModuleNotFoundError: No module named 'yt_dlp'`。
+    - 裝 yt-dlp 會動到 venv 或系統環境，超出 worktree，所以我沒裝。
+    - 格式已確認（`homepage.load_competitors`）：一個 list，每項是 `{id, title, channel, lang, url, thumb, found_via}`，`thumb` 是相對於 json 的檔名，目標路徑是 `output/eval-competitors/yokai/competitors.json`。
+    - 沒有這份資料，標題縮圖階段一定是「沒有首頁情境結果」，所以**沒有重跑**（跑了只會白白用掉 1 輪）。
+  - 子代理的暫存檔在 `/private/tmp/yokai_probe/`（對照腳本、frame、HTML），worktree 外，要清 🟡。
 - 舊的接手方式：Leon 選了選項之後，A 要先改 deck（加 mascot pose）並重審 gate_deck，再執行 `PYTHONPATH=<wt>/src .venv/bin/python scripts/produce.py run --run-dir output/yokai-kyubi-v2 --no-stock --env-file /Users/lileon/project/content-farm/.env`。
