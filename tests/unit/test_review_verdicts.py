@@ -152,13 +152,39 @@ def test_title_thumb_homepage_auto_and_producer():
     assert verdict.passed, verdict.reasons
     assert verdict.scores["best_title"] == "T2"
     hype = seat("producer-1", "producer", "producer", {"checks": [{"item": "T2", "exaggerated": True,
-                                                                   "consistent": True, "why": "誇大"}], "issues": []})
+                                                                   "consistent": True, "why": "誇大"},
+                                                                  {"item": "A", "exaggerated": True,
+                                                                   "consistent": True, "why": "縮圖誇大"}],
+                                                       "issues": []})
     verdict = judge("title_thumb", [*viewers, designer, hype], keys=keys, auto={"A": ["對比 3.9"]})
     assert not verdict.passed and verdict.scores["best_title"] == "T1"
-    assert any("自動檢查" in r for r in verdict.reasons) and any("誇大" in r for r in verdict.reasons)
+    assert any("自動檢查" in r for r in verdict.reasons) and any("製作人判定 A" in r for r in verdict.reasons)
+    assert not any("製作人判定 T2" in r for r in verdict.reasons)          # a flagged title is just dropped
+    assert verdict.scores["titles_dropped"] == ["T2"]
     unseen = [_title_viewer(n, [1, 2, 3], 1) for n in range(5)]
     verdict = judge("title_thumb", [*unseen, designer, honest], keys=keys, auto={})
     assert any("被注意名次" in r for r in verdict.reasons) and any("被選比例" in r for r in verdict.reasons)
+
+
+def _producer(*items: str):
+    return seat("producer-1", "producer", "producer", {"checks": [
+        {"item": i, "exaggerated": True, "consistent": True, "why": "誇大"} for i in items], "issues": []})
+
+
+def test_only_what_ships_must_be_clean():
+    """Orchestrator 2026-10-19: flagged titles leave the list; the chosen one must be clean; every
+    thumbnail variant ships (A/B), so a flagged variant still fails the round."""
+    keys = {f"viewer-{n}_feed1.jpg": {"variant": "A", "ours_card": 4, "cards": 12} for n in range(5)}
+    viewers = [_title_viewer(n, [4, 1, 2], 4) for n in range(5)]
+    designer = seat("designer-1", "designer", "designer", {"score": 7, "variants": {"A": 7}, "issues": []})
+    ctx = {"keys": keys, "auto": {"A": []}, "title_ids": ["T1", "T2"]}
+    passed = judge("title_thumb", [*viewers, designer, _producer("T2")], **ctx)
+    assert passed.passed, passed.reasons
+    assert passed.scores["best_title"] == "T1" and passed.scores["titles_dropped"] == ["T2"]
+    every_title = judge("title_thumb", [*viewers, designer, _producer("T1", "T2")], **ctx)
+    assert not every_title.passed and any("沒有可用的標題" in r for r in every_title.reasons)
+    variant = judge("title_thumb", [*viewers, designer, _producer("T2", "B")], **ctx)
+    assert not variant.passed and any("製作人判定 B" in r for r in variant.reasons)
 
 
 def test_competitor_hue_distance_is_listed_but_does_not_block():

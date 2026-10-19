@@ -272,8 +272,6 @@ def title_thumb(stage: Stage, seats: list[Seat], *, keys: dict[str, dict] | None
         reasons += [f"縮圖 {k} 自動檢查未過：{'、'.join(v)}" for k, v in sorted(failed_auto.items())]
     flagged = [c for s in regular if s.kind == "producer" for c in (s.output or {}).get("checks") or []
                if c.get("exaggerated") or not c.get("consistent", True)]
-    if t.producer_honest and flagged:
-        reasons += [f"製作人判定 {c['item']} 誇大或與內容不一致：{c.get('why', '')}" for c in flagged]
     title_clicks: dict[str, list[float]] = {}
     for seat in viewers:
         for item in (seat.output or {}).get("titles") or []:
@@ -281,9 +279,19 @@ def title_thumb(stage: Stage, seats: list[Seat], *, keys: dict[str, dict] | None
     titles = {k: round(statistics.mean(v), 2) for k, v in title_clicks.items()}
     honest = [k for k in titles if k not in {str(c["item"]) for c in flagged}]
     best_title = max(honest, key=titles.get) if honest else None
+    # "only what ships must be clean" (orchestrator 2026-10-19): a flagged title is dropped from the
+    # candidates and only fails the round when no clean title is left; every thumbnail variant ships
+    # (A/B test), so any flagged variant still fails it.
+    title_ids = {str(i) for i in context.get("title_ids") or titles}
+    flagged_variants = [c for c in flagged if str(c["item"]) not in title_ids]
+    if t.producer_honest:
+        reasons += [f"製作人判定 {c['item']} 誇大或與內容不一致：{c.get('why', '')}" for c in flagged_variants]
+        if titles and best_title is None:
+            reasons.append("製作人判定所有標題都誇大或與內容不一致，沒有可用的標題")
     kept, dropped = split_issues(_collect(seats), **_context(context))
     scores = {"homepage": home, "titles": titles, "best_title": best_title, "auto": auto or {},
               "auto_advisory": advisory,
+              "titles_dropped": sorted({str(c["item"]) for c in flagged} & title_ids),
               "designer": {s.rid: (s.output or {}).get("variants") for s in regular if s.kind == "designer"}}
     return Verdict(not reasons, reasons, scores, kept, dropped)
 
