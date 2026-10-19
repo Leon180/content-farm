@@ -186,5 +186,12 @@
     - 裝 yt-dlp 會動到 venv 或系統環境，超出 worktree，所以我沒裝。
     - 格式已確認（`homepage.load_competitors`）：一個 list，每項是 `{id, title, channel, lang, url, thumb, found_via}`，`thumb` 是相對於 json 的檔名，目標路徑是 `output/eval-competitors/yokai/competitors.json`。
     - 沒有這份資料，標題縮圖階段一定是「沒有首頁情境結果」，所以**沒有重跑**（跑了只會白白用掉 1 輪）。
+  - orchestrator 改指示：不裝 yt-dlp，改用 WebSearch 找影片、curl 下載縮圖。
+    - **curl 被權限拒絕**，原文：`Permission to use Bash with command curl -sS -o output/eval-competitors/yokai/AeZNvnl2OzA.probe.jpg https://i.ytimg.com/vi/AeZNvnl2OzA/hqdefault.jpg has been denied.`。我沒有改用其他工具下載 🔴。
+    - WebSearch 加 `site:youtube.com` 拿不到 YouTube 結果（4 次都是）；改用 `allowed_domains=["youtube.com"]` 就可以。
+    - 搜了 4 組關鍵字（九尾狐由來、山海經怪獸、日本妖怪起源、玉藻前殺生石），選出 15 支中文解說片，排除戲劇、日文、英文、同系列的下集。
+    - 結果寫在 `output/eval-competitors/yokai/competitors.pending.json`（gitignored）。故意不用 `competitors.json` 這個檔名：沒有縮圖檔的 json 會讓首頁評審讀不到圖。
+    - 限制：搜尋結果沒有頻道名，所以 `channel` 欄位寫「待查」，有系列標記的附上。「頻道不重複」只能靠標題的系列標記判斷 🟡。
+    - 接手：由 Leon 下載 15 張縮圖，把 pending 改名成 `competitors.json`，再從標題縮圖階段重跑（指令見回報）。
   - 子代理的暫存檔在 `/private/tmp/yokai_probe/`（對照腳本、frame、HTML），worktree 外，要清 🟡。
 - 舊的接手方式：Leon 選了選項之後，A 要先改 deck（加 mascot pose）並重審 gate_deck，再執行 `PYTHONPATH=<wt>/src .venv/bin/python scripts/produce.py run --run-dir output/yokai-kyubi-v2 --no-stock --env-file /Users/lileon/project/content-farm/.env`。
