@@ -24,6 +24,10 @@ from content_farm.review.rounds import expected_seats, rounds_of, run_round, sta
 from content_farm.review.sentences import deck_sentences, script_sentences
 
 PANEL_BY = "agent-panel:"
+# Stages whose rework only goes to their own producing step (the title / thumbnail spec); fixes the panel
+# pins on earlier steps (script, media) are listed under the plan's ``advisory`` and change nothing
+# (orchestrator decision 2026-10-19: a title round had rewritten the script and broken the channel opening).
+TITLE_ONLY_STAGES = ("title_thumb", "shorts_title")
 LONG_STAGE_FOR_GATE = {"topic": "topic", "article": "article", "deck": "script_structure",
                        "deck_facts": "script_facts", "title": "title_thumb", "media": "media", "final": "final"}
 SHORT_STAGE_FOR_GATE = {"topic": "shorts_topic", "script": "shorts_script", "title": "shorts_title",
@@ -110,12 +114,19 @@ def _rework(run_dir: Path, gate: str, stage_name: str, card: dict[str, Any], def
         issues.append({"ref": {"target": "media", "item": asset}, "category": "compliance", "severity": "high",
                        "problem": f"素材 {asset} 合規未過", "fix": "換素材或重生這一張", "evidence": asset,
                        "caused_by": "media"})
+    advisory: list[dict[str, Any]] = []
+    if stage_name in TITLE_ONLY_STAGES:   # a title panel never sends the script (or media) back: listed only
+        advisory = [i for i in issues if (i.get("caused_by") or default_step) != default_step]
+        issues = [i for i in issues if (i.get("caused_by") or default_step) == default_step]
     if not issues:   # failed on numbers alone (e.g. leave median): the producing step reworks
         issues = [{"ref": {"target": "script"}, "category": "content", "severity": "high",
                    "problem": "；".join(verdict.get("reasons", [])), "fix": "依評分卡改善", "evidence": "",
                    "caused_by": default_step}]
     plan = routing.plan(issues, _texts(run_dir), stage=stage_name, round_no=card["round"], default_step=default_step,
                         frozen=frozen_steps(run_dir))
+    if advisory:
+        plan["advisory"] = [{k: i.get(k) for k in ("ref", "category", "problem", "fix", "who", "caused_by")}
+                            for i in advisory]
     plan["reasons"] = verdict.get("reasons", [])
     plan["scorecard"] = str(stage_dir(run_dir, stage_name) / card["label"] / "scorecard.json")
     routing.write(run_dir, gate, plan)

@@ -224,17 +224,70 @@ def rework_gate(note: str) -> str | None:
     return name.removesuffix(".fixes.json") if name.endswith(".fixes.json") else None
 
 
+RULE_OUTPUTS = {"deck": ("deck.json",), "thumbnail_spec": ("titles.json", "thumbnail.json", "thumbnail_variants.json")}
+
+
+def channel_rule_violations(ctx: Context, step_name: str) -> list[str]:
+    """The channel's own rules a producer's output breaks (the same checks as the policy step, run
+    before the output is accepted): deck → opening / sign-off / take / host share; thumbnail_spec →
+    the host on the main thumbnail and its promise paid off (rendering is checked later)."""
+    if step_name == "deck" and (ctx.run_dir / "deck.json").is_file():
+        from pydantic import ValidationError
+
+        from content_farm.explainer.deck import load_deck
+        from content_farm.production import qc
+
+        try:
+            deck = load_deck(ctx.run_dir / "deck.json")
+        except (ValidationError, ValueError):   # not a valid deck: the deck step's own verify (--strict) reports it
+            return []
+        return [f.message for f in qc.deck_findings(ctx.channel, deck) if f.level == "error"]
+    if step_name == "thumbnail_spec":
+        from content_farm.production.thumbnail import OUT_FILE, thumbnail_findings
+
+        return [f.message for f in thumbnail_findings(ctx.run_dir, ctx.channel)
+                if f.level == "error" and OUT_FILE not in f.message]
+    return []
+
+
 def run_producer(ctx: Context, step_name: str, log: Callable[[str], None], *, gate: str | None = None) -> str | None:
     """Run the producer agent for ``step_name``; None on success, else why it failed. ``gate``: the
     gate whose fix list sent this rework (default: the step's own gate).
 
-    A rework under DELETE_ONLY_FROM_ROUND (the article from round 2, the script's fact stage) must
-    only delete or edit the flagged sentences (``review.article_diff``): a rewrite that breaks it is
-    restored and redone, at most ``REWORK_ATTEMPTS`` times in all."""
+    The output must keep the channel's rules (``channel_rule_violations``, the policy step's checks):
+    an output that breaks one is restored and redone once with the broken rules in the brief (not a
+    review round); breaking them again stops the step with the output restored."""
+    before = {name: (ctx.run_dir / name).read_text(encoding="utf-8")
+              for name in RULE_OUTPUTS.get(step_name, ()) if (ctx.run_dir / name).is_file()}
+    failure = _produce_guarded(ctx, step_name, log, gate=gate)
+    for attempt in (1, 2):
+        if failure is not None:
+            return failure
+        broken = channel_rule_violations(ctx, step_name)
+        _event(ctx.run_dir, step=step_name, channel_rules=broken, attempt=attempt)
+        if not broken:
+            return None
+        for name, text in before.items():
+            (ctx.run_dir / name).write_text(text, encoding="utf-8")
+        log(f"✗ {step_name}: 拒收（違反頻道規則）：{'；'.join(broken)[:200]}")
+        if attempt == 2:
+            break
+        failure = _produce_guarded(ctx, step_name, log, gate=gate, rules=(
+            "上一次的改稿違反頻道規則，已還原成改稿前的版本。頻道規則優先於評審意見；以下規則一條都不能破：\n- "
+            + "\n- ".join(broken) + "\n照修改清單重改，但保留上面這些頻道規則要求的內容。"))
+    return f"{step_name}：改稿兩次都違反頻道規則，已還原並停下：{'；'.join(broken)[:300]}"
+
+
+def _produce_guarded(ctx: Context, step_name: str, log: Callable[[str], None], *, gate: str | None = None,
+                     rules: str = "") -> str | None:
+    """One producer run, with the delete-only guard (a rework under DELETE_ONLY_FROM_ROUND — the article
+    from round 2, the script's fact stage — must only delete or edit the flagged sentences
+    (``review.article_diff``): a rewrite that breaks it is restored and redone, at most
+    ``REWORK_ATTEMPTS`` times in all)."""
     from content_farm.review.producers import produce
 
     guard = _delete_only_guard(ctx.run_dir, step_name, gate)
-    extra = ""
+    extra = rules
     for attempt in range(1, (REWORK_ATTEMPTS if guard else 1) + 1):
         log(f"✎ {step_name}: 產出 agent" + (f"（只准刪改，第 {attempt} 次）" if guard else ""))
         config = review_config(ctx)
@@ -252,7 +305,7 @@ def run_producer(ctx: Context, step_name: str, log: Callable[[str], None], *, ga
             return None
         guard.restore()
         log(f"✗ {step_name}: 拒收（不是只刪改）：{'；'.join(problems)[:200]}")
-        extra = (f"上一次的改稿被拒收，{guard.path.name} 已還原成改稿前的版本。原因（程式比對前後版本）：\n- "
+        extra = (rules + "\n\n" if rules else "") + (f"上一次的改稿被拒收，{guard.path.name} 已還原成改稿前的版本。原因（程式比對前後版本）：\n- "
                  + "\n- ".join(problems)
                  + "\n重新改：只准刪除被點名的句子，或在被點名的句子裡加限定詞、改正數字與歸屬；不准新增句子，"
                    "沒被點名的句子一字不動。")
