@@ -68,6 +68,10 @@ ECONOMY_TIER: tuple[Model, Effort] = ("sonnet", "medium")
 ECONOMY_FACT_TIER: tuple[Model, Effort] = ("sonnet", "high")
 REVIEW_TIER_ENV = "CF_REVIEW_TIER"
 REVIEW_TIER_FILE = "review/tier.json"   # {"tier": "economy", "why": "..."}
+# Viewer leave-median threshold by tier (orchestrator 2026-10-19, Leon-authorised): sonnet viewers are the
+# stricter audience, so economy scales the leave threshold by 0.8 (default 0.50 → 0.40). Provisional.
+ECONOMY_LEAVE_SCALE = 0.8
+ECONOMY_THRESHOLD_NOTE = "sonnet 觀眾較嚴，CoWoS 對照 47% vs 81%，n=1，待校正（離開中位門檻 ×0.8）"
 # article 2 → 3: Leon 2026-10-18 decision 59fdefb32bd7 = D (with delete-or-edit-only rewrites and arbitration)
 MAX_ROUNDS = {"topic": 2, "article": 3, "script_structure": 3, "script_facts": 3, "title_thumb": 3, "media": 3,
               "final": 3, "shorts_topic": 2, "shorts_script": 3, "shorts_title": 3, "shorts_final": 3}
@@ -168,7 +172,7 @@ class Aggregator(_Strict):
 
 
 class Defaults(_Strict):
-    max_parallel: int = Field(default=4, ge=1, le=8)
+    max_parallel: int = Field(default=8, ge=1, le=8)
     timeout_s: int = Field(default=1200, ge=60, le=7200)
     schema_retries: int = Field(default=1, ge=0, le=3)
 
@@ -221,9 +225,11 @@ def _seat_errors(name: str, stage: Stage, roles: dict[str, Role], economy: bool 
     return errors
 
 
-def _threshold_errors(name: str, threshold: Threshold) -> list[str]:
+def _threshold_errors(name: str, threshold: Threshold, economy: bool = False) -> list[str]:
     errors = []
     for field, (direction, floor) in THRESHOLD_FLOOR.get(name, {}).items():
+        if economy and field == "leave_median_pct":
+            floor = round(floor * ECONOMY_LEAVE_SCALE, 4)
         value = getattr(threshold, field)
         if value is None:
             errors.append(f"{name}: threshold {field} is required (floor {floor})")
@@ -244,7 +250,7 @@ def rule_violations(config: ReviewConfig) -> list[str]:
             errors.append(f"unknown stage {name!r}")
             continue
         errors += _seat_errors(name, stage, config.roles, economy)
-        errors += _threshold_errors(name, stage.threshold)
+        errors += _threshold_errors(name, stage.threshold, economy)
         if stage.max_rounds > MAX_ROUNDS[name]:
             errors.append(f"{name}: max_rounds {stage.max_rounds} > {MAX_ROUNDS[name]}")
         if stage.rework not in REWORK_STEPS:
@@ -300,6 +306,10 @@ def _economize(raw: dict, config: ReviewConfig) -> dict:
     stages = {}
     for name, stage in raw["stages"].items():
         new = {**stage, "seats": [seat_tier(s) for s in stage["seats"]]}
+        threshold = stage.get("threshold") or {}
+        if threshold.get("leave_median_pct") is not None:
+            new["threshold"] = {**threshold,
+                                "leave_median_pct": round(threshold["leave_median_pct"] * ECONOMY_LEAVE_SCALE, 4)}
         if stage.get("producer") is not None:
             new["producer"] = {"model": ECONOMY_TIER[0], "effort": ECONOMY_TIER[1]}
         if stage.get("arbiter") is not None:

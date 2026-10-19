@@ -23,7 +23,7 @@ from content_farm.production.state import fingerprint
 from content_farm.review import materials as mat
 from content_farm.review import prompts, verdicts
 from content_farm.review.client import Call, CallResult, call_usage, run_call
-from content_farm.review.config import ReviewConfig, Stage, sentence_id_field
+from content_farm.review.config import ECONOMY_THRESHOLD_NOTE, ReviewConfig, Stage, sentence_id_field
 from content_farm.review.schemas import schema_for
 from content_farm.review.snapshot import snapshot_reviewed
 
@@ -191,6 +191,9 @@ def run_round(run_dir: Path, *, stage_name: str, config: ReviewConfig, channel: 
         "at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "inputs": fingerprint(run_dir, stage.reviews), "max_rounds": stage.max_rounds,
         "tier_mode": config.tier_mode,
+        "threshold": stage.threshold.model_dump(exclude_none=True),
+        **({"threshold_note": ECONOMY_THRESHOLD_NOTE}
+           if config.tier_mode == "economy" and stage.threshold.leave_median_pct is not None else {}),
         **({"only_sentences": sorted(only_sentences)} if only_sentences is not None else {}),
         "seats": [{**{"role": m.role, "kind": m.kind, "holdout": m.holdout}, **r.to_json()}
                   for m, r in zip(members, results)],

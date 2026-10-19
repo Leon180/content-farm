@@ -7,7 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from content_farm.review.config import MODEL_RANK, REVIEW_TIER_ENV, REVIEW_TIER_FILE, economy_requested, load_review
+from content_farm.review.config import (ECONOMY_THRESHOLD_NOTE, MODEL_RANK, REVIEW_TIER_ENV, REVIEW_TIER_FILE,
+                                        economy_requested, load_review)
 from tests.unit.test_production_runner import run_dir as run_dir  # noqa: F401  (fixture)
 from tests.unit.test_review_script_stages import Panel, _runner
 
@@ -24,6 +25,31 @@ def test_economy_puts_every_seat_producer_and_arbiter_on_sonnet():
             assert (stage.producer.model, stage.producer.effort) == ("sonnet", "medium"), name
         if stage.arbiter is not None:
             assert (stage.arbiter.model, stage.arbiter.effort) == ("sonnet", "high"), name
+
+
+def test_economy_viewer_leave_threshold_is_scaled_and_noted():
+    economy, default = load_review("yokai", economy=True), load_review("yokai")
+    for name in ("script_structure", "final"):
+        assert default.stages[name].threshold.leave_median_pct == 0.5
+        assert economy.stages[name].threshold.leave_median_pct == 0.4
+    assert "47% vs 81%" in ECONOMY_THRESHOLD_NOTE
+
+
+def test_a_0_40_leave_threshold_is_rejected_outside_economy():
+    from pydantic import ValidationError
+
+    from content_farm.review.config import ReviewConfig
+
+    raw = load_review("yokai", economy=True).model_dump()
+    with pytest.raises(ValidationError, match="leave_median_pct=0.4 is looser"):
+        ReviewConfig.model_validate({**raw, "tier_mode": "default",
+                                     "stages": {**raw["stages"], **{n: {**s, "seats": load_review("yokai").model_dump()
+                                                                         ["stages"][n]["seats"]}
+                                                                    for n, s in raw["stages"].items()}}})
+
+
+def test_reviewers_run_up_to_eight_at_once():
+    assert load_review().defaults.max_parallel == 8
 
 
 def test_default_mode_is_unchanged():
@@ -76,6 +102,7 @@ def test_the_round_scorecard_records_the_mode(run_dir: Path, monkeypatch: pytest
     _runner(run_dir, Panel(writer=5)).run(until="gate_deck")
     card = json.loads((run_dir / "review" / "script_structure" / "round-1" / "scorecard.json").read_text(encoding="utf-8"))
     assert card["tier_mode"] == "economy"
+    assert card["threshold"]["leave_median_pct"] == 0.4 and card["threshold_note"] == ECONOMY_THRESHOLD_NOTE
     assert {s["model"] for s in card["seats"]} == {"sonnet"}
     events = [json.loads(line) for line in (run_dir / "production.log.jsonl").read_text(encoding="utf-8").splitlines()]
     assert any(e.get("panel") == "script_structure" and e.get("tier_mode") == "economy" for e in events)

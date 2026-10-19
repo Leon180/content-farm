@@ -100,7 +100,7 @@ sentence_id_field: sentence_ids   # feat/incremental-render ec2c126: slide.sente
 # 由 src/content_farm/review/config.py 驗證；硬規則（必要角色、事實查核 opus·high、門檻下限、輪數上限）寫在程式裡，
 # 這裡只能「更嚴」不能「更鬆」。每位評審是 pipeline 自己啟動的 `claude -p --model --effort --json-schema` 子程序。
 review:
-  defaults: {max_parallel: 4, timeout_s: 1200, schema_retries: 1}
+  defaults: {max_parallel: 8, timeout_s: 1200, schema_retries: 1}   # 2026-10-19 4→8；入場檢查仍依可用記憶體往下調
   aggregator: {model: haiku, effort: low}      # 修改清單整理、退回路由、彙整
   roles:
     viewer: {title: 合成觀眾, kind: viewer}
