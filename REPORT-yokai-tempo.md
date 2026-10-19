@@ -233,5 +233,15 @@
   - yokai run：寫了 `review/tier.json`，改用 economy。標題縮圖開新循環：舊的 3 輪搬到 `review/title_thumb/cycle-1/`，`title.fixes.json` 改名為 `title.fixes.cycle-1.json`。背景重跑中。
     - 新循環第 1 輪會先審現有的標題縮圖，T6 和 B 大概會再被點名，然後才退回 thumbnail_spec 修改。這會多用 1 輪，換來不用手改 run 的狀態。
     - 接下來事實段會先對 `s14.27` 跑差異查核。
+  - **economy 重跑結果（2026-10-19）** 🟢：
+    - 事實段差異查核 1 通過（只審 1 句 `s14.27`）。第 e02675f 的修正生效。
+    - 標題縮圖新循環第 1 輪沒過，製作人又點名 T6、B。修改清單有 thumbnail_spec 33 條、deck 11 條、media 1 條，restart 是 **deck**，因為取的是最早的步驟。
+    - deck agent（sonnet）照觀眾和製作人的意見改了開場，刪掉「最早的原典」。理由是它跟 s11.22「先後排不出來」不一致。
+    - 結果 **policy 失敗**，原文：`「最早的原典」not spoken in the first 3 slides (channel opening: 「你以為 vs 原典」開場：…)`。
+  - **衝突，需要決定**：
+    - 頻道開場規則要求「最早的原典」，評審團卻判這個說法跟 s11.22 矛盾。
+    - 依照「青蛙書記」那次的先例，頻道規則應該優先，但這是內容取捨，我沒有自己改。
+    - 另外，標題階段的退回會改到 deck（講稿），在事實鎖之後還是會動到旁白；只要新增一句，兩段就要重走。
+    - 建議：(a) 頻道規則優先，把 deck 還原成 `review/deck.approved.json`（含「最早的原典」×3；改過的版本存在 `deck.title-rework-1.json`）；(b) 標題階段的退回只改 thumbnail_spec，觀眾對講稿的意見只列出、不退回 deck。(b) 要改 routing。
   - 子代理的暫存檔在 `/private/tmp/yokai_probe/`（對照腳本、frame、HTML），worktree 外，要清 🟡。
 - 舊的接手方式：Leon 選了選項之後，A 要先改 deck（加 mascot pose）並重審 gate_deck，再執行 `PYTHONPATH=<wt>/src .venv/bin/python scripts/produce.py run --run-dir output/yokai-kyubi-v2 --no-stock --env-file /Users/lileon/project/content-farm/.env`。
