@@ -193,5 +193,10 @@
     - 結果寫在 `output/eval-competitors/yokai/competitors.pending.json`（gitignored）。故意不用 `competitors.json` 這個檔名：沒有縮圖檔的 json 會讓首頁評審讀不到圖。
     - 限制：搜尋結果沒有頻道名，所以 `channel` 欄位寫「待查」，有系列標記的附上。「頻道不重複」只能靠標題的系列標記判斷 🟡。
     - 接手：由 Leon 下載 15 張縮圖，把 pending 改名成 `competitors.json`，再從標題縮圖階段重跑（指令見回報）。
+  - Leon 在本 session 下載了 15 張縮圖（15/15）。我把清單改名成 `competitors.json`，再用 YouTube oEmbed（子代理 WebFetch）補上真實頻道名。
+    - 奇观探秘站出現兩次，拿掉 G2AlE3K9uqs，剩 **14 支／14 個頻道** 🟢。
+    - 頻道名是經過 WebFetch 的摘要拿到的，不是原始 JSON 🟡。
+    - `homepage.load_competitors` 讀得到全部，圖片路徑都對得上。
+  - 從標題縮圖階段繼續跑（背景執行）。要注意：標題階段已經用了 2 輪，下一輪是最後一輪。事實段因為 s14 的修改，會先跑一次差異查核。
   - 子代理的暫存檔在 `/private/tmp/yokai_probe/`（對照腳本、frame、HTML），worktree 外，要清 🟡。
 - 舊的接手方式：Leon 選了選項之後，A 要先改 deck（加 mascot pose）並重審 gate_deck，再執行 `PYTHONPATH=<wt>/src .venv/bin/python scripts/produce.py run --run-dir output/yokai-kyubi-v2 --no-stock --env-file /Users/lileon/project/content-farm/.env`。
