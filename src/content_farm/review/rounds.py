@@ -103,12 +103,28 @@ def roster(config: ReviewConfig, stage_name: str, channel: str, round_no: int, *
     return members
 
 
-def _build_materials(run_dir: Path, out: Path, stage: str, vertical: bool) -> mat.Materials:
+def _build_materials(run_dir: Path, out: Path, stage: str, vertical: bool,
+                     only: frozenset[str] | None = None) -> mat.Materials:
     if stage in VIDEO_STAGES:
         from content_farm.review.materials_video import final
 
         return final(run_dir, out, vertical=vertical)
-    return mat.BUILDERS[stage](run_dir, out, id_field=sentence_id_field())
+    extra = {"only": only} if only is not None else {}
+    return mat.BUILDERS[stage](run_dir, out, id_field=sentence_id_field(), **extra)
+
+
+def _within(seat: verdicts.Seat, only: frozenset[str]) -> verdicts.Seat:
+    """A fact-checker's answer restricted to the sentences under review (delta fact-check)."""
+    if seat.kind != "fact" or not seat.ok or seat.output is None:
+        return seat
+
+    def hits(item: dict[str, Any]) -> bool:
+        ids = item.get("sentence_ids") or (item.get("ref") or {}).get("sentence_ids") or []
+        return bool(set(map(str, ids)) & only)
+
+    output = {**seat.output, "claims": [c for c in seat.output.get("claims", []) if hits(c)],
+              "issues": [i for i in seat.output.get("issues", []) if hits(i)]}
+    return verdicts.Seat(seat.rid, seat.role, seat.kind, seat.holdout, seat.ok, output)
 
 
 def _feeds(run_dir: Path, out: Path, member: Member, channel_name: str, competitors: Path | None) -> tuple[list[str], dict]:
@@ -120,15 +136,18 @@ def _feeds(run_dir: Path, out: Path, member: Member, channel_name: str, competit
 def run_round(run_dir: Path, *, stage_name: str, config: ReviewConfig, channel: str, channel_name: str,
               round_no: int, with_holdout: bool, holdout_only: bool = False, competitors: Path | None = None,
               client: Callable[[Call], CallResult] | None = None, vertical: bool = False,
-              judge_context: dict[str, Any] | None = None, suffix: str = "") -> dict[str, Any]:
-    """``suffix``: a side round (e.g. ``-opus`` comparison) that never counts for the gate."""
+              judge_context: dict[str, Any] | None = None, suffix: str = "",
+              only_sentences: frozenset[str] | None = None) -> dict[str, Any]:
+    """``suffix``: a side round (e.g. ``-opus`` comparison) that never counts for the gate.
+    ``only_sentences``: a delta fact-check (``review.delta``) — reviewers see those sentences with
+    their neighbours, and only claims about them are judged."""
     stage = config.stages[stage_name]
     name = f"round-{round_no}" + ("-holdout" if holdout_only else "") + suffix
     out = stage_dir(run_dir, stage_name) / name
     out.mkdir(parents=True, exist_ok=True)
     started = time.monotonic()
     snapshot_reviewed(run_dir, out, stage.reviews)
-    materials = _build_materials(run_dir, out, stage_name, vertical)
+    materials = _build_materials(run_dir, out, stage_name, vertical, only_sentences)
     members = roster(config, stage_name, channel, round_no, with_holdout=with_holdout, holdout_only=holdout_only)
     keys: dict[str, dict] = {}
     calls = []
@@ -156,6 +175,8 @@ def run_round(run_dir: Path, *, stage_name: str, config: ReviewConfig, channel: 
         key_dir.mkdir(parents=True, exist_ok=True)
         (key_dir / f"{stage_name}-{name}.json").write_text(json.dumps(keys, indent=1), encoding="utf-8")
     seats = [verdicts.Seat(m.rid, m.role, m.kind, m.holdout, r.ok, r.output) for m, r in zip(members, results)]
+    if only_sentences is not None:
+        seats = [_within(seat, only_sentences) for seat in seats]
     arbitration, arbiter = _arbitrate(run_dir, out, stage_name, stage, seats, invoke, config)
     if arbiter is not None:
         members, results = [*members, arbiter[0]], [*results, arbiter[1]]
@@ -169,6 +190,7 @@ def run_round(run_dir: Path, *, stage_name: str, config: ReviewConfig, channel: 
         "stage": stage_name, "round": round_no, "label": name, "holdout_only": holdout_only,
         "at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "inputs": fingerprint(run_dir, stage.reviews), "max_rounds": stage.max_rounds,
+        **({"only_sentences": sorted(only_sentences)} if only_sentences is not None else {}),
         "seats": [{**{"role": m.role, "kind": m.kind, "holdout": m.holdout}, **r.to_json()}
                   for m, r in zip(members, results)],
         "verdict": verdict.to_json(), "seconds": round(time.monotonic() - started, 1),

@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 PRODUCER_STEPS = ("topic", "article", "deck", "thumbnail_spec")
 APPROVED_DECK = "review/deck.approved.json"   # same path as feat/incremental-render's runner.APPROVED_DECK
 LOCKED_DECK = "review/deck.locked.json"       # deck at the last structure / facts approval (the fact lock's baseline)
+FACTS_LOCKED_DECK = "review/deck_facts.locked.json"   # deck at the last fact-stage approval (delta fact-check baseline)
 SCRIPT_STAGES = ("script_structure", "script_facts")
 EVENTS = "production.log.jsonl"
 
@@ -128,8 +129,7 @@ def _mark_rework(ctx: Context, state: RunState, plan: dict[str, Any], gate: str)
 
 def panel_step(ctx: Context, state: RunState, step: Step, stage: str, current: str,
                log: Callable[[str], None]) -> tuple[RunState, RunResult | None]:
-    from content_farm.production.runner import Outcome, RunResult
-    from content_farm.review.gate import PANEL_BY, panel_gate
+    from content_farm.review.gate import panel_gate
 
     assert step.gate is not None
     competitors = competitors_for(ctx)
@@ -138,8 +138,54 @@ def panel_step(ctx: Context, state: RunState, step: Step, stage: str, current: s
                         channel=ctx.channel.code, channel_name=ctx.channel.name, competitors=competitors,
                         vertical=_short(ctx), judge_context=_judge_context(ctx, stage, competitors),
                         client=ctx.options.review_client)
+    return _apply(ctx, state, step, stage, current, result, log)
+
+
+def facts_delta(ctx: Context, state: RunState, step: Step, current: str,
+                log: Callable[[str], None]) -> tuple[RunState, RunResult | None] | None:
+    """The delta fact-check (``review.delta``) when the fact stage approved an earlier deck and the deck
+    only lost or edited sentences since; None = the regular fact rounds decide."""
+    from content_farm.review.delta import delta_gate
+    from content_farm.review.gate import PANEL_BY
+
+    assert step.gate is not None
+    decision = state.decisions.get(step.gate.value)
+    locked = _facts_baseline(ctx.run_dir)
+    if (decision is None or decision.verdict != "approved" or not decision.by.startswith(PANEL_BY)
+            or locked is None or not (ctx.run_dir / "deck.json").is_file()):
+        return None
+    log(f"⚖ {step.name}: 差異查核（事實段已核可，只審核可後改寫的句子）")
+    result = delta_gate(ctx.run_dir, gate=step.gate.value, stage_name="script_facts", config=review_config(ctx),
+                        channel=ctx.channel.code, channel_name=ctx.channel.name, locked_deck=locked,
+                        client=ctx.options.review_client)
+    if result is None:
+        return None
+    return _apply(ctx, state, step, "script_facts", current, result, log, delta=True)
+
+
+def _facts_baseline(run_dir: Path) -> Path | None:
+    """The deck the fact stage last approved: ``FACTS_LOCKED_DECK``, or — for an approval recorded before
+    that file existed — the snapshot kept by the approving round. None when neither exists (e.g. a new
+    cycle moved the rounds aside)."""
+    locked = run_dir / FACTS_LOCKED_DECK
+    if locked.is_file():
+        return locked
+    decision = run_dir / "review" / f"{Gate.DECK_FACTS.value}.decision.json"
+    if not decision.is_file():
+        return None
+    card = json.loads(decision.read_text(encoding="utf-8")).get("scorecard")
+    snapshot = Path(card).parent / "snapshot" / "deck.json" if card else None
+    return snapshot if snapshot is not None and snapshot.is_file() else None
+
+
+def _apply(ctx: Context, state: RunState, step: Step, stage: str, current: str, result: Any,
+           log: Callable[[str], None], *, delta: bool = False) -> tuple[RunState, RunResult | None]:
+    from content_farm.production.runner import Outcome, RunResult
+    from content_farm.review.gate import PANEL_BY
+
+    assert step.gate is not None
     _event(ctx.run_dir, step=step.name, panel=stage, status=result.status, message=result.message,
-           scorecard=result.scorecard)
+           scorecard=result.scorecard, **({"delta": True} if delta else {}))
     from content_farm.review.scorecard_html import render
 
     render(ctx.run_dir, ctx.channel.name)
@@ -155,6 +201,8 @@ def panel_step(ctx: Context, state: RunState, step: Step, stage: str, current: s
 
             shutil.copy2(ctx.run_dir / "deck.json", ctx.run_dir / APPROVED_DECK)
             shutil.copy2(ctx.run_dir / "deck.json", ctx.run_dir / LOCKED_DECK)
+            if step.gate is Gate.DECK_FACTS:
+                shutil.copy2(ctx.run_dir / "deck.json", ctx.run_dir / FACTS_LOCKED_DECK)
         return state.with_decision(decision).with_step(step.name, record), None
     record = StepRecord("waiting", now_iso(), inputs=current, note=result.message)
     state = state.with_step(step.name, record)
@@ -302,4 +350,6 @@ def _new_cycle(run_dir: Path) -> str:
         if plan.is_file():
             plan.rename(plan.with_name(f"{gate}.fixes.cycle-{number}.json"))
     (run_dir / LOCKED_DECK).rename(run_dir / f"review/deck.locked.cycle-{number}.json")
+    if (run_dir / FACTS_LOCKED_DECK).is_file():
+        (run_dir / FACTS_LOCKED_DECK).rename(run_dir / f"review/deck_facts.locked.cycle-{number}.json")
     return f"cycle-{number}"

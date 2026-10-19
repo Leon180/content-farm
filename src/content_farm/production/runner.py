@@ -239,6 +239,10 @@ class Runner:
                 return kept, None
         if stage is not None:
             with self._admit(state, step):
+                if stage == "script_facts":
+                    delta = panel_flow.facts_delta(self.ctx, state, step, current, self.log)
+                    if delta is not None:
+                        return delta
                 return panel_flow.panel_step(self.ctx, state, step, stage, current, self.log)
         decision = state.decisions.get(step.gate.value)
         unchanged_rejection = (decision is not None and decision.verdict == "rejected"

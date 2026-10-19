@@ -73,12 +73,27 @@ def _source_ids(path: Path) -> list[str]:
     return [str(i.get("id")) for i in items if isinstance(i, dict)]
 
 
-def script(run_dir: Path, out: Path, *, id_field: str = "sentence_ids", **_: Any) -> Materials:
+DELTA_CONTEXT = 1   # neighbours shown on each side of an edited sentence in a delta fact-check
+
+
+def _delta_listing(sentences: list[Sentence], only: frozenset[str]) -> str:
+    """The edited sentences (★) with ``DELTA_CONTEXT`` neighbours each side; the rest left out."""
+    marks = [i for i, s in enumerate(sentences) if s.id in only]
+    keep = sorted({j for i in marks for j in range(i - DELTA_CONTEXT, i + DELTA_CONTEXT + 1) if 0 <= j < len(sentences)})
+    lines = [("★ " if sentences[j].id in only else "  ") + listing([sentences[j]]).strip().splitlines()[-1] for j in keep]
+    return ("差異查核：事實段已核可，這次只審標 ★ 的句子（核可後被改寫）；沒標的是前後文，不審。\n\n"
+            + "\n".join(lines) + "\n")
+
+
+def script(run_dir: Path, out: Path, *, id_field: str = "sentence_ids", only: frozenset[str] | None = None,
+           **_: Any) -> Materials:
     deck = _read_json(run_dir / "deck.json")
     sentences = deck_sentences(deck, id_field)
-    text = f"# {deck.get('title', '')}\n\n" + listing(sentences)
+    full = f"# {deck.get('title', '')}\n\n" + listing(sentences)
+    text = full if only is None else f"# {deck.get('title', '')}\n\n" + _delta_listing(sentences, only)
     files = [_put(out, "script.txt", text)]
-    notes = {files[0]: "講稿逐句（[句子 id] ~預估時間 句子）；指認問題時用句子 id"}
+    notes = {files[0]: "講稿逐句（[句子 id] ~預估時間 句子）；指認問題時用句子 id"
+             + ("；★＝這次要審的句子" if only is not None else "")}
     visual = []
     for section in deck.get("sections", []):
         for slide in section.get("slides", []):
@@ -92,7 +107,7 @@ def script(run_dir: Path, out: Path, *, id_field: str = "sentence_ids", **_: Any
         if (run_dir / name).is_file():
             files.append(_copy(run_dir / name, out, Path(name).name))
             notes[files[-1]] = note
-    corpus = text + "\n".join(visual) + ((run_dir / "article.md").read_text(encoding="utf-8")
+    corpus = full + "\n".join(visual) + ((run_dir / "article.md").read_text(encoding="utf-8")
                                          if (run_dir / "article.md").is_file() else "")
     return Materials(files, notes, corpus=corpus, sentences=sentences,
                      extra={"source_ids": _source_ids(run_dir / "sources.json") if (run_dir / "sources.json").is_file() else []})
