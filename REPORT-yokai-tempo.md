@@ -165,4 +165,13 @@
     - `review/deck.fixes.json` 改名為 `deck.fixes.cycle-1.json`。
     - 起點 deck 就是結構段第 3 輪那份，`cmp` 確認跟 `deck.structure-r3.json` 相同。
   - 同一條 `produce.py run --auto-agents --no-stock` 在背景重跑。
+- orchestrator 決定兩個阻擋的處理（orch-mail d0a37614c380239f，已 ack）：差異查核、建 yokai 競品縮圖集、修畫作主體偵測、青蛙書記照頻道規則留在主縮圖。
+  - **差異查核**（commit **cf94744**）🟢：`review/delta.py`、`panel_flow.facts_delta`、runner 的 script_facts 分支。
+    - 規則：事實段核可之後，deck 只有刪句或改句時，只審改寫過的句子。兩位查核，意見不一致時仲裁，0 確認錯誤就沿用核可。
+    - 審查材料只列 ★ 標記的句子，前後各帶 1 句當上下文；判定只算這些句子上的說法。
+    - 這種審查是附加輪 `round-N-delta-K`，不佔事實段的輪數；只刪句的話不叫評審。
+    - 同一個基準最多跑 2 次，超過就停。新增句子照舊讓兩段重走。
+    - 修掉一個缺口：原本結構段核可時會覆寫共用的 lock，事實段因此看不到改動。現在事實段改用自己的基準 `review/deck_facts.locked.json`，新一輪循環時一起搬走；在這個 commit 之前就核可的 run 用核可那一輪的快照當基準（要先有 e3bb581）。
+    - 測試 `tests/unit/test_review_delta.py` 8 支。全套 1582 passed／1 skipped／1 failed（既有的 multi_provider）。
+  - 競品縮圖集＋畫作主體偵測：交給子代理在做（只動 evaluation／新測試，不 commit，做完由我審過再 commit）。
 - 舊的接手方式：Leon 選了選項之後，A 要先改 deck（加 mascot pose）並重審 gate_deck，再執行 `PYTHONPATH=<wt>/src .venv/bin/python scripts/produce.py run --run-dir output/yokai-kyubi-v2 --no-stock --env-file /Users/lileon/project/content-farm/.env`。
