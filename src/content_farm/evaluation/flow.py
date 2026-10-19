@@ -68,8 +68,11 @@ def thumbs_for(run_dir: Path, competitors_dir: Path | None) -> dict:
     work = run_dir / "thumbnails" / ".work"
     for image in sorted((run_dir / "thumbnails").glob("variant_*.jpg")):
         key = image.stem.split("_")[-1].upper()
-        html = work / f"variant_{key.lower()}.html"
-        page = measure_page(html) if html.is_file() else {}
+        # render_variants writes variant_<key as in the spec>.html (usually upper case); a case-sensitive
+        # filesystem would miss it under the lower-case name and score subject share 0
+        html = next((p for p in (work / f"variant_{key}.html", work / f"variant_{key.lower()}.html") if p.is_file()),
+                    None)
+        page = measure_page(html) if html else {}
         out[key] = thumb_metrics(image, page, hues)
     return out
 

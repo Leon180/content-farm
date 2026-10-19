@@ -150,11 +150,24 @@ def hue_distance(a: float, b: float) -> float:
     return round(min(d, 360 - d), 1)
 
 
+# every thumbnail template's main picture: character/compare ``img.visual``, keyart ``img.art``,
+# panel ``.panel img`` (the panel layout's image has no class — it measured 0.0 before 2026-10-19)
+SUBJECT_SELECTOR = "img.visual, img.art, .panel img"
+
 _MEASURE_JS = """() => {
+  const SUBJECT_SELECTOR = '__SUBJECT_SELECTOR__';
   const els = [...document.querySelectorAll('.big > div, .yokai-title > div, .num, .big')];
   const text = els.map(e => ({h: parseFloat(getComputedStyle(e).fontSize), c: getComputedStyle(e).color,
                               r: e.getBoundingClientRect()})).sort((a, b) => b.h - a.h)[0] || null;
-  const vis = [...document.querySelectorAll('img.visual, img.art')].map(e => e.getBoundingClientRect());
+  const drawn = e => {          // the box the picture is painted in (object-fit: contain letterboxes it)
+    const r = e.getBoundingClientRect();
+    if (getComputedStyle(e).objectFit !== 'contain' || !e.naturalWidth || !e.naturalHeight) return r;
+    const k = Math.min(r.width / e.naturalWidth, r.height / e.naturalHeight);
+    const w = e.naturalWidth * k, h = e.naturalHeight * k;
+    const left = r.left + (r.width - w) / 2, top = r.top + (r.height - h) / 2;
+    return {left, top, right: left + w, bottom: top + h};
+  };
+  const vis = [...document.querySelectorAll(SUBJECT_SELECTOR)].map(drawn);
   const area = vis.reduce((s, r) => s + Math.max(0, Math.min(r.right, 1280) - Math.max(r.left, 0)) *
                                       Math.max(0, Math.min(r.bottom, 720) - Math.max(r.top, 0)), 0);
   return {font_px: text ? text.h : null, color: text ? text.c : null,
@@ -168,7 +181,7 @@ def measure_page(html: Path) -> dict:
 
     with PageCapturer(size=(1280, 720)) as capturer:
         page = capturer._open(html)                     # noqa: SLF001 — same browser, read-only query
-        return page.evaluate(_MEASURE_JS)
+        return page.evaluate(_MEASURE_JS.replace("__SUBJECT_SELECTOR__", SUBJECT_SELECTOR))
 
 
 def _rgb(css: str | None) -> tuple[float, float, float] | None:
