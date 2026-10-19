@@ -25,6 +25,7 @@ from content_farm.review import prompts, verdicts
 from content_farm.review.client import Call, CallResult, call_usage, run_call
 from content_farm.review.config import ReviewConfig, Stage, sentence_id_field
 from content_farm.review.schemas import schema_for
+from content_farm.review.snapshot import snapshot_reviewed
 
 REVIEW_DIR = Path("review")
 VIDEO_STAGES = ("final", "shorts_final")
@@ -126,6 +127,7 @@ def run_round(run_dir: Path, *, stage_name: str, config: ReviewConfig, channel: 
     out = stage_dir(run_dir, stage_name) / name
     out.mkdir(parents=True, exist_ok=True)
     started = time.monotonic()
+    snapshot_reviewed(run_dir, out, stage.reviews)
     materials = _build_materials(run_dir, out, stage_name, vertical)
     members = roster(config, stage_name, channel, round_no, with_holdout=with_holdout, holdout_only=holdout_only)
     keys: dict[str, dict] = {}
