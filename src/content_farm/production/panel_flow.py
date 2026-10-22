@@ -535,14 +535,25 @@ def _new_cycle(run_dir: Path) -> str:
     return f"cycle-{number}"
 
 
-def new_stage_cycle(run_dir: Path, stages: tuple[str, ...]) -> dict[str, str]:
+NEW_CYCLE_REASON_MIN = 12      # chars: "because" is not a reason
+
+
+def new_stage_cycle(run_dir: Path, stages: tuple[str, ...], *, reason: str) -> dict[str, str]:
     """``produce.py new-cycle``: the same archiving ``_new_cycle`` does for the script stages, for any panel
-    stages whose rounds are used up (a cloned or older run-dir). Each stage's ``round-*`` folders move to
-    ``cycle-N/`` (N = that stage's next number) and its fix list to ``<gate>.fixes.cycle-N.json``, so the next
-    round is number 1. Returns ``{stage: "cycle-N"}`` for the stages that had rounds; unknown stages raise."""
+    stages whose rounds are used up. Each stage's ``round-*`` folders move to ``cycle-N/`` (N = that stage's
+    next number) and its fix list to ``<gate>.fixes.cycle-N.json``, so the next round is number 1. Returns
+    ``{stage: "cycle-N"}`` for the stages that had rounds; unknown stages raise.
+
+    Leon 2026-10-23: the article gate allows 3 rounds and 0 errors; a new cycle is **not** a way to run more rounds
+    on the same content. It is for rounds left by a clone / an older run-dir, or a re-run after a process gap was
+    fixed. ``reason`` (required) says which; it is written to ``review/new_cycle.jsonl`` and the production log
+    so the report can list every use."""
     from content_farm.review.config import load_review
     from content_farm.review.rounds import stage_dir
 
+    if len((reason or "").strip()) < NEW_CYCLE_REASON_MIN:
+        raise ValueError("new-cycle needs --reason (>= 12 chars): a cloned / older run's leftover rounds, or a re-run after "
+                         "a process gap was fixed. It is not for running more rounds on the same content.")
     known = load_review().stages
     unknown = [s for s in stages if s not in known]
     if unknown:
@@ -561,4 +572,8 @@ def new_stage_cycle(run_dir: Path, stages: tuple[str, ...]) -> dict[str, str]:
         if plan.is_file():
             plan.rename(plan.with_name(f"{known[stage].gate}.fixes.cycle-{number}.json"))
         moved[stage] = f"cycle-{number}"
+    if moved:
+        _event(run_dir, step="new_cycle", stages=moved, reason=reason.strip())
+        with (run_dir / "review" / "new_cycle.jsonl").open("a", encoding="utf-8") as log:
+            log.write(json.dumps({"at": now_iso(), "stages": moved, "reason": reason.strip()}, ensure_ascii=False) + "\n")
     return moved

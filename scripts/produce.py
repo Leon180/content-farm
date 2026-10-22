@@ -148,6 +148,9 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     cycle.add_argument("--run-dir", type=Path, required=True)
     cycle.add_argument("--stage", action="append", required=True,
                        help="panel stage, e.g. media|final|script_structure|script_facts (repeatable)")
+    cycle.add_argument("--reason", required=True,
+                       help="required: leftover rounds of a clone / older run, or a re-run after a process gap was fixed "
+                            "(NOT more rounds on the same content: article stays at 3 rounds, 0 errors)")
     sub.add_parser("queue", help="machine-wide heavy-work queue (renders, local TTS, image/video models)")
     news_cli.add_parser(sub)
     return parser.parse_args(argv)
@@ -327,7 +330,7 @@ def cmd_new_cycle(args: argparse.Namespace) -> int:
 
     if not args.run_dir.is_dir():
         raise ValueError(f"no run-dir: {args.run_dir}")
-    moved = new_stage_cycle(args.run_dir, tuple(args.stage))
+    moved = new_stage_cycle(args.run_dir, tuple(args.stage), reason=args.reason)
     for stage in args.stage:
         print(f"{stage}: {'rounds moved to review/' + stage + '/' + moved[stage] if stage in moved else 'no rounds to archive'}")
     return 0

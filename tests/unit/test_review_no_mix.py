@@ -82,14 +82,26 @@ def test_new_cycle_moves_rounds_and_the_fix_list_aside(tmp_path: Path):
         (tmp_path / "review" / "media" / f"round-{n}").mkdir(parents=True)
         (tmp_path / "review" / "media" / f"round-{n}" / "scorecard.json").write_text("{}", encoding="utf-8")
     (tmp_path / "review" / "media.fixes.json").write_text("{}", encoding="utf-8")
-    assert new_stage_cycle(tmp_path, ("media", "final")) == {"media": "cycle-1"}      # final had nothing to move
+    assert new_stage_cycle(tmp_path, ("media", "final"), reason="leftover rounds of a cloned run") == {"media": "cycle-1"}      # final had nothing to move
     assert not list((tmp_path / "review" / "media").glob("round-*"))
     assert (tmp_path / "review" / "media" / "cycle-1" / "round-3" / "scorecard.json").is_file()
     assert (tmp_path / "review" / "media.fixes.cycle-1.json").is_file()
     (tmp_path / "review" / "media" / "round-1").mkdir()
-    assert new_stage_cycle(tmp_path, ("media",)) == {"media": "cycle-2"}              # numbering continues
+    assert new_stage_cycle(tmp_path, ("media",), reason="leftover rounds of a cloned run") == {"media": "cycle-2"}              # numbering continues
 
 
 def test_new_cycle_refuses_an_unknown_stage(tmp_path: Path):
     with pytest.raises(ValueError, match="unknown stage"):
-        new_stage_cycle(tmp_path, ("nope",))
+        new_stage_cycle(tmp_path, ("nope",), reason="leftover rounds of a cloned run")
+
+
+def test_new_cycle_needs_a_real_reason_and_logs_it(tmp_path: Path):
+    (tmp_path / "review" / "media" / "round-1").mkdir(parents=True)
+    for reason in ("", "   ", "again"):
+        with pytest.raises(ValueError, match="--reason"):
+            new_stage_cycle(tmp_path, ("media",), reason=reason)
+    assert (tmp_path / "review" / "media" / "round-1").is_dir()           # nothing moved by a refused call
+    new_stage_cycle(tmp_path, ("media",), reason="re-run after the touch guard fix")
+    line = json.loads((tmp_path / "review" / "new_cycle.jsonl").read_text(encoding="utf-8").splitlines()[0])
+    assert line["reason"] == "re-run after the touch guard fix" and line["stages"] == {"media": "cycle-1"}
+    assert "new_cycle" in (tmp_path / "production.log.jsonl").read_text(encoding="utf-8")
