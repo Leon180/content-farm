@@ -14,6 +14,7 @@ from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
 
+from content_farm.review.brief import deck_brief
 from content_farm.review.client import Call, CallResult, run_call
 from content_farm.review.config import ReviewConfig, Tier
 
@@ -25,7 +26,7 @@ RECEIPT = {"type": "object", "additionalProperties": False, "required": ["files"
                                                                               "(only when the fix list names no sentence)"}}}
 TOOLS = ("Read", "Write", "Edit", "Glob", "Grep", "WebSearch", "WebFetch")   # + Bash scoped to the repo python
 
-SCRIPTS = ("check_article.py", "deck_to_script.py", "make_thumbnail.py", "render_slides.py")
+SCRIPTS = ("check_article.py", "deck_to_script.py", "apply_deck_patch.py", "make_thumbnail.py", "render_slides.py")
 TIMEOUT_S = {"topic": 1500, "article": 2700, "deck": 3600, "thumbnail_spec": 1800}
 
 # step → (stage whose producer tier applies, gate whose fixes apply)
@@ -167,7 +168,8 @@ def produce(step: str, run_dir: Path, *, channel: str, config: ReviewConfig, pyt
     fmt = {"run_dir": run_dir, "repo": REPO, "channel": channel, "python": python}
     fixes = _fixes_text(run_dir, gate)
     task = TASKS_REWORK[step] if fixes and step in TASKS_REWORK else TASKS[step]     # a rework is a diff, not a redo
-    prompt = "\n\n".join(part for part in (COMMON.format(**fmt), task.format(**fmt), fixes,
+    guide = deck_brief(config, channel, python, str(REPO)) if step == "deck" else ""   # rubric + channel rules + Bash, first time
+    prompt = "\n\n".join(part for part in (COMMON.format(**fmt), task.format(**fmt), guide, fixes,
                                            extra, "完成後用結構化輸出回報寫了哪些檔。") if part)
     tier = producer_tier(config, step)
     log_dir = run_dir / "review" / "producers"
