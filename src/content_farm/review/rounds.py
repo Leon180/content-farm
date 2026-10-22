@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import os
 import random
+import threading
 import time
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
@@ -32,6 +33,28 @@ from content_farm.review.snapshot import snapshot_reviewed
 REVIEW_DIR = Path("review")
 VIDEO_STAGES = ("final", "shorts_final")
 TITLE_STAGES = ("title_thumb", "shorts_title")
+
+
+class Meter:
+    """How many reviewers were really running at once in a round (the planned parallelism is only a cap:
+    free memory shrinks it, and a stage with few seats never reaches it)."""
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self.running = 0
+        self.peak = 0
+
+    def wrap(self, invoke: Callable[[Call], CallResult]) -> Callable[[Call], CallResult]:
+        def metered(call: Call) -> CallResult:
+            with self._lock:
+                self.running += 1
+                self.peak = max(self.peak, self.running)
+            try:
+                return invoke(call)
+            finally:
+                with self._lock:
+                    self.running -= 1
+        return metered
 
 
 @dataclass(frozen=True)
@@ -193,6 +216,7 @@ def run_round(run_dir: Path, *, stage_name: str, config: ReviewConfig, channel: 
     out = stage_dir(run_dir, stage_name) / name
     out.mkdir(parents=True, exist_ok=True)
     started = time.monotonic()
+    started_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
     snapshot_reviewed(run_dir, out, stage.reviews)
     materials = _build_materials(run_dir, out, stage_name, vertical, only_sentences)
     members = roster(config, stage_name, channel, round_no, with_holdout=with_holdout, holdout_only=holdout_only)
@@ -224,7 +248,8 @@ def run_round(run_dir: Path, *, stage_name: str, config: ReviewConfig, channel: 
         if not feeds:       # a homepage viewer's feeds are shuffled per seat: never the same question twice
             call_keys[member.rid] = _seat_key(stage_name, call, member, role, view, view_dir, channel_name)
     live_invoke = client or (lambda call: run_call(call, log_dir=out / "raw"))
-    invoke = _cached(run_dir, call_keys, live_invoke, out.name)
+    meter = Meter()
+    invoke = meter.wrap(_cached(run_dir, call_keys, live_invoke, out.name))
     parallel = reviewer_parallel(len(calls), config.defaults.max_parallel)
     with ThreadPoolExecutor(max_workers=parallel) as pool:
         live = dict(zip((c.rid for c in calls), pool.map(invoke, calls)))
@@ -239,7 +264,9 @@ def run_round(run_dir: Path, *, stage_name: str, config: ReviewConfig, channel: 
     seats = [verdicts.Seat(m.rid, m.role, m.kind, m.holdout, r.ok, r.output) for m, r in zip(members, results)]
     if only_sentences is not None:
         seats = [_within(seat, only_sentences) for seat in seats]
+    arbitration_started = time.monotonic()
     arbitration, arbiter = _arbitrate(run_dir, out, stage_name, stage, seats, invoke, config)
+    arbitration_seconds = round(time.monotonic() - arbitration_started, 1)
     if arbiter is not None:
         members, results = [*members, arbiter[0]], [*results, arbiter[1]]
     context = {"corpus": materials.corpus, "sentences": materials.sentences, "duration": materials.duration,
@@ -250,7 +277,9 @@ def run_round(run_dir: Path, *, stage_name: str, config: ReviewConfig, channel: 
     verdict = verdicts.JUDGES[stage_name](stage, seats, **context)
     card = {
         "stage": stage_name, "round": round_no, "label": name, "holdout_only": holdout_only,
-        "at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "started_at": started_at,
+        "wanted": len(calls), "parallel_cap": config.defaults.max_parallel, "parallel_allowed": parallel,
+        "peak_parallel": meter.peak, "arbitration_seconds": arbitration_seconds,
         "inputs": fingerprint(run_dir, stage.reviews), "max_rounds": stage.max_rounds,
         "tier_mode": config.tier_mode,
         "threshold": stage.threshold.model_dump(exclude_none=True),

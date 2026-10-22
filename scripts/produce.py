@@ -128,6 +128,13 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     use = sub.add_parser("usage", help="cloud-lane usage (claude -p) and local-lane step times of one run")
     use.add_argument("--run-dir", type=Path, required=True)
     use.add_argument("--json", action="store_true", help="machine-readable report")
+    clock = sub.add_parser("timing", help="wall-clock timeline, bottlenecks and machine-vs-wait time of one run, or several side by side")
+    clock.add_argument("--run-dir", type=Path, help="one run: Gantt-style timeline + top 5 bottlenecks")
+    clock.add_argument("--all", type=Path, nargs="+", metavar="DIR", help="run-dirs, or folders of run-dirs, side by side")
+    clock.add_argument("--json", action="store_true", help="print timing.json instead of the text view")
+    clock.add_argument("--no-write", action="store_true", help="do not write timing.json into the run-dir")
+    clock.add_argument("--since", default="", help="ISO time: ignore work that ended before it (older attempts in the same run-dir)")
+    clock.add_argument("--until", default="", help="ISO time: ignore work that started after it")
     review = sub.add_parser("review", help="side round of one stage's panel (e.g. all-opus comparison); never opens a gate")
     review.add_argument("--run-dir", type=Path, required=True)
     review.add_argument("--stage", required=True, help="topic|article|script|title_thumb|media|final")
@@ -322,6 +329,36 @@ def cmd_usage(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_timing(args: argparse.Namespace) -> int:
+    """Wall-clock ledger (production.timing): derived from the logs a run already has, so it also back-fills old runs."""
+    from content_farm import paths
+    from content_farm.production import timing, timing_view
+
+    roots = args.all or ([args.run_dir] if args.run_dir else [])
+    if not roots:
+        print("timing needs --run-dir DIR or --all DIR...", file=sys.stderr)
+        return 1
+    run_dirs = [d for root in roots for d in (timing_view.run_dirs_under(root) if root.is_dir() else [])]
+    if not run_dirs:
+        print(f"no run-dir under {', '.join(map(str, roots))}", file=sys.stderr)
+        return 1
+    history = paths.heavy_queue_dir() / "history.jsonl"
+    ledgers = []
+    for run_dir in run_dirs:
+        code = read_channel_code(run_dir) if (run_dir / STATE_FILE).is_file() else ""
+        build = timing.build if args.no_write else timing.write
+        ledgers.append(build(run_dir, channel=code or "", queue_history=history, since=args.since, until=args.until))
+    if args.json:
+        print(json.dumps(ledgers[0] if len(ledgers) == 1 else ledgers, ensure_ascii=False, indent=1))
+    elif args.all:
+        print(timing_view.compare(ledgers))
+    else:
+        print(timing_view.gantt(ledgers[0]))
+        print()
+        print(timing_view.bottlenecks(ledgers[0]))
+    return 0
+
+
 def cmd_queue(_: argparse.Namespace) -> int:
     from content_farm.lanes.queue import default_queue_dir, status
 
@@ -343,7 +380,7 @@ def main(argv: list[str] | None = None) -> int:
     handlers = {"run": cmd_run, "status": cmd_status, "inbox": cmd_inbox, "plan": cmd_plan,
                 "channels": cmd_channels, "short-from-long": cmd_short_from_long,
                 "manual-kit": cmd_manual_kit, "eval-loop": cmd_eval_loop, "queue": cmd_queue, "review": cmd_review,
-                "news": news_cli.run, "usage": cmd_usage,
+                "news": news_cli.run, "usage": cmd_usage, "timing": cmd_timing,
                 "approve": lambda a: cmd_decide(a, "approved"),
                 "reject": lambda a: cmd_decide(a, "rejected")}
     try:

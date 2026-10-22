@@ -21,7 +21,7 @@ from content_farm import paths
 from content_farm.explainer.deck import load_deck
 from content_farm.lanes.queue import Ticket, heavy_slot
 from content_farm.lanes.resources import Need, load_config, need_for
-from content_farm.production import panel_flow, publish, qc
+from content_farm.production import panel_flow, publish, qc, timing
 from content_farm.production.channels import Channel, Gate
 from content_farm.production.review import write_review
 from content_farm.production.state import (
@@ -146,7 +146,25 @@ class Runner:
         return self.ctx.run_dir
 
     def run(self, *, until: str | None = None, force: frozenset[str] = frozenset()) -> RunResult:
+        """One pass over the steps. The timing ledger gets a start and an end event, and ``timing.json`` is
+        refreshed when the pass ends (machine time vs. waiting for a person: ``production.timing``)."""
         self.run_dir.mkdir(parents=True, exist_ok=True)
+        timing.record_event(self.run_dir, event="run_start", pid=os.getpid())
+        result = RunResult(Outcome.FAILED, "", "run aborted by an exception")
+        try:
+            result = self._run(until=until, force=force)
+            return result
+        finally:
+            timing.record_event(self.run_dir, event="run_end", outcome=result.outcome.value, step=result.step)
+            self._write_timing()
+
+    def _write_timing(self) -> None:
+        try:
+            timing.write(self.run_dir, channel=self.ctx.channel.code, queue_history=paths.heavy_queue_dir() / "history.jsonl")
+        except (OSError, ValueError, KeyError) as exc:        # the ledger must never stop a production run
+            self.log(f"timing.json not written: {type(exc).__name__}: {exc}")
+
+    def _run(self, *, until: str | None, force: frozenset[str]) -> RunResult:
         state = load_state(self.run_dir, self.ctx.channel.code)
         save_state(self.run_dir, state)
         for step in steps_for(self.ctx.channel, self.run_dir):
@@ -274,9 +292,18 @@ class Runner:
         default = need_for("heavy_default", config) if step.heavy else Need()
         return need_for(step.name, config, default=default)
 
-    def _admit(self, state: RunState, step: Step):
-        """Entry check before a step does work (cloud lane too): queue until its need fits."""
-        return render_lock(self.max_load if step.heavy else None, self.log, self._ticket(state, step), self._need(step))
+    @contextmanager
+    def _admit(self, state: RunState, step: Step) -> Iterator[None]:
+        """Entry check before a step does work (cloud lane too): queue until its need fits. A wait of a second
+        or more goes to the timing ledger with the step it held up."""
+        began = time.monotonic()
+        need = self._need(step)
+        with render_lock(self.max_load if step.heavy else None, self.log, self._ticket(state, step), need):
+            waited = time.monotonic() - began
+            if waited >= 1.0:
+                timing.record_event(self.run_dir, event="queue", step=step.name, waited_s=round(waited, 1),
+                                    mem_gb=need.mem_gb, gpu=need.gpu)
+            yield
 
     def _ticket(self, state: RunState, step: Step) -> Ticket:
         """Queue ticket: Shorts first, then the long video closest to done."""
@@ -320,7 +347,8 @@ class Runner:
         started = time.monotonic()
         code = self.executor(command, self.run_dir / "logs" / f"{step.name}.log")
         seconds = round(time.monotonic() - started, 1)
-        _event(self.run_dir, step=step.name, exit_code=code, seconds=seconds)
+        _event(self.run_dir, step=step.name, exit_code=code, seconds=seconds,
+               lane="local" if step.kind == "cmd" else "cloud")
         if code != 0:
             message = f"{step.title} 失敗（exit {code}），看 logs/{step.name}.log"
             record = StepRecord("failed", now_iso(), seconds, code, note=message)

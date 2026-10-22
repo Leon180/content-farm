@@ -137,7 +137,8 @@ def test_the_rework_brief_is_a_diff_not_a_redo(tmp_path: Path) -> None:
     assert "要改的句子" in brief and "s1.1（s1）｜第一句要改。" in brief      # the id and its current wording
     assert "不要整份重寫" in brief and "deck-outline/SKILL.md" not in brief   # no skill re-read, no redo
     assert "s2.1" not in brief.split("要改的句子")[1]                          # unnamed sentences are not quoted
-    assert len(brief) < len(producers.TASKS["deck"]) + 1500
+    # + the fixed channel-rules / Bash-use block every deck brief carries (brief.py); still no rubric, no skill text
+    assert len(brief) < len(producers.TASKS["deck"]) + 2200
 
 
 def test_a_whole_file_rewrite_is_refused_restored_and_redone(tmp_path: Path) -> None:

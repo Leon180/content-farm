@@ -9,10 +9,14 @@ Each call returns a tiny JSON receipt (``RECEIPT``) so the result is schema-chec
 from __future__ import annotations
 
 import json
+import os
 from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
 
+from content_farm.review import quick_patch
+from content_farm.review.brief import channel_rules_text, deck_brief
+from content_farm.review.quick_patch import quick_enabled
 from content_farm.review.client import Call, CallResult, run_call
 from content_farm.review.config import ReviewConfig, Tier
 
@@ -24,7 +28,7 @@ RECEIPT = {"type": "object", "additionalProperties": False, "required": ["files"
                                                                               "(only when the fix list names no sentence)"}}}
 TOOLS = ("Read", "Write", "Edit", "Glob", "Grep", "WebSearch", "WebFetch")   # + Bash scoped to the repo python
 
-SCRIPTS = ("check_article.py", "deck_to_script.py", "make_thumbnail.py", "render_slides.py")
+SCRIPTS = ("check_article.py", "deck_to_script.py", "apply_deck_patch.py", "make_thumbnail.py", "render_slides.py")
 TIMEOUT_S = {"topic": 1500, "article": 2700, "deck": 3600, "thumbnail_spec": 1800}
 
 # step → (stage whose producer tier applies, gate whose fixes apply)
@@ -156,6 +160,38 @@ def producer_tier(config: ReviewConfig, step: str) -> Tier:
     return tier or Tier(model="sonnet", effort="medium")
 
 
+def _log(log_dir: Path, step: str, **fields: object) -> None:
+    with (log_dir / "producers.jsonl").open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps({"at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "step": step, **fields},
+                                ensure_ascii=False) + "\n")
+
+
+def _quick(run_dir: Path, gate: str, channel: str, config: ReviewConfig, python: str,
+           client: Callable[[Call], CallResult] | None, log_dir: Path, common: str) -> CallResult | None:
+    """The small-rework fast path (``quick_patch``); the result when it applied and passed, else None (caller runs the agent)."""
+    plan_path = run_dir / "review" / f"{gate}.fixes.json"
+    if not plan_path.is_file() or not (run_dir / "deck.json").is_file():
+        return None
+    plan = json.loads(plan_path.read_text(encoding="utf-8"))
+    rid = f"deck-{len(list(log_dir.glob('deck-*.prompt.md'))) + 1}"
+
+    def call_for(prompt: str) -> CallResult:
+        (log_dir / f"{rid}.prompt.md").write_text(prompt, encoding="utf-8")
+        run = client or (lambda c: run_call(c, log_dir=log_dir))
+        return run(quick_patch.build_call(rid, prompt, producer_tier(config, "deck"), run_dir))
+
+    result, why = quick_patch.quick_deck(
+        run_dir, plan, call_for=call_for, common=common, rules=channel_rules_text(channel),
+        verify=lambda rd: quick_patch.strict_check(rd, python, REPO))
+    if result is None:     # no call was made, so no usage row: producers.jsonl is read by the cost / budget code
+        with (log_dir / "quick.jsonl").open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps({"at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "rid": rid,
+                                     "skipped": why}, ensure_ascii=False) + "\n")
+        return None
+    _log(log_dir, "deck", quick=True, quick_ok=not why, quick_why=why, **result.to_json(), receipt=result.output)
+    return None if why else result
+
+
 def produce(step: str, run_dir: Path, *, channel: str, config: ReviewConfig, python: str,
             client: Callable[[Call], CallResult] | None = None, extra: str = "", gate: str | None = None) -> CallResult:
     """``extra``: appended to the brief (e.g. why the previous rewrite was refused). ``gate``: whose fix
@@ -166,11 +202,17 @@ def produce(step: str, run_dir: Path, *, channel: str, config: ReviewConfig, pyt
     fmt = {"run_dir": run_dir, "repo": REPO, "channel": channel, "python": python}
     fixes = _fixes_text(run_dir, gate)
     task = TASKS_REWORK[step] if fixes and step in TASKS_REWORK else TASKS[step]     # a rework is a diff, not a redo
-    prompt = "\n\n".join(part for part in (COMMON.format(**fmt), task.format(**fmt), fixes,
+    guide = (deck_brief(config, channel, python, str(REPO), rework=task is TASKS_REWORK[step])
+             if step == "deck" else "")          # rubric + channel rules + Bash, from the first call
+    prompt = "\n\n".join(part for part in (COMMON.format(**fmt), task.format(**fmt), guide, fixes,
                                            extra, "完成後用結構化輸出回報寫了哪些檔。") if part)
     tier = producer_tier(config, step)
     log_dir = run_dir / "review" / "producers"
     log_dir.mkdir(parents=True, exist_ok=True)
+    if step == "deck" and fixes and quick_enabled():       # a small rework: one no-tool turn, the program applies it
+        done = _quick(run_dir, gate, channel, config, python, client, log_dir, COMMON.format(**fmt))
+        if done is not None:
+            return done
     rid = f"{step}-{len(list(log_dir.glob(f'{step}-*.prompt.md'))) + 1}"
     (log_dir / f"{rid}.prompt.md").write_text(prompt, encoding="utf-8")
     # Claude Code matches Bash prefixes word by word, so each allowed script is named (a "scripts/" prefix never matched).
@@ -180,7 +222,8 @@ def produce(step: str, run_dir: Path, *, channel: str, config: ReviewConfig, pyt
     dirs = tuple(REPO / d for d in (".claude/skills", "channels", "src", "scripts", "assets"))
     call = Call(rid, prompt, RECEIPT, tier.model, tier.effort, tools=tools, cwd=run_dir, add_dirs=dirs,
                 env=(("PYTHONPATH", str(REPO / "src")),),
-                timeout_s=TIMEOUT_S[step], retries=1, write_tools=True)   # one retry: network drops (2026-10-18)
+                timeout_s=TIMEOUT_S[step], retries=1, write_tools=True,   # one retry: network drops (2026-10-18)
+                trace=os.environ.get("CF_PRODUCER_TRACE", "1") != "0")   # per-step trace → <rid>.trace1.json
     result = (client or (lambda c: run_call(c, log_dir=log_dir)))(call)
     with (log_dir / "producers.jsonl").open("a", encoding="utf-8") as handle:
         handle.write(json.dumps({"at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "step": step,

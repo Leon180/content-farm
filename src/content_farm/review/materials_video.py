@@ -79,4 +79,19 @@ def final(run_dir: Path, out: Path, *, vertical: bool = False, **_: Any) -> Mate
     else:
         sentences = []
     return Materials(files, notes, corpus=corpus, sentences=sentences, duration=float(report["duration"]),
-                     extra={"objective": report, "duration_text": mmss(report["duration"])})
+                     extra={"objective": report, "duration_text": mmss(report["duration"]),
+                            "sentence_times": sentence_times(run_dir, sentences)})
+
+
+def sentence_times(run_dir: Path, sentences: list) -> list[list]:
+    """``[id, start, end]`` per deck sentence from the voice step's measured scene lengths (whisper-aligned
+    when the subtitles match), so a viewer's m:ss can be turned into sentence ids. [] when it cannot line up."""
+    from content_farm.retention.timing import sentence_timeline
+
+    try:
+        timed = sentence_timeline(run_dir)
+    except (OSError, ValueError, KeyError):
+        return []
+    if not sentences or len(timed) != len(sentences):
+        return []
+    return [[s.id, t.start, t.end] for s, t in zip(sentences, timed)]

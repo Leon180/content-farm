@@ -20,6 +20,7 @@ from content_farm.review import routing
 from content_farm.review.client import Call, CallResult, model_matches
 from content_farm.review.config import ReviewConfig
 from content_farm.review.freeze import frozen_steps
+from content_farm.review.narrow import narrow
 from content_farm.review.rounds import expected_seats, rounds_of, run_round, stage_dir
 from content_farm.review.sentences import deck_sentences, script_sentences
 
@@ -127,8 +128,13 @@ def _rework(run_dir: Path, gate: str, stage_name: str, card: dict[str, Any], def
         issues = [{"ref": {"target": "script"}, "category": "content", "severity": "high",
                    "problem": "；".join(verdict.get("reasons", [])), "fix": "依評分卡改善", "evidence": "",
                    "caused_by": default_step}]
-    plan = routing.plan(issues, _texts(run_dir), stage=stage_name, round_no=card["round"], default_step=default_step,
+    texts = _texts(run_dir)
+    issues, deferred, narrowing = narrow(issues, texts.sentences) if narrow_enabled() else (issues, [], None)
+    plan = routing.plan(issues, texts, stage=stage_name, round_no=card["round"], default_step=default_step,
                         frozen=frozen_steps(run_dir))
+    if narrowing is not None:
+        plan["narrowing"] = narrowing
+        plan["deferred"] = [{k: i.get(k) for k in ("ref", "category", "severity", "problem", "who")} for i in deferred]
     if prompt_only:
         plan["prompt_only"] = prompt_only
     if advisory:
@@ -209,6 +215,13 @@ def _carry(run_dir: Path, gate: str, stage_name: str, config: ReviewConfig, chan
     members = roster(config, stage_name, channel, number, with_holdout=number == config.stages[stage_name].max_rounds)
     return reuse.plan_carry(run_dir, stage_name=stage_name, stage=config.stages[stage_name], config=config,
                             members=members, previous_dir=done[-1], fixes=fixes)
+
+
+def narrow_enabled() -> bool:
+    """``CF_REVIEW_NARROW=0`` sends every issue back as before (before / after comparisons)."""
+    import os
+
+    return os.environ.get("CF_REVIEW_NARROW", "1").strip() != "0"
 
 
 def reuse_enabled() -> bool:

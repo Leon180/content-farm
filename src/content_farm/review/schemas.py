@@ -25,6 +25,9 @@ ISSUE: dict[str, Any] = {
                 "target": {"enum": ["topic", "article", "script", "title", "thumbnail", "description",
                                     "media", "video", "audio"]},
                 "sentence_ids": {"type": "array", "items": _STR},
+                "scope": {"enum": ["sentences", "global"], "description": "global = a whole-script problem that "
+                                                                          "cannot be narrowed to sentences"},
+                "why_global": {"type": ["string", "null"], "description": "required when scope is global"},
                 "t": {"type": ["string", "null"], "description": "m:ss in the video, when target is video/audio"},
                 "item": {"type": ["string", "null"], "description": "candidate id, title id, thumbnail variant, "
                                                                   "asset/slide id or source id"},
@@ -38,6 +41,8 @@ ISSUE: dict[str, Any] = {
         "evidence": {"type": "string", "description": "verbatim quote of the material the issue is about"},
         "caused_by": {"enum": list(REWORK_STEPS)},
         "claim_change": {"type": "boolean", "description": "true when the fix changes a chapter's argument"},
+        "affected_slides": {"type": "array", "items": _STR, "description": "with claim_change: the slide ids "
+                                                                         "(at most 3) whose argument changes"},
     },
 }
 _ISSUES = {"type": "array", "items": ISSUE}
@@ -171,6 +176,11 @@ def validate(value: Any, schema: dict[str, Any], path: str = "$") -> list[str]:
             errors.append(f"{path}: {value} > {schema['maximum']}")
     if isinstance(value, dict):
         errors += _validate_object(value, schema, path)
+    if isinstance(value, list):
+        if "maxItems" in schema and len(value) > schema["maxItems"]:
+            errors.append(f"{path}: {len(value)} items > {schema['maxItems']}")
+        if "minItems" in schema and len(value) < schema["minItems"]:
+            errors.append(f"{path}: {len(value)} items < {schema['minItems']}")
     if isinstance(value, list) and "items" in schema:
         for n, item in enumerate(value):
             errors += validate(item, schema["items"], f"{path}[{n}]")

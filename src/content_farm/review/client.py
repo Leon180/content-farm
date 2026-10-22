@@ -14,6 +14,7 @@ import subprocess
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -42,6 +43,7 @@ class Call:
     retries: int = 1
     write_tools: bool = False          # producer agents may write files in cwd
     env: tuple[tuple[str, str], ...] = ()   # extra child env (never an API key: PAID_ENV is removed after)
+    trace: bool = False                # stream-json + per-step trace (review.trace); producer agents only
 
 
 @dataclass(frozen=True)
@@ -61,11 +63,18 @@ class CallResult:
     cached: bool = False               # answered from the per-seat cache (review.cache): nothing was billed
     saved_usd: float = 0.0             # what the cached answer originally cost
     carried_from: str = ""             # the earlier round whose answer this seat keeps (review.reuse)
+    turns: int = 0                     # model turns the CLI took (a producer's tool round trips)
+    thinking_tokens: int = 0           # part of tokens["output"] spent thinking rather than writing
+    started_at: str = ""               # wall clock when the call began (ISO, UTC); "" for cached / carried answers
 
     def to_json(self) -> dict[str, Any]:
         out = {"rid": self.rid, "ok": self.ok, "errors": list(self.errors), "model": self.model,
                "effort": self.effort, "models_used": list(self.models_used), "seconds": self.seconds,
                "cost_usd": self.cost_usd, "tokens": self.tokens, "attempts": self.attempts, "infra": self.infra}
+        if self.turns:
+            out |= {"turns": self.turns, "thinking_tokens": self.thinking_tokens}
+        if self.started_at:
+            out["started_at"] = self.started_at
         if self.cached:
             out |= {"cached": True, "saved_usd": self.saved_usd}
         if self.carried_from:
@@ -110,9 +119,11 @@ def argv_for(call: Call) -> list[str]:
         raise ValueError("--bare would bill the API key; never allowed")
     names = ",".join(dict.fromkeys(t.split("(")[0] for t in call.tools))   # --tools takes bare names
     allowed = ",".join(call.tools)                                          # --allowed-tools may scope them
-    argv = [claude_bin(), "-p", "--model", call.model, "--effort", call.effort, "--output-format", "json",
+    output = ["--output-format", "stream-json", "--verbose"] if call.trace else ["--output-format", "json"]
+    argv = [claude_bin(), "-p", "--model", call.model, "--effort", call.effort, *output,
             "--json-schema", json.dumps(call.schema, ensure_ascii=False), "--no-session-persistence",
-            "--strict-mcp-config", "--disable-slash-commands", "--tools", names, "--allowed-tools", allowed,
+            "--strict-mcp-config", "--disable-slash-commands", "--tools", names,
+            *(["--allowed-tools", allowed] if call.tools else []),     # no tools at all: a one-turn JSON answer
             "--permission-mode", "acceptEdits" if call.write_tools else "dontAsk"]
     for directory in call.add_dirs:
         argv += ["--add-dir", str(directory)]
@@ -158,11 +169,37 @@ def is_infra(code: int, problem: str, envelope: dict[str, Any]) -> bool:
     return any(hint.lower() in text.lower() for hint in _INFRA_HINT)
 
 
-def run_call(call: Call, *, runner: Runner = _subprocess, log_dir: Path | None = None,
+def _extras(envelope: dict[str, Any]) -> tuple[int, int]:
+    """(turns, thinking tokens) the CLI reported for one answer."""
+    usage = envelope.get("usage") or {}
+    thinking = int((usage.get("output_tokens_details") or {}).get("thinking_tokens") or 0)
+    return int(envelope.get("num_turns") or 0), thinking
+
+
+def _write_trace(log_dir: Path | None, rid: str, attempt: int, envelope: dict[str, Any]) -> None:
+    trace = envelope.get("cf_trace")
+    if log_dir is None or not trace:
+        return
+    from content_farm.review.trace import summarize
+
+    summary = {**summarize(trace), "num_turns": envelope.get("num_turns"), "duration_ms": envelope.get("duration_ms"),
+               "duration_api_ms": envelope.get("duration_api_ms"),
+               "permission_denials": [{"tool": d.get("tool_name"), "arg": json.dumps(d.get("tool_input"), ensure_ascii=False)[:160]}
+                                      for d in envelope.get("permission_denials") or []]}
+    (log_dir / f"{rid}.trace{attempt}.json").write_text(json.dumps(summary, ensure_ascii=False, indent=1), encoding="utf-8")
+
+
+def run_call(call: Call, *, runner: Runner | None = None, log_dir: Path | None = None,
              sleep: Callable[[float], None] = time.sleep) -> CallResult:
+    if runner is None:
+        from content_farm.review.trace import stream_runner
+
+        runner = stream_runner if call.trace else _subprocess
     errors: list[str] = []
     started = time.monotonic()
+    began_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
     cost, tokens, used = 0.0, {"input": 0, "output": 0, "cache_read": 0, "cache_write": 0}, ()
+    turns, thinking = 0, 0
     attempt, answers, infra_left, infra = 0, 0, INFRA_RETRIES, False
     while answers < call.retries + 1:
         attempt += 1
@@ -171,6 +208,7 @@ def run_call(call: Call, *, runner: Runner = _subprocess, log_dir: Path | None =
             log_dir.mkdir(parents=True, exist_ok=True)
             (log_dir / f"{call.rid}.attempt{attempt}.json").write_text(stdout or stderr, encoding="utf-8")
         output, envelope, problem = _parse(stdout) if code == 0 else (None, {}, f"exit {code}: {stderr[-300:]}")
+        _write_trace(log_dir, call.rid, attempt, envelope)
         infra = output is None and is_infra(code, problem, envelope)
         if infra and infra_left > 0:
             infra_left -= 1
@@ -184,17 +222,21 @@ def run_call(call: Call, *, runner: Runner = _subprocess, log_dir: Path | None =
                   "output": tokens["output"] + int(usage.get("output_tokens") or 0),
                   "cache_read": tokens["cache_read"] + int(usage.get("cache_read_input_tokens") or 0),
                   "cache_write": tokens["cache_write"] + int(usage.get("cache_creation_input_tokens") or 0)}
+        more_turns, more_thinking = _extras(envelope)
+        turns, thinking = turns + more_turns, thinking + more_thinking
         used = tuple(sorted(set(used) | set((envelope.get("modelUsage") or {}).keys())))
         if output is not None:
             problems = validate(output, call.schema)
             if not problems:
                 seconds = round(time.monotonic() - started, 1)
+                extra = {"turns": turns, "thinking_tokens": thinking, "started_at": began_at}
                 if used and not model_matches(call.model, used):
                     return CallResult(call.rid, False, output, (f"model mismatch: asked {call.model}, got {used}",),
-                                      call.model, call.effort, used, seconds, round(cost, 4), tokens, attempt)
+                                      call.model, call.effort, used, seconds, round(cost, 4), tokens, attempt, **extra)
                 return CallResult(call.rid, True, output, (), call.model, call.effort, used, seconds,
-                                  round(cost, 4), tokens, attempt)
+                                  round(cost, 4), tokens, attempt, **extra)
             problem = "schema: " + "; ".join(problems[:5])
         errors.append(f"attempt {attempt}: {problem}")
     return CallResult(call.rid, False, None, tuple(errors), call.model, call.effort, used,
-                      round(time.monotonic() - started, 1), round(cost, 4), tokens, attempt, infra=infra)
+                      round(time.monotonic() - started, 1), round(cost, 4), tokens, attempt, infra=infra,
+                      turns=turns, thinking_tokens=thinking, started_at=began_at)
