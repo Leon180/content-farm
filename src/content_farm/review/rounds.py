@@ -9,6 +9,7 @@ feeds the verdict or fixes.
 from __future__ import annotations
 
 import json
+import os
 import random
 import time
 from collections.abc import Callable
@@ -20,6 +21,7 @@ from typing import Any
 
 from content_farm.evaluation.panel import load_panels, persona_set, word_persona
 from content_farm.production.state import fingerprint
+from content_farm.review import cache as seat_cache
 from content_farm.review import materials as mat
 from content_farm.review import prompts, verdicts
 from content_farm.review.client import Call, CallResult, call_usage, run_call
@@ -150,20 +152,24 @@ def run_round(run_dir: Path, *, stage_name: str, config: ReviewConfig, channel: 
     materials = _build_materials(run_dir, out, stage_name, vertical, only_sentences)
     members = roster(config, stage_name, channel, round_no, with_holdout=with_holdout, holdout_only=holdout_only)
     keys: dict[str, dict] = {}
-    calls = []
+    calls, call_keys = [], {}
     for member in members:
         feeds: list[str] = []
         if member.kind == "viewer" and stage_name in TITLE_STAGES:
             feeds, member_keys = _feeds(run_dir, out, member, channel_name, competitors)
             keys.update(member_keys)
-        text = prompts.build(stage_name, config.roles[member.role], materials, channel=channel_name,
-                             persona=member.persona, feeds=feeds)
+        role = config.roles[member.role]
+        text = prompts.build(stage_name, role, materials, channel=channel_name, persona=member.persona, feeds=feeds)
         (out / "prompts").mkdir(exist_ok=True)
         (out / "prompts" / f"{member.rid}.md").write_text(text, encoding="utf-8")
-        calls.append(Call(member.rid, text, schema_for(stage_name, member.kind), member.model, member.effort,
-                          tools=config.roles[member.role].tools, cwd=out, timeout_s=config.defaults.timeout_s,
-                          retries=config.defaults.schema_retries))
-    invoke = client or (lambda call: run_call(call, log_dir=out / "raw"))
+        call = Call(member.rid, text, schema_for(stage_name, member.kind), member.model, member.effort,
+                    tools=role.tools, cwd=out, timeout_s=config.defaults.timeout_s,
+                    retries=config.defaults.schema_retries)
+        calls.append(call)
+        if not feeds:       # a homepage viewer's feeds are shuffled per seat: never the same question twice
+            call_keys[member.rid] = _seat_key(stage_name, call, member, role, materials, out, channel_name)
+    live_invoke = client or (lambda call: run_call(call, log_dir=out / "raw"))
+    invoke = _cached(run_dir, call_keys, live_invoke, out.name)
     parallel = reviewer_parallel(len(calls), config.defaults.max_parallel)
     with ThreadPoolExecutor(max_workers=parallel) as pool:
         results = list(pool.map(invoke, calls))
@@ -199,10 +205,50 @@ def run_round(run_dir: Path, *, stage_name: str, config: ReviewConfig, channel: 
         "verdict": verdict.to_json(), "seconds": round(time.monotonic() - started, 1),
         "reviewer_seconds": round(sum(r.seconds for r in results), 1),
         "cost_usd": round(sum(r.cost_usd for r in results), 4),
+        "cache": {"hits": sum(1 for r in results if r.cached), "saved_usd": round(sum(r.saved_usd for r in results), 4)},
         "tokens": {k: sum(r.tokens.get(k, 0) for r in results) for k in ("input", "output", "cache_read", "cache_write")},
     }
     (out / "scorecard.json").write_text(json.dumps(card, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
     return card
+
+
+CACHE_ENV = "CF_REVIEW_CACHE"       # "0" turns the per-seat cache off (before / after comparisons)
+
+
+def cache_enabled() -> bool:
+    return os.environ.get(CACHE_ENV, "1").strip() != "0"
+
+
+def _seat_key(stage_name: str, call: Call, member: Member, role: Any, materials: mat.Materials, out: Path,
+              channel_name: str) -> str:
+    """The cache key of one seat: its prompt with the persona wording neutralised (the per-round re-wording is
+    anti-overfitting, not new information), the content of the files it is shown, model, effort, schema, tools."""
+    neutral = prompts.build(stage_name, role, materials, channel=channel_name, persona=f"[{member.rid}]")
+    view = materials.visible_to(role.kind)
+    content = seat_cache.content_digest(out, view.files, derived=view.derived, override=view.content_key)
+    return seat_cache.seat_key(stage=stage_name, rid=member.rid, prompt=neutral, schema=call.schema, tools=call.tools,
+                               model=call.model, effort=call.effort, content=content)
+
+
+def _cached(run_dir: Path, call_keys: dict[str, str], live: Callable[[Call], CallResult],
+            label: str) -> Callable[[Call], CallResult]:
+    """``live`` with the per-seat cache in front: a seat whose key was answered before gets that answer at no cost;
+    a valid live answer is remembered. Calls without a key (and ``CF_REVIEW_CACHE=0``) always run."""
+    def invoke(call: Call) -> CallResult:
+        key = call_keys.get(call.rid)
+        if key is None or not cache_enabled():
+            return live(call)
+        entry = seat_cache.load(run_dir, key)
+        if entry is not None:
+            was = entry.get("result") or {}
+            return CallResult(call.rid, True, entry["output"], (), call.model, call.effort,
+                              tuple(was.get("models_used") or ()), 0.0, 0.0, {}, 0, cached=True,
+                              saved_usd=float(was.get("cost_usd") or 0))
+        result = live(call)
+        if result.ok and result.output is not None:
+            seat_cache.save(run_dir, key, output=result.output, result=result.to_json(), label=label)
+        return result
+    return invoke
 
 
 def _arbitrate(run_dir: Path, out: Path, stage_name: str, stage: Stage, seats: list[verdicts.Seat],
@@ -231,8 +277,13 @@ def _arbitrate(run_dir: Path, out: Path, stage_name: str, stage: Stage, seats: l
     (out / "prompts").mkdir(exist_ok=True)
     (out / "prompts" / f"{member.rid}.md").write_text(text, encoding="utf-8")
     tools = next(r.tools for r in config.roles.values() if r.kind == "fact")
-    result = invoke(Call(member.rid, text, arb.SCHEMA, member.model, member.effort, tools=tools, cwd=out,
-                         timeout_s=config.defaults.timeout_s, retries=config.defaults.schema_retries))
+    arbiter_call = Call(member.rid, text, arb.SCHEMA, member.model, member.effort, tools=tools, cwd=out,
+                        timeout_s=config.defaults.timeout_s, retries=config.defaults.schema_retries)
+    sources = run_dir / "sources.json"
+    key = seat_cache.seat_key(stage=stage_name, rid=member.rid, prompt=text, schema=arb.SCHEMA, tools=tools,
+                              model=member.model, effort=member.effort,
+                              content=seat_cache.file_digest(sources) if sources.is_file() else "")
+    result = _cached(run_dir, {member.rid: key}, invoke, out.name)(arbiter_call)
     write_result(out, result)
     upheld, unanswered = arb.upheld(result.output if result.ok else None, found["disputes"])
     return {**found, "upheld": upheld, "unanswered": unanswered, "ruled": result.ok,

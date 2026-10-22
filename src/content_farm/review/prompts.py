@@ -102,6 +102,7 @@ def _task(stage: str, kind: str) -> str:
 def build(stage: str, role: Role, materials: Materials, *, channel: str, persona: str = "",
           feeds: list[str] | None = None) -> str:
     base = BASE_STAGE.get(stage, stage)
+    materials = materials.visible_to(role.kind)     # a reviewer is listed only the files it needs
     intro = STAGE_INTRO.get(base, STAGE_INTRO["final"]).format(channel=channel)
     if stage.startswith("shorts_"):
         intro += "這是一支 20–60 秒的直式 Short。"

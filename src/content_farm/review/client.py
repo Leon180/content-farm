@@ -58,11 +58,19 @@ class CallResult:
     tokens: dict[str, int] = field(default_factory=dict)
     attempts: int = 1
     infra: bool = False                # failed because the plumbing failed (network, exit, timeout)
+    cached: bool = False               # answered from the per-seat cache (review.cache): nothing was billed
+    saved_usd: float = 0.0             # what the cached answer originally cost
+    carried_from: str = ""             # the earlier round whose answer this seat keeps (review.reuse)
 
     def to_json(self) -> dict[str, Any]:
-        return {"rid": self.rid, "ok": self.ok, "errors": list(self.errors), "model": self.model,
-                "effort": self.effort, "models_used": list(self.models_used), "seconds": self.seconds,
-                "cost_usd": self.cost_usd, "tokens": self.tokens, "attempts": self.attempts, "infra": self.infra}
+        out = {"rid": self.rid, "ok": self.ok, "errors": list(self.errors), "model": self.model,
+               "effort": self.effort, "models_used": list(self.models_used), "seconds": self.seconds,
+               "cost_usd": self.cost_usd, "tokens": self.tokens, "attempts": self.attempts, "infra": self.infra}
+        if self.cached:
+            out |= {"cached": True, "saved_usd": self.saved_usd}
+        if self.carried_from:
+            out |= {"carried_from": self.carried_from, "saved_usd": self.saved_usd}
+        return out
 
 
 TOKEN_KEYS = ("input", "output", "cache_read", "cache_write")
