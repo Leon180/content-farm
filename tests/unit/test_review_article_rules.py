@@ -127,7 +127,7 @@ def test_arbiter_overturns_a_lone_error_and_the_gate_opens(tmp_path):
     result = _gate(_article_run(tmp_path), panel)
     assert result.status == "pass", result.message
     arbiters = [c for c in panel.calls if c.rid.startswith(arb.ARBITER_ROLE)]
-    assert len(arbiters) == 1 and (arbiters[0].model, arbiters[0].effort) == ("opus", "high")
+    assert len(arbiters) == 1 and (arbiters[0].model, arbiters[0].effort) == ("sonnet", "medium")
     assert "WebFetch" in arbiters[0].tools
     assert result.scores["confirmed_errors"] == 0 and result.scores["disputes"] == 1
 
@@ -160,8 +160,8 @@ def test_enforce_refuses_disputes_without_a_valid_arbiter(tmp_path):
     assert enforce(card, CONFIG, "article", current) == []
     stripped = {**card, "seats": [s for s in card["seats"] if s["role"] != arb.ARBITER_ROLE]}
     assert any("no arbiter seat" in p for p in enforce(stripped, CONFIG, "article", current))
-    weak = {**card, "seats": [{**s, "model": "sonnet"} if s["role"] == arb.ARBITER_ROLE else s for s in card["seats"]]}
-    assert any("fact_arbiter-1: ran sonnet" in p for p in enforce(weak, CONFIG, "article", current))
+    weak = {**card, "seats": [{**s, "model": "haiku"} if s["role"] == arb.ARBITER_ROLE else s for s in card["seats"]]}
+    assert any("fact_arbiter-1: ran haiku" in p for p in enforce(weak, CONFIG, "article", current))
 
 
 def test_third_round_is_the_last(tmp_path):

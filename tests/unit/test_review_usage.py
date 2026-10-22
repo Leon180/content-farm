@@ -63,7 +63,7 @@ def test_failed_seat_still_gets_a_result_file_with_usage(tmp_path):
 def test_producers_jsonl_records_usage_and_time(tmp_path):
     _run(tmp_path)
     row = json.loads((tmp_path / "review" / "producers" / "producers.jsonl").read_text(encoding="utf-8").splitlines()[0])
-    assert row["at"] and row["model"] == "opus" and row["cost_usd"] == 1.5 and row["tokens"]["output"] == 900
+    assert row["at"] and row["model"] == "sonnet" and row["cost_usd"] == 1.5 and row["tokens"]["output"] == 900
 
 
 def test_report_totals_rounds_producers_and_local_steps(tmp_path):

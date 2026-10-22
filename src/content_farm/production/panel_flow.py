@@ -45,13 +45,13 @@ def stage_of(ctx: Context, gate: Gate) -> str | None:
 
 
 def review_config(ctx: Context):
-    from content_farm.review.config import Tier, economy_requested, load_review
+    from content_farm.review.config import Tier, load_review
 
     tier = None
     if ctx.options.review_tier:
         model, effort = ctx.options.review_tier.split(":")
         tier = Tier(model=model, effort=effort)
-    return load_review(ctx.channel.code, raise_tier=tier, economy=economy_requested(ctx.run_dir))
+    return load_review(ctx.channel.code, raise_tier=tier)
 
 
 def competitors_for(ctx: Context) -> Path | None:

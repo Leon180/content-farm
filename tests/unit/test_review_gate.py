@@ -254,7 +254,7 @@ def test_gate_rework_then_pass(tmp_path):
     assert second.status == "pass", second.message
     decision = json.loads((tmp_path / "review" / "deck.decision.json").read_text(encoding="utf-8"))
     assert decision["by"] == "agent-panel:script_structure" and decision["round"] == 2
-    assert {c.model for c in panel.calls if c.rid.startswith("fact_checker")} == {"opus"}
+    assert {c.model for c in panel.calls if c.rid.startswith("fact_checker")} == {"sonnet"}
     assert (tmp_path / "review" / "script_structure" / "round-2-holdout" / "scorecard.json").is_file()
     from content_farm.review.scorecard_html import render
 
@@ -299,7 +299,7 @@ def test_producer_cannot_read_other_runs_and_runs_only_named_scripts(tmp_path):
                           ("claude-opus-5-5",))
     produce("article", tmp_path, channel="chipcat", config=CONFIG, python="/py", client=fake)
     call = seen[0]
-    assert call.model == "opus" and call.effort == "high"
+    assert call.model == "sonnet" and call.effort == "low"
     assert all("output" not in Path(d).parts for d in call.add_dirs) and REPO not in call.add_dirs
     bash = [t for t in call.tools if t.startswith("Bash(")]
     assert bash and all(t.startswith(f"Bash(/py {REPO}/scripts/") and t.endswith(".py:*)") for t in bash)

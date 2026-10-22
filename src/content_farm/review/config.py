@@ -2,7 +2,9 @@
 that live here in code so that no prompt, memory or edited yaml can loosen them (Leon 2026-10-18):
 
 - every stage keeps at least its required reviewers (``REQUIRED_ROLES``);
-- fact-checkers are opus · high in every stage; every role meets its tier floor (``TIER_FLOOR``);
+- cost policy (Leon 2026-10-22): sonnet everywhere except the plan stage's producer agent
+  (``PLAN_PRODUCER_STAGES``, the only place opus may appear); effort defaults to low, fact-checkers and
+  arbiters never below medium;
 - thresholds cannot be looser than ``THRESHOLD_FLOOR``, rounds not more than ``MAX_ROUNDS``.
 
 Channels may override a stage (``review.channels.<code>.stages.<stage>``); the merged result is
@@ -45,33 +47,17 @@ REQUIRED_ROLES: dict[str, dict[str, int]] = {
 }
 REQUIRED_HOLDOUT = {"script_structure": 1, "final": 1}
 
-# (model, effort) floors per stage × role (Leon 2026-10-18 table). "*" = any role in that stage.
-TIER_FLOOR: dict[str, dict[str, tuple[Model, Effort]]] = {
-    "topic": {"producer_agent": ("opus", "high"), "viewer": ("sonnet", "medium"), "*": ("opus", "high")},
-    "article": {"producer_agent": ("opus", "high"), "writer_story": ("opus", "medium"), "*": ("opus", "high")},
-    "script_structure": {"producer_agent": ("opus", "high"), "viewer": ("sonnet", "medium"), "*": ("opus", "high")},
-    "script_facts": {"*": ("opus", "high")},
-    "title_thumb": {"*": ("sonnet", "medium")},
-    "media": {"*": ("sonnet", "medium")},
-    "final": {"*": ("sonnet", "medium")},
-    "shorts_topic": {"*": ("sonnet", "medium")},
-    "shorts_script": {"*": ("sonnet", "medium")},
-    "shorts_title": {"*": ("sonnet", "medium")},
-    "shorts_final": {"*": ("sonnet", "medium")},
-}
-FACT_CHECKER_TIER: tuple[Model, Effort] = ("opus", "high")   # every stage: errors are dearest downstream
-# Economy mode (Leon 2026-10-19, token limit): every seat, producer and arbiter runs on sonnet; fact-checkers
-# and arbiters keep high effort, the rest medium. Selected by CF_REVIEW_TIER=economy or the run-dir file
-# REVIEW_TIER_FILE; only in that mode do these floors replace TIER_FLOOR / FACT_CHECKER_TIER.
-ECONOMY = "economy"
-ECONOMY_TIER: tuple[Model, Effort] = ("sonnet", "medium")
-ECONOMY_FACT_TIER: tuple[Model, Effort] = ("sonnet", "high")
-REVIEW_TIER_ENV = "CF_REVIEW_TIER"
-REVIEW_TIER_FILE = "review/tier.json"   # {"tier": "economy", "why": "..."}
-# Viewer leave-median threshold by tier (orchestrator 2026-10-19, Leon-authorised): sonnet viewers are the
-# stricter audience, so economy scales the leave threshold by 0.8 (default 0.50 → 0.40). Provisional.
-ECONOMY_LEAVE_SCALE = 0.8
-ECONOMY_THRESHOLD_NOTE = "sonnet 觀眾較嚴，CoWoS 對照 47% vs 81%，n=1，待校正（離開中位門檻 ×0.8）"
+# Cost policy (Leon 2026-10-22: "除了 plan 階段外都應該用 sonnet"). The plan stage is the topic producer agent, the
+# step that decides what the video is about; it alone may use opus. Everything else — article / deck / thumbnail
+# producers and every reviewer, arbiters included — runs on sonnet. Effort: low by default; fact-checkers and
+# arbiters never below medium (floors, not caps — a channel override may raise effort).
+PLAN_PRODUCER_STAGES = ("topic",)
+DEFAULT_TIER: tuple[Model, Effort] = ("sonnet", "low")
+FACT_TIER: tuple[Model, Effort] = ("sonnet", "medium")
+# Viewer leave-median threshold on the sonnet audience's scale (Leon 2026-10-22: 0.40; the CoWoS check had sonnet
+# viewers leaving at 47% where opus viewers left at 81%, n=1). cf-pipeline-speed recalibrates it later.
+LEAVE_MEDIAN_FLOOR = 0.40
+THRESHOLD_NOTE = "sonnet 觀眾尺度的離開中位門檻 0.40（CoWoS 對照 sonnet 47% vs opus 81%，n=1，待校正）"
 # article 2 → 3: Leon 2026-10-18 decision 59fdefb32bd7 = D (with delete-or-edit-only rewrites and arbitration)
 MAX_ROUNDS = {"topic": 2, "article": 3, "script_structure": 3, "script_facts": 3, "title_thumb": 3, "media": 3,
               "final": 3, "shorts_topic": 2, "shorts_script": 3, "shorts_title": 3, "shorts_final": 3}
@@ -87,13 +73,13 @@ DELETE_ONLY_FROM_ROUND = {"article": 2, "deck_facts": 2}
 # Threshold fields: (direction, floor). "min" = value must be ≥ floor; "max" = value must be ≤ floor.
 THRESHOLD_FLOOR: dict[str, dict[str, tuple[str, float]]] = {
     "article": {"fact_errors_max": ("max", 0)},
-    "script_structure": {"leave_median_pct": ("min", 0.5), "writer_min": ("min", 6.5)},  # Leon 80bd30689ee7=C: 7 → 6.5
+    "script_structure": {"leave_median_pct": ("min", LEAVE_MEDIAN_FLOOR), "writer_min": ("min", 6.5)},  # Leon 80bd30689ee7=C: 7 → 6.5
     "script_facts": {"fact_errors_max": ("max", 0)},
     "title_thumb": {"noticed_median_max": ("max", 3), "pick_factor": ("min", 2.0)},
     "media": {"compliance_issues_max": ("max", 0)},
-    "final": {"leave_median_pct": ("min", 0.5)},
-    "shorts_script": {"leave_median_pct": ("min", 0.5)},
-    "shorts_final": {"leave_median_pct": ("min", 0.5)},
+    "final": {"leave_median_pct": ("min", LEAVE_MEDIAN_FLOOR)},
+    "shorts_script": {"leave_median_pct": ("min", LEAVE_MEDIAN_FLOOR)},
+    "shorts_final": {"leave_median_pct": ("min", LEAVE_MEDIAN_FLOOR)},
 }
 
 # Steps a fix may be routed back to (``caused_by`` in reviewer output).
@@ -183,7 +169,7 @@ class ReviewConfig(_Strict):
     roles: dict[str, Role]
     stages: dict[str, Stage]
     channels: dict[str, dict] = {}
-    tier_mode: Literal["default", "economy"] = "default"
+    tier_mode: Literal["default", "lifted"] = "default"   # lifted: a --review-tier comparison run, may use opus
 
     @model_validator(mode="after")
     def _rules(self) -> ReviewConfig:
@@ -193,14 +179,21 @@ class ReviewConfig(_Strict):
         return self
 
 
-def _floor(name: str, role: str, kind: str, economy: bool) -> tuple[Model, Effort]:
-    if economy:
-        return ECONOMY_FACT_TIER if kind == "fact" else ECONOMY_TIER
-    floors = TIER_FLOOR[name]
-    return FACT_CHECKER_TIER if kind == "fact" else floors.get(role, floors["*"])
+def _floor(kind: str) -> tuple[Model, Effort]:
+    return FACT_TIER if kind == "fact" else DEFAULT_TIER
 
 
-def _seat_errors(name: str, stage: Stage, roles: dict[str, Role], economy: bool = False) -> list[str]:
+def _tier_errors(label: str, tier: Tier, floor: tuple[Model, Effort], *, opus_ok: bool) -> list[str]:
+    errors = []
+    if not tier.at_least(floor):
+        errors.append(f"{label} is {tier.label()}, below {floor[0]} · {floor[1]}")
+    if tier.model == "opus" and not opus_ok:
+        errors.append(f"{label} is {tier.label()}: opus is only allowed for the plan stage's producer "
+                      f"({', '.join(PLAN_PRODUCER_STAGES)})")
+    return errors
+
+
+def _seat_errors(name: str, stage: Stage, roles: dict[str, Role], lifted: bool = False) -> list[str]:
     errors = []
     counts: dict[str, int] = {}
     holdouts = 0
@@ -214,9 +207,7 @@ def _seat_errors(name: str, stage: Stage, roles: dict[str, Role], economy: bool 
             errors.append(f"{name}: only viewers can be held out ({seat.role})")
         if seat.holdout >= seat.count:
             errors.append(f"{name}: {seat.role} holdout {seat.holdout} must leave regular viewers")
-        floor = _floor(name, seat.role, roles[seat.role].kind, economy)
-        if not seat.tier.at_least(floor):
-            errors.append(f"{name}: {seat.role} is {seat.tier.label()}, below {floor[0]} · {floor[1]}")
+        errors += _tier_errors(f"{name}: {seat.role}", seat.tier, _floor(roles[seat.role].kind), opus_ok=lifted)
     for role, need in REQUIRED_ROLES[name].items():
         if counts.get(role, 0) < need:
             errors.append(f"{name}: needs {role} ×{need}, has ×{counts.get(role, 0)}")
@@ -225,11 +216,9 @@ def _seat_errors(name: str, stage: Stage, roles: dict[str, Role], economy: bool 
     return errors
 
 
-def _threshold_errors(name: str, threshold: Threshold, economy: bool = False) -> list[str]:
+def _threshold_errors(name: str, threshold: Threshold) -> list[str]:
     errors = []
     for field, (direction, floor) in THRESHOLD_FLOOR.get(name, {}).items():
-        if economy and field == "leave_median_pct":
-            floor = round(floor * ECONOMY_LEAVE_SCALE, 4)
         value = getattr(threshold, field)
         if value is None:
             errors.append(f"{name}: threshold {field} is required (floor {floor})")
@@ -240,8 +229,7 @@ def _threshold_errors(name: str, threshold: Threshold, economy: bool = False) ->
 
 def rule_violations(config: ReviewConfig) -> list[str]:
     errors = []
-    economy = config.tier_mode == ECONOMY
-    fact_floor = ECONOMY_FACT_TIER if economy else FACT_CHECKER_TIER
+    lifted = config.tier_mode == "lifted"
     for name in STAGES:
         if name not in config.stages:
             errors.append(f"stage {name!r} missing")
@@ -249,18 +237,19 @@ def rule_violations(config: ReviewConfig) -> list[str]:
         if name not in STAGES:
             errors.append(f"unknown stage {name!r}")
             continue
-        errors += _seat_errors(name, stage, config.roles, economy)
-        errors += _threshold_errors(name, stage.threshold, economy)
+        errors += _seat_errors(name, stage, config.roles, lifted)
+        errors += _threshold_errors(name, stage.threshold)
         if stage.max_rounds > MAX_ROUNDS[name]:
             errors.append(f"{name}: max_rounds {stage.max_rounds} > {MAX_ROUNDS[name]}")
         if stage.rework not in REWORK_STEPS:
             errors.append(f"{name}: rework target {stage.rework!r} not in {REWORK_STEPS}")
-        floor = TIER_FLOOR[name].get("producer_agent")
-        floor = ECONOMY_TIER if economy and floor else floor
-        if floor and (stage.producer is None or not stage.producer.at_least(floor)):
-            errors.append(f"{name}: producer agent must be ≥ {floor[0]} · {floor[1]}")
-        if name in ARBITRATED_STAGES and (stage.arbiter is None or not stage.arbiter.at_least(fact_floor)):
-            errors.append(f"{name}: fact arbiter must be ≥ {fact_floor[0]} · {fact_floor[1]}")
+        if stage.producer is not None:
+            errors += _tier_errors(f"{name}: producer agent", stage.producer, DEFAULT_TIER,
+                                   opus_ok=lifted or name in PLAN_PRODUCER_STAGES)
+        if name in ARBITRATED_STAGES and stage.arbiter is None:
+            errors.append(f"{name}: needs a fact arbiter (≥ {FACT_TIER[0]} · {FACT_TIER[1]})")
+        if stage.arbiter is not None:
+            errors += _tier_errors(f"{name}: fact arbiter", stage.arbiter, FACT_TIER, opus_ok=lifted)
         if name in ARBITRATED_STAGES:
             checkers = sum(s.count for s in stage.seats if config.roles.get(s.role, None) is not None
                            and config.roles[s.role].kind == "fact")
@@ -280,56 +269,18 @@ def _merge(base: dict, override: dict) -> dict:
 
 
 def load_review(channel: str | None = None, *, path: Path = PANELS_FILE,
-                raise_tier: Tier | None = None, economy: bool = False) -> ReviewConfig:
+                raise_tier: Tier | None = None) -> ReviewConfig:
     """The validated review config, with ``channel``'s overrides merged in. ``raise_tier`` lifts
-    every seat to at least that tier (the all-opus comparison run); it can never lower one.
-    ``economy``: the economy tier (see ``ECONOMY_TIER``) — the default config must still validate
-    first, so a yaml that breaks the normal floors is rejected in economy mode too."""
+    every seat to at least that tier (the all-opus comparison run, ``tier_mode='lifted'``); it can
+    never lower one."""
     raw = yaml.safe_load(path.read_text(encoding="utf-8"))["review"]
     config = ReviewConfig.model_validate(raw)
     if channel and channel in config.channels:
         raw = {**raw, "stages": _merge(raw["stages"], config.channels[channel].get("stages", {}))}
         config = ReviewConfig.model_validate(raw)
-    if economy:
-        raw = _economize(raw, config)
-        config = ReviewConfig.model_validate(raw)
     if raise_tier is not None:
         config = _lift(raw, config, raise_tier)
     return config
-
-
-def _economize(raw: dict, config: ReviewConfig) -> dict:
-    def seat_tier(seat: dict) -> dict:
-        model, effort = ECONOMY_FACT_TIER if config.roles[seat["role"]].kind == "fact" else ECONOMY_TIER
-        return {**seat, "model": model, "effort": effort}
-
-    stages = {}
-    for name, stage in raw["stages"].items():
-        new = {**stage, "seats": [seat_tier(s) for s in stage["seats"]]}
-        threshold = stage.get("threshold") or {}
-        if threshold.get("leave_median_pct") is not None:
-            new["threshold"] = {**threshold,
-                                "leave_median_pct": round(threshold["leave_median_pct"] * ECONOMY_LEAVE_SCALE, 4)}
-        if stage.get("producer") is not None:
-            new["producer"] = {"model": ECONOMY_TIER[0], "effort": ECONOMY_TIER[1]}
-        if stage.get("arbiter") is not None:
-            new["arbiter"] = {"model": ECONOMY_FACT_TIER[0], "effort": ECONOMY_FACT_TIER[1]}
-        stages[name] = new
-    return {**raw, "stages": stages, "tier_mode": ECONOMY}
-
-
-def economy_requested(run_dir: Path | None = None) -> bool:
-    """CF_REVIEW_TIER=economy, or ``<run_dir>/review/tier.json`` saying so (keeps the run command's
-    shape unchanged for the permission allow rule)."""
-    import json
-    import os
-
-    if os.environ.get(REVIEW_TIER_ENV, "").strip().lower() == ECONOMY:
-        return True
-    marker = run_dir / REVIEW_TIER_FILE if run_dir is not None else None
-    if marker is None or not marker.is_file():
-        return False
-    return str(json.loads(marker.read_text(encoding="utf-8")).get("tier", "")).lower() == ECONOMY
 
 
 def _lift(raw: dict, config: ReviewConfig, tier: Tier) -> ReviewConfig:
@@ -342,7 +293,7 @@ def _lift(raw: dict, config: ReviewConfig, tier: Tier) -> ReviewConfig:
             effort = max(current.effort, tier.effort, key=EFFORT_RANK.get)
             seats.append({**seat, "model": model, "effort": effort})
         stages[name] = {**stage, "seats": seats}
-    return ReviewConfig.model_validate({**raw, "stages": stages})
+    return ReviewConfig.model_validate({**raw, "stages": stages, "tier_mode": "lifted"})
 
 
 def sentence_id_field(path: Path = PANELS_FILE) -> str:

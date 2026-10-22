@@ -70,7 +70,7 @@ def test_steps_and_stages_are_in_order():
     assert stage_for_gate("deck", short=False) == "script_structure"
     assert stage_for_gate("deck_facts", short=False) == "script_facts"
     facts = CONFIG.stages["script_facts"]
-    assert [(s.role, s.count, s.model, s.effort) for s in facts.seats] == [("fact_checker", 2, "opus", "high")]
+    assert [(s.role, s.count, s.model, s.effort) for s in facts.seats] == [("fact_checker", 2, "sonnet", "medium")]
     assert facts.arbiter is not None and facts.max_rounds == 3 and facts.threshold.fact_errors_max == 0
     assert CONFIG.stages["script_structure"].threshold.fact_errors_max is None
 

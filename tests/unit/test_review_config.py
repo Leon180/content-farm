@@ -30,20 +30,57 @@ def test_shipped_config_is_valid():
 
 
 @pytest.mark.parametrize("stage", ["article", "script_structure", "script_facts"])
-def test_fact_checker_must_be_opus_high(stage):
-    raw = _with(lambda r: _seat(r, stage, "fact_checker").update(model="sonnet"))
-    with pytest.raises(ValidationError, match="fact_checker is sonnet · high, below opus · high"):
+def test_fact_checker_effort_floor_is_medium(stage):
+    raw = _with(lambda r: _seat(r, stage, "fact_checker").update(effort="low"))
+    with pytest.raises(ValidationError, match="fact_checker is sonnet · low, below sonnet · medium"):
         ReviewConfig.model_validate(raw)
-    raw = _with(lambda r: _seat(r, stage, "fact_checker").update(effort="medium"))
-    with pytest.raises(ValidationError, match="below opus · high"):
-        ReviewConfig.model_validate(raw)
+    raw = _with(lambda r: _seat(r, stage, "fact_checker").update(effort="high"))
+    ReviewConfig.model_validate(raw)    # a floor, not a cap
 
 
 def test_fact_checker_floor_applies_in_late_stages_too():
     def add(r):
-        r["stages"]["final"]["seats"].append({"role": "fact_checker", "count": 1, "model": "sonnet", "effort": "medium"})
+        r["stages"]["final"]["seats"].append({"role": "fact_checker", "count": 1, "model": "sonnet", "effort": "low"})
     with pytest.raises(ValidationError, match="final: fact_checker"):
         ReviewConfig.model_validate(_with(add))
+
+
+def test_shipped_defaults_are_sonnet_low_except_facts_and_the_plan_producer():
+    config = ReviewConfig.model_validate(RAW)
+    for name, stage in config.stages.items():
+        for seat in stage.seats:
+            fact = config.roles[seat.role].kind == "fact"
+            assert (seat.model, seat.effort) == ("sonnet", "medium" if fact else "low"), (name, seat.role)
+        if stage.arbiter is not None:
+            assert (stage.arbiter.model, stage.arbiter.effort) == ("sonnet", "medium"), name
+        if stage.producer is not None and name != "topic":
+            assert (stage.producer.model, stage.producer.effort) == ("sonnet", "low"), name
+    assert config.stages["topic"].producer.model == "opus"
+
+
+@pytest.mark.parametrize("stage", ["article", "script_structure", "script_facts", "title_thumb", "media", "final"])
+def test_opus_is_refused_everywhere_but_the_plan_producer(stage):
+    def mutate(r):
+        r["stages"][stage]["seats"][0].update(model="opus")
+    with pytest.raises(ValidationError, match="opus is only allowed for the plan stage"):
+        ReviewConfig.model_validate(_with(mutate))
+
+
+def test_opus_arbiter_and_non_plan_producer_are_refused():
+    raw = _with(lambda r: r["stages"]["article"].update(arbiter={"model": "opus", "effort": "medium"}))
+    with pytest.raises(ValidationError, match="article: fact arbiter is opus"):
+        ReviewConfig.model_validate(raw)
+    raw = _with(lambda r: r["stages"]["script_structure"].update(producer={"model": "opus", "effort": "low"}))
+    with pytest.raises(ValidationError, match="script_structure: producer agent is opus"):
+        ReviewConfig.model_validate(raw)
+
+
+def test_the_plan_producer_may_use_opus_but_not_haiku():
+    raw = _with(lambda r: r["stages"]["topic"].update(producer={"model": "opus", "effort": "high"}))
+    assert ReviewConfig.model_validate(raw).stages["topic"].producer.model == "opus"
+    raw = _with(lambda r: r["stages"]["topic"].update(producer={"model": "haiku", "effort": "low"}))
+    with pytest.raises(ValidationError, match="topic: producer agent is haiku"):
+        ReviewConfig.model_validate(raw)
 
 
 def test_required_roles_cannot_be_removed():
@@ -65,20 +102,8 @@ def test_script_needs_a_holdout_viewer():
         ReviewConfig.model_validate(raw)
 
 
-def test_early_stage_writers_must_be_opus():
-    raw = _with(lambda r: _seat(r, "script_structure", "writer_story").update(model="sonnet"))
-    with pytest.raises(ValidationError, match="script_structure: writer_story is sonnet · high"):
-        ReviewConfig.model_validate(raw)
-
-
-def test_producer_agent_floor():
-    raw = _with(lambda r: r["stages"]["script_structure"].update(producer={"model": "sonnet", "effort": "high"}))
-    with pytest.raises(ValidationError, match="script_structure: producer agent"):
-        ReviewConfig.model_validate(raw)
-
-
 @pytest.mark.parametrize(("stage", "field", "value"), [
-    ("script_structure", "leave_median_pct", 0.4), ("script_structure", "writer_min", 6),
+    ("script_structure", "leave_median_pct", 0.3), ("script_structure", "writer_min", 6),
     ("script_facts", "fact_errors_max", 1),
     ("article", "fact_errors_max", 2), ("title_thumb", "noticed_median_max", 5), ("media", "compliance_issues_max", 1),
 ])
@@ -110,16 +135,22 @@ def test_rounds_capped():
         ReviewConfig.model_validate(raw)
 
 
-def test_article_needs_an_opus_high_arbiter_and_two_checkers():
+def test_article_needs_an_arbiter_and_two_checkers():
     raw = _with(lambda r: r["stages"]["article"].pop("arbiter"))
-    with pytest.raises(ValidationError, match="article: fact arbiter must be ≥ opus · high"):
+    with pytest.raises(ValidationError, match="article: needs a fact arbiter"):
         ReviewConfig.model_validate(raw)
-    raw = _with(lambda r: r["stages"]["article"].update(arbiter={"model": "sonnet", "effort": "high"}))
-    with pytest.raises(ValidationError, match="fact arbiter"):
+    raw = _with(lambda r: r["stages"]["article"].update(arbiter={"model": "sonnet", "effort": "low"}))
+    with pytest.raises(ValidationError, match="fact arbiter is sonnet · low, below sonnet · medium"):
         ReviewConfig.model_validate(raw)
     raw = _with(lambda r: _seat(r, "article", "fact_checker").update(count=3))
     with pytest.raises(ValidationError, match="exactly 2 fact-checkers, has 3"):
         ReviewConfig.model_validate(raw)
+
+
+def test_leave_median_threshold_is_the_sonnet_scale_040():
+    config = ReviewConfig.model_validate(RAW)
+    for name in ("script_structure", "final", "shorts_script", "shorts_final"):
+        assert config.stages[name].threshold.leave_median_pct == 0.4, name
 
 
 def test_missing_stage_and_unknown_role():
@@ -157,6 +188,7 @@ def test_channel_override_can_tighten_but_not_loosen(tmp_path):
 
 def test_raise_tier_lifts_every_seat_and_never_lowers():
     config = load_review(raise_tier=Tier(model="opus", effort="high"))
+    assert config.tier_mode == "lifted"
     assert all(seat.model == "opus" and seat.effort in ("high", "xhigh", "max")
                for stage in config.stages.values() for seat in stage.seats)
     low = load_review(raise_tier=Tier(model="haiku", effort="low"))

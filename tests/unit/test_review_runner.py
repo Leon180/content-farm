@@ -43,9 +43,9 @@ def test_article_gate_opened_by_panel(run_dir: Path) -> None:  # noqa: F811
     decision = load_state(run_dir, "chipcat").decisions["article"]
     assert decision.by == "agent-panel:article" and "scorecard" in decision.note
     assert sorted(c.rid for c in panel.calls) == ["fact_checker-1", "fact_checker-2", "writer_story-1"]
-    assert all(c.model == "opus" and c.effort == "high" for c in panel.calls if c.rid.startswith("fact"))
+    assert all(c.model == "sonnet" and c.effort == "medium" for c in panel.calls if c.rid.startswith("fact"))
     card = json.loads((run_dir / "review" / "article" / "round-1" / "scorecard.json").read_text(encoding="utf-8"))
-    assert {s["model"] for s in card["seats"]} == {"opus"}
+    assert {s["model"] for s in card["seats"]} == {"sonnet"}
 
 
 def test_failed_round_routes_rework_and_waits_for_the_article_agent(run_dir: Path) -> None:  # noqa: F811
