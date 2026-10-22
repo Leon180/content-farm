@@ -1,2 +1,5 @@
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-cost-accept/REPORT-cost-accept.md","min_bytes":2000,"why":"派工宣告的預期產物（實跑停在 gate_media，報告據實寫停下點）"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-cost-accept/src/content_farm/review/budget.py","pattern":"if not since or not at:","why":"誤判條件已移除"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-cost-accept/REPORT-cost-accept.md","min_bytes":3000,"why":"派工宣告的預期產物"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-cost-accept/artifacts/yokai-accept/yokai-accept-part1.mp4","min_bytes":1000000,"why":"540p 預覽第一段"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-cost-accept/artifacts/yokai-accept/yokai-accept-part2.mp4","min_bytes":1000000,"why":"540p 預覽第二段"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-cost-accept/output/yokai-kyubi-v2/review/producers/deck-17.trace1.json","why":"stream-json trace 對真的 claude -p 產生"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-cost-accept/src/content_farm/review/budget.py","pattern":"if not since or not at:","why":"budget 誤判條件已移除"}
