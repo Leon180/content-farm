@@ -88,6 +88,14 @@ TASKS_REWORK = {
 只改清單點名的標題與縮圖款，沒被點名的標題一字不動（程式會比對）。
 改完跑 `{python} {repo}/scripts/make_thumbnail.py --run-dir {run_dir} --channel {channel} --variants` 確認能渲染。""",
 }
+# Article sent back by the script_structure panel (Leon 2026-10-23): a structure-level rewrite, not a fact fix.
+ARTICLE_STRUCTURE_REWORK = """任務：文章結構退回重做。腳本評審指出文章的結構問題（例如名詞表／時間軸堆疊、缺留人點、論點不推進）；article.md 與 sources.json 已經存在。
+可以重構：調整段落與順序、改寫句子、加上懸念與過場、把表格改成敘事。限制（程式會比對改稿前後，違反就拒收並還原）：
+- 已通過事實查核的句子（沿用原句或改寫後仍是同一句話的），數字與 [src:…] 來源 id 一個字都不能改、不能漏；
+- 新寫的每一句都會被事實查核逐句查：有數字或八卦就附你實際打開過的來源 id，推論與換算要寫明「換算起來」「我們的判斷是」，不要新增沒查證的說法；
+- 不准為了留人點編造情節、引述或數字。
+改完跑 `{python} {repo}/scripts/check_article.py --run-dir {run_dir}`，有問題改到 0 problem(s)。
+交件：receipt 的 rewrite_reason 必須寫明為什麼要大改、改了哪些結構（必填）。"""
 NAMED_LIMIT = 14        # sentences quoted per rework brief
 
 
@@ -203,6 +211,8 @@ def produce(step: str, run_dir: Path, *, channel: str, config: ReviewConfig, pyt
     fmt = {"run_dir": run_dir, "repo": REPO, "channel": channel, "python": python}
     fixes = _fixes_text(run_dir, gate)
     task = TASKS_REWORK[step] if fixes and step in TASKS_REWORK else TASKS[step]     # a rework is a diff, not a redo
+    if step == "article" and fixes and gate != "article":      # sent back by the script panel: a structure rewrite
+        task = ARTICLE_STRUCTURE_REWORK
     guide = (deck_brief(config, channel, python, str(REPO), rework=task is TASKS_REWORK[step])
              if step == "deck" else "")          # rubric + channel rules + Bash, from the first call
     prompt = "\n\n".join(part for part in (COMMON.format(**fmt), task.format(**fmt), guide, fixes,

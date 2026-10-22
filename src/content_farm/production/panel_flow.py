@@ -241,6 +241,12 @@ def _apply(ctx: Context, state: RunState, step: Step, stage: str, current: str, 
         note = f"{result.message}; {result.scorecard}"
         decision = Decision(step.gate.value, "approved", current, now_iso(), by=PANEL_BY + stage, note=note)
         record = StepRecord("approved", decision.at, inputs=current, note=f"by {decision.by}")
+        if step.gate is Gate.ARTICLE and (ctx.run_dir / "article.md").is_file():
+            import shutil
+
+            shutil.copy2(ctx.run_dir / "article.md", ctx.run_dir / ARTICLE_APPROVED)
+            for stale in (ARTICLE_LOCKED, ARTICLE_REWRITE):     # a structure rewrite's fact check is done
+                (ctx.run_dir / stale).unlink(missing_ok=True)
         if step.gate in (Gate.DECK, Gate.DECK_FACTS) and (ctx.run_dir / "deck.json").is_file():
             # the baselines the next edit is diffed against: feat/incremental-render's fix scope
             # (scripts/fix_scope.py) and the fact lock (structure_kept)
@@ -354,7 +360,8 @@ def _produce_guarded(ctx: Context, step_name: str, log: Callable[[str], None], *
     ``REWORK_ATTEMPTS`` times in all)."""
     from content_farm.review.producers import produce
 
-    guard = _delete_only_guard(ctx.run_dir, step_name, gate) or _scoped_guard(ctx.run_dir, step_name, gate)
+    guard = (_structural_article_guard(ctx.run_dir, step_name, gate) or _delete_only_guard(ctx.run_dir, step_name, gate)
+             or _scoped_guard(ctx.run_dir, step_name, gate))
     extra = rules
     for attempt in range(1, (REWORK_ATTEMPTS if guard else 1) + 1):
         log(f"✎ {step_name}: 產出 agent" + (f"（{guard.label}，第 {attempt} 次）" if guard else ""))
@@ -371,6 +378,8 @@ def _produce_guarded(ctx: Context, step_name: str, log: Callable[[str], None], *
         _event(ctx.run_dir, step=step_name, guard=guard.label, file=guard.path.name, attempt=attempt, problems=problems,
                **guard.facts(result.output))
         if not problems:
+            if hasattr(guard, "accept"):
+                guard.accept(result.output)
             return None
         guard.restore()
         log(f"✗ {step_name}: 拒收（{guard.label}）：{'；'.join(problems)[:200]}")
@@ -437,10 +446,83 @@ def _delete_only_guard(run_dir: Path, step_name: str, gate: str | None = None) -
     snapshot.write_text(before, encoding="utf-8")
     if step_name == "article":
         quotes = [str(f.get("evidence") or "") for f in fixes]
-        return _DeleteOnly(target, before, frozenset(flagged_sentences(quotes, split_article(before))))
+        flagged = flagged_sentences(quotes, split_article(before)) | changed_since_lock(run_dir, before)
+        return _DeleteOnly(target, before, frozenset(flagged))
     ids = {str(i) for f in fixes for i in [*((f.get("ref") or {}).get("sentence_ids") or []),
                                            *(f.get("scope") or {}).get("sentence_ids", [])]}
     return _DeleteOnly(target, before, frozenset(ids), deck=True)
+
+
+ARTICLE_APPROVED = "review/article.approved.md"       # article at the last panel approval (the fact lock's baseline)
+ARTICLE_LOCKED = "review/article.locked.md"           # baseline of a structure rewrite still awaiting its fact check
+ARTICLE_REWRITE = "review/article.rewrite.json"       # why that rewrite was needed (rewrite_reason) and how big it was
+
+
+def changed_since_lock(run_dir: Path, current: str) -> set[str]:
+    """Ids of the article sentences that are new or reworded since the fact-locked baseline of a structure
+    rewrite (empty when none is pending): the only sentences the next fact check has not seen."""
+    from content_farm.review.article_diff import normalize, split_article
+
+    locked = run_dir / ARTICLE_LOCKED
+    if not locked.is_file():
+        return set()
+    known = {normalize(s.text) for s in split_article(locked.read_text(encoding="utf-8"))}
+    return {s.id for s in split_article(current) if normalize(s.text) not in known}
+
+
+class _StructuralArticle:
+    """The article sent back by the script_structure panel (leave points, story shape; Leon 2026-10-23). It may be
+    restructured, but needs a ``rewrite_reason`` and may not change the numbers or source ids of the sentences that
+    passed the fact check; the sentences it writes anew are checked by the next article round (and, as they are
+    "changed since the lock", they stay editable for that round's fact fixes)."""
+
+    label = "結構改寫（事實鎖定）"
+    phrase = "動到已查核句子的數字或來源"
+
+    def __init__(self, run_dir: Path, path: Path, before: str):
+        self.run_dir, self.path, self.before = run_dir, path, before
+        approved = run_dir / ARTICLE_APPROVED
+        self.baseline = approved.read_text(encoding="utf-8") if approved.is_file() else before
+        self.fresh: list[str] = []
+
+    def check(self) -> list[str]:
+        from content_farm.review.article_diff import check_structural
+
+        after = self.path.read_text(encoding="utf-8") if self.path.is_file() else ""
+        problems, self.fresh = check_structural(self.baseline, after)
+        return problems
+
+    def reason_problems(self, receipt: dict | None) -> list[str]:
+        if not str((receipt or {}).get("rewrite_reason") or "").strip():
+            return ["結構退回可以大改，但交件時 rewrite_reason 要說明為什麼要大改、改了哪些結構"]
+        return []
+
+    def facts(self, receipt: dict | None) -> dict:
+        return {"rewrite_reason": (receipt or {}).get("rewrite_reason"), "new_sentences": len(self.fresh)}
+
+    def accept(self, receipt: dict | None) -> None:
+        (self.run_dir / ARTICLE_LOCKED).write_text(self.baseline, encoding="utf-8")
+        (self.run_dir / ARTICLE_REWRITE).write_text(json.dumps(
+            {"at": now_iso(), "rewrite_reason": (receipt or {}).get("rewrite_reason"), "new_sentences": len(self.fresh)},
+            ensure_ascii=False, indent=1), encoding="utf-8")
+
+    def restore(self) -> None:
+        self.path.write_text(self.before, encoding="utf-8")
+
+    def retry_hint(self) -> str:
+        return ("重新改：可以重構段落與順序，但已通過事實查核的句子，數字與 [src:…] 來源 id 要和原句一致；新句子附來源或寫明是判斷；"
+                "交件時 rewrite_reason 說明為什麼要大改。")
+
+
+def _structural_article_guard(run_dir: Path, step_name: str, gate: str | None) -> _StructuralArticle | None:
+    """The guard for an article rework that the script panel (not the article panel) asked for, else None."""
+    article = run_dir / "article.md"
+    if step_name != "article" or gate in (None, "article") or not article.is_file():
+        return None
+    plan_path = run_dir / "review" / f"{gate}.fixes.json"
+    if not plan_path.is_file() or "article" not in json.loads(plan_path.read_text(encoding="utf-8")).get("steps", {}):
+        return None
+    return _StructuralArticle(run_dir, article, article.read_text(encoding="utf-8"))
 
 
 class _Scoped:

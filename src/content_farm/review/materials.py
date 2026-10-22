@@ -77,7 +77,15 @@ def topic(run_dir: Path, out: Path, **_: Any) -> Materials:
 
 
 def article(run_dir: Path, out: Path, *, only: frozenset[str] | None = None, **_: Any) -> Materials:
-    if only is None:
+    if only is None and (fresh := _structure_rewrite_ids(run_dir)):
+        # the script panel sent the article back for its structure: the unchanged sentences passed the fact check
+        # and the program verified their numbers / source ids did not move, so only the new ones are checked
+        from content_farm.review.article_diff import mark_article
+
+        a = _put(out, "article.md", mark_article((run_dir / "article.md").read_text(encoding="utf-8"), fresh))
+        note = ("文章（結構改寫後的差異查核：只審標 ★ 的新句，每一句的數字、八卦、因果都要回來源查；沒標的句子前一輪已通過事實查核、"
+                "數字與來源 id 經程式比對沒有變，當前後文讀就好）")
+    elif only is None:
         a = _copy(run_dir / "article.md", out)
         note = "文章（每個數字、八卦都應附來源 id）"
     else:    # delta fact-check: the earlier rounds already cleared the unmarked sentences
@@ -89,6 +97,14 @@ def article(run_dir: Path, out: Path, *, only: frozenset[str] | None = None, **_
     corpus = (out / a).read_text(encoding="utf-8").replace("★", "")
     return Materials([a, s], {a: note, s: "來源清單（id、標題、網址）"}, corpus=corpus,
                      extra={"source_ids": _source_ids(out / s)}, audience={s: (FACTS,)})
+
+
+def _structure_rewrite_ids(run_dir: Path) -> frozenset[str]:
+    """Ids of the article sentences new since a pending structure rewrite's fact-locked baseline."""
+    from content_farm.production.panel_flow import changed_since_lock
+
+    article_md = run_dir / "article.md"
+    return frozenset(changed_since_lock(run_dir, article_md.read_text(encoding="utf-8"))) if article_md.is_file() else frozenset()
 
 
 def _source_ids(path: Path) -> list[str]:

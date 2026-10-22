@@ -96,6 +96,52 @@ def check_rework(before: str, after: str, flagged: set[str]) -> list[str]:
     return check_sentences(split_article(before), split_article(after), flagged)
 
 
+_CITE = re.compile(r"\[src:[\w.-]+\]")
+_DIGITS = re.compile(r"\d[\d,]*(?:\.\d+)?")
+
+
+def _facts_of(text: str) -> tuple[list[str], list[str]]:
+    """(numbers, source ids) of a sentence, sorted: what a fact check locked on it."""
+    cites = sorted(_CITE.findall(text))
+    numbers = sorted(n.replace(",", "") for n in _DIGITS.findall(_CITE.sub("", text)))
+    return numbers, cites
+
+
+def match_sentences(before: list[ArticleSentence], after: list[ArticleSentence]) -> dict[str, str | None]:
+    """For each ``after`` sentence id: the ``before`` sentence id it is a (moved / reworded) version of, or None
+    when it is new. Best similarity first, each old sentence used once, at least ``EDIT_SIMILARITY_MIN`` alike."""
+    pairs = sorted(((_similar(a.text, b.text), a.id, b.id) for a in after for b in before), reverse=True)
+    out: dict[str, str | None] = {a.id: None for a in after}
+    used: set[str] = set()
+    for ratio, new_id, old_id in pairs:
+        if ratio < EDIT_SIMILARITY_MIN:
+            break
+        if out[new_id] is None and old_id not in used:
+            out[new_id] = old_id
+            used.add(old_id)
+    return out
+
+
+def check_structural(before: str, after: str) -> tuple[list[str], list[str]]:
+    """A structure-level article rewrite (script_structure sent the article back: leave points, story shape —
+    Leon 2026-10-23). Sections may move and sentences be reworded or added; the fact-locked sentences (the ones that
+    passed the fact check) must keep their numbers and source ids. Returns (problems, new sentence ids): a sentence
+    that matches no old one is new, and the fact check then reads only those."""
+    old, new = split_article(before), split_article(after)
+    old_by_id = {s.id: s for s in old}
+    matched = match_sentences(old, new)
+    problems, fresh = [], []
+    for sentence in new:
+        origin = matched[sentence.id]
+        if origin is None:
+            fresh.append(sentence.id)
+            continue
+        was = old_by_id[origin]
+        if _facts_of(was.text) != _facts_of(sentence.text):
+            problems.append(f"{sentence.id} 是已查核過的句子（原 {origin}），數字或來源 id 不能改：「{was.text[:30]}」→「{sentence.text[:30]}」")
+    return problems, fresh
+
+
 def added_sentences(old: list[ArticleSentence], new: list[ArticleSentence]) -> list[str]:
     """Sentences ``new`` adds over ``old`` (in place or as a rewrite too large to be an edit); [] when
     ``new`` only deletes or edits. The fact lock: an addition sends the script back to its structure stage."""
