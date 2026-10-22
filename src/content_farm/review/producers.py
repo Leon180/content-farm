@@ -19,7 +19,9 @@ from content_farm.review.config import ReviewConfig, Tier
 REPO = Path(__file__).resolve().parents[3]
 RECEIPT = {"type": "object", "additionalProperties": False, "required": ["files", "summary"],
            "properties": {"files": {"type": "array", "items": {"type": "string"}}, "summary": {"type": "string"},
-                          "fixed": {"type": "array", "items": {"type": "string"}}}}
+                          "fixed": {"type": "array", "items": {"type": "string"}},
+                          "rewrite_reason": {"type": "string", "description": "why a structure-level rewrite was needed "
+                                                                              "(only when the fix list names no sentence)"}}}
 TOOLS = ("Read", "Write", "Edit", "Glob", "Grep", "WebSearch", "WebFetch")   # + Bash scoped to the repo python
 
 SCRIPTS = ("check_article.py", "deck_to_script.py", "make_thumbnail.py", "render_slides.py")
@@ -68,6 +70,39 @@ TASKS = {
 }
 
 
+TASKS_REWORK = {
+    "article": """任務：文章退回重做。article.md 與 sources.json 已經存在（不要重寫、不要重讀 skill 文件）；只依下面的修改清單處理被點名的句子。
+改完跑 `{python} {repo}/scripts/check_article.py --run-dir {run_dir}`，有問題改到 0 problem(s)。""",
+    "deck": """任務：腳本退回重做。deck.json 已經存在（不要整份重寫、不要重讀 skill 文件）；用 Edit 逐句改下面「要改的句子」，
+其他句子、投影片、標題、說明欄一字不動（程式會逐句比對前後版本，改到沒被點名的部分就整份拒收並還原）。
+改完跑 `{python} {repo}/scripts/deck_to_script.py --run-dir {run_dir} --strict`，有錯就改到通過。
+事實規則同初稿：每個數字、日期、引述、因果要能在 sources.json 的來源原文找到；限定詞（據報導、預估、規劃）不能拿掉；
+頻道自己的推論、換算要在句子裡標明；要補來源時沿用 sources.json 的欄位格式、新 id 不重複。
+交件：receipt 的 fixed 列出處理了哪些句子 id；清單沒有指到任何具體句子（整體結構問題）時才可以重構，並在 rewrite_reason 寫明為什麼。""",
+    "thumbnail_spec": """任務：標題與縮圖退回重做。titles.json、thumbnail.json、thumbnail_variants.json 已經存在；
+只改清單點名的標題與縮圖款，沒被點名的標題一字不動（程式會比對）。
+改完跑 `{python} {repo}/scripts/make_thumbnail.py --run-dir {run_dir} --channel {channel} --variants` 確認能渲染。""",
+}
+NAMED_LIMIT = 14        # sentences quoted per rework brief
+
+
+def _named_sentences(run_dir: Path, plan: dict, step: str) -> str:
+    """The sentences the fix list names, with their current wording: the agent edits these and nothing else."""
+    deck_path = run_dir / "deck.json"
+    if step != "deck" or not deck_path.is_file():
+        return ""
+    from content_farm.review.sentences import deck_sentences
+    from content_farm.review.touch_guard import named_in
+
+    named = named_in(plan, step)
+    if not named.sentence_ids:
+        return ""
+    by_id = {s.id: s for s in deck_sentences(json.loads(deck_path.read_text(encoding="utf-8")))}
+    rows = [f"- {i}（{by_id[i].slide_id}）｜{by_id[i].text}" for i in sorted(named.sentence_ids) if i in by_id]
+    more = f"\n（另有 {len(rows) - NAMED_LIMIT} 句見修改清單的連動範圍）" if len(rows) > NAMED_LIMIT else ""
+    return "\n要改的句子（id｜現文）：\n" + "\n".join(rows[:NAMED_LIMIT]) + more
+
+
 def _fixes_text(run_dir: Path, gate: str) -> str:
     path = run_dir / "review" / f"{gate}.fixes.json"
     if not path.is_file():
@@ -103,6 +138,7 @@ def _fixes_text(run_dir: Path, gate: str) -> str:
                         "提示詞不能自相矛盾：頻道風格前綴已經寫了 no text, no seal 這類禁令，提示詞裡就不能再要求印章、"
                         "文字、題字等同一樣東西；被點名的舊圖已經移走，改完會換 seed 重畫。")
     return (f"\n這是退回重做（第 {plan.get('round')} 輪評審未過：{reasons}）。修改清單（{path}）：\n" + "\n".join(lines)
+            + "".join(_named_sentences(run_dir, plan, step) for step in plan.get("steps", {}))
             + "\n只改清單與連動範圍列出的地方，其他句子一字不動（沒改到的句子 id 要保持不變）；"
               "改寫時不要新增沒查證過的說法——新寫的每一句一樣會被查核；"
               "不准為了分數灌水或誇大。fixed 欄位列出你處理了哪些。" + delete_only)
@@ -128,7 +164,9 @@ def produce(step: str, run_dir: Path, *, channel: str, config: ReviewConfig, pyt
         raise ValueError(f"no producer agent for step {step!r}")
     gate = gate or STEP_STAGE[step][1]
     fmt = {"run_dir": run_dir, "repo": REPO, "channel": channel, "python": python}
-    prompt = "\n\n".join(part for part in (COMMON.format(**fmt), TASKS[step].format(**fmt), _fixes_text(run_dir, gate),
+    fixes = _fixes_text(run_dir, gate)
+    task = TASKS_REWORK[step] if fixes and step in TASKS_REWORK else TASKS[step]     # a rework is a diff, not a redo
+    prompt = "\n\n".join(part for part in (COMMON.format(**fmt), task.format(**fmt), fixes,
                                            extra, "完成後用結構化輸出回報寫了哪些檔。") if part)
     tier = producer_tier(config, step)
     log_dir = run_dir / "review" / "producers"

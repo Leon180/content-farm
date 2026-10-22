@@ -354,10 +354,10 @@ def _produce_guarded(ctx: Context, step_name: str, log: Callable[[str], None], *
     ``REWORK_ATTEMPTS`` times in all)."""
     from content_farm.review.producers import produce
 
-    guard = _delete_only_guard(ctx.run_dir, step_name, gate)
+    guard = _delete_only_guard(ctx.run_dir, step_name, gate) or _scoped_guard(ctx.run_dir, step_name, gate)
     extra = rules
     for attempt in range(1, (REWORK_ATTEMPTS if guard else 1) + 1):
-        log(f"✎ {step_name}: 產出 agent" + (f"（只准刪改，第 {attempt} 次）" if guard else ""))
+        log(f"✎ {step_name}: 產出 agent" + (f"（{guard.label}，第 {attempt} 次）" if guard else ""))
         config = review_config(ctx)
         result = produce(step_name, ctx.run_dir, channel=ctx.channel.code, config=config,
                          python=ctx.options.python, client=ctx.options.review_client, extra=extra, gate=gate)
@@ -367,17 +367,16 @@ def _produce_guarded(ctx: Context, step_name: str, log: Callable[[str], None], *
         log(f"✎ {step_name}: {result.seconds}s {(result.output or {}).get('summary', '')[:120]}")
         if guard is None:
             return None
-        problems = guard.check()
-        _event(ctx.run_dir, step=step_name, delete_only=guard.path.name, attempt=attempt, problems=problems)
+        problems = guard.check() + guard.reason_problems(result.output)
+        _event(ctx.run_dir, step=step_name, guard=guard.label, file=guard.path.name, attempt=attempt, problems=problems,
+               **guard.facts(result.output))
         if not problems:
             return None
         guard.restore()
-        log(f"✗ {step_name}: 拒收（不是只刪改）：{'；'.join(problems)[:200]}")
+        log(f"✗ {step_name}: 拒收（{guard.label}）：{'；'.join(problems)[:200]}")
         extra = (rules + "\n\n" if rules else "") + (f"上一次的改稿被拒收，{guard.path.name} 已還原成改稿前的版本。原因（程式比對前後版本）：\n- "
-                 + "\n- ".join(problems)
-                 + "\n重新改：只准刪除被點名的句子，或在被點名的句子裡加限定詞、改正數字與歸屬；不准新增句子，"
-                   "沒被點名的句子一字不動。")
-    return f"{step_name}：改稿 {REWORK_ATTEMPTS} 次都不是只刪改，已還原並停下（見 production.log.jsonl）"
+                 + "\n- ".join(problems) + "\n" + guard.retry_hint())
+    return f"{step_name}：改稿 {REWORK_ATTEMPTS} 次都{guard.phrase}，已還原並停下（見 production.log.jsonl）"
 
 
 @dataclass(frozen=True)
@@ -386,6 +385,18 @@ class _DeleteOnly:
     before: str
     flagged: frozenset[str]
     deck: bool = False          # compare deck narration sentences (stable ids), not article lines
+    label: str = "只准刪改"
+    phrase: str = "不是只刪改"
+
+    def reason_problems(self, receipt: dict | None) -> list[str]:
+        return []
+
+    def facts(self, receipt: dict | None) -> dict:
+        return {}
+
+    def retry_hint(self) -> str:
+        return ("重新改：只准刪除被點名的句子，或在被點名的句子裡加限定詞、改正數字與歸屬；不准新增句子，"
+                "沒被點名的句子一字不動。")
 
     def check(self) -> list[str]:
         from content_farm.review.article_diff import check_rework, check_sentences, deck_narration
@@ -430,6 +441,50 @@ def _delete_only_guard(run_dir: Path, step_name: str, gate: str | None = None) -
     ids = {str(i) for f in fixes for i in [*((f.get("ref") or {}).get("sentence_ids") or []),
                                            *(f.get("scope") or {}).get("sentence_ids", [])]}
     return _DeleteOnly(target, before, frozenset(ids), deck=True)
+
+
+class _Scoped:
+    """``review.touch_guard.ScopedGuard`` with the interface ``_produce_guarded`` uses."""
+
+    label = "只改被點名的部分"
+    phrase = "改到沒被點名的部分"
+
+    def __init__(self, inner):
+        self.inner = inner
+        self.path = inner.path
+
+    def check(self) -> list[str]:
+        return self.inner.check()
+
+    def restore(self) -> None:
+        self.inner.restore()
+
+    def reason_problems(self, receipt: dict | None) -> list[str]:
+        if self.inner.named.open and not str((receipt or {}).get("rewrite_reason") or "").strip():
+            return ["修改清單沒有指到具體句子（整體結構問題）：可以大改，但交件時 rewrite_reason 要說明為什麼要大改"]
+        return []
+
+    def facts(self, receipt: dict | None) -> dict:
+        return {"named": self.inner.named.to_json(), "rewrite_reason": (receipt or {}).get("rewrite_reason")}
+
+    def retry_hint(self) -> str:
+        return ("重新改：只改清單點名的句子 id（與連動範圍）；沒被點名的句子、投影片、標題一字不動，用 Edit 逐句改，不要整份重寫。"
+                "若清單沒有指到具體句子（整體結構問題），可以重構，但回報的 rewrite_reason 必須寫明為什麼要大改。")
+
+
+def _scoped_guard(run_dir: Path, step_name: str, gate: str | None) -> _Scoped | None:
+    """The scoped-rework guard for a deck / title rework answering a fix list (``review.touch_guard``);
+    None for a first draft, a media prompt-only rework (checked by ``prompt_rework``) or a step with no file to diff."""
+    from content_farm.review.touch_guard import scoped_guard
+
+    plan_path = run_dir / "review" / f"{gate}.fixes.json" if gate else None
+    if plan_path is None or not plan_path.is_file():
+        return None
+    plan = json.loads(plan_path.read_text(encoding="utf-8"))
+    if plan.get("prompt_only") or step_name not in plan.get("steps", {}):
+        return None
+    inner = scoped_guard(run_dir, step_name, plan)
+    return _Scoped(inner) if inner is not None else None
 
 
 def structure_kept(ctx: Context, state: RunState, current: str, log: Callable[[str], None]) -> RunState | None:
