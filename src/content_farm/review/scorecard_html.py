@@ -83,6 +83,27 @@ def _tokens_text(tokens: dict[str, Any]) -> str:
                       zip(usage.TOKEN_KEYS, ("input", "output", "cache 讀", "cache 寫")))
 
 
+def _timing_section(run_dir: Path) -> str:
+    """牆鐘：機器時間（雲端／本機車道）與等待（排隊、等決定、離開），退回造成的時間；來源同 ``produce.py timing``。"""
+    from content_farm.production import timing, timing_view
+
+    data = timing.build(run_dir)
+    if not data["spans"]:
+        return ""
+    fmt = timing_view.fmt
+    totals = _table(("牆鐘", "機器時間", "雲端車道", "本機車道", "排隊", "等決定", "離開（≥3h）", "未歸類", "退回重做"),
+                    [(fmt(data["wall_s"]), fmt(data["machine_s"]), fmt(data["lane_s"]["cloud"]), fmt(data["lane_s"]["local"]),
+                      fmt(data["queue_s"]), fmt(data["wait_s"]["decision"]), fmt(data["wait_s"]["away"]),
+                      fmt(data["wait_s"]["unattributed"]),
+                      f"{len(data['rework'])} 次 / {fmt(sum(r['seconds'] for r in data['rework']))}")])
+    rows = [(c["category"], c["count"], fmt(c["seconds"]), f"{c['share_of_machine']:.0%}") for c in data["categories"][:8]]
+    rework = [(r["producer"], fmt(r["seconds"]), r["caused_by"] or "—", r.get("cost_usd")) for r in data["rework"]]
+    return ("<h2>牆鐘（機器時間 vs 等待）</h2>" + totals
+            + "<details open><summary>前幾名耗時</summary>" + _table(("類別", "次數", "合計", "占機器時間"), rows) + "</details>"
+            + (f"<details><summary>退回造成的產出重寫（{len(rework)}）</summary>"
+               + _table(("產出", "耗時", "由哪一輪退回", "名目 $"), rework) + "</details>" if rework else ""))
+
+
 def _usage_section(run_dir: Path) -> str:
     """每階段（評審各輪＋產出 agent）小計與整支片總計，來源同 ``produce.py usage``。"""
     data = usage.report(run_dir)["cloud"]
@@ -129,6 +150,7 @@ def _round(card: dict[str, Any], previous: Path | None, current: Path) -> str:
     dropped = verdict.get("dropped") or []
     return (f"<div class='card'><h3>{escape(card['label'])} · {status}</h3><p>{escape(reasons)}</p>"
             f"<p class='muted'>{card.get('at')} · 牆鐘 {card.get('seconds')} s · 評審合計 {card.get('reviewer_seconds')} s · "
+            f"同時進行 {card.get('peak_parallel', '—')}／上限 {card.get('parallel_allowed', '—')}（設定 {card.get('parallel_cap', '—')}）· "
             f"本輪小計：{subtotal['calls']} 席 · {_tokens_text(subtotal['tokens'])} · "
             f"名目費用 ${subtotal['cost_usd']}（訂閱）</p>"
             f"{_scores(verdict.get('scores', {}))}<details><summary>評審與模型（{len(card['seats'])}）</summary>{seats}</details>"
@@ -157,7 +179,7 @@ def render(run_dir: Path, title: str) -> Path:
     page = (f"<!doctype html><html lang='zh-Hant'><head><meta charset='utf-8'><meta name='viewport' "
             f"content='width=device-width,initial-scale=1'><title>評分卡</title><style>{_CSS}</style></head><body><main>"
             f"<h1>{escape(title)} · 評分卡</h1><p class='muted'>{escape(str(run_dir))}</p>"
-            + _table(("階段", "輪數", "結果", "分鐘", "評審次數"), summary) + _usage_section(run_dir)
+            + _table(("階段", "輪數", "結果", "分鐘", "評審次數"), summary) + _timing_section(run_dir) + _usage_section(run_dir)
             + "".join(sections) + "</main></body></html>")
     out = root / "scorecard.html"
     out.parent.mkdir(parents=True, exist_ok=True)

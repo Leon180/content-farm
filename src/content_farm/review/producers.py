@@ -9,6 +9,7 @@ Each call returns a tiny JSON receipt (``RECEIPT``) so the result is schema-chec
 from __future__ import annotations
 
 import json
+import os
 from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
@@ -180,7 +181,8 @@ def produce(step: str, run_dir: Path, *, channel: str, config: ReviewConfig, pyt
     dirs = tuple(REPO / d for d in (".claude/skills", "channels", "src", "scripts", "assets"))
     call = Call(rid, prompt, RECEIPT, tier.model, tier.effort, tools=tools, cwd=run_dir, add_dirs=dirs,
                 env=(("PYTHONPATH", str(REPO / "src")),),
-                timeout_s=TIMEOUT_S[step], retries=1, write_tools=True)   # one retry: network drops (2026-10-18)
+                timeout_s=TIMEOUT_S[step], retries=1, write_tools=True,   # one retry: network drops (2026-10-18)
+                trace=os.environ.get("CF_PRODUCER_TRACE", "1") != "0")   # per-step trace → <rid>.trace1.json
     result = (client or (lambda c: run_call(c, log_dir=log_dir)))(call)
     with (log_dir / "producers.jsonl").open("a", encoding="utf-8") as handle:
         handle.write(json.dumps({"at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "step": step,
