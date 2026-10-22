@@ -21,7 +21,7 @@ from content_farm.review.client import Call, CallResult, model_matches
 from content_farm.review.config import ReviewConfig
 from content_farm.review.freeze import frozen_steps
 from content_farm.review.narrow import narrow
-from content_farm.review.rounds import expected_seats, rounds_of, run_round, stage_dir
+from content_farm.review.rounds import VIDEO_STAGES, expected_seats, rounds_of, run_round, stage_dir
 from content_farm.review.sentences import deck_sentences, script_sentences
 
 PANEL_BY = "agent-panel:"
@@ -127,6 +127,12 @@ def _rework(run_dir: Path, gate: str, stage_name: str, card: dict[str, Any], def
                   if i.get("category") == "compliance" and (i.get("ref") or {}).get("item") in live
                   and (i.get("ref") or {}).get("item") not in prompt_only
                   and i.get("caused_by") in (None, "illustrate", "media") else i for i in issues]
+    if stage_name in VIDEO_STAGES and any(i.get("caused_by") == "mix" for i in issues):
+        from content_farm.review.materials_video import audio_mix_enabled
+
+        if not audio_mix_enabled(run_dir):   # no mix step on this channel: a mix fix has nothing to run — a config matter
+            advisory += [{**i, "caused_by": "channel-config"} for i in issues if i.get("caused_by") == "mix"]
+            issues = [i for i in issues if i.get("caused_by") != "mix"]
     if stage_name in TITLE_ONLY_STAGES:   # a title panel never sends the script (or media) back: listed only
         advisory = [i for i in issues if (i.get("caused_by") or default_step) != default_step]
         issues = [i for i in issues if (i.get("caused_by") or default_step) == default_step]

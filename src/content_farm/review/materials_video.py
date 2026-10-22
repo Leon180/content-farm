@@ -48,6 +48,22 @@ def best_title(run_dir: Path) -> str:
     return str(chosen["text"])
 
 
+NO_MIX_NOTE = ("【本頻道無混音】channels 設定沒有開 audio.mix：成片沒有配樂（BGM）也沒有音效，這是頻道設定，不是缺陷。"
+               "請不要以配樂、BGM 與人聲比例、ducking、音效位置扣分，也不要把問題歸因到 mix。\n")
+
+
+def audio_mix_enabled(run_dir: Path) -> bool:
+    """Whether the run's channel mixes BGM / SFX (``audio.enabled``). True when the channel cannot be read, so
+    a run-dir without ``production.json`` is judged by the full audio standard as before."""
+    from content_farm.production.channels import load_channel
+    from content_farm.production.state import read_channel_code
+
+    try:
+        return load_channel(read_channel_code(run_dir)).audio.enabled
+    except (OSError, ValueError, KeyError):
+        return True
+
+
 def final(run_dir: Path, out: Path, *, vertical: bool = False, **_: Any) -> Materials:
     from content_farm.evaluation.prepare import audio_lines
     from content_farm.evaluation.sheets import build_sheets, extract_frames, mmss
@@ -65,8 +81,9 @@ def final(run_dir: Path, out: Path, *, vertical: bool = False, **_: Any) -> Mate
         notes[files[-1]] = "畫面截圖表（每 5 秒一格、每張 6 格、左上角是時間戳）"
     files.append(_copy(run_dir / "subtitles" / "subtitles.srt", out))
     notes[files[-1]] = "旁白逐字稿（含時間）"
-    files.append(_put(out, "audio.txt", audio_lines(report)))
-    notes[files[-1]] = "每 10 秒的聲音描述"
+    mix = audio_mix_enabled(run_dir)
+    files.append(_put(out, "audio.txt", ("" if mix else NO_MIX_NOTE) + audio_lines(report)))
+    notes[files[-1]] = "每 10 秒的聲音描述" + ("" if mix else "（本頻道無混音）")
     corpus = (out / "subtitles.srt").read_text(encoding="utf-8")
     if (run_dir / "titles.json").is_file():
         files.append(_put(out, "title.txt", best_title(run_dir) + "\n"))
@@ -79,7 +96,7 @@ def final(run_dir: Path, out: Path, *, vertical: bool = False, **_: Any) -> Mate
     else:
         sentences = []
     return Materials(files, notes, corpus=corpus, sentences=sentences, duration=float(report["duration"]),
-                     extra={"objective": report, "duration_text": mmss(report["duration"]),
+                     extra={"objective": report, "duration_text": mmss(report["duration"]), "audio_mix": mix,
                             "sentence_times": sentence_times(run_dir, sentences)})
 
 

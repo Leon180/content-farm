@@ -14,6 +14,7 @@ Usage:
         --run-dir output/offwork-7722 --title "…" --number 7,722 --unit mm²   # 9:16 Short (R5)
     python scripts/produce.py manual-kit --run-dir output/cowos [--out DIR]  # Studio upload kit + preview.html
     python scripts/produce.py usage --run-dir output/cowos [--json]   # tokens / notional $ / step times so far
+    python scripts/produce.py new-cycle --run-dir output/cowos --stage media --stage final  # archive used-up panel rounds
     python scripts/produce.py eval-loop --run-dir output/cowos --max-rounds 3  # review panel → fix loop (one step)
     python scripts/produce.py news daily [--date D] [--pick 2,5] --allow-paid  # HN 快報 Shorts (production/news)
     python scripts/produce.py news weekly [--week 2026-W42]                     # HN 快報 weekly long video
@@ -142,6 +143,11 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     review.add_argument("--round", type=int, default=1, help="round number to mirror (holdout sits in the last)")
     review.add_argument("--suffix", default="-compare")
     review.add_argument("--competitors", type=Path)
+    cycle = sub.add_parser("new-cycle", help="archive a stage's used-up rounds into cycle-N/ so its next round is 1 "
+                                             "(cloned / older run-dirs); never opens a gate")
+    cycle.add_argument("--run-dir", type=Path, required=True)
+    cycle.add_argument("--stage", action="append", required=True,
+                       help="panel stage, e.g. media|final|script_structure|script_facts (repeatable)")
     sub.add_parser("queue", help="machine-wide heavy-work queue (renders, local TTS, image/video models)")
     news_cli.add_parser(sub)
     return parser.parse_args(argv)
@@ -316,6 +322,17 @@ def cmd_review(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_new_cycle(args: argparse.Namespace) -> int:
+    from content_farm.production.panel_flow import new_stage_cycle
+
+    if not args.run_dir.is_dir():
+        raise ValueError(f"no run-dir: {args.run_dir}")
+    moved = new_stage_cycle(args.run_dir, tuple(args.stage))
+    for stage in args.stage:
+        print(f"{stage}: {'rounds moved to review/' + stage + '/' + moved[stage] if stage in moved else 'no rounds to archive'}")
+    return 0
+
+
 def cmd_usage(args: argparse.Namespace) -> int:
     """Read-only: totals from review/*/round-*/scorecard.json, review/producers/producers.jsonl and
     production.log.jsonl. Nothing in the run-dir is written."""
@@ -380,7 +397,7 @@ def main(argv: list[str] | None = None) -> int:
     handlers = {"run": cmd_run, "status": cmd_status, "inbox": cmd_inbox, "plan": cmd_plan,
                 "channels": cmd_channels, "short-from-long": cmd_short_from_long,
                 "manual-kit": cmd_manual_kit, "eval-loop": cmd_eval_loop, "queue": cmd_queue, "review": cmd_review,
-                "news": news_cli.run, "usage": cmd_usage, "timing": cmd_timing,
+                "news": news_cli.run, "usage": cmd_usage, "timing": cmd_timing, "new-cycle": cmd_new_cycle,
                 "approve": lambda a: cmd_decide(a, "approved"),
                 "reject": lambda a: cmd_decide(a, "rejected")}
     try:

@@ -139,7 +139,9 @@ def fix_list(viewers: list[dict], pros: list[dict]) -> list[dict]:
             for g in groups]
 
 
-def objective_checks(obj: dict, thumbs: dict | None = None) -> list[Check]:
+def objective_checks(obj: dict, thumbs: dict | None = None, *, mix: bool = True) -> list[Check]:
+    """``mix=False``: the channel has no BGM / SFX mix (``audio.enabled`` off), so the checks that only a
+    mixed bed can pass (BGM under voice, ducking) are left out instead of failing every run."""
     c, v, a = obj["content"], obj["visual"], obj["audio"]
     checks = [
         Check("content", "死區（10 秒內無畫面變化、音效、鉤子）", len(obj["dead_zones"]), "0", not obj["dead_zones"]),
@@ -169,8 +171,9 @@ def objective_checks(obj: dict, thumbs: dict | None = None) -> list[Check]:
             Check("audio", "削波取樣數", a["clipped_samples"], "0", a["clipped_samples"] == 0),
             Check("audio", "語速中位（字/秒，說話時）", rate, "3.8–5.8", rate is not None and 3.8 <= rate <= 5.8),
             Check("audio", "音高起伏（半音）", a["pitch_spread_st"], "≥1.6（不單調）", a["pitch_spread_st"] >= 1.6, False),
-            Check("audio", "BGM 低於人聲（dB，中位）", under, "12–18", under is not None and 12 <= under <= 18),
-            Check("audio", "ducking（dB）", a.get("ducking_db"), "≥3", (a.get("ducking_db") or 0) >= 3, False),
+            *([Check("audio", "BGM 低於人聲（dB，中位）", under, "12–18", under is not None and 12 <= under <= 18),
+               Check("audio", "ducking（dB）", a.get("ducking_db"), "≥3", (a.get("ducking_db") or 0) >= 3, False)]
+              if mix else []),
             Check("audio", "死空氣（≥2 秒無聲）", len(a.get("dead_air", [])), "0", not a.get("dead_air")),
             Check("audio", "念錯（CER 平均）", (a.get("speech_check") or {}).get("mean_cer"), "≤0.08",
                   ((a.get("speech_check") or {}).get("mean_cer") or 0) <= 0.08, False),

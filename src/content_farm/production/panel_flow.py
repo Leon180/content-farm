@@ -533,3 +533,32 @@ def _new_cycle(run_dir: Path) -> str:
     if (run_dir / FACTS_LOCKED_DECK).is_file():
         (run_dir / FACTS_LOCKED_DECK).rename(run_dir / f"review/deck_facts.locked.cycle-{number}.json")
     return f"cycle-{number}"
+
+
+def new_stage_cycle(run_dir: Path, stages: tuple[str, ...]) -> dict[str, str]:
+    """``produce.py new-cycle``: the same archiving ``_new_cycle`` does for the script stages, for any panel
+    stages whose rounds are used up (a cloned or older run-dir). Each stage's ``round-*`` folders move to
+    ``cycle-N/`` (N = that stage's next number) and its fix list to ``<gate>.fixes.cycle-N.json``, so the next
+    round is number 1. Returns ``{stage: "cycle-N"}`` for the stages that had rounds; unknown stages raise."""
+    from content_farm.review.config import load_review
+    from content_farm.review.rounds import stage_dir
+
+    known = load_review().stages
+    unknown = [s for s in stages if s not in known]
+    if unknown:
+        raise ValueError(f"unknown stage {unknown}; one of {sorted(known)}")
+    moved: dict[str, str] = {}
+    for stage in stages:
+        here = stage_dir(run_dir, stage)
+        rounds = sorted(here.glob("round-*")) if here.is_dir() else []
+        if not rounds:
+            continue
+        number = 1 + len(list(here.glob("cycle-*")))
+        (here / f"cycle-{number}").mkdir(parents=True)
+        for path in rounds:
+            path.rename(here / f"cycle-{number}" / path.name)
+        plan = run_dir / "review" / f"{known[stage].gate}.fixes.json"
+        if plan.is_file():
+            plan.rename(plan.with_name(f"{known[stage].gate}.fixes.cycle-{number}.json"))
+        moved[stage] = f"cycle-{number}"
+    return moved

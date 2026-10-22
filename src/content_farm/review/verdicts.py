@@ -325,7 +325,8 @@ def final(stage: Stage, seats: list[Seat], *, sentences: list[Sentence] | None =
     if columns is None and context.get("objective"):
         from content_farm.evaluation.aggregate import column_scores, objective_checks
 
-        columns = column_scores(objective_checks(context["objective"], context.get("thumbs")))
+        columns = column_scores(objective_checks(context["objective"], context.get("thumbs"),
+                                                          mix=context.get("audio_mix", True)))
     viewers = [s for s in regular if s.kind == "viewer"]
     leave = _leave(viewers, [], duration)
     median = round(statistics.median(leave), 3) if leave else 0.0
