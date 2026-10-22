@@ -33,7 +33,8 @@ def _detail(tool_input: dict[str, Any]) -> str:
 def rows_of(event: dict[str, Any], at: float) -> list[list[Any]]:
     """Trace rows for one stream event (empty for events that carry no step of the agent's work)."""
     kind = event.get("type")
-    blocks = (event.get("message") or {}).get("content")
+    message = event.get("message")
+    blocks = message.get("content") if isinstance(message, dict) else None   # some events carry message as a plain string
     if kind not in ("assistant", "user") or not isinstance(blocks, list):
         return []
     rows: list[list[Any]] = []
