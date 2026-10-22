@@ -121,6 +121,12 @@ def _rework(run_dir: Path, gate: str, stage_name: str, card: dict[str, Any], def
         issues = [{**i, "caused_by": "deck", "prompt_only": True}
                   if (i.get("ref") or {}).get("item") in prompt_only and i.get("caused_by") in (None, "illustrate", "media")
                   else i for i in issues]
+    if stage_name == "media":   # a credits / licence gap on a live slide's card: re-running media cannot fix it
+        live = _deck_slide_ids(run_dir)
+        issues = [{**i, "caused_by": "deck"}
+                  if i.get("category") == "compliance" and (i.get("ref") or {}).get("item") in live
+                  and (i.get("ref") or {}).get("item") not in prompt_only
+                  and i.get("caused_by") in (None, "illustrate", "media") else i for i in issues]
     if stage_name in TITLE_ONLY_STAGES:   # a title panel never sends the script (or media) back: listed only
         advisory = [i for i in issues if (i.get("caused_by") or default_step) != default_step]
         issues = [i for i in issues if (i.get("caused_by") or default_step) == default_step]
@@ -144,6 +150,12 @@ def _rework(run_dir: Path, gate: str, stage_name: str, card: dict[str, Any], def
     plan["scorecard"] = str(stage_dir(run_dir, stage_name) / card["label"] / "scorecard.json")
     routing.write(run_dir, gate, plan)
     return plan
+
+
+def _deck_slide_ids(run_dir: Path) -> set[str]:
+    if not (run_dir / "deck.json").is_file():
+        return set()
+    return {str(s["id"]) for sec in _load(run_dir / "deck.json").get("sections", []) for s in sec.get("slides", [])}
 
 
 def _ai_image_ids(run_dir: Path, issues: list[dict[str, Any]]) -> list[str]:

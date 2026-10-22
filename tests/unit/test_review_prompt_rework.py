@@ -79,6 +79,26 @@ def test_the_media_panel_routes_ai_image_issues_to_a_prompt_only_deck_rework(tmp
     assert "media" in plan["steps"]                      # the credits item still goes to the media step
 
 
+def test_a_compliance_gap_on_a_live_card_goes_to_the_deck_agent_limited_to_that_slide(tmp_path: Path):
+    from content_farm.review.touch_guard import deck_problems, named_in
+
+    (tmp_path / "deck.json").write_text(json.dumps(_deck(), ensure_ascii=False), encoding="utf-8")
+    (tmp_path / "review").mkdir()
+    issues = [{"ref": {"target": "media", "item": "s10"}, "category": "compliance", "severity": "high",
+               "problem": "卡片出現第三方報頭", "fix": "改成中性版面", "evidence": "s10", "who": "compliance-1",
+               "caused_by": "media"}]
+    card = {"round": 1, "label": "round-1", "verdict": {"pass": False, "reasons": ["x"], "issues": issues}}
+    plan = _rework(tmp_path, "media", "media", card, "illustrate")
+    assert plan["restart"] == "deck" and "prompt_only" not in plan
+    named = named_in(plan, "deck")
+    assert named.slides == {"s10"} and named.description
+    before, after = _deck(), _deck()
+    after["sections"][0]["slides"][2]["media"] = {"kind": "title_card"}
+    assert deck_problems(before, after, named) == []                       # the named card may change ...
+    after["sections"][0]["slides"][1]["media"]["prompt"] = "other"
+    assert deck_problems(before, after, named) != []                       # ... nothing else may
+
+
 def test_the_compliance_reason_carries_a_summary():
     stage = load_review().stages["media"]
     from content_farm.review.verdicts import Seat

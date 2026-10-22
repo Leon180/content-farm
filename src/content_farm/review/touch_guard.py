@@ -30,20 +30,26 @@ class Named:
     thumbnail: bool
     description: bool
     open: bool                       # a fix that names no sentence: structure-level rewrite, reason required
+    slides: frozenset[str] = frozenset()   # slides a media compliance fix names: that slide's media / card is free
 
     def to_json(self) -> dict[str, Any]:
         return {"sentence_ids": sorted(self.sentence_ids), "titles": sorted(self.titles),
-                "thumbnail": self.thumbnail, "description": self.description, "open": self.open}
+                "thumbnail": self.thumbnail, "description": self.description, "open": self.open,
+                "slides": sorted(self.slides)}
 
 
 def named_in(plan: dict[str, Any], step: str) -> Named:
     """The ids / titles the fixes routed to ``step`` name (their ``ref`` plus the linked ``scope``)."""
     ids: set[str] = set()
     titles: set[str] = set()
+    slides: set[str] = set()
     thumbnail = description = is_open = False
     fixes = (plan.get("steps", {}).get(step) or {}).get("fixes", [])
     for fix in fixes:
         ref, scope = fix.get("ref") or {}, fix.get("scope") or {}
+        if ref.get("target") == "media" and ref.get("item") and fix.get("category") == "compliance":
+            slides.add(str(ref["item"]))      # credits / licence gap on a live slide: its card and the source list
+            description = True
         named = {str(i) for i in [*(ref.get("sentence_ids") or []), *(scope.get("sentence_ids") or [])]}
         ids |= named
         titles |= {str(t) for t in scope.get("titles") or []}
@@ -53,7 +59,7 @@ def named_in(plan: dict[str, Any], step: str) -> Named:
         description |= bool(scope.get("description")) or ref.get("target") == "description"
         if not named and ref.get("target") in ("script", None) and not ref.get("item"):
             is_open = True
-    return Named(frozenset(ids), frozenset(titles), thumbnail, description, is_open)
+    return Named(frozenset(ids), frozenset(titles), thumbnail, description, is_open, frozenset(slides))
 
 
 def _slides(deck: dict[str, Any]) -> dict[str, dict[str, Any]]:
@@ -81,6 +87,8 @@ def deck_problems(before: dict[str, Any], after: dict[str, Any], named: Named) -
     for sid in new_slides.keys() - old_slides.keys():
         problems.append(f"新增投影片 {sid}（修改清單沒有要求；結構大改要先讓清單指到整個腳本）")
     for sid in old_slides.keys() & new_slides.keys():
+        if sid in named.slides:
+            continue
         if sid in touched:
             keep = [(i, t) for i, t in old_by.get(sid, []) if i not in named.sentence_ids]
             after_texts = [normalize(t) for _, t in new_by.get(sid, [])]
