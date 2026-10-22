@@ -101,6 +101,7 @@ sentence_id_field: sentence_ids   # feat/incremental-render ec2c126: slide.sente
 # 這裡只能「更嚴」不能「更鬆」。每位評審是 pipeline 自己啟動的 `claude -p --model --effort --json-schema` 子程序。
 review:
   defaults: {max_parallel: 8, timeout_s: 1200, schema_retries: 1}   # 2026-10-19 4→8；入場檢查仍依可用記憶體往下調
+  budget: {usd_per_video: 15}                  # 雲端車道（評審＋產出 agent）每支片的名目上限；用完就停下回報，不自動繼續（review/budget.py）
   aggregator: {model: haiku, effort: low}      # 修改清單整理、退回路由、彙整
   roles:
     viewer: {title: 合成觀眾, kind: viewer}

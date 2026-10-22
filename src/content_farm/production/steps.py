@@ -43,6 +43,7 @@ class RunOptions:
     auto_agents: bool = False     # run producer agents (claude -p) for agent steps / rework
     competitors: Path | None = None   # homepage feeds for the title & thumbnail panel
     review_tier: str = ""         # "opus:high" lifts every reviewer (comparison runs only)
+    budget_usd: float | None = None   # cloud-lane allowance for this video (review.budget); None = file / env / config
     review_client: Callable | None = None   # tests inject a fake; None = claude -p subprocesses
 
 

@@ -130,11 +130,53 @@ def _mark_rework(ctx: Context, state: RunState, plan: dict[str, Any], gate: str)
     return state
 
 
+def over_budget(ctx: Context) -> str | None:
+    """Why the cloud lane must stop for this video (``review.budget``), or None. A person raising the allowance
+    (``--budget-usd``) is recorded in the run-dir and counts from then on."""
+    from content_farm.review import budget
+
+    override = getattr(ctx.options, "budget_usd", None)
+    if override is not None:
+        budget.record_raise(ctx.run_dir, override)
+    return budget.check(ctx.run_dir, configured=review_config(ctx).budget.usd_per_video, override=override)
+
+
+def _round_due(ctx: Context, step: Step, stage: str) -> bool:
+    """Would ``panel_gate`` start reviewers now? False when the stage's last round already judged the current
+    inputs (a pass is only recorded; a miss is only turned into a fix list) — those cost nothing."""
+    import re
+
+    from content_farm.review.rounds import rounds_of, stage_dir
+
+    config = review_config(ctx)
+    wanted = config.stages[stage]
+    done = [p for p in rounds_of(ctx.run_dir, stage) if re.fullmatch(r"round-\d+", p.name)]
+    if not done:
+        return True
+    last = json.loads((done[-1] / "scorecard.json").read_text(encoding="utf-8"))
+    if last.get("inputs") != fingerprint(ctx.run_dir, wanted.reviews):
+        return True
+    needs_holdout = any(s.holdout for s in wanted.seats) and not any(s.get("holdout") for s in last["seats"])
+    addendum = stage_dir(ctx.run_dir, stage) / f"round-{last['round']}-holdout" / "scorecard.json"
+    return bool(last["verdict"]["pass"]) and needs_holdout and not addendum.is_file()
+
+
+def _budget_stop(ctx: Context, state: RunState, step: Step, message: str,
+                 log: Callable[[str], None]) -> tuple[RunState, RunResult]:
+    from content_farm.production.runner import Outcome, RunResult
+
+    _event(ctx.run_dir, step=step.name, budget_stop=True, message=message)
+    log(f"💸 {step.name}: {message}")
+    return state, RunResult(Outcome.FAILED, step.name, message)
+
+
 def panel_step(ctx: Context, state: RunState, step: Step, stage: str, current: str,
                log: Callable[[str], None]) -> tuple[RunState, RunResult | None]:
     from content_farm.review.gate import panel_gate
 
     assert step.gate is not None
+    if (stopped := over_budget(ctx)) is not None and _round_due(ctx, step, stage):
+        return _budget_stop(ctx, state, step, stopped, log)
     competitors = competitors_for(ctx)
     log(f"⚖ {step.name}: 評審團 {stage}")
     result = panel_gate(ctx.run_dir, gate=step.gate.value, stage_name=stage, config=review_config(ctx),
@@ -152,6 +194,8 @@ def facts_delta(ctx: Context, state: RunState, step: Step, current: str,
     from content_farm.review.gate import PANEL_BY
 
     assert step.gate is not None
+    if (stopped := over_budget(ctx)) is not None:
+        return _budget_stop(ctx, state, step, stopped, log)
     decision = state.decisions.get(step.gate.value)
     locked = _facts_baseline(ctx.run_dir)
     if (decision is None or decision.verdict != "approved" or not decision.by.startswith(PANEL_BY)
@@ -278,6 +322,9 @@ def run_producer(ctx: Context, step_name: str, log: Callable[[str], None], *, ga
     The output must keep the channel's rules (``channel_rule_violations``, the policy step's checks):
     an output that breaks one is restored and redone once with the broken rules in the brief (not a
     review round); breaking them again stops the step with the output restored."""
+    if (stopped := over_budget(ctx)) is not None:
+        _event(ctx.run_dir, step=step_name, budget_stop=True, message=stopped)
+        return stopped
     before = {name: (ctx.run_dir / name).read_text(encoding="utf-8")
               for name in RULE_OUTPUTS.get(step_name, ()) if (ctx.run_dir / name).is_file()}
     failure = _produce_guarded(ctx, step_name, log, gate=gate)

@@ -163,8 +163,13 @@ class Defaults(_Strict):
     schema_retries: int = Field(default=1, ge=0, le=3)
 
 
+class Budget(_Strict):
+    usd_per_video: float = Field(default=15.0, gt=0)    # nominal list-price USD of one video's `claude -p` calls
+
+
 class ReviewConfig(_Strict):
     defaults: Defaults = Defaults()
+    budget: Budget = Budget()
     aggregator: Aggregator = Aggregator()
     roles: dict[str, Role]
     stages: dict[str, Stage]

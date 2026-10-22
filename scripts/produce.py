@@ -71,6 +71,9 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
                      help="run producer agents (claude -p) for topic/article/deck/titles and their rework")
     run.add_argument("--competitors", type=Path, help="dir with competitors.json for the homepage feeds")
     run.add_argument("--review-tier", default="", help='lift every reviewer, e.g. "opus:high" (comparison runs)')
+    run.add_argument("--budget-usd", type=float, default=None,
+                     help="cloud-lane allowance for this video in nominal USD (default review.budget.usd_per_video = 15); "
+                          "recorded in review/budget.json; the run stops, never continues by itself, when it is used up")
 
     for name in ("approve", "reject"):
         p = sub.add_parser(name)
@@ -163,7 +166,7 @@ def cmd_run(args: argparse.Namespace) -> int:
     options = RunOptions(mock_voice=args.mock_voice, allow_paid=args.allow_paid, no_stock=args.no_stock,
                          mascot_workers=args.mascot_workers, panels=not args.no_panels,
                          auto_agents=args.auto_agents, competitors=args.competitors,
-                         review_tier=args.review_tier,
+                         review_tier=args.review_tier, budget_usd=args.budget_usd,
                          **({"env_file": args.env_file} if args.env_file else {}))
     runner = Runner(Context(channel, args.run_dir.resolve(), options), max_load=args.max_load)
     result = runner.run(until=args.until, force=frozenset(args.force))
