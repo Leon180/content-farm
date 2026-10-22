@@ -1,8 +1,2 @@
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-cost-accept/REPORT-cost-accept.md","min_bytes":500,"why":"暫停交接報告（派工宣告的預期產物；實跑本身未完成）"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-pipeline-speed-2/REPORT-pipeline-speed.md","min_bytes":2000,"why":"派工宣告的預期產物"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-pipeline-speed-2/scripts/apply_deck_patch.py","why":"待辦 1 白名單腳本"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-pipeline-speed-2/src/content_farm/review/narrow.py","why":"待辦 2 守門"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-pipeline-speed-2/src/content_farm/review/quick_patch.py","why":"待辦 3 快路"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-pipeline-speed-2/docs/pipeline-speed/replay/replay_narrow.py","why":"離線重放腳本可重跑"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-pipeline-speed-2/src/content_farm/review","pattern":"scripts_bridge","why":"沒有留下暫時碼"}
-{"kind":"clean_worktree","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-pipeline-speed-2"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-cost-accept/REPORT-cost-accept.md","min_bytes":2000,"why":"派工宣告的預期產物（實跑停在 gate_media，報告據實寫停下點）"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-cost-accept/src/content_farm/review/budget.py","pattern":"if not since or not at:","why":"誤判條件已移除"}
