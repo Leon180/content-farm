@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import json
 from collections import defaultdict
+from datetime import datetime
 from pathlib import Path
 
 TOKEN_KEYS = ("input", "output", "cache_read", "cache_write")
@@ -28,13 +29,35 @@ def _tok(usage: dict) -> dict:
     return {k: int((usage.get("tokens") or {}).get(k) or 0) for k in TOKEN_KEYS}
 
 
-def summarize(run_dir: Path) -> dict:
+def _after(at: str | None, since: str | None) -> bool:
+    """Same rule as ``review.budget``: with a ``since``, undated rows predate it."""
+    if not since:
+        return True
+    if not at:
+        return False
+    try:
+        return datetime.fromisoformat(at) >= datetime.fromisoformat(since)
+    except ValueError:
+        return True
+
+
+def budget_since(run_dir: Path) -> str | None:
+    path = run_dir / "review" / "budget.json"
+    try:
+        return json.loads(path.read_text(encoding="utf-8")).get("since")
+    except (OSError, json.JSONDecodeError, AttributeError):
+        return None
+
+
+def summarize(run_dir: Path, since: str | None = None) -> dict:
     review = run_dir / "review"
     stages: dict[str, dict] = defaultdict(lambda: {"rounds": 0, "cost": 0.0, "seconds": 0.0, "seats": 0, "cached": 0,
                                                     "carried": 0, "tokens": dict.fromkeys(TOKEN_KEYS, 0),
                                                     "models": defaultdict(float), "roles": defaultdict(float),
                                                     "input_per_seat": []})
     for stage, _, card in _cards(review):
+        if not _after(card.get("at"), since):
+            continue
         s = stages[stage]
         s["rounds"] += 1
         s["seconds"] += float(card.get("seconds") or 0)
@@ -58,6 +81,8 @@ def summarize(run_dir: Path) -> dict:
             if not line.strip():
                 continue
             row = json.loads(line)
+            if not _after(row.get("at"), since):
+                continue
             p = producers[row.get("step", "?")]
             p["runs"] += 1
             p["cost"] += float(row.get("cost_usd") or 0)
@@ -101,8 +126,11 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("run_dir", type=Path)
     parser.add_argument("--json", action="store_true")
+    parser.add_argument("--since", help="ISO time; default: `since` of review/budget.json (only this run's calls)")
+    parser.add_argument("--all", action="store_true", help="count the whole history, ignore any since")
     args = parser.parse_args()
-    summary = summarize(args.run_dir)
+    since = None if args.all else (args.since or budget_since(args.run_dir))
+    summary = summarize(args.run_dir, since)
     print(json.dumps(summary, ensure_ascii=False, indent=1) if args.json else render(summary))
 
 

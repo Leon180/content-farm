@@ -186,6 +186,18 @@ def title_thumb(run_dir: Path, out: Path, *, feeds: list[str] | None = None, **_
                             "variants": [p.stem.split("_")[-1].upper() for p in variants], "feeds": feeds or []})
 
 
+def _live_ai_images(run_dir: Path) -> list[Path]:
+    """The generated pictures of slides the current media report covers. A picture left behind by a slide that a
+    later deck merged away is not delivered, so it is neither reviewed nor asked for credits (cf-cost-accept:
+    s08b / s10 were orphans after deck-13 and failed the compliance panel three rounds in a row)."""
+    paths = sorted((run_dir / "assets" / "ai_images").glob("*.png"))
+    report = run_dir / "media" / "media_report.json"
+    if not report.is_file():
+        return paths[:40]
+    live = {s.get("slide_id") for s in _read_json(report).get("slides", [])}
+    return [p for p in paths if p.stem in live][:40] if live else paths[:40]
+
+
 def _media_identity(run_dir: Path) -> str:
     """What the compliance reviewer's verdict depends on: each slide's media identity, the generated pictures'
     bytes and the credits — not the contact sheet (a picture of them) nor timings and timestamps."""
@@ -194,7 +206,7 @@ def _media_identity(run_dir: Path) -> str:
     if report.is_file():
         for slide in _read_json(report).get("slides", []):
             parts.append(f"{slide.get('slide_id')}|{slide.get('identity')}|{slide.get('used')}|{slide.get('note')}")
-    for path in sorted((run_dir / "assets" / "ai_images").glob("*.png"))[:40]:
+    for path in _live_ai_images(run_dir):
         parts.append(f"{path.name}={hashlib.sha256(path.read_bytes()).hexdigest()[:16]}")
     credits = run_dir / "credits.json"
     if credits.is_file():
@@ -211,7 +223,7 @@ def media(run_dir: Path, out: Path, **_: Any) -> Materials:
         if (run_dir / name).is_file():
             files.append(_copy(run_dir / name, out, Path(name).name))
             notes[files[-1]] = note
-    for path in sorted((run_dir / "assets" / "ai_images").glob("*.png"))[:40]:
+    for path in _live_ai_images(run_dir):
         files.append(_copy(path, out, f"ai_images/{path.name}"))
         notes[files[-1]] = "AI 插圖"
     credits = _read_json(run_dir / "credits.json") if (run_dir / "credits.json").is_file() else {}
