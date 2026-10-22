@@ -201,9 +201,24 @@ def ai_credits_text(entries: Sequence[dict]) -> str:
     return "\n".join(lines)
 
 
+def news_credits_text(entries: Sequence[dict]) -> str:
+    """One line per report a title card quotes (publisher, headline, date, URL)."""
+    seen: dict[str, dict] = {}
+    for entry in entries:
+        if entry.get("kind") == "news_card":
+            seen.setdefault(entry["source_id"], entry)
+    if not seen:
+        return ""
+    lines = ["引用報導 / Cited reports（引用標題，非轉載全文）:"]
+    for e in seen.values():
+        lines.append(f"- {e['publisher']}, {e['published']}〈{e['headline']}〉: {e['source_url']}")
+    return "\n".join(lines)
+
+
 def credits_text(entries: Sequence[dict]) -> str:
     """Ready-to-paste block for the YouTube description."""
-    blocks = [block for block in (artwork_credits_text(entries), ai_credits_text(entries)) if block]
+    blocks = [block for block in (artwork_credits_text(entries), news_credits_text(entries),
+                                  ai_credits_text(entries)) if block]
     artwork = "\n\n".join(blocks)
     stock = [e for e in entries if e.get("kind") == "stock"]
     if not stock:

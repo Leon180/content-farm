@@ -102,7 +102,12 @@ def cached_build(ctx: MediaContext, job: SlideJob, cache: SceneCache, key: str) 
     meta = cache.get(key)
     if meta is not None:
         name = f"clip{meta['suffix']}"
-        return _from_meta(meta, cache.path(key, name), job), True
+        reused = _from_meta(meta, cache.path(key, name), job)
+        if reused.used == "title_card" and not reused.credit:   # clips cached before news cards were credited
+            from content_farm.explainer.media import _news_card_credit
+
+            reused = replace(reused, credit=_news_card_credit(ctx, job, job.slide.media.source_id if job.slide.media else ""))
+        return reused, True
     result = build_clip(ctx, job)
     name = f"clip{result.path.suffix}"
     # Plain slides with transitions off point at slides/slide_NNN.png: copy, never move it.

@@ -255,4 +255,17 @@ def _title_card(ctx: MediaContext, job: SlideJob) -> ClipResult:
         capture = ctx.capturer.animate(html, ctx.clip_path(job, ".mp4"), job.seconds)
     source_id = job.slide.media.source_id if job.slide.media else ""
     pulses = f" {len(job.stage.pulses)} pulse(s)" if job.stage else ""
-    return _result(job, "title_card", capture.clip, note=f"source_id={source_id}{pulses}")
+    return _result(job, "title_card", capture.clip, note=f"source_id={source_id}{pulses}",
+                   credit=_news_card_credit(ctx, job, source_id))
+
+
+def _news_card_credit(ctx: MediaContext, job: SlideJob, source_id: str) -> dict | None:
+    """The card names a publisher and shows its headline: credit the report (publisher, headline, date, URL) so
+    the licence record and the description cover it ("quoted headline, not a reprint")."""
+    if not source_id:
+        return None
+    source = ctx.deck.source_by_id(source_id)
+    return {"slide_id": job.slide.id, "slide_index": job.index, "kind": "news_card", "source_id": source.id,
+            "publisher": source.publisher or "", "headline": source.headline or source.title,
+            "published": source.published or "", "source_url": source.url or "",
+            "license": "引用標題，非轉載全文 / headline quoted, article not reproduced"}

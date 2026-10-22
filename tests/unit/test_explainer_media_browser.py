@@ -82,7 +82,7 @@ def test_media_to_visual_end_to_end_offline(tmp_path: Path) -> None:
     report = json.loads(run.report_path.read_text())
     assert report["slides"][0]["fallback"] is True and report["slides"][2]["placeholder"] is True
     credits = json.loads(run.credits_path.read_text())
-    assert credits["entries"] == []
+    assert [e["kind"] for e in credits["entries"]] == ["news_card"]     # the title card quotes a report: credited
     assert [(p["slide_index"], p["kind"]) for p in credits["pending"]] == [(3, "ai_image")]
     assert (run_dir / "ai_image_prompts.md").is_file()
     assert run.contact_sheet.is_file()
