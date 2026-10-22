@@ -5,3 +5,7 @@
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-yokai-tempo/output/yokai-kyubi-v2/deck.before-frog.json","min_bytes":2000,"why":"加角色前的原 deck 備份"}
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-yokai-tempo/output/yokai-kyubi-v2/upload/manual/preview.html","min_bytes":1,"why":"注意：這是複製來的 1.20 舊版 preview，不是 1.29 成品；任務要求的新 preview 尚未產生"}
 {"kind":"clean_worktree","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-yokai-tempo","why":"可能不通過：graft/ 是開工前就存在的 untracked 目錄（不是我建的）"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-cost-fix/REPORT-cost-fix.md","min_bytes":2000,"why":"cf-cost-fix 派工時宣告的預期產物（基線、七項改動、預設設定表、交接清單；實跑數字尚未填）"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-cost-fix/scripts/session_guard.py","min_bytes":1000,"why":"cf-cost-fix item 6 的對話大小守門腳本"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-cost-fix/src/content_farm/review/reuse.py","min_bytes":1000,"why":"cf-cost-fix item 3 只重評需要的席次"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-cost-fix/src","pattern":"ECONOMY_","why":"cf-cost-fix：舊 economy 常數已移除（併入預設）"}
