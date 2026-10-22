@@ -75,5 +75,7 @@ def bash_text(python: str, repo: str) -> str:
         "讀檔用 Read／Grep／Glob，改檔用 Edit（單句）或 apply_deck_patch（多句），不要用 shell 讀寫。")
 
 
-def deck_brief(config: ReviewConfig, channel_code: str, python: str, repo: str) -> str:
-    return "\n\n".join(p for p in (rubric_text(config), channel_rules_text(channel_code), bash_text(python, repo)) if p)
+def deck_brief(config: ReviewConfig, channel_code: str, python: str, repo: str, *, rework: bool = False) -> str:
+    """A first draft gets the rubric too; a rework (a diff, the fix list says what to change) only the hard rules and Bash use."""
+    parts = (() if rework else (rubric_text(config),)) + (channel_rules_text(channel_code), bash_text(python, repo))
+    return "\n\n".join(p for p in parts if p)

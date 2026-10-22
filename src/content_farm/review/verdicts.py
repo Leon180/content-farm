@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from content_farm.review.config import Stage
+from content_farm.review.narrow import with_sentences_from_time
 from content_farm.review.sentences import Sentence, position_share
 
 _NORMALIZE = re.compile(r"[\s「」『』“”\"'‘’，,。．.！!？?：:；;、（）()\[\]【】—\-…~～]+")
@@ -60,6 +61,9 @@ def verify_issue(issue: dict[str, Any], *, corpus: str, sentence_ids: set[str], 
     unknown = [i for i in ids if i not in sentence_ids]
     if unknown and sentence_ids:
         return f"unknown sentence id(s) {unknown}"
+    if target == "script" and not ids and sentence_ids and not (
+            ref.get("scope") == "global" and str(ref.get("why_global") or "").strip()):
+        return "script issue names no sentence (set ref.scope=global with why_global if it truly is script-wide)"
     if target in ("video", "audio"):
         t = seconds(ref.get("t"))
         if t is None or (duration and t > duration + 1):
@@ -339,6 +343,8 @@ def final(stage: Stage, seats: list[Seat], *, sentences: list[Sentence] | None =
     holdout = [s for s in seats if s.holdout and s.ok]
     kept, dropped = split_issues(_collect(seats), **_context({**context, "sentences": sentences or [],
                                                                "duration": duration}))
+    times = context.get("sentence_times") or []      # time → sentence: the fix list gets ids instead of a bare m:ss
+    kept = [with_sentences_from_time(i, times, seconds((i.get("ref") or {}).get("t"))) for i in kept]
     scores = {"leave_median_pct": median, "leave": leave, "columns": columns or {},
               "thumbnail_matches": f"{sum(matches)}/{len(matches)}",
               "pros": {s.rid: s.output.get("score") for s in regular if s.kind == "pro" and s.output},

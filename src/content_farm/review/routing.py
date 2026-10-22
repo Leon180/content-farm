@@ -28,6 +28,8 @@ from content_farm.review.sentences import Sentence
 
 PIPELINE_ORDER = ("topic", "article", "deck", "thumbnail_spec", "voice", "illustrate", "media", "assembly",
                   "mascot", "mix")
+COMMON_TERM_HITS = 6          # a linked term found in more sentences than this does not link
+MAX_AFFECTED_SLIDES = 3       # extra slides a claim_change issue may name (ref: ``affected_slides``)
 _TOKENS = re.compile(r"\d[\d,.]*\s*[%倍萬億年月週片顆]?|[A-Za-z][A-Za-z0-9\-]{1,}|「([^」]{2,12})」")
 
 
@@ -71,13 +73,19 @@ def simple_scope(issue: dict[str, Any], texts: Texts) -> Scope:
     ref = issue.get("ref") or {}
     named = [str(i) for i in ref.get("sentence_ids") or []]
     terms = terms_of(issue.get("evidence", ""))
-    linked = [s.id for s in texts.sentences if s.id in named or any(t in s.text for t in terms)]
+    # a term found in more than COMMON_TERM_HITS sentences is a common word, not a linked claim (it would drag in half the script)
+    hits = {t: sum(t in s.text for s in texts.sentences) for t in terms}
+    linking = [t for t in terms if hits[t] <= COMMON_TERM_HITS]
+    linked = [s.id for s in texts.sentences if s.id in named or any(t in s.text for t in linking)]
     titles = tuple(k for k, v in texts.titles.items() if any(t in v for t in terms))
     chapters: tuple[str, ...] = ()
     if issue.get("claim_change"):
-        sections = {s.section for s in texts.sentences if s.id in named}
-        chapters = tuple(sorted(sections))
-        linked += [s.id for s in texts.sentences if s.section in sections and s.id not in linked]
+        # the chapter goes back to review as a whole, but only the slides the issue names must be rewritten
+        # (reject-list-analysis: whole-chapter expansion added 118 sentences, 8 of them were changed)
+        chapters = tuple(sorted({s.section for s in texts.sentences if s.id in named}))
+        slides = {s.slide_id for s in texts.sentences if s.id in named} | set(
+            str(x) for x in (issue.get("affected_slides") or [])[:MAX_AFFECTED_SLIDES])
+        linked += [s.id for s in texts.sentences if s.slide_id in slides and s.id not in linked]
     return Scope(tuple(dict.fromkeys(linked)), titles, any(t in texts.thumbnail for t in terms),
                  any(t in texts.description for t in terms), chapters, tuple(terms))
 

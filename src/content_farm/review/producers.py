@@ -168,7 +168,8 @@ def produce(step: str, run_dir: Path, *, channel: str, config: ReviewConfig, pyt
     fmt = {"run_dir": run_dir, "repo": REPO, "channel": channel, "python": python}
     fixes = _fixes_text(run_dir, gate)
     task = TASKS_REWORK[step] if fixes and step in TASKS_REWORK else TASKS[step]     # a rework is a diff, not a redo
-    guide = deck_brief(config, channel, python, str(REPO)) if step == "deck" else ""   # rubric + channel rules + Bash, first time
+    guide = (deck_brief(config, channel, python, str(REPO), rework=task is TASKS_REWORK[step])
+             if step == "deck" else "")          # rubric + channel rules + Bash, from the first call
     prompt = "\n\n".join(part for part in (COMMON.format(**fmt), task.format(**fmt), guide, fixes,
                                            extra, "完成後用結構化輸出回報寫了哪些檔。") if part)
     tier = producer_tier(config, step)
