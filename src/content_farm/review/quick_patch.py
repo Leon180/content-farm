@@ -27,7 +27,9 @@ from content_farm.review.touch_guard import named_in
 SMALL_SHARE = 0.10
 MAX_SENTENCES = 14
 TIMEOUT_S = 600
-_NEEDS_TOOLS = re.compile(r"來源|sources\.json|WebFetch|WebSearch|查證|查核員.*無|補上.*出處|出處|新增.{0,6}(句|張|投影片)|拆(成|開)")
+# judged on the *fix* text only (a problem always talks about sources); the answer's ``needs_tools`` catches the rest
+_NEEDS_TOOLS = re.compile(r"[補加找查增]\S{0,4}(來源|出處|資料)|sources\.json|WebFetch|WebSearch|查(證|一下|查看)|"
+                          r"新增\S{0,6}(句|張|投影片)|拆(成|開|兩)|移到.{0,8}(之前|之後|前面|後面)")
 PATCH = {"type": "object", "additionalProperties": False, "required": ["replace", "deletes", "summary"],
          "properties": {"replace": {"type": "object", "additionalProperties": {"type": "string"}},
                         "deletes": {"type": "array", "items": {"type": "string"}},
@@ -57,7 +59,7 @@ def eligibility(deck: dict[str, Any], plan: dict[str, Any], step: str = "deck") 
     if len(named.sentence_ids) > min(MAX_SENTENCES, SMALL_SHARE * len(sentences)):
         return False, f"{len(named.sentence_ids)} of {len(sentences)} sentences named (over {SMALL_SHARE:.0%})"
     for fix in (plan.get("steps", {}).get(step) or {}).get("fixes", []):
-        if fix.get("rerouted_from") or _NEEDS_TOOLS.search(f"{fix.get('problem', '')} {fix.get('fix', '')}"):
+        if fix.get("rerouted_from") or _NEEDS_TOOLS.search(str(fix.get("fix", ""))):
             return False, "a fix needs a source, a new sentence or a rerouted step"
     return True, ""
 
