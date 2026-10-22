@@ -44,7 +44,8 @@ TASKS = {
     "topic": """任務：選題候選。從趨勢、Hacker News、新聞、頻道待辦清單（{repo}/channels/backlog/{channel}.yaml）整理 8–12 個候選，
 排除 topics/channel_history.txt 裡已做過的題目。寫 topics/candidates.json：
 {{"candidates":[{{"id":"t01","title":"標題草案","hook":"一句鉤子","minutes":8,"sources":["可查的來源網址"],"note":"為何適合這頻道"}}]}}
-每題至少 2 個可公開查證的來源網址（用 WebSearch／WebFetch 確認存在）。""",
+每題至少 2 個可公開查證的來源網址（用 WebSearch／WebFetch 確認存在），其中至少 1 個是一手來源（公司公告、財報、法說會、官方統計、論文）。
+避開以傳聞為主、各家報價互相矛盾、主要數字沒有一手來源的題目（例如只靠媒體轉述的晶圓報價）：評審會直接扣分或淘汰。""",
     "article": """任務：研究與文章。題目在 topic.json 的 chosen[0]。照 {repo}/.claude/skills/article/SKILL.md 的做法（不要停下來等人審），
 寫 article.md 與 sources.json。每個數字和八卦都附來源 id，來源要是你實際打開過的網址。
 交出前逐條自我查核（兩位事實查核員會各自回頭查每個來源，任何一條錯誤或無來源就整篇退回）：

@@ -13,6 +13,12 @@ CAUSED_BY = ("caused_by：問題是哪一步造成的——topic（選題）、a
              "thumbnail_spec（標題縮圖）、voice（配音／念錯）、illustrate（AI 插圖）、media（素材／B-roll）、"
              "assembly（剪接／字幕）、mascot（角色疊加）、mix（配樂混音）。")
 
+# Topic rubric (cf-chipcat-run2, from run1: a 3 nm wafer-price topic lived on rumour and conflicting quotes, and its
+# fact items kept coming back). Applies to the pro and producer topic seats.
+SOURCE_RISK = ("來源風險（扣分項）：題目的主要數字或主張若以傳聞為主、各家報價互相矛盾、或沒有一手來源（公司公告、財報、法說會、"
+               "官方統計、論文），分數壓到 4 以下（score ≤ 4）；三項全中或整題靠單一傳聞就 veto。"
+               "候選題的 sources 全是轉述報導、沒有一手來源，也算沒有一手來源。")
+
 RULES = f"""共同規則：
 - 這是上線前的品質評審，目的是找出觀眾會流失或被誤導的地方；不要客氣，不要比真人更有耐心。
 - 只讀下面列出的檔案（都在目前資料夾），不要讀其他地方，不要修改任何檔案。
@@ -38,9 +44,9 @@ STAGE_TASK = {
     "topic": {
         "viewer": "你在 YouTube 首頁看到這些題目當標題。每一題給點擊意願 0–10（picks 要涵蓋每個候選 id）與一句理由。",
         "pro": "評每個候選題（scores 涵蓋每個 id）：這題撐不撐得起一支 8–10 分鐘、有起承轉合的故事？0–10。"
-               "veto＝撐不起或只是新聞稿。",
+               "veto＝撐不起或只是新聞稿。" + SOURCE_RISK,
         "producer": "評每個候選題（scores 涵蓋每個 id）：跟頻道合不合、有沒有和已做過的題目重複（duplicate_of）、"
-                    "來源夠不夠可查、會不會變成投資建議。0–10；不合格就 veto。",
+                    "來源夠不夠可查、會不會變成投資建議。0–10；不合格就 veto。" + SOURCE_RISK,
     },
     "article": {
         "fact": "逐條列出文章中所有可查證的說法（數字、日期、引述、因果、八卦），每條回到來源網址查證，填 claims。"
