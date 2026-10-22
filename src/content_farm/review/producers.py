@@ -14,7 +14,9 @@ from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
 
-from content_farm.review.brief import deck_brief
+from content_farm.review import quick_patch
+from content_farm.review.brief import channel_rules_text, deck_brief
+from content_farm.review.quick_patch import quick_enabled
 from content_farm.review.client import Call, CallResult, run_call
 from content_farm.review.config import ReviewConfig, Tier
 
@@ -158,6 +160,38 @@ def producer_tier(config: ReviewConfig, step: str) -> Tier:
     return tier or Tier(model="sonnet", effort="medium")
 
 
+def _log(log_dir: Path, step: str, **fields: object) -> None:
+    with (log_dir / "producers.jsonl").open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps({"at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "step": step, **fields},
+                                ensure_ascii=False) + "\n")
+
+
+def _quick(run_dir: Path, gate: str, channel: str, config: ReviewConfig, python: str,
+           client: Callable[[Call], CallResult] | None, log_dir: Path, common: str) -> CallResult | None:
+    """The small-rework fast path (``quick_patch``); the result when it applied and passed, else None (caller runs the agent)."""
+    plan_path = run_dir / "review" / f"{gate}.fixes.json"
+    if not plan_path.is_file() or not (run_dir / "deck.json").is_file():
+        return None
+    plan = json.loads(plan_path.read_text(encoding="utf-8"))
+    rid = f"deck-{len(list(log_dir.glob('deck-*.prompt.md'))) + 1}"
+
+    def call_for(prompt: str) -> CallResult:
+        (log_dir / f"{rid}.prompt.md").write_text(prompt, encoding="utf-8")
+        run = client or (lambda c: run_call(c, log_dir=log_dir))
+        return run(quick_patch.build_call(rid, prompt, producer_tier(config, "deck"), run_dir))
+
+    result, why = quick_patch.quick_deck(
+        run_dir, plan, call_for=call_for, common=common, rules=channel_rules_text(channel),
+        verify=lambda rd: quick_patch.strict_check(rd, python, REPO))
+    if result is None:     # no call was made, so no usage row: producers.jsonl is read by the cost / budget code
+        with (log_dir / "quick.jsonl").open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps({"at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "rid": rid,
+                                     "skipped": why}, ensure_ascii=False) + "\n")
+        return None
+    _log(log_dir, "deck", quick=True, quick_ok=not why, quick_why=why, **result.to_json(), receipt=result.output)
+    return None if why else result
+
+
 def produce(step: str, run_dir: Path, *, channel: str, config: ReviewConfig, python: str,
             client: Callable[[Call], CallResult] | None = None, extra: str = "", gate: str | None = None) -> CallResult:
     """``extra``: appended to the brief (e.g. why the previous rewrite was refused). ``gate``: whose fix
@@ -175,6 +209,10 @@ def produce(step: str, run_dir: Path, *, channel: str, config: ReviewConfig, pyt
     tier = producer_tier(config, step)
     log_dir = run_dir / "review" / "producers"
     log_dir.mkdir(parents=True, exist_ok=True)
+    if step == "deck" and fixes and quick_enabled():       # a small rework: one no-tool turn, the program applies it
+        done = _quick(run_dir, gate, channel, config, python, client, log_dir, COMMON.format(**fmt))
+        if done is not None:
+            return done
     rid = f"{step}-{len(list(log_dir.glob(f'{step}-*.prompt.md'))) + 1}"
     (log_dir / f"{rid}.prompt.md").write_text(prompt, encoding="utf-8")
     # Claude Code matches Bash prefixes word by word, so each allowed script is named (a "scripts/" prefix never matched).

@@ -122,7 +122,8 @@ def argv_for(call: Call) -> list[str]:
     output = ["--output-format", "stream-json", "--verbose"] if call.trace else ["--output-format", "json"]
     argv = [claude_bin(), "-p", "--model", call.model, "--effort", call.effort, *output,
             "--json-schema", json.dumps(call.schema, ensure_ascii=False), "--no-session-persistence",
-            "--strict-mcp-config", "--disable-slash-commands", "--tools", names, "--allowed-tools", allowed,
+            "--strict-mcp-config", "--disable-slash-commands", "--tools", names,
+            *(["--allowed-tools", allowed] if call.tools else []),     # no tools at all: a one-turn JSON answer
             "--permission-mode", "acceptEdits" if call.write_tools else "dontAsk"]
     for directory in call.add_dirs:
         argv += ["--add-dir", str(directory)]
