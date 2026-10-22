@@ -193,6 +193,31 @@ def _has_holdout(config: ReviewConfig, stage_name: str) -> bool:
     return any(s.holdout for s in config.stages[stage_name].seats)
 
 
+def _carry(run_dir: Path, gate: str, stage_name: str, config: ReviewConfig, channel: str, number: int,
+           last: dict[str, Any] | None, done: list[Path]):
+    """Which seats of the round about to start keep their answer from the failed round before it
+    (``review.reuse``); None on round 1, when the inputs were never reworked, or when a big change voids it."""
+    from content_farm.review import reuse
+    from content_farm.review.rounds import roster
+
+    if last is None or number < 2 or last["verdict"]["pass"] or not reuse_enabled():
+        return None
+    plan_path = run_dir / "review" / f"{gate}.fixes.json"
+    fixes = _load(plan_path) if plan_path.is_file() else None
+    if fixes is not None and fixes.get("round") != last["round"]:
+        fixes = None
+    members = roster(config, stage_name, channel, number, with_holdout=number == config.stages[stage_name].max_rounds)
+    return reuse.plan_carry(run_dir, stage_name=stage_name, stage=config.stages[stage_name], config=config,
+                            members=members, previous_dir=done[-1], fixes=fixes)
+
+
+def reuse_enabled() -> bool:
+    """``CF_REVIEW_REUSE=0`` re-runs every seat every round (before / after comparisons)."""
+    import os
+
+    return os.environ.get("CF_REVIEW_REUSE", "1").strip() != "0"
+
+
 def panel_gate(run_dir: Path, *, gate: str, stage_name: str, config: ReviewConfig, channel: str,
                channel_name: str, client: Callable[[Call], CallResult] | None = None,
                competitors: Path | None = None, vertical: bool = False,
@@ -209,7 +234,8 @@ def panel_gate(run_dir: Path, *, gate: str, stage_name: str, config: ReviewConfi
         last = run_round(run_dir, stage_name=stage_name, config=config, channel=channel, channel_name=channel_name,
                          round_no=number, with_holdout=number == stage.max_rounds, competitors=competitors,
                          client=client, vertical=vertical,
-                         judge_context=judge_context(run_dir) if judge_context else None)
+                         judge_context=judge_context(run_dir) if judge_context else None,
+                         carry=_carry(run_dir, gate, stage_name, config, channel, number, last, done))
         lost = [s["rid"] for s in last["seats"] if not s.get("ok") and s.get("infra")]
         if lost:   # the plumbing failed, not the work: this round does not count and sends nothing back
             moved = set_aside(run_dir, stage_name, last["label"])

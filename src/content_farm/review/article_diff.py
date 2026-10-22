@@ -45,6 +45,19 @@ def split_article(markdown: str) -> list[ArticleSentence]:
     return out
 
 
+def mark_article(markdown: str, only: frozenset[str] | set[str]) -> str:
+    """The article with ★ in front of the sentences in ``only`` (ids as ``split_article`` gives them)."""
+    lines, paragraph = [], 0
+    for line in markdown.splitlines():
+        if not line.strip():
+            lines.append("")
+            continue
+        paragraph += 1
+        parts = [p.strip() for p in _SENTENCE_END.split(line.strip()) if p.strip()]
+        lines.append("".join(("★" if f"p{paragraph}.{n}" in only else "") + part for n, part in enumerate(parts, 1)))
+    return "\n".join(lines) + "\n"
+
+
 def deck_narration(deck: dict) -> list[ArticleSentence]:
     """A deck's narration sentences under their stable ids (``review.sentences.deck_sentences``)."""
     from content_farm.review.sentences import deck_sentences

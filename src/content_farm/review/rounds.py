@@ -135,14 +135,59 @@ def _feeds(run_dir: Path, out: Path, member: Member, channel_name: str, competit
     return homepage_feeds(out, member.rid, variant_images(run_dir), best_title(run_dir), channel_name, competitors)
 
 
+def _delta_view(run_dir: Path, out: Path, stage_name: str, vertical: bool, carry: Any) -> tuple[Path, mat.Materials] | None:
+    """The ★-only view fact-checkers get in a carried round (own folder, so their cwd shows nothing else)."""
+    if carry is None or not carry.prior_fact or not carry.delta:
+        return None
+    view = out / "delta"
+    view.mkdir(exist_ok=True)
+    return view, _build_materials(run_dir, view, stage_name, vertical, carry.delta)
+
+
+def _kept_result(member: Member, prior: Any, label: str) -> CallResult:
+    """A seat that keeps its answer from the earlier round: nothing is called, nothing is billed."""
+    seat = prior.seat
+    return CallResult(member.rid, True, prior.output, (), member.model, member.effort,
+                      tuple(seat.get("models_used") or ()), 0.0, 0.0, {}, 0, carried_from=label,
+                      saved_usd=float(seat.get("cost_usd") or 0))
+
+
+def _merge_facts(run_dir: Path, stage_name: str, members: list[Member], results: list[CallResult],
+                 carry: Any) -> list[CallResult]:
+    """Fact-checkers of a carried round: new claims about the ★ sentences + earlier claims about the rest."""
+    import dataclasses
+
+    from content_farm.review import reuse
+    from content_farm.review.article_diff import split_article
+
+    if carry is None or not carry.prior_fact:
+        return results
+    article = split_article((run_dir / "article.md").read_text(encoding="utf-8")) if stage_name == "article" else None
+    out = []
+    for member, result in zip(members, results):
+        prior = carry.prior_fact.get(member.rid)
+        if prior is None or not result.ok or result.output is None:
+            out.append(result)
+            continue
+        fresh = {} if result.carried_from else result.output
+        if article is None and fresh:     # deck claims outside the ★ sentences are not this round's business
+            ids = carry.delta or frozenset()
+            fresh = {**fresh, **{k: [i for i in fresh.get(k, []) if not reuse.claim_ids(i) or set(reuse.claim_ids(i)) & ids]
+                                  for k in ("claims", "issues")}}
+        merged = reuse.merge_fact(prior.output, fresh, carry, new_article=article)
+        out.append(dataclasses.replace(result, output=merged, carried_from=result.carried_from))
+    return out
+
+
 def run_round(run_dir: Path, *, stage_name: str, config: ReviewConfig, channel: str, channel_name: str,
               round_no: int, with_holdout: bool, holdout_only: bool = False, competitors: Path | None = None,
               client: Callable[[Call], CallResult] | None = None, vertical: bool = False,
               judge_context: dict[str, Any] | None = None, suffix: str = "",
-              only_sentences: frozenset[str] | None = None) -> dict[str, Any]:
+              only_sentences: frozenset[str] | None = None, carry: Any = None) -> dict[str, Any]:
     """``suffix``: a side round (e.g. ``-opus`` comparison) that never counts for the gate.
     ``only_sentences``: a delta fact-check (``review.delta``) — reviewers see those sentences with
-    their neighbours, and only claims about them are judged."""
+    their neighbours, and only claims about them are judged. ``carry``: a ``review.reuse.CarryPlan`` — seats that
+    keep their earlier answer are not called, fact-checkers re-check only the changed sentences."""
     stage = config.stages[stage_name]
     name = f"round-{round_no}" + ("-holdout" if holdout_only else "") + suffix
     out = stage_dir(run_dir, stage_name) / name
@@ -151,28 +196,39 @@ def run_round(run_dir: Path, *, stage_name: str, config: ReviewConfig, channel: 
     snapshot_reviewed(run_dir, out, stage.reviews)
     materials = _build_materials(run_dir, out, stage_name, vertical, only_sentences)
     members = roster(config, stage_name, channel, round_no, with_holdout=with_holdout, holdout_only=holdout_only)
+    delta_view = _delta_view(run_dir, out, stage_name, vertical, carry)
+    kept: dict[str, CallResult] = {}
+    for member in members:
+        if carry is not None and member.rid in carry.carried:
+            kept[member.rid] = _kept_result(member, carry.carried[member.rid], carry.previous)
+        elif carry is not None and member.rid in carry.prior_fact and not carry.delta:
+            kept[member.rid] = _kept_result(member, carry.prior_fact[member.rid], carry.previous)   # nothing to re-check
     keys: dict[str, dict] = {}
     calls, call_keys = [], {}
     for member in members:
+        if member.rid in kept:
+            continue
         feeds: list[str] = []
         if member.kind == "viewer" and stage_name in TITLE_STAGES:
             feeds, member_keys = _feeds(run_dir, out, member, channel_name, competitors)
             keys.update(member_keys)
+        view_dir, view = delta_view if delta_view is not None and member.rid in carry.prior_fact else (out, materials)
         role = config.roles[member.role]
-        text = prompts.build(stage_name, role, materials, channel=channel_name, persona=member.persona, feeds=feeds)
+        text = prompts.build(stage_name, role, view, channel=channel_name, persona=member.persona, feeds=feeds)
         (out / "prompts").mkdir(exist_ok=True)
         (out / "prompts" / f"{member.rid}.md").write_text(text, encoding="utf-8")
         call = Call(member.rid, text, schema_for(stage_name, member.kind), member.model, member.effort,
-                    tools=role.tools, cwd=out, timeout_s=config.defaults.timeout_s,
+                    tools=role.tools, cwd=view_dir, timeout_s=config.defaults.timeout_s,
                     retries=config.defaults.schema_retries)
         calls.append(call)
         if not feeds:       # a homepage viewer's feeds are shuffled per seat: never the same question twice
-            call_keys[member.rid] = _seat_key(stage_name, call, member, role, materials, out, channel_name)
+            call_keys[member.rid] = _seat_key(stage_name, call, member, role, view, view_dir, channel_name)
     live_invoke = client or (lambda call: run_call(call, log_dir=out / "raw"))
     invoke = _cached(run_dir, call_keys, live_invoke, out.name)
     parallel = reviewer_parallel(len(calls), config.defaults.max_parallel)
     with ThreadPoolExecutor(max_workers=parallel) as pool:
-        results = list(pool.map(invoke, calls))
+        live = dict(zip((c.rid for c in calls), pool.map(invoke, calls)))
+    results = _merge_facts(run_dir, stage_name, members, [kept.get(m.rid) or live[m.rid] for m in members], carry)
     (out / "results").mkdir(exist_ok=True)
     for result in results:
         write_result(out, result)
@@ -200,12 +256,14 @@ def run_round(run_dir: Path, *, stage_name: str, config: ReviewConfig, channel: 
         "threshold": stage.threshold.model_dump(exclude_none=True),
         **({"threshold_note": THRESHOLD_NOTE} if stage.threshold.leave_median_pct is not None else {}),
         **({"only_sentences": sorted(only_sentences)} if only_sentences is not None else {}),
+        **({"carry": carry.to_json()} if carry is not None else {}),
         "seats": [{**{"role": m.role, "kind": m.kind, "holdout": m.holdout}, **r.to_json()}
                   for m, r in zip(members, results)],
         "verdict": verdict.to_json(), "seconds": round(time.monotonic() - started, 1),
         "reviewer_seconds": round(sum(r.seconds for r in results), 1),
         "cost_usd": round(sum(r.cost_usd for r in results), 4),
-        "cache": {"hits": sum(1 for r in results if r.cached), "saved_usd": round(sum(r.saved_usd for r in results), 4)},
+        "cache": {"hits": sum(1 for r in results if r.cached), "saved_usd": round(sum(r.saved_usd for r in results), 4),
+                  "carried": sum(1 for r in results if r.carried_from)},
         "tokens": {k: sum(r.tokens.get(k, 0) for r in results) for k in ("input", "output", "cache_read", "cache_write")},
     }
     (out / "scorecard.json").write_text(json.dumps(card, ensure_ascii=False, indent=1, default=str), encoding="utf-8")

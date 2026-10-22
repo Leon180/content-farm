@@ -73,7 +73,8 @@ def test_report_totals_rounds_producers_and_local_steps(tmp_path):
     assert stage["review"]["calls"] == seats and set(stage["rounds"]) >= {"round-1", "round-2"}
     assert stage["review"]["cost_usd"] == round(0.25 * seats, 4)
     assert stage["producer"] == {"calls": 1, "seconds": 30.0, "cost_usd": 1.5, "models": ["claude-opus-5-5"],
-                                 "tokens": {"input": 10, "output": 900, "cache_read": 80000, "cache_write": 4000}}
+                                 "tokens": {"input": 10, "output": 900, "cache_read": 80000, "cache_write": 4000},
+                                 "reused": 0, "saved_usd": 0.0}
     total = data["cloud"]["total"]
     assert total["calls"] == seats + 1 and total["tokens"]["cache_read"] == 5000 * seats + 80000
     assert data["local"]["steps"]["voice"] == {"runs": 2, "seconds": 100.5, "last_seconds": 20.0, "failed": 0}

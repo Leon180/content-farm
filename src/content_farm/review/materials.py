@@ -76,11 +76,18 @@ def topic(run_dir: Path, out: Path, **_: Any) -> Materials:
                      content_key=hashlib.sha256(stable.encode("utf-8")).hexdigest()[:24])
 
 
-def article(run_dir: Path, out: Path, **_: Any) -> Materials:
-    a = _copy(run_dir / "article.md", out)
+def article(run_dir: Path, out: Path, *, only: frozenset[str] | None = None, **_: Any) -> Materials:
+    if only is None:
+        a = _copy(run_dir / "article.md", out)
+        note = "文章（每個數字、八卦都應附來源 id）"
+    else:    # delta fact-check: the earlier rounds already cleared the unmarked sentences
+        from content_farm.review.article_diff import mark_article
+
+        a = _put(out, "article.md", mark_article((run_dir / "article.md").read_text(encoding="utf-8"), only))
+        note = "文章（差異查核：只審標 ★ 的句子，沒標的前幾輪已審過，當前後文讀就好；每個數字、八卦都應附來源 id）"
     s = _copy(run_dir / "sources.json", out)
-    corpus = (out / a).read_text(encoding="utf-8")
-    return Materials([a, s], {a: "文章（每個數字、八卦都應附來源 id）", s: "來源清單（id、標題、網址）"}, corpus=corpus,
+    corpus = (out / a).read_text(encoding="utf-8").replace("★", "")
+    return Materials([a, s], {a: note, s: "來源清單（id、標題、網址）"}, corpus=corpus,
                      extra={"source_ids": _source_ids(out / s)}, audience={s: (FACTS,)})
 
 

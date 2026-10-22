@@ -28,6 +28,8 @@ class Tally:
     cost_usd: float = 0.0
     tokens: dict[str, int] = field(default_factory=lambda: dict.fromkeys(TOKEN_KEYS, 0))
     models: set[str] = field(default_factory=set)
+    reused: int = 0               # seats answered from the cache or carried from an earlier round (nothing billed)
+    saved_usd: float = 0.0        # what those answers originally cost
 
     def add(self, usage: dict[str, Any]) -> Tally:
         self.calls += 1
@@ -43,16 +45,23 @@ class Tally:
         self.cost_usd += other.cost_usd
         self.tokens = {k: self.tokens[k] + other.tokens[k] for k in TOKEN_KEYS}
         self.models |= other.models
+        self.reused += other.reused
+        self.saved_usd += other.saved_usd
         return self
 
     def to_json(self) -> dict[str, Any]:
         return {"calls": self.calls, "seconds": round(self.seconds, 1), "cost_usd": round(self.cost_usd, 4),
-                "tokens": dict(self.tokens), "models": sorted(m for m in self.models if m)}
+                "tokens": dict(self.tokens), "models": sorted(m for m in self.models if m),
+                "reused": self.reused, "saved_usd": round(self.saved_usd, 4)}
 
 
 def card_tally(card: dict[str, Any]) -> Tally:
     tally = Tally()
     for seat in card.get("seats", []):
+        if seat.get("cached") or seat.get("carried_from"):
+            tally.reused += 1
+            tally.saved_usd += float(seat.get("saved_usd") or 0)
+            continue
         tally.add(call_usage(seat))
     return tally
 
