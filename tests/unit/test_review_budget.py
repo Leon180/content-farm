@@ -47,6 +47,14 @@ def test_since_counts_only_later_calls(tmp_path: Path) -> None:
     assert budget.spent(tmp_path, since=(NOW - timedelta(hours=1)).isoformat()).total == 1.0
 
 
+def test_since_ignores_undated_legacy_producer_rows(tmp_path: Path) -> None:
+    path = tmp_path / "review" / "producers" / "producers.jsonl"
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps({"step": "deck", "cost_usd": 5.0}) + "\n", encoding="utf-8")
+    assert budget.spent(tmp_path, since=(NOW - timedelta(hours=1)).isoformat()).total == 0.0
+    assert budget.spent(tmp_path).total == 5.0
+
+
 def test_limit_precedence_override_file_env_config(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.delenv(budget.BUDGET_ENV, raising=False)
     assert budget.limit(tmp_path)[0] == budget.DEFAULT_USD == 15.0

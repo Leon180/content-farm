@@ -34,8 +34,10 @@ class Spend:
 
 
 def _after(at: str | None, since: str | None) -> bool:
-    if not since or not at:
+    if not since:
         return True
+    if not at:
+        return False  # undated legacy rows predate ``since``; every row written now carries ``at``
     try:
         return datetime.fromisoformat(at) >= datetime.fromisoformat(since)
     except ValueError:
