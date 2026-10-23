@@ -8,6 +8,7 @@ from pathlib import Path
 from content_farm.audio_mix.cues import plan as plan_cues
 from content_farm.audio_mix.mix import (MIX_DIR, RELEASE, credits_for, make_plan, master, mux, render_stems,
                                          report)
+from content_farm.audio_mix.synth_bgm import with_synth_bgm
 from content_farm.production.channels import Channel
 from content_farm.retention.beats import lint, slide_beats
 from content_farm.retention.timing import load_scenes, sentence_timeline
@@ -33,9 +34,9 @@ def chapters_of(scenes) -> list[tuple[int, float, float]]:
 
 
 def run_mix(run_dir: Path, channel: Channel) -> dict:
-    config = channel.audio
-    if not config.enabled:
+    if not channel.audio.enabled:
         raise ValueError(f"channel {channel.code} has audio.enabled: false")
+    config = with_synth_bgm(channel.audio, run_dir / MIX_DIR / "bgm")
     video = source_video(run_dir)
     scenes = load_scenes(run_dir)
     beats = lint(scenes, sentence_timeline(run_dir, scenes), slide_beats(run_dir))

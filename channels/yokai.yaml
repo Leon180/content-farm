@@ -66,6 +66,13 @@ identity:   # 政策審查 2026-10 D3：開場、說明欄、片尾各頻道不�
     header: "【妖怪溯源所・原典追蹤】{title}"
     sources_label: 原典與參考文獻：
     footer: 原典引自公共領域版本，白話為頻道自寫；片中畫作皆為公共領域或 CC0。
+audio:                  # Leon 2026-10-23：九尾狐加低音量和風配樂（本機程式合成，不評審）
+  enabled: true
+  synth_bgm: wafu
+  sfx: true
+  voice_lufs: -23.4         # 人聲維持原響度（九尾狐 draft 實測 -23.44 LUFS）：不加增益、母帶不拉到 -14
+  master_lufs: -23.4
+  bgm_under_voice_db: 16.0
 notes:
   - 讀原典自己寫；現代白話譯注另有著作權，不可照抄
   - 媽祖、城隍等講「來歷」，不稱神話、不嘲諷、不生成神像

@@ -225,6 +225,7 @@ class AudioMix(_Strict):
 
     enabled: bool = False
     bgm: tuple[AudioTrack, ...] = ()
+    synth_bgm: Literal["wafu"] | None = None   # no `bgm` files: synthesize this bed locally (audio_mix/synth_bgm.py)
     stinger: AudioTrack | None = None   # None = the built-in synthesized stinger
     sfx: bool = True                    # synthesized SFX on some narration hooks
     voice_lufs: float = Field(default=-16.0, ge=-30, le=-10)
