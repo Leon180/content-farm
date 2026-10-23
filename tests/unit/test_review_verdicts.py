@@ -243,9 +243,23 @@ def test_final_objective_and_thumbnail_consistency():
     viewers = [seat(f"viewer-{n}", "viewer", "viewer", {"left_at": left, "thumbnail_matches": n != 0,
                                                         "pronunciation": [], "top_fixes": []})
                for n, left in enumerate(("4:00", "5:00", None, "6:00"))]
-    pros = [seat(f"{r}-1", r, "pro", {"score": 7, "issues": []}) for r in ("editor_visual", "editor_audio", "director")]
+    pros = [seat(f"{r}-1", r, "pro", {"score": 7, "issues": []}) for r in ("editor_visual", "director")]
     green = {"visual": {"light": "green"}, "audio": {"light": "green"}, "content": {"light": "yellow"}}
     assert judge("final", viewers + pros, duration=600, columns=green).passed
-    red = {**green, "audio": {"light": "red"}}
+    red = {**green, "visual": {"light": "red"}}
     verdict = judge("final", viewers + pros, duration=600, columns=red)
-    assert not verdict.passed and "audio" in verdict.reasons[0]
+    assert not verdict.passed and "visual" in verdict.reasons[0]
+    # sound is not judged (Leon 2026-10-23): a red audio column neither fails the cut nor shows in the scores
+    sound_red = {**green, "audio": {"light": "red"}}
+    verdict = judge("final", viewers + pros, duration=600, columns=sound_red)
+    assert verdict.passed and "audio" not in verdict.scores["columns"]
+
+
+def test_final_drops_issues_about_sound():
+    issue = {"ref": {"target": "video", "t": "1:00"}, "category": "visual", "severity": "high", "problem": "p",
+             "fix": "f", "evidence": "e", "caused_by": "assembly"}
+    sound = [{**issue, "category": "audio"}, {**issue, "category": "pronunciation"}, {**issue, "caused_by": "mix"},
+             {**issue, "caused_by": "voice"}, {**issue, "ref": {"target": "audio", "t": "1:00"}}]
+    viewer = seat("viewer-0", "viewer", "viewer", {"left_at": None, "thumbnail_matches": True, "top_fixes": [issue, *sound]})
+    verdict = judge("final", [viewer], duration=600, columns={})
+    assert [i["category"] for i in verdict.issues] == ["visual"]

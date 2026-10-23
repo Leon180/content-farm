@@ -1,0 +1,93 @@
+{
+ "rid": "cel1r2:viewer-casual:opus",
+ "ok": true,
+ "errors": [],
+ "model": "opus",
+ "effort": "low",
+ "models_used": [
+  "claude-opus-5-5"
+ ],
+ "seconds": 22.9,
+ "cost_usd": 0.1538,
+ "tokens": {
+  "input": 4,
+  "output": 1733,
+  "cache_read": 17395,
+  "cache_write": 14458
+ },
+ "attempts": 1,
+ "infra": false,
+ "turns": 5,
+ "thinking_tokens": 246,
+ "started_at": "2026-10-23T07:27:04+00:00",
+ "output": {
+  "persona": "27 歲上班族，前 15 秒不有趣就走，看過幾部熱門動畫，對產業法規沒有背景",
+  "segments": [
+   {
+    "slide_id": "s01",
+    "engagement": 3,
+    "decision": "leave",
+    "why": "開頭念「CUT 01」，接著是公平會概要頁跟「元請」這種沒解釋的詞，加上兩個百分比。14 秒都沒有人、沒有畫面感，我在 s01.8 就滑走了。",
+    "confusing": [
+     "元請是什麼？",
+     "「CUT 01」為什麼要念出來"
+    ]
+   }
+  ],
+  "left_at_sentence": "s01.8",
+  "finish": false,
+  "top_fixes": [
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s01.8",
+      "s01.6",
+      "s01.7"
+     ]
+    },
+    "category": "structure",
+    "severity": "high",
+    "problem": "前 15 秒只有官方頁面和兩個比例，「元請」也還沒解釋。真正抓人的原畫師重畫情境排到 0:35 才出現，一般觀眾等不到。",
+    "fix": "把 s02.1–s02.3（原畫師被要求重畫，問重畫費，對方回「這是完成保證義務」）移到片頭第一句。接著用一句話講「接案的公司九成說委託費在漲，六成卻說是虧的」，「元請」改成「接下整部動畫製作的公司」。s01.6 的「CUT 01」不要念出來。",
+    "evidence": "CUT 01，兩則同年的調查回答並排。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s01.7",
+      "s01.8"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "開場就丟出「元請」這個日文術語，到 2:10 才解釋。觀眾在最關鍵的開頭聽不懂主詞是誰。",
+    "fix": "開場改講「接下整部動畫製作的公司（日文叫元請）」，s05.7 的比喻保留。",
+    "evidence": "元請的回答裡，約九成說委託費在上升。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s01.10"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "promise 答應要講「為什麼」漲價和虧損會同時出現，但 s10 的結論是來源沒交代原因、資料不足，觀眾會覺得被騙了。",
+    "fix": "s01.10 直接說「這集會告訴你這兩個數字為什麼不能直接拿來比，還缺哪些資料」，promise 也照這個方向改，不要承諾給出原因。",
+    "evidence": "這一集，我們看這兩個數字並列時，口徑哪裡不一致、缺什麼資料。",
+    "caused_by": "deck"
+   }
+  ],
+  "overall": "內容紮實，七類做法也具體，可是開頭用調查數字和沒解釋的術語開場，最有畫面的重畫故事拖到 35 秒才出來。我這種觀眾在 0:14 左右就走了。把原畫師的情境拉到第一句，就能留住人。"
+ },
+ "draft": "cel1r2",
+ "round_dir": "/Users/lileon/project/content-farm/.claude/worktrees/cf-cel-run1/output/cel-run1/review/script_structure/round-2"
+}

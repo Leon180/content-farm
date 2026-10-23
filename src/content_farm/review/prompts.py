@@ -81,10 +81,10 @@ STAGE_TASK = {
                       "credits.json 的授權是否可營利。有問題的寫進 issues（ref.item＝素材 id，caused_by=media 或 illustrate）。",
     },
     "final": {
-        "viewer": "看完所有截圖表、字幕與 audio.txt（把聲音描述當成你聽到的），每 10 秒一段給投入 0–10 與 stay/leave；"
+        "viewer": "看完所有截圖表與字幕，每 10 秒一段給投入 0–10 與 stay/leave；"
                   "標出離開時間 left_at（m:ss，看完就 null）；thumbnail_matches＝縮圖與片中內容一致嗎；"
-                  "pronunciation＝聽起來念錯的詞。top_fixes 最多 3 條，影片問題 ref.t 寫時間點。",
-        "pro": "依 rubric 評這支成片，各項 0–10，總分 score；問題寫時間點（ref.t）與造成它的步驟。可用 objective.json 佐證，不要只複述它。",
+                  "pronunciation 填空陣列。不評聲音（配音、語速、配樂、音效、響度都不在評審範圍）。top_fixes 最多 3 條，影片問題 ref.t 寫時間點。",
+        "pro": "依 rubric 評這支成片，各項 0–10，總分 score；問題寫時間點（ref.t）與造成它的步驟。可用 objective.json 佐證（沒有聲音欄，聲音不在評審範圍），不要只複述它。",
     },
 }
 STAGE_TASK["shorts_topic"] = STAGE_TASK["topic"]

@@ -1,0 +1,157 @@
+{
+ "rid": "chipcat2:viewer-student:sonnet",
+ "ok": true,
+ "errors": [],
+ "model": "sonnet",
+ "effort": "low",
+ "models_used": [
+  "claude-sonnet-5-5"
+ ],
+ "seconds": 17.8,
+ "cost_usd": 0.0785,
+ "tokens": {
+  "input": 4,
+  "output": 1962,
+  "cache_read": 17436,
+  "cache_write": 14289
+ },
+ "attempts": 1,
+ "infra": false,
+ "turns": 5,
+ "thinking_tokens": 0,
+ "started_at": "2026-10-23T07:24:34+00:00",
+ "output": {
+  "persona": "19 歲大一文組學生，只聽過台積電，不懂半導體，用平板看，愛梗與八卦，名詞多又無比喻就跟不上",
+  "segments": [
+   {
+    "slide_id": "s01",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "尺卡住、先賣再附說明書有點梗，但「奈米、IBM、節點」已開始堆。",
+    "confusing": [
+     "節點",
+     "sub-1 nm"
+    ]
+   },
+   {
+    "slide_id": "s02",
+    "engagement": 4,
+    "decision": "stay",
+    "why": "埃米、節點、世代，名詞開始多，論點還算清楚。",
+    "confusing": [
+     "埃米",
+     "電晶體節點",
+     "間距與密度"
+    ]
+   },
+   {
+    "slide_id": "s03",
+    "engagement": 7,
+    "decision": "stay",
+    "why": "衣服尺碼比喻我聽得懂，很有感。",
+    "confusing": [
+     "晶圓廠"
+    ]
+   },
+   {
+    "slide_id": "s04",
+    "engagement": 3,
+    "decision": "stay",
+    "why": "閘極長度、金屬半間距、IEEE，沒比喻，開始跟不上。",
+    "confusing": [
+     "閘極長度",
+     "金屬半間距",
+     "IEEE Spectrum"
+    ]
+   },
+   {
+    "slide_id": "s05",
+    "engagement": 2,
+    "decision": "leave",
+    "why": "FinFET、26、40、22一串數字，我已經放棄，想滑走。",
+    "confusing": [
+     "FinFET",
+     "閘極長度 26 奈米",
+     "金屬半間距 40 奈米"
+    ]
+   },
+   {
+    "slide_id": "s06",
+    "engagement": 2,
+    "decision": "leave",
+    "why": "證管會文件、10nm Enhanced SuperFin、Intel 7/4，像考試。",
+    "confusing": [
+     "SuperFin",
+     "Intel 7 與 Intel 4"
+    ]
+   },
+   {
+    "slide_id": "s07",
+    "engagement": 4,
+    "decision": "leave",
+    "why": "停車場比喻有幫助，但已離開。",
+    "confusing": [
+     "閘極間距"
+    ]
+   }
+  ],
+  "left_at_sentence": "s05.2",
+  "finish": false,
+  "top_fixes": [
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s05.2",
+      "s04.2",
+      "s04.3",
+      "s06.2"
+     ]
+    },
+    "category": "content",
+    "severity": "high",
+    "problem": "s04–s06 連續堆閘極長度、金屬半間距、FinFET、SuperFin 與一串數字，沒有比喻也沒有名詞解釋；停車場比喻到 s07 才出現，我在 s05 就離開了。",
+    "fix": "把停車場比喻提前到 s04 之前，先講「閘極、間距」是什麼。s05 只留一個結論：「Intel 的 22 奈米，實際量到 26 和 40，沒有一個是 22」，用口語講。刪掉 FinFET。s04 年份與 130/70 數字只留一組。s06 刪掉 SuperFin 與完整改名對照，改成「Intel 乾脆把名字改掉」。",
+    "evidence": "Intel 的 22 奈米 FinFET 製程，閘極長度是 26 奈米，金屬半間距是 40 奈米，兩個都不是 22。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s02.2",
+      "s02.1",
+      "s02.4"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "開場連續丟出節點、埃米、世代、間距、密度，沒人解釋；我只認識台積電，不知道為什麼要在意。",
+    "fix": "s02 先用一句白話說「節點」就是製程的型號名字，「埃米」是比奈米小十倍的單位；補一句為什麼和台積電、手機有關，再丟論點。",
+    "evidence": "電晶體節點現在指的是一個製造技術的世代，而不是一個精確的實體尺寸。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s03.3",
+      "s04.4"
+     ]
+    },
+    "category": "content",
+    "severity": "low",
+    "problem": "電晶體、晶圓廠、閘極全片未用白話介紹過，文組觀眾缺基礎概念。",
+    "fix": "在 s03 補一句：電晶體就是晶片裡的微小開關，晶圓廠就是代工製造的工廠。",
+    "evidence": "定義上，它是晶圓廠替一代製程取的名字。",
+    "caused_by": "deck"
+   }
+  ],
+  "overall": "前三張有梗有比喻還能看，但 s04–s06 數字與術語密集又沒比喻，我在 s05 離開。停車場比喻太晚出現，應提前並刪減數字。"
+ },
+ "draft": "chipcat2",
+ "round_dir": "/Users/lileon/project/content-farm/.claude/worktrees/cf-chipcat-run2/output/chipcat-run2/review/script_structure/round-1"
+}

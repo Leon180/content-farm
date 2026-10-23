@@ -1,0 +1,136 @@
+{
+ "rid": "cel1:writer_density-1:opus",
+ "ok": true,
+ "errors": [],
+ "model": "opus",
+ "effort": "low",
+ "models_used": [
+  "claude-opus-5-5"
+ ],
+ "seconds": 34.6,
+ "cost_usd": 0.1756,
+ "tokens": {
+  "input": 4,
+  "output": 2849,
+  "cache_read": 17043,
+  "cache_write": 14395
+ },
+ "attempts": 1,
+ "infra": false,
+ "turns": 5,
+ "thinking_tokens": 495,
+ "started_at": "2026-10-23T07:23:51+00:00",
+ "output": {
+  "role": "科普節目編劇（資訊密度）",
+  "score": 6.8,
+  "rubric": {
+   "內容撐得起片長": 7,
+   "無灌水重講": 6,
+   "數字密度與單位": 6,
+   "名詞密度": 7,
+   "論點推進": 7
+  },
+  "issues": [
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s13.1",
+      "s13.2",
+      "s13.3"
+     ]
+    },
+    "category": "structure",
+    "severity": "high",
+    "problem": "片子答應講「七類」，但 s13 插在第三類和第四類中間，又多講了「兩條」，沒有編號，觀眾數不清到底是七類還是九條，也不知道這兩條屬於哪一類。",
+    "fix": "把 s13.1 改成「第三類裡還有兩條更具體的減額例子：」，明說是減額、附在第三類底下；或者把這兩條移到第四類前面，標成「減額類的兩個例子」，並在 s11.1 先說「七類，外加兩條減額的具體例子」。",
+    "evidence": "有兩條，具體到讓人皺眉。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s09.2",
+      "s09.3"
+     ]
+    },
+    "category": "content",
+    "severity": "high",
+    "problem": "兩句共約 17 秒，塞了四個比例，比例的寫法混用（約七成、75%、50%、約五成），回答的人也不一樣（元請、下請、作畫負責人、自由工作者），題目也不一樣（談得成、上升、赤字、不滿意）。「作畫負責人」是新出現的詞，沒有解釋。觀眾沒辦法把好看和難看兩邊對起來比。",
+    "fix": "每句只講一個回答群體、一種說法：「下請：75% 說委託費上升。」「作畫負責人，也就是接作畫工程的公司：一半說只看委託費是赤字。」「自由工作者：約一半不滿意報酬。」元請那句七成談得成刪掉，前面已經有九成上升。比例一律用「成」或一律用 %。",
+    "evidence": "難看的一邊：作畫負責人有 50% 說只看委託費是赤字，自由工作者約五成不滿意報酬水準。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s15.3"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "沒交代比例的分母：一成、三成是誰回答的？所有回答者，還是有讓渡著作權的元請？s15.4 的結論「最大的數字是沒有談」完全靠這組比例撐著。",
+    "fix": "改成「讓渡著作權的元請裡，約一成說交涉談不成，約三成說根本沒有交涉。」並在字卡上標出回答群體。",
+    "evidence": "調查結果顯示，這類交涉談不成的約一成，沒有談的場合約三成。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s02.4",
+      "s08.2"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "同一件事講兩遍：s02.4 已經把重畫情境念完一次，s11.3 又幾乎逐字重念；s08.2 也逐字重複了 s01.3 的六成赤字。觀眾會覺得在灌水。",
+    "fix": "s02.4 縮成「這個情境，指針裡真的寫了。」細節留到 s11.3 再講。s08.2 改成「開場那個六成赤字，是只看委託費；」直接接 s08.3 的版稅四成。",
+    "evidence": "約六成元請說，只看製作委託費，營業損益是赤字。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s10.4"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "promise 答應要解釋「為什麼漲價和虧錢會同時出現」，可是講稿自己承認來源給不出原因，只有一句推測。觀眾會覺得被開了空頭支票。",
+    "fix": "兩條路選一條：promise 改成「為什麼這兩組數字不衝突，以及資料還缺什麼」；或者在 s10.2 補一個具體、有來源的機制，例如指針或概要頁有提到的成本項目。不要把推測講成結論。",
+    "evidence": "要證明這筆帳到底怎麼虧，這份概要頁還不夠。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s05.2",
+      "s06.2",
+      "s06.3",
+      "s06.4"
+     ]
+    },
+    "category": "structure",
+    "severity": "med",
+    "problem": "主菜七類清單到 4:50 才開始。2:03 到 3:27 解釋名詞，分組作業的比喻同一個詞講了三層：比喻、動畫例子、白話定義，三句講同一件事。",
+    "fix": "s06.2 到 s06.4 合成一句：「優越地位濫用：強勢的一方利用對方怕丟案，做不當要求，例如無償重畫。」s05.2 刪掉「這是通俗說明，不是指針原文」，改在畫面上加小字標註。",
+    "evidence": "白話講，就是強勢一方利用地位，對對方做不當的要求，這不是法條原文。",
+    "caused_by": "deck"
+   }
+  ],
+  "verdict": "素材夠撐 9 分半，論點也從帳到清單再到命名一路往前推，但要修三個地方。第一，「七類」的數法被 s13 的兩條打亂。第二，s09 和 s15 的數字分母、單位不清楚。第三，有重講的段落，前段名詞解釋太長。修完可以上線。"
+ },
+ "draft": "cel1",
+ "round_dir": "/Users/lileon/project/content-farm/.claude/worktrees/cf-cel-run1/output/cel-run1/review/script_structure/round-1"
+}

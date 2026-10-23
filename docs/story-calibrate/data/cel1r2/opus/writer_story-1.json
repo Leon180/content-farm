@@ -1,0 +1,119 @@
+{
+ "rid": "cel1r2:writer_story-1:opus",
+ "ok": true,
+ "errors": [],
+ "model": "opus",
+ "effort": "low",
+ "models_used": [
+  "claude-opus-5-5"
+ ],
+ "seconds": 29.3,
+ "cost_usd": 0.1121,
+ "tokens": {
+  "input": 4,
+  "output": 2636,
+  "cache_read": 24793,
+  "cache_write": 6804
+ },
+ "attempts": 1,
+ "infra": false,
+ "turns": 5,
+ "thinking_tokens": 600,
+ "started_at": "2026-10-23T07:27:55+00:00",
+ "output": {
+  "role": "科普節目編劇（故事結構）",
+  "score": 6.8,
+  "rubric": {
+   "十五秒鉤子": 6.5,
+   "留人點密度": 6,
+   "國高中比喻": 8.5,
+   "八卦與冷笑話節拍": 6.5,
+   "收尾回扣": 8.5
+  },
+  "issues": [
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s08.2",
+      "s09.6",
+      "s10.6"
+     ]
+    },
+    "category": "structure",
+    "severity": "med",
+    "problem": "「約六成元請說只看委託費是赤字」從開場算起講了四次（s01.8、s08.2、s09.6、s10.6），「約九成說上升」也講了三次。3:19–4:56 這一分半都在重複同一組數字，沒有新資訊，是全片最容易流失觀眾的地方。",
+    "fix": "s08.2 改成只講新資訊：「把版稅也算進去，赤字比例還有約四成。」（併進 s08.6）。刪除 s09.5/s09.6，改由畫面並排呈現。s10.6 刪掉，直接從 s10.7 的「概要頁沒交代兩題是不是同一批元請回答」切入。",
+    "evidence": "公平會概要頁的調查結果：約六成元請說，只看製作委託費，營業損益是赤字。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s01.6",
+      "s01.10"
+     ]
+    },
+    "category": "structure",
+    "severity": "med",
+    "problem": "第一句是唸出來的分鏡指示「CUT 01」，浪費開場最前面幾秒。s01.10 承諾的是「口徑哪裡不一致、缺什麼資料」，像研究方法說明，不像觀眾想知道的答案；而且跟 promise.txt 的「點名哪七類做法」沒對上。七類清單這個最強的承諾，要到 1:02 才出現。",
+    "fix": "s01.6 改成「兩個數字，出自同一份日本政府調查。」s01.10 改成「這裡是賽璐璐研究室。這一集：日本公平會點名了動畫業七類做法，還有這兩個數字為什麼對不上。」",
+    "evidence": "CUT 01，兩則同年的調查回答並排。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s10.8",
+      "s10.9"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "promise.txt 答應觀眾解釋「為什麼委託費在漲和帳卻是虧的會同時出現」，但講稿最後只說口徑不一致、資料不足，原因交不出來。觀眾會覺得被開場的謎題騙了。",
+    "fix": "不要誇大答案，改成調整承諾：s01.10 和 promise 改成「這兩個數字能不能放在一起讀，缺哪些資料」。s10.9 結尾補一句收束：「所以這筆帳的答案是：現有資料還解不開，我們能指出的是卡在哪。」",
+    "evidence": "要解開這筆帳，至少還缺兩題的樣本數與回答者重疊的資料，這份概要頁沒有。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s13.1",
+      "s12.3"
+     ]
+    },
+    "category": "structure",
+    "severity": "low",
+    "problem": "七類編號跟分段不一致：第三類（DVD 修正）塞在「時間被推遲」那一段裡，s13 的兩條（扣手續費、調低報酬）又沒有編號。觀眾數到這裡會搞不清楚哪七類，而「七類」正是承諾的核心。",
+    "fix": "s12.3 改成獨立開頭「第三類，驗收後再改：」。s13.1 改成「七類之外，還有兩條具體到讓人皺眉的例子。」",
+    "evidence": "有兩條，具體到讓人皺眉。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s02.5"
+     ]
+    },
+    "category": "content",
+    "severity": "low",
+    "problem": "先說「冷笑話一則」再講笑點，節拍就被破壞了，聽起來像在唸稿。",
+    "fix": "改成直接講：「保證完成的人，可沒保證有人付錢。」",
+    "evidence": "冷笑話一則：保證完成的人，沒保證有人付錢。",
+    "caused_by": "deck"
+   }
+  ],
+  "verdict": "比喻（組長/組員）和收尾回扣原畫師都做得好。主要問題有三個：中段同一組數字重複四次拖慢節奏；開場唸出分鏡指示，承諾也偏方法論；「為什麼同時出現」的承諾沒有兌現。修正後可上線。"
+ },
+ "draft": "cel1r2",
+ "round_dir": "/Users/lileon/project/content-farm/.claude/worktrees/cf-cel-run1/output/cel-run1/review/script_structure/round-2"
+}

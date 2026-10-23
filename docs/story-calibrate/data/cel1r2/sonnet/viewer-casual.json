@@ -1,0 +1,98 @@
+{
+ "rid": "cel1r2:viewer-casual:sonnet",
+ "ok": true,
+ "errors": [],
+ "model": "sonnet",
+ "effort": "low",
+ "models_used": [
+  "claude-sonnet-5-5"
+ ],
+ "seconds": 24.2,
+ "cost_usd": 0.0806,
+ "tokens": {
+  "input": 4,
+  "output": 2098,
+  "cache_read": 17399,
+  "cache_write": 14462
+ },
+ "attempts": 1,
+ "infra": false,
+ "turns": 5,
+ "thinking_tokens": 249,
+ "started_at": "2026-10-23T07:27:02+00:00",
+ "output": {
+  "persona": "27 歲上班族，前 15 秒不有趣就走，看過幾部熱門作品",
+  "segments": [
+   {
+    "slide_id": "s01",
+    "engagement": 3,
+    "decision": "leave",
+    "why": "開場 14 秒都在念「概要頁載明」「約九成」「約六成」，是公文式的數字並列。我還不知道這跟我有什麼關係。「價格在漲、帳卻是虧」的矛盾要到 0:22 才點出來，我在 0:14 就滑走了。",
+    "confusing": [
+     "兩個比例的分母是誰、是不是同一批人，開場沒有說明"
+    ]
+   }
+  ],
+  "left_at_sentence": "s01.8",
+  "finish": false,
+  "top_fixes": [
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s01.8",
+      "s01.7",
+      "s01.9",
+      "s02.1"
+     ]
+    },
+    "category": "structure",
+    "severity": "high",
+    "problem": "前 15 秒只有「概要頁載明」加兩個百分比，沒有人物也沒有衝突，矛盾要等 0:22 才說出口，觀眾已經走了。原畫師被要求重畫卻領不到錢的情境，反而是最抓人的畫面，卻放在 0:35 之後。",
+    "fix": "把 s02 的原畫師情境（「稿子交了，對方說請重畫。他問，重畫費呢？對方說，這是完成保證義務。」）搬到最前面當 10 秒內的開場。接著一句帶出矛盾：「同一批元請，九成說價格在漲，六成說帳是虧的。」資料來源的細節（概要頁、日期）挪到 s01.10 之後再說。",
+    "evidence": "右邊：同一頁載明，元請的回答裡，約六成說只看製作委託費，營業損益是赤字。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s05.6",
+      "s06.4",
+      "s07.4",
+      "s05.1"
+     ]
+    },
+    "category": "structure",
+    "severity": "med",
+    "problem": "1:40 到 3:15 連續三段名詞解釋（時間軸、製作委員會、優越地位、取適法），沒有任何新鮮的東西，是最容易流失的一段。s06.4 是白話講法，s07.4 是回頭說明 s04.5 已經講過的事。",
+    "fix": "合併 s04.5 和 s07.4，只講一次取適法改名。優越地位只留 s06.7 的組長比喻，刪掉 s06.4 這類「這不是法條原文」的重複聲明，改成各詞第一次出現時再帶一句。把「60 日」等到第五類付款那一段才講。",
+    "evidence": "最後一個詞，取適法，就是剛才提到的下請法，2026 年 1 月 1 日起改稱取適法。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s10.5",
+      "s10.7",
+      "s10.9",
+      "s09.7"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "這一章答應要解開「帳為什麼對不上」，結論卻是「口徑不一致、缺資料」，觀眾等了 4 分鐘只得到「不知道」。s09.7 又塞進 75%、50% 兩組別的數字，讓人更亂。",
+    "fix": "s10 直接用一句話講結論：「兩題的回答者可能不同、算法也不同（含不含版稅），所以不能直接相減。」刪掉 s09.7 的額外百分比，缺資料的部分只留 s10.9 一句。",
+    "evidence": "畫面上另外列的下請 75% 說上升、作畫負責人 50% 說赤字，回答者不同，這裡不混著比。",
+    "caused_by": "deck"
+   }
+  ],
+  "overall": "我在 0:14 離開。開場是公文語氣加兩個百分比，沒有人也沒有故事，真正的鉤子（原畫師被要求重畫卻領不到錢）晚到 0:35。就算撐過開場，1:40 到 3:15 的名詞解釋段也很容易讓我流失。把原畫師的情境和「九成對六成」的矛盾提前，並縮短定義段，這支片才留得住我。"
+ },
+ "draft": "cel1r2",
+ "round_dir": "/Users/lileon/project/content-farm/.claude/worktrees/cf-cel-run1/output/cel-run1/review/script_structure/round-2"
+}

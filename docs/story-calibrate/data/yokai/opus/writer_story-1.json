@@ -1,0 +1,136 @@
+{
+ "rid": "yokai:writer_story-1:opus",
+ "ok": true,
+ "errors": [],
+ "model": "opus",
+ "effort": "low",
+ "models_used": [
+  "claude-opus-5-5"
+ ],
+ "seconds": 33.6,
+ "cost_usd": 0.1835,
+ "tokens": {
+  "input": 4,
+  "output": 2627,
+  "cache_read": 16801,
+  "cache_write": 15952
+ },
+ "attempts": 1,
+ "infra": false,
+ "turns": 5,
+ "thinking_tokens": 491,
+ "started_at": "2026-10-23T07:23:06+00:00",
+ "output": {
+  "role": "科普節目編劇（故事結構）",
+  "score": 7,
+  "rubric": {
+   "十五秒鉤子": 7,
+   "留人點密度": 6.5,
+   "國高中比喻": 8,
+   "八卦與冷笑話節拍": 7.5,
+   "收尾回扣": 8
+  },
+  "issues": [
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s01.7",
+      "s01.18"
+     ]
+    },
+    "category": "structure",
+    "severity": "med",
+    "problem": "開場的問題先問「怎麼變成妲己」，下一句才補上「漢代是吉兆」。這樣問題被下一句沖淡，「吃人→吉兆→妖婦」三段反差也沒能一口氣講完，鉤子變鈍。",
+    "fix": "把順序改成 s01.16 → s01.18 → s01.7，並改成：「但最早的原典裡，牠會吃人，叫聲像嬰兒；到了漢代，牠又成了代表皇帝有德的吉兆。那牠是怎麼一路變成妲己的？」",
+    "evidence": "牠是怎麼一路變成妲己的？",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s17a.16",
+      "s17a.18"
+     ]
+    },
+    "category": "structure",
+    "severity": "med",
+    "problem": "這兩句叫觀眾「再看一次」第一站和開場的圖，可是講稿在 s00 和 s04 從沒介紹過這兩張圖。觀眾沒有記憶可以接，回扣會落空。",
+    "fix": "在 s00.4 後補半句「像這張北齋一派的素描」，s04.29 也補一句「古今圖書集成的插圖裡，牠站在樹枝上」，先把伏筆埋好；不然就刪掉「第一站那張」「再看一次開場那張」，直接介紹這兩張圖。",
+    "evidence": "再看一次開場那張北齋一派的素描",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s13.32",
+      "s14.34",
+      "s14.35",
+      "s14.27"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "約 3:50–5:14 這一段，保留語太密：「我們的看法」「二手整理」「還沒查到」連著出現，「唐代祭祀與妖魅並存」還在 s13.32 和 s14.34 講了兩次。大約 80 秒沒有新的反轉或數字，留人點最弱的就是這裡。",
+    "fix": "刪掉 s14.34，避免重複；s14.35 和 s14.27 合成一句：「宋代道教開始出現驅狐符咒，不過這是二手整理，確切哪年轉壞我們還沒查到。」接著直接進 s14.18。",
+    "evidence": "唐代，祭祀與妖魅並存；",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s14.25"
+     ]
+    },
+    "category": "content",
+    "severity": "low",
+    "problem": "「畫面上分成…」是在描述版型的旁白，不是留人點，配音念出來很像在讀簡報。",
+    "fix": "改成問題：「把吉兆和妖狐拉成兩條線，看看它們在哪裡交叉。」",
+    "evidence": "畫面上分成吉兆線和妖狐線。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s26b.4",
+      "s26b.5",
+      "s25.12"
+     ]
+    },
+    "category": "structure",
+    "severity": "low",
+    "problem": "結論一開頭就連念兩句「還沒查到／是推測」，把 s23.10 的揭曉情緒直接打斷，之後才進入主旨。",
+    "fix": "把 s26b 移到 s25.11 之後、s26.4 之前，或濃縮成一句，讓 s23.10 的揭曉直接接到 s25.8。",
+    "evidence": "這集有兩處還沒查到：武王伐紂平話的原文，和狐狸在唐宋之間轉壞的確切年份。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s11a.11"
+     ]
+    },
+    "category": "fact",
+    "severity": "low",
+    "problem": "墓頂九尾狐這一點，講稿只說依據維基百科，比其他站引用原典弱，而且旁白特地點名維基，聽起來不夠可信。",
+    "fix": "如果 sources.json 裡有考古報告或博物館資料，就改引那份；沒有的話改成「據公開資料整理」，並在資訊欄標出處。",
+    "evidence": "據維基百科的條目，其中有九尾狐和飛馬。",
+    "caused_by": "article"
+   }
+  ],
+  "verdict": "整體故事線完整，比喻和冷笑話節拍都好（保健食品說明書、催婚的親戚、簽證辦不下來），殺生石也有前後回扣。要改的有三處：開場句序、圖像回扣沒先埋伏筆、第三站中段保留語太密。改完可以上線。"
+ },
+ "draft": "yokai",
+ "round_dir": "/Users/lileon/project/content-farm/.claude/worktrees/cf-cost-accept/output/yokai-kyubi-v2/review/script_structure/round-1"
+}

@@ -64,8 +64,12 @@ def audio_mix_enabled(run_dir: Path) -> bool:
         return True
 
 
+def without_audio(report: dict) -> dict:
+    """The retention report without its sound measurements: sound is not judged by the panels (Leon 2026-10-23)."""
+    return {k: v for k, v in report.items() if k != "audio"}
+
+
 def final(run_dir: Path, out: Path, *, vertical: bool = False, **_: Any) -> Materials:
-    from content_farm.evaluation.prepare import audio_lines
     from content_farm.evaluation.sheets import build_sheets, extract_frames, mmss
     from content_farm.retention.report import build_report, upload_video
 
@@ -73,8 +77,8 @@ def final(run_dir: Path, out: Path, *, vertical: bool = False, **_: Any) -> Mate
     if video is None:
         raise FileNotFoundError(f"{run_dir}/assembly has no video to review")
     report = build_report(run_dir, vertical=vertical)
-    files = [_put(out, "objective.json", json.dumps(report, ensure_ascii=False, indent=1))]
-    notes = {files[0]: "自動量測（節拍、靜止、死區、響度、語速……）"}
+    files = [_put(out, "objective.json", json.dumps(without_audio(report), ensure_ascii=False, indent=1))]
+    notes = {files[0]: "自動量測（節拍、靜止、死區……；聲音不在評審範圍）"}
     frames = extract_frames(video, run_dir / "review" / ".frames")
     for sheet in build_sheets(frames, out / "sheets"):
         files.append(sheet.relative_to(out).as_posix())
@@ -82,8 +86,6 @@ def final(run_dir: Path, out: Path, *, vertical: bool = False, **_: Any) -> Mate
     files.append(_copy(run_dir / "subtitles" / "subtitles.srt", out))
     notes[files[-1]] = "旁白逐字稿（含時間）"
     mix = audio_mix_enabled(run_dir)
-    files.append(_put(out, "audio.txt", ("" if mix else NO_MIX_NOTE) + audio_lines(report)))
-    notes[files[-1]] = "每 10 秒的聲音描述" + ("" if mix else "（本頻道無混音）")
     corpus = (out / "subtitles.srt").read_text(encoding="utf-8")
     if (run_dir / "titles.json").is_file():
         files.append(_put(out, "title.txt", best_title(run_dir) + "\n"))

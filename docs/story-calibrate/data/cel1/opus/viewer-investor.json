@@ -1,0 +1,114 @@
+{
+ "rid": "cel1:viewer-investor:opus",
+ "ok": true,
+ "errors": [],
+ "model": "opus",
+ "effort": "low",
+ "models_used": [
+  "claude-opus-5-5"
+ ],
+ "seconds": 32.1,
+ "cost_usd": 0.1704,
+ "tokens": {
+  "input": 4,
+  "output": 2565,
+  "cache_read": 17414,
+  "cache_write": 14449
+ },
+ "attempts": 1,
+ "infra": false,
+ "turns": 5,
+ "thinking_tokens": 496,
+ "started_at": "2026-10-23T07:23:39+00:00",
+ "output": {
+  "persona": "40 歲、關心娛樂股的投資人：想知道動畫產業鏈裡誰賺錢、誰虧錢，不要明牌，但要清楚結論；耐心有限，聽不到跟錢有關的答案就會走。",
+  "segments": [
+   {
+    "slide_id": "s01",
+    "engagement": 8,
+    "decision": "stay",
+    "why": "九成說漲價、六成說虧錢，這個帳對不上的開場正中投資人關心的點。"
+   },
+   {
+    "slide_id": "s02",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "重畫的情境好懂，但講的是個別畫師，離「誰賺錢」越來越遠；冷笑話可以略過。"
+   },
+   {
+    "slide_id": "s03",
+    "engagement": 4,
+    "decision": "stay",
+    "why": "法規名稱一個接一個；s03.4 直接說「不是在指名哪家公司」，我想知道的東西大概不會有。"
+   },
+   {
+    "slide_id": "s04",
+    "engagement": 3,
+    "decision": "stay",
+    "why": "時間軸和改名的小插曲對判斷誰賺錢沒有幫助。"
+   },
+   {
+    "slide_id": "s05",
+    "engagement": 2,
+    "decision": "leave",
+    "why": "到 2 分鐘還在用分組作業比喻製作委員會，對懂產業的投資人太幼稚，開場那筆帳也遲遲沒回來，所以在這裡離開。"
+   }
+  ],
+  "left_at_sentence": "s05.2",
+  "finish": false,
+  "top_fixes": [
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s05.2",
+      "s02.6",
+      "s04.5"
+     ]
+    },
+    "category": "structure",
+    "severity": "high",
+    "problem": "開場拋出「帳對不上」的鉤子，答案（s08–s10）卻拖到 3:27 才出現，中間花兩分多鐘講名詞解釋和時間軸，還用分組作業比喻製作委員會。想知道錢流向哪裡的觀眾會在這段離開。同型：s04.5 下請法改名的插曲、s07 取適法的說明也在拖慢節奏。",
+    "fix": "s02.6 之後直接接 s08–s10 的帳（六成虧、加版稅仍四成虧、元請七成談得成但作畫負責人 50% 虧），講完再進名詞解釋。s05.2 刪掉分組作業的比喻，改成一句：「製作委員會：幾家公司共同出資、共同持有作品權利，元請只拿製作委託費。」s04.5 刪除。",
+    "evidence": "製作委員會，像班上分組作業的出資者聯合會，幾家公司一起出錢，一起持有作品的權利，這是通俗說明，不是指針原文。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s10.4",
+      "s20.2"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "開場說「我們來對這一筆帳」，結尾卻是「這份指針沒有替它結帳」。觀眾沒聽到一句清楚的結論：在指針點名的三段交易裡，哪一方掌握權利和定價、哪一方承擔虧損。",
+    "fix": "在 s10.4 補一句只用來源能支持的結論：「從指針點名的方向看，改需求、延期、壓價的都是委員會、元請上游和串流平台；回報赤字的是元請和作畫負責人。來源沒有告訴我們上游賺多少，所以只能說成本是往下游推。」s20.2 呼應這句結論，不要只寫「沒結帳」。",
+    "evidence": "要證明這筆帳到底怎麼虧，這份概要頁還不夠。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s13.1",
+      "s12.3"
+     ]
+    },
+    "category": "structure",
+    "severity": "low",
+    "problem": "promise.txt 答應講「七類」做法，但 s13 的兩條（扣匯款手續費、壓低自由工作者報酬）沒有編號；第三類又塞在標題寫「延期與修正」的 s12 裡。觀眾數不出七類對應哪幾條。",
+    "fix": "s13.1 改成「另外兩條不在七類編號裡，但很具體：」，說明它們屬於減額的例子。s12.3 開頭改成「第三類，驗收後的修正：」，s12 的標題對應改成「第二、三類」。",
+    "evidence": "有兩條，具體到讓人皺眉。",
+    "caused_by": "deck"
+   }
+  ],
+  "overall": "開場的帳很有吸引力，但答案拖太久，前面又先上了一堂名詞課。我在 s05.2（約 2:05）的分組作業比喻離開。這支片從頭到尾沒有回答「誰賺錢」，連「成本往哪一邊推」這種來源撐得住的結論也沒講。"
+ },
+ "draft": "cel1",
+ "round_dir": "/Users/lileon/project/content-farm/.claude/worktrees/cf-cel-run1/output/cel-run1/review/script_structure/round-1"
+}

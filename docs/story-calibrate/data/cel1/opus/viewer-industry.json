@@ -1,0 +1,210 @@
+{
+ "rid": "cel1:viewer-industry:opus",
+ "ok": true,
+ "errors": [],
+ "model": "opus",
+ "effort": "low",
+ "models_used": [
+  "claude-opus-5-5"
+ ],
+ "seconds": 38.4,
+ "cost_usd": 0.1881,
+ "tokens": {
+  "input": 4,
+  "output": 3455,
+  "cache_read": 17408,
+  "cache_write": 14443
+ },
+ "attempts": 1,
+ "infra": false,
+ "turns": 5,
+ "thinking_tokens": 879,
+ "started_at": "2026-10-23T07:23:36+00:00",
+ "output": {
+  "persona": "33 歲動畫業界從業者，熟悉製作委員會與元請／下請的外包結構，數字講錯會糾正，對入門解說耐心不高。",
+  "segments": [
+   {
+    "slide_id": "s01",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "九成說漲、六成說虧，這個矛盾是業界人會點頭的鉤子。但開頭第一句就把分鏡指令念出來，很出戲。",
+    "confusing": [
+     "「CUT 01，兩句話並排。」聽起來像是把剪接指示念出來"
+    ]
+   },
+   {
+    "slide_id": "s02",
+    "engagement": 7,
+    "decision": "stay",
+    "why": "以完成保證義務為由不付重畫費，是真實會遇到的情境，有共鳴。"
+   },
+   {
+    "slide_id": "s03",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "發布單位、日期和 43 件情境例都講對了，交代很乾淨。"
+   },
+   {
+    "slide_id": "s04",
+    "engagement": 5,
+    "decision": "stay",
+    "why": "時間軸短，可以接受。下請法改名的插曲有點資訊量。"
+   },
+   {
+    "slide_id": "s05",
+    "engagement": 3,
+    "decision": "stay",
+    "why": "把製作委員會比成「班上分組作業」，對業內人來說太幼稚，很想快轉。"
+   },
+   {
+    "slide_id": "s06",
+    "engagement": 3,
+    "decision": "stay",
+    "why": "又是組長和組員的比喻，再加一句「組員只能握鉛筆」，拖沓。"
+   },
+   {
+    "slide_id": "s07",
+    "engagement": 5,
+    "decision": "stay",
+    "why": "60 日付款期限講對了，也很實用。"
+   },
+   {
+    "slide_id": "s08",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "有交代把版稅算進去後的數字，也坦白說看不到樣本數，可信度加分。"
+   },
+   {
+    "slide_id": "s09",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "兩邊並排有料，訪談裡的「約十分之一」也有特別區分出來。"
+   },
+   {
+    "slide_id": "s10",
+    "engagement": 5,
+    "decision": "stay",
+    "why": "「漲幅沒追上實際花費」是業內常識，沒有新意，但態度誠實。"
+   },
+   {
+    "slide_id": "s11",
+    "engagement": 7,
+    "decision": "stay",
+    "why": "終於進到清單，重畫這一類很有感。"
+   },
+   {
+    "slide_id": "s12",
+    "engagement": 7,
+    "decision": "stay",
+    "why": "播出延期和 DVD 修正都是真實痛點。"
+   },
+   {
+    "slide_id": "s13",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "例子很具體，但這頁沒有編號，夾在第三類和第四類中間，我數到這裡就亂了。",
+    "confusing": [
+     "這兩條算不算七類裡的其中一類？"
+    ]
+   },
+   {
+    "slide_id": "s14",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "取消和出資沒到位都講得清楚。"
+   },
+   {
+    "slide_id": "s15",
+    "engagement": 7,
+    "decision": "stay",
+    "why": "「根本沒有談」這個觀察準確。"
+   },
+   {
+    "slide_id": "s16",
+    "engagement": 7,
+    "decision": "stay",
+    "why": "串流平台不公開觀看數據，是業界關心的議題。"
+   },
+   {
+    "slide_id": "s17",
+    "engagement": 4,
+    "decision": "stay",
+    "why": "台灣這段講了等於沒講，但很短。"
+   },
+   {
+    "slide_id": "s18",
+    "engagement": 5,
+    "decision": "stay",
+    "why": "把限制講得誠實，「香檳先別開」可以。"
+   },
+   {
+    "slide_id": "s19",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "「命名」這個論點成立。"
+   },
+   {
+    "slide_id": "s20",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "收尾有回扣開頭的那筆帳。"
+   }
+  ],
+  "left_at_sentence": null,
+  "finish": true,
+  "top_fixes": [
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s13.1",
+      "s13.3"
+     ]
+    },
+    "category": "structure",
+    "severity": "med",
+    "problem": "影片承諾的是「七類」，但 s13 這頁沒有編號，夾在第三類和第四類中間。s13.3 講的是製作公司對自由工作者，不屬於前後任何一類。觀眾一邊數一邊聽，到這裡會亂，以為漏聽了一類。",
+    "fix": "s13.1 改成「另外兩條不在七類編號裡，但具體到讓人皺眉」，明講這兩條是編號以外的補充；或者把匯款手續費併入第二類的「錢沒跟著動」，自由工作者那條移到第七類之後，當補充說明。",
+    "evidence": "有兩條，具體到讓人皺眉。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s05.2",
+      "s05.3",
+      "s05.4",
+      "s06.6"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "從 2:03 到 3:08，連續用「班上分組作業／組長／組員」比喻講了一分多鐘，在進入正題之前，懂業界的觀眾會想快轉或直接離開。同型：s06.2。",
+    "fix": "比喻只留一句。例如 s05.2 改成「製作委員會：幾家公司共同出資、共同持有作品權利」，刪掉 s05.3、s05.4 的組長組員說法和 s06.6，讓清單提早約 30 秒出現。",
+    "evidence": "製作委員會，像班上分組作業的出資者聯合會",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s01.1"
+     ]
+    },
+    "category": "content",
+    "severity": "low",
+    "problem": "第一句就把分鏡的剪接指示念出來，旁白聽起來像在讀工作稿，開頭的鉤子因此打折。",
+    "fix": "刪掉 s01.1，直接從「日本公平會 2026 年 6 月公布的概要頁載明……」開始。",
+    "evidence": "CUT 01，兩句話並排。",
+    "caused_by": "deck"
+   }
+  ],
+  "overall": "以業內人的標準，事實大致站得住：60 日付款期限、43 件情境例、發布日期都沒問題，資料的限制也交代得誠實。最大的流失風險在 2:03–3:08 這段太淺的名詞解說，以及七類編號中途亂掉。修掉這兩處，業界觀眾會看完。"
+ },
+ "draft": "cel1",
+ "round_dir": "/Users/lileon/project/content-farm/.claude/worktrees/cf-cel-run1/output/cel-run1/review/script_structure/round-1"
+}

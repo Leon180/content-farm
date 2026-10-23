@@ -1,0 +1,189 @@
+{
+ "rid": "chipcat1:writer_density-1:sonnet",
+ "ok": true,
+ "errors": [],
+ "model": "sonnet",
+ "effort": "low",
+ "models_used": [
+  "claude-sonnet-5-5"
+ ],
+ "seconds": 30.5,
+ "cost_usd": 0.0908,
+ "tokens": {
+  "input": 4,
+  "output": 3232,
+  "cache_read": 17029,
+  "cache_write": 14184
+ },
+ "attempts": 1,
+ "infra": false,
+ "turns": 5,
+ "thinking_tokens": 0,
+ "started_at": "2026-10-23T07:28:31+00:00",
+ "output": {
+  "role": "科普節目編劇（資訊密度）",
+  "score": 5.5,
+  "rubric": {
+   "內容撐得起片長": 5,
+   "無灌水重講": 5,
+   "數字密度與單位": 5,
+   "名詞密度": 7,
+   "論點推進": 5
+  },
+  "issues": [
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s02.2",
+      "s08.2",
+      "s09.2",
+      "s09.3"
+     ]
+    },
+    "category": "content",
+    "severity": "high",
+    "problem": "同一則工商時報「上看 3 萬美元、轉述 wccftech」在 s02、s08、s09 重講三次，約 1 分半是重複，時間軸段幾乎沒有新資訊。同型：s02.1 與 s09.2 的 2025 年 6 月重複。",
+    "fix": "s02 保留一次完整出處；s08 只講新資訊（限定詞「上看」「轉述」）；s09 的時間軸用一句帶過，或與 s08 合併刪除重述。",
+    "evidence": "工商時報 2025 年 8 月寫，2 奈米單片報價上看 3 萬美元，較 3 奈米高出五成，並註明轉述 wccftech。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s09.5",
+      "s10.2",
+      "s11.1",
+      "s11.2"
+     ]
+    },
+    "category": "content",
+    "severity": "high",
+    "problem": "價格段的數字基準混亂：s09.5 說「價差」10% 至 20%，卻沒講是與哪個基準比。s10.2 的 3 奈米兩萬是「晶圓價」，s11.1 的 N3E/N3P 是「成本」，價格與成本混用。2.5 萬/2.7 萬對比 3 萬算出的價差是 10% 至 20%，卻沒演算給觀眾看。短時間內塞入 2 萬、5 成、2.5 萬、2.7 萬、3 萬、10–20% 六個數字。",
+    "fix": "用一句寫明「價」與「成本」是不同口徑；並演算 3 萬/2.7 萬≈11%、3 萬/2.5 萬=20%，再拆成兩段，每段只留兩三個數字。",
+    "evidence": "3 奈米的 N3E 與 N3P，成本估計分別是 2.5 萬與 2.7 萬美元，2 奈米仍是三萬，價差因此縮到 10% 至 20%。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s13.2",
+      "s13.4",
+      "s14.1",
+      "s14.2"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "「為什麼貴」一章只有 EUV 單價一個硬事實，卻拿校車、40 個貨櫃、747 的趣味細節撐時間，與晶圓價沒有因果連結（s15 自己承認來源沒寫）。承諾的「墊高什麼」實際沒有被回答。s13.4 的「整座設備」也沒有數字支撐。",
+    "fix": "把 s14 壓成一句，並明講這只說明機器昂貴，不證明晶圓價；或補上設備折舊占晶圓成本的比例，若沒有來源就明說缺口。",
+    "evidence": "這台機器大小像校車，重 150 噸，在荷蘭組裝後，要拆成約 40 個貨櫃，用 747 貨機運到台灣、南韓、美國與日本的晶片廠。",
+    "caused_by": "article"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s17.3",
+      "s17.5",
+      "s16.2",
+      "s17.2"
+     ]
+    },
+    "category": "fact",
+    "severity": "med",
+    "problem": "良率講完定義卻沒有納入計算：每顆約 300 美元「還沒算良率」，良率沒有數字，使這章對論點沒推進；而且是拿 AI 大晶片的 100 顆除傳聞價，結論只有誤導風險。s17.5 是笑話灌水。",
+    "fix": "刪 s17.5；s17.3 補一句「若良率只有七成，單顆成本就會再升」之類的示例（標為假設），或整章砍掉並把良率縮成一句。",
+    "evidence": "換算起來，三萬美元除以一百顆，每顆約三百美元，還沒算良率與封裝。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s18.3",
+      "s18.4",
+      "s19.1",
+      "s19.2"
+     ]
+    },
+    "category": "structure",
+    "severity": "med",
+    "problem": "「台灣在哪」一段離題：1987 年台積電成立資本與張忠謀的商業模式，和 2 奈米定價無關，也沒有連到論點；客戶清單與廠址也沒有連回價格。論點在此停滯。",
+    "fix": "刪掉 s18.3–s18.4；s19 只留一句說明量產集中在台灣，或連到議價地位（s15.3）才有意義。",
+    "evidence": "台積電 1987 年成立，靠台灣政府與荷蘭飛利浦的資金，加上民間資本，合計新台幣 13.775 億元。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s22.3",
+      "s22.4",
+      "s23.5",
+      "s24.1"
+     ]
+    },
+    "category": "content",
+    "severity": "high",
+    "problem": "片頭答應的「最後誰在付」只有一則單一款式、非 2 奈米晶片的報導，結尾又承認不下定論，答案實質缺席；s24.1 重述論點卻仍把「這筆錢由誰吃下」當成主軸。高通 300 美元晶片也沒說明是不是 2 奈米，與全片 300 美元的換算容易被誤連。「三分之一」缺基準。",
+    "fix": "把片頭承諾改成「看現有證據能說到哪」，並在 s22 說明該晶片的製程、「三分之一」的基準（預算或 BOM）；s24.1 改為與實際結論一致。",
+    "evidence": "目前能引用的證據只有一個。",
+    "caused_by": "topic",
+    "claim_change": true,
+    "affected_slides": [
+     "s22",
+     "s23",
+     "s24"
+    ]
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s21.2",
+      "s21.3",
+      "s20.2",
+      "s20.3"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "s21.2 一口氣報 8%、33%、28%、10% 四個占比，且沒講基準（晶圓營收）與合計；s20.2 的「每月可望朝 10 萬片」語意不清，沒有年份。s21.3 比較 8% 與 10% 屬於細節，對論點的推進有限。",
+    "fix": "s21.2 只念 2 奈米 8% 與 3 奈米 33%，其餘放畫面；s20.2 改成明確年份「到 2026 年底每月約 10 萬片 vs 14 萬片」。",
+    "evidence": "2 奈米出貨占晶圓營收 8%，3 奈米 33%，5 奈米 28%，7 奈米 10%。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s04.2",
+      "s04.3",
+      "s05.1",
+      "s05.3"
+     ]
+    },
+    "category": "content",
+    "severity": "low",
+    "problem": "名詞段用「比喻＋定義上」雙講，每個名詞都說兩遍；s05.3 說奈米是代號不是線寬，卻放在「這是我們的背景說明」之後，與 s05.1「數字越小越新」衝突，段落冗長（近 1 分半才講兩三個名詞），EUV 在後面幾乎沒再被用到。",
+    "fix": "每個名詞只留一句，比喻與定義合併；s05.3 提前併入 s05.1；EUV 移到 s13 才講。",
+    "evidence": "定義上，它是晶片製造技術的世代名稱；",
+    "caused_by": "deck"
+   }
+  ],
+  "verdict": "資訊密度不均：價格段數字塞太滿且基準不清，同一則傳聞重講三次，中後段（EUV 趣聞、台積電歷史、良率）灌水或離題；片頭承諾的「誰在付」答案幾乎缺席，約 8 分半內容實質只撐得起 5–6 分鐘。"
+ },
+ "draft": "chipcat1",
+ "round_dir": "/Users/lileon/project/content-farm/.claude/worktrees/cf-chipcat-run1/output/chipcat-run1/review/script_structure/round-1"
+}

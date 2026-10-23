@@ -223,3 +223,35 @@ def test_yokai_thumbnail_no_longer_needs_the_character(tmp_path: Path, monkeypat
     assert not [f for f in yokai if "must be on the thumbnail" in f.message]
     chipcat = thumbnail.thumbnail_findings(tmp_path, load_channel("chipcat"))
     assert [f for f in chipcat if "must be on the thumbnail" in f.message]
+
+
+# ── no sound in any review (Leon 2026-10-23) ─────────────────────────────────────────────────
+
+SOUND_WORDS = ("語速", "聲音", "BGM", "配樂", "響度", "念錯", "音效", "ducking", "混音")
+
+
+def test_no_reviewer_role_or_persona_scores_sound() -> None:
+    import yaml
+
+    from content_farm.review.config import PANELS_FILE, REQUIRED_ROLES
+
+    config = load_review()
+    assert "editor_audio" not in config.roles and "editor_audio" not in REQUIRED_ROLES["final"]
+    for name, stage in config.stages.items():
+        assert all(seat.role != "editor_audio" for seat in stage.seats), name
+    for name, role in config.roles.items():
+        text = " ".join(role.rubric)
+        assert not any(w in text for w in SOUND_WORDS), (name, text)
+    raw = yaml.safe_load(PANELS_FILE.read_text(encoding="utf-8"))
+    personas = json.dumps({k: v for k, v in raw.items() if k not in ("review", "pros")}, ensure_ascii=False)
+    assert not any(w in personas for w in ("語速", "聲音開著", "音效")), "viewer personas still care about sound"
+
+
+def test_the_final_viewer_prompt_and_materials_have_no_audio_file() -> None:
+    from content_farm.review.materials_video import without_audio
+    from content_farm.review.prompts import STAGE_TASK
+
+    viewer = STAGE_TASK["final"]["viewer"]
+    assert "audio.txt" not in viewer and "不評聲音" in viewer
+    report = {"duration": 60, "visual": {"x": 1}, "audio": {"integrated": -14}}
+    assert without_audio(report) == {"duration": 60, "visual": {"x": 1}}

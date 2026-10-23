@@ -1,0 +1,205 @@
+{
+ "rid": "cel1:viewer-anime_fan:opus",
+ "ok": true,
+ "errors": [],
+ "model": "opus",
+ "effort": "low",
+ "models_used": [
+  "claude-opus-5-5"
+ ],
+ "seconds": 30.7,
+ "cost_usd": 0.1754,
+ "tokens": {
+  "input": 4,
+  "output": 2835,
+  "cache_read": 17378,
+  "cache_write": 14404
+ },
+ "attempts": 1,
+ "infra": false,
+ "turns": 5,
+ "thinking_tokens": 409,
+ "started_at": "2026-10-23T07:23:13+00:00",
+ "output": {
+  "persona": "22 歲動漫迷，每季追番，討厭被說教，想知道製作內幕",
+  "segments": [
+   {
+    "slide_id": "s01",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "「價格在漲，帳卻是虧的」有鉤子，但開頭念「CUT 01，兩句話並排」很像在念分鏡"
+   },
+   {
+    "slide_id": "s02",
+    "engagement": 8,
+    "decision": "stay",
+    "why": "原畫師被要求重畫這個情境很真實，是我想看的內幕"
+   },
+   {
+    "slide_id": "s03",
+    "engagement": 5,
+    "decision": "stay",
+    "why": "法規名稱一串，有點硬，但還算短"
+   },
+   {
+    "slide_id": "s04",
+    "engagement": 4,
+    "decision": "stay",
+    "why": "時間軸是官方流水帳，對追番的人沒感覺"
+   },
+   {
+    "slide_id": "s05",
+    "engagement": 2,
+    "decision": "leave",
+    "why": "把製作委員會、元請、下請講成班上分組作業，追番的人早就知道這些詞，被當小學生教，加上「這是通俗說明，不是指針原文」這種免責聲明，整段像上課。已經 2 分鐘，七類做法還沒出現"
+   },
+   {
+    "slide_id": "s06",
+    "engagement": 2,
+    "decision": "leave",
+    "why": "又是組長組員比喻，又一句「這不是法條原文」"
+   },
+   {
+    "slide_id": "s07",
+    "engagement": 3,
+    "decision": "leave",
+    "why": "名詞解釋第三輪"
+   },
+   {
+    "slide_id": "s08",
+    "engagement": 4,
+    "decision": "leave",
+    "why": "樣本數免責講太長"
+   },
+   {
+    "slide_id": "s09",
+    "engagement": 5,
+    "decision": "leave",
+    "why": "十分之一那句訪談有料"
+   },
+   {
+    "slide_id": "s10",
+    "engagement": 3,
+    "decision": "leave",
+    "why": "最後說「來源不夠」，等於沒回答開場的問題"
+   },
+   {
+    "slide_id": "s11",
+    "engagement": 7,
+    "decision": "leave",
+    "why": "真正的重點，可惜 4:50 才開始"
+   },
+   {
+    "slide_id": "s12",
+    "engagement": 7,
+    "decision": "leave",
+    "why": "延播三個月還要求提升品質，有料"
+   },
+   {
+    "slide_id": "s13",
+    "engagement": 8,
+    "decision": "leave",
+    "why": "連匯款手續費都扣，最有畫面"
+   },
+   {
+    "slide_id": "s14",
+    "engagement": 7,
+    "decision": "leave",
+    "why": "「已經畫好的那幾格怎麼算」問得好"
+   },
+   {
+    "slide_id": "s15",
+    "engagement": 6,
+    "decision": "leave",
+    "why": "「根本沒有談」這個觀點好"
+   },
+   {
+    "slide_id": "s16",
+    "engagement": 7,
+    "decision": "leave",
+    "why": "串流平台不公開觀看數，跟觀眾最有關"
+   },
+   {
+    "slide_id": "s17",
+    "engagement": 4,
+    "decision": "leave",
+    "why": "大多在講自己不知道什麼"
+   },
+   {
+    "slide_id": "s18",
+    "engagement": 4,
+    "decision": "leave",
+    "why": "免責清單"
+   },
+   {
+    "slide_id": "s19",
+    "engagement": 6,
+    "decision": "leave",
+    "why": "「命名」這個觀點還行"
+   },
+   {
+    "slide_id": "s20",
+    "engagement": 6,
+    "decision": "leave",
+    "why": "收尾有回扣原畫師"
+   }
+  ],
+  "left_at_sentence": "s05.2",
+  "finish": false,
+  "top_fixes": [
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s05.2",
+      "s06.2",
+      "s06.4",
+      "s05.3"
+     ]
+    },
+    "category": "structure",
+    "severity": "high",
+    "problem": "2:03 起連續三頁名詞解釋，用「班上分組作業」比喻動畫業，對動漫迷是被當小孩教；還一再加「不是原文」的免責，七類做法要等到 4:50 才出現，觀眾在這裡流失。同型：s05.4、s06.6",
+    "fix": "刪掉分組作業／組長組員比喻，各詞用一句話定義（例如「製作委員會＝出資並持有版權的幾家公司」），s05～s07 壓到 40 秒內；免責聲明只在片頭講一次",
+    "evidence": "製作委員會，像班上分組作業的出資者聯合會，幾家公司一起出錢，一起持有作品的權利，這是通俗說明，不是指針原文。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s04.1",
+      "s04.5"
+     ]
+    },
+    "category": "structure",
+    "severity": "med",
+    "problem": "開場的重畫情境之後，接的是官方時間軸，鉤子斷掉；清單（片子的承諾）被壓到後半段",
+    "fix": "s02 之後直接接 s11～s16 的七類清單，時間軸縮成一句帶過（2025 調查→2026/6 指針），名詞放在第一次出現時順口解釋",
+    "evidence": "時間軸只要記一句：先調查，再寫規則。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s10.4",
+      "s10.3"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "promise 答應解釋「為什麼漲價和虧損同時出現」，講稿最後卻說來源不夠，等於落空，觀眾會覺得被騙",
+    "fix": "若無資料可支撐，就把 promise 改成「把兩組數字並排，看出漲幅可能沒追上成本」；或補上概要頁裡有的成本、追加費用數據（如十分之一那段）作為具體線索",
+    "evidence": "要證明這筆帳到底怎麼虧，這份概要頁還不夠。",
+    "caused_by": "deck"
+   }
+  ],
+  "overall": "清單本身（扣匯款手續費、延播還要求提升品質、串流不公開觀看數）都是好內幕，可惜被前面約 3 分鐘的名詞教學和免責聲明埋掉了，我在分組作業比喻那裡就關掉了。把清單往前移、砍掉比喻，這支片就能留住人。"
+ },
+ "draft": "cel1",
+ "round_dir": "/Users/lileon/project/content-farm/.claude/worktrees/cf-cel-run1/output/cel-run1/review/script_structure/round-1"
+}

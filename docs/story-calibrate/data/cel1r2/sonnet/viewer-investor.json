@@ -1,0 +1,179 @@
+{
+ "rid": "cel1r2:viewer-investor:sonnet",
+ "ok": true,
+ "errors": [],
+ "model": "sonnet",
+ "effort": "low",
+ "models_used": [
+  "claude-sonnet-5-5"
+ ],
+ "seconds": 42.3,
+ "cost_usd": 0.1331,
+ "tokens": {
+  "input": 6,
+  "output": 4865,
+  "cache_read": 36038,
+  "cache_write": 20211
+ },
+ "attempts": 1,
+ "infra": false,
+ "turns": 6,
+ "thinking_tokens": 228,
+ "started_at": "2026-10-23T07:27:22+00:00",
+ "output": {
+  "persona": "40 歲關心娛樂股的投資人：想知道誰賺錢、錢流到哪，不要投資建議但要明確結論",
+  "segments": [
+   {
+    "slide_id": "s01",
+    "engagement": 8,
+    "decision": "stay",
+    "why": "九成說漲、六成說赤字，帳對不上，這個鉤子對看財務的人有效。"
+   },
+   {
+    "slide_id": "s02",
+    "engagement": 5,
+    "decision": "stay",
+    "why": "原畫師情境能懂，但冷笑話和「看完你會知道」在拖時間，我要的是錢流向誰。"
+   },
+   {
+    "slide_id": "s03",
+    "engagement": 5,
+    "decision": "stay",
+    "why": "交代了指針是什麼，43 件是情境例而非個案，但沒有公司，我還在等誰賺錢。"
+   },
+   {
+    "slide_id": "s04",
+    "engagement": 3,
+    "decision": "stay",
+    "why": "改名取適法是法規小插曲，與誰賺錢無關，開始不耐煩。"
+   },
+   {
+    "slide_id": "s05",
+    "engagement": 2,
+    "decision": "leave",
+    "why": "連續三段名詞翻譯，沒有任何一家公司或金額，我會在這裡滑走。"
+   },
+   {
+    "slide_id": "s06",
+    "engagement": 2,
+    "decision": "leave",
+    "why": "優越地位的比喻很長，仍沒碰到誰賺錢。"
+   },
+   {
+    "slide_id": "s07",
+    "engagement": 3,
+    "decision": "leave",
+    "why": "60 日只丟一個數字，還說後面再記，沒有用處。"
+   },
+   {
+    "slide_id": "s08",
+    "engagement": 5,
+    "decision": "leave",
+    "why": "回到帳，但結果是樣本數沒有，只能當比例看。"
+   },
+   {
+    "slide_id": "s09",
+    "engagement": 5,
+    "decision": "leave",
+    "why": "並排有料，但不能混比，結論被自己削弱。"
+   },
+   {
+    "slide_id": "s10",
+    "engagement": 4,
+    "decision": "leave",
+    "why": "結論是口徑不一致、缺資料，我要的結論沒有。"
+   },
+   {
+    "slide_id": "s11",
+    "engagement": 4,
+    "decision": "leave",
+    "why": "七類清單偏法務，沒有金額或受影響公司。"
+   },
+   {
+    "slide_id": "s15",
+    "engagement": 5,
+    "decision": "leave",
+    "why": "著作權談不成與沒談是版權收益相關，稍有興趣，但沒講權利歸誰。"
+   },
+   {
+    "slide_id": "s16",
+    "engagement": 5,
+    "decision": "leave",
+    "why": "串流分潤不透明是有用訊號，但沒有數字。"
+   },
+   {
+    "slide_id": "s19",
+    "engagement": 4,
+    "decision": "leave",
+    "why": "結論是命名的意義，不是誰賺錢。"
+   },
+   {
+    "slide_id": "s20",
+    "engagement": 4,
+    "decision": "leave",
+    "why": "帳沒結，收尾只剩清單。"
+   }
+  ],
+  "left_at_sentence": "s05.1",
+  "finish": false,
+  "top_fixes": [
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s05.1",
+      "s04.5",
+      "s05.7",
+      "s06.7"
+     ]
+    },
+    "category": "structure",
+    "severity": "high",
+    "problem": "開場拋出「帳對不上」後，連續約一分半是時間軸、改名、組長組員比喻，全是詞彙翻譯，沒有一個錢流向誰的資訊。關心產業獲利的觀眾會在這裡離開。同型：s06.6、s07.3。",
+    "fix": "刪掉 s04.5 的改名插曲，把 s05 到 s07 壓成每詞一句、直接接情境（元請=接製作委員會的案、下請=再發包），組長組員比喻和 s06.6 整段刪掉；60 日改在講付款類情境時再放，並直接把成本落在哪一層講清楚。",
+    "evidence": "先把詞翻成人話。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s10.5",
+      "s10.8",
+      "s10.9",
+      "s20.2"
+     ]
+    },
+    "category": "content",
+    "severity": "high",
+    "problem": "開場的核心謎題最後只得到「口徑不一致、缺樣本數」，沒有可帶走的結論，也沒說利潤實際卡在製作委員會、元請還是下請哪一層。看完等於沒解開承諾的「為什麼同時出現」。",
+    "fix": "在 s10 明講能確定的部分：六成赤字是只看委託費，含版稅後降到約四成，所以差距至少有一部分來自版稅在帳外；再指出版稅收益歸屬製作委員會與著作權讓渡（s15）連起來，說明錢多半在作品權利端、不在委託費端。保留「不知因果」的聲明，但先給這個結構性結論，再列缺的資料。",
+    "evidence": "要解開這筆帳，至少還缺兩題的樣本數與回答者重疊的資料，這份概要頁沒有。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s19.1",
+      "s19.4",
+      "s19.5",
+      "s20.5"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "結論落在「命名的意義」，對想知道誰賺錢的觀眾沒有用；且自己承認沒有任何來源說指針後現場變了多少，卻還把命名當最大價值。",
+    "fix": "收尾改成可驗證的觀察清單：委託費端、版稅端、串流分潤透明度三處，各說明目前已知與未知；並明講本片不涉及個別公司獲利，所以看不出哪家上市公司受影響，把這個邊界放在 s19 開頭，而不是只留在 s20.4。",
+    "evidence": "研究室的看法：這份指針最大的意義是命名。",
+    "caused_by": "deck"
+   }
+  ],
+  "overall": "開場鉤子不錯，但隨後的詞彙解釋把我送走；帳的謎題最後只得到口徑不一致與缺資料，沒有誰賺錢的結論，我會在 s05.1 離開。"
+ },
+ "draft": "cel1r2",
+ "round_dir": "/Users/lileon/project/content-farm/.claude/worktrees/cf-cel-run1/output/cel-run1/review/script_structure/round-2"
+}

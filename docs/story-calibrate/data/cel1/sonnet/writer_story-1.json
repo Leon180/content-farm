@@ -1,0 +1,140 @@
+{
+ "rid": "cel1:writer_story-1:sonnet",
+ "ok": true,
+ "errors": [],
+ "model": "sonnet",
+ "effort": "low",
+ "models_used": [
+  "claude-sonnet-5-5"
+ ],
+ "seconds": 29.2,
+ "cost_usd": 0.0894,
+ "tokens": {
+  "input": 4,
+  "output": 2980,
+  "cache_read": 17108,
+  "cache_write": 14460
+ },
+ "attempts": 1,
+ "infra": false,
+ "turns": 5,
+ "thinking_tokens": 705,
+ "started_at": "2026-10-23T07:23:51+00:00",
+ "output": {
+  "role": "科普節目編劇（故事）",
+  "score": 6,
+  "rubric": {
+   "十五秒鉤子": 6,
+   "留人點密度": 5,
+   "國高中比喻": 7,
+   "八卦與冷笑話節拍": 5,
+   "收尾回扣": 8
+  },
+  "issues": [
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s03.2",
+      "s03.3",
+      "s04.2",
+      "s04.5"
+     ]
+    },
+    "category": "structure",
+    "severity": "high",
+    "problem": "從 1:01 到 3:27 連續兩分多鐘是指針來歷、時間軸、名詞定義，沒有問題、反轉或數字揭曉。開場的原畫師懸念在 s02.6 之後被擱置，觀眾最容易在此流失。s04 時間軸全是日期羅列。同型：s03.4 的 43 件情境、s05.5 的三段分法。",
+    "fix": "把 s03、s04 壓成兩三句，只留「同日公布、43 件情境例、不是違規認定」。s04.5 的改名小插曲併進 s07。在 s05 之前回扣原畫師一句，例如「那個被叫重畫的人，到底算誰的組員？」，用懸念帶進名詞。",
+    "evidence": "2025 年 1 月起，公平會訪談業界、發問卷；",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s07.2",
+      "s07.3"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "s07.3 要觀眾記住 60 日，但後面的付款情境（第五類出資沒到位）完全沒有回扣這個數字。這個承諾沒有兌現，s07 的整段鋪陳就成了無用的名詞。",
+    "fix": "在 s14.4 補一句「到了付款期日付不出錢，而這個期日，法定是收到成果後 60 日內」。如果不回扣，就刪掉 s07.3，並把 s07 縮成一句。",
+    "evidence": "後面談到付款的情境，記得這個數字。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s12.3",
+      "s13.1",
+      "s13.2",
+      "s13.3"
+     ]
+    },
+    "category": "structure",
+    "severity": "high",
+    "problem": "片頭承諾「七類」，但 s13 的兩條（扣匯款手續費、調低報酬湊助手費）沒有編號，夾在第三類與第四類之間。觀眾會數不準七類，也不知道這兩條屬哪一類。",
+    "fix": "明講 s13 的兩條屬於哪一類（例如「第三類之外的兩條減額例」），或把它們編進第四類。後面的編號順延，確保口說的「第七類」正好湊滿七。",
+    "evidence": "有兩條，具體到讓人皺眉。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s02.5"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "冷笑話先報幕「冷笑話一則」，笑點被預告而沒有落點。句子本身是文字遊戲，緊接在不付重畫費的情境之後，語氣又輕浮。",
+    "fix": "刪掉「冷笑話一則：」這個報幕，直接說「保證完成的人，沒保證有人付錢。」，後面留半拍再接 s02.6。",
+    "evidence": "冷笑話一則：保證完成的人，沒保證有人付錢。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s09.2",
+      "s09.3",
+      "s09.4",
+      "s10.2"
+     ]
+    },
+    "category": "structure",
+    "severity": "med",
+    "problem": "s08 到 s10 在 40 秒內堆了九成、六成、四成、七成、75%、50%、五成等七八組百分比，口說聽不住，也分不清誰是元請、誰是下請。這是片中最需要懸念的「帳為什麼對不上」，現在變成念表格。",
+    "fix": "只留三個數字：九成說漲、六成說虧、75% 的下請說漲。其餘（七成、四成、五成）移到畫面上顯示，不念。s09.4 的十分之一訪談可以放在最後，當作揭曉。",
+    "evidence": "好看的一邊：元請約七成說委託費多半談得成，下請有 75% 說委託費上升。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s01.2",
+      "s01.3"
+     ]
+    },
+    "category": "content",
+    "severity": "low",
+    "problem": "開場前 19 秒是兩句帶出處與日期的長句，還沒有人物。「元請」這個詞也還沒解釋就先出現，觀眾可能第一句就卡住。原畫師的情境要到 0:26 才出現。",
+    "fix": "s01.2、s01.3 改成短句，不帶來源日期，來源留到 s03。例如「九成業者說，委託費在漲。六成說，只看委託費，是赤字。」並把「元請」換成「接案的製作公司」。",
+    "evidence": "日本公平會 2026 年 6 月公布的概要頁載明，元請約九成說，委託費在上升。",
+    "caused_by": "deck"
+   }
+  ],
+  "verdict": "收尾回扣和結構誠實度不錯，但中段 1:01–3:27 的定義與時間軸沒有留人點、s08–s10 的百分比堆疊太多、七類編號對不上，需要先修這三處再上線。"
+ },
+ "draft": "cel1",
+ "round_dir": "/Users/lileon/project/content-farm/.claude/worktrees/cf-cel-run1/output/cel-run1/review/script_structure/round-1"
+}

@@ -13,3 +13,6 @@
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-offwork-skit-build/src/content_farm/production/skit.py","why":"(a) 劇本格式與檢查"}
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-offwork-skit-build/.claude/skills/skit-script/SKILL.md","why":"(a) skill"}
 {"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-offwork-skit-build/src","pattern":"TODO-skit-temp","why":"沒留暫時碼"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-story-calibrate/REPORT-story-calibrate.md","min_bytes":2000,"why":"派工宣告的預期產物"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-story-calibrate/docs/story-calibrate/data/summary.json","why":"校正原始數據"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-story-calibrate/src","pattern":"editor_audio","why":"評審拿掉聲音席次"}

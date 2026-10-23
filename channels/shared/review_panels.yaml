@@ -27,7 +27,7 @@ personas:
       traits: [在客廳電視大螢幕看, 想知道跟台積電、輝達、供應鏈誰受惠的關係, 不要技術細節但要結論清楚, 頻道不給投資建議——評估會不會失望、片中有沒有教他自己去哪查]
     - id: senior
       who: 63 歲退休公務員
-      traits: [用手機看、字幕要大、語速不能快, 喜歡可愛貓角色, 不喜歡英文縮寫和閃太快的畫面, 評估字幕大小、語速、縮寫]
+      traits: [用手機看、字幕要大, 喜歡可愛貓角色, 不喜歡英文縮寫和閃太快的畫面, 評估字幕大小、縮寫]
     - id: teacher          # holdout：只在最後一輪出現，不參與前幾輪修正依據
       holdout: true
       who: 42 歲國中理化老師
@@ -37,15 +37,15 @@ personas:
     - {id: casual, who: 24 歲上班族, traits: [睡前手機滑, 想聽故事不想聽論文, 前 15 秒不有趣就走]}
     - {id: student, who: 17 歲高中生, traits: [只看過動漫裡的妖怪, 喜歡畫面與冷笑話, 古文聽不懂]}
     - {id: scholar, who: 50 歲中文系講師, traits: [會檢查引文與年代, 討厭把傳說講成史實]}
-    - {id: senior, who: 65 歲退休阿嬤, traits: [手機看、字幕要大, 喜歡台灣在地傳說, 語速要慢]}
+    - {id: senior, who: 65 歲退休阿嬤, traits: [手機看、字幕要大, 喜歡台灣在地傳說]}
     - {id: parent, holdout: true, who: 38 歲家長, traits: [陪小孩一起看, 在意會不會太恐怖, 喜歡有知識點]}
   offwork:       # 冷笑話小劇場（Shorts，滑著看；笑點成敗取決於前幾秒的鋪陳有沒有留住人）
     - {id: office_worker, who: 28 歲台北上班族, traits: [下班後在床上滑 Shorts、隨時滑走, 職場梗一聽就懂但看過太多爛梗, 鋪陳超過幾秒還沒進入狀況就走, 笑點如果被預告或被解釋就翻白眼]}
     - {id: engineer, who: 32 歲後端工程師, traits: [懂部署／會議／需求變更這類工程師日常, 對網路上轉了無數次的梗沒反應, 笑點要有一點巧思才算數, 太刻意的諧音梗會直接滑走]}
     - {id: student, who: 20 歲大學生, traits: [Shorts 重度使用者、沒上過班, 需要不靠職場經驗也看得懂的鋪陳, 喜歡節奏快、停頓有張力的短片, 字幕沒跟上就走]}
-    - {id: manager, who: 45 歲科技公司主管, traits: [通勤時用手機看、聲音開著, 喜歡自嘲型的職場幽默, 不喜歡拿同事或公司開刀的內容, 語速太快會漏掉鋪陳]}
+    - {id: manager, who: 45 歲科技公司主管, traits: [通勤時用手機看, 喜歡自嘲型的職場幽默, 不喜歡拿同事或公司開刀的內容, 鋪陳太趕會漏掉]}
     - {id: casual, who: 24 歲剛入職的行政助理, traits: [午休滑手機, 愛轉發給同事的才算好笑, 看完要能一句話轉述給別人, 角色可愛有加分]}
-    - {id: comedy_fan, holdout: true, who: 35 歲愛看脫口秀的觀眾, traits: [在意笑話是不是原創、有沒有搬運常見段子, 笑點被講白或重複就扣分, 停頓時機不對會覺得拖, 討厭靠音效或字幕硬撐的笑點]}
+    - {id: comedy_fan, holdout: true, who: 35 歲愛看脫口秀的觀眾, traits: [在意笑話是不是原創、有沒有搬運常見段子, 笑點被講白或重複就扣分, 停頓時機不對會覺得拖, 討厭靠字幕硬撐的笑點]}
   cel:
     - {id: anime_fan, who: 22 歲動漫迷, traits: [每季追番, 想知道製作內幕, 討厭被說教]}
     - {id: industry, who: 33 歲動畫業界從業者, traits: [懂製作委員會與外包, 數字講錯會糾正]}
@@ -59,8 +59,8 @@ pros:
     title: 專業剪輯
     brief: >-
       你是有十年經驗的 YouTube 知識類長片剪輯師。只看節奏與畫面：換場頻率、靜止畫面、轉場髒不髒、
-      畫面與旁白同步、素材是否貼題、字幕可讀性、BGM／音效位置（依每 10 秒聲音描述判斷）。
-    rubric: [節奏與換場, 畫面與旁白同步, 素材貼題, 字幕與版面, 聲音設計]
+      畫面與旁白同步、素材是否貼題、字幕可讀性（不評聲音）。
+    rubric: [節奏與換場, 畫面與旁白同步, 素材貼題, 字幕與版面]
   director:
     title: 專業導演
     brief: >-
@@ -172,13 +172,6 @@ review:
         是否原創（看起來像常見段子或其他頻道的口頭禪就扣分）、是否符合頻道調性（下班族的冷面幽默、口語、不爆粗、不拿真實公司或個人開刀、
         不用過期流行語如「狂」「絕了」、「欸」不超過一次）、角色只有頻道設定裡的金魚。不要評音效與配樂（後期才加）。
       rubric: [笑點, 鋪陳, 停頓, 時長, 頻道調性]
-    editor_audio:
-      title: 剪輯（聲音）
-      kind: pro
-      brief: >-
-        你是十年經驗的混音與剪輯師，只看聲音（依 audio.txt 的每 10 秒描述與 objective.json）：語速、停頓、念錯、BGM 與人聲比例、
-        ducking、音效位置、死空氣、響度。
-      rubric: [語速與停頓, 念錯, 配樂與人聲比例, 音效位置]
   stages:
     topic:
       gate: topic
@@ -253,7 +246,6 @@ review:
       seats:
         - {role: viewer, count: 5, holdout: 1, model: sonnet, effort: low}
         - {role: editor_visual, count: 1, model: sonnet, effort: low}
-        - {role: editor_audio, count: 1, model: sonnet, effort: low}
         - {role: director, count: 1, model: sonnet, effort: low}
       threshold: {leave_median_pct: 0.35, objective_all_green: true, thumbnail_consistent: true}
     shorts_topic:

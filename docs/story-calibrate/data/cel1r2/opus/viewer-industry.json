@@ -1,0 +1,215 @@
+{
+ "rid": "cel1r2:viewer-industry:opus",
+ "ok": true,
+ "errors": [],
+ "model": "opus",
+ "effort": "low",
+ "models_used": [
+  "claude-opus-5-5"
+ ],
+ "seconds": 38.9,
+ "cost_usd": 0.186,
+ "tokens": {
+  "input": 4,
+  "output": 3350,
+  "cache_read": 17381,
+  "cache_write": 14444
+ },
+ "attempts": 1,
+ "infra": false,
+ "turns": 5,
+ "thinking_tokens": 756,
+ "started_at": "2026-10-23T07:27:16+00:00",
+ "output": {
+  "persona": "33 歲動畫業界從業者，懂製作委員會與外包結構，數字講錯會糾正",
+  "segments": [
+   {
+    "slide_id": "s01",
+    "engagement": 7,
+    "decision": "stay",
+    "why": "九成漲、六成虧並排，業內人一看就想知道口徑"
+   },
+   {
+    "slide_id": "s02",
+    "engagement": 7,
+    "decision": "stay",
+    "why": "完成保證義務的情境很真實"
+   },
+   {
+    "slide_id": "s03",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "定位清楚，43 件情境例、非個案講得對"
+   },
+   {
+    "slide_id": "s04",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "取適法改名、時間軸正確且短"
+   },
+   {
+    "slide_id": "s05",
+    "engagement": 5,
+    "decision": "stay",
+    "why": "三段交易講得對，組長組員比喻對業內人有點幼稚但不擋"
+   },
+   {
+    "slide_id": "s06",
+    "engagement": 5,
+    "decision": "stay",
+    "why": "比喻與白話解釋重複講了兩三次"
+   },
+   {
+    "slide_id": "s07",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "60 日正確"
+   },
+   {
+    "slide_id": "s08",
+    "engagement": 5,
+    "decision": "stay",
+    "why": "含版稅四成是新資訊，承認樣本數不明是誠實的"
+   },
+   {
+    "slide_id": "s09",
+    "engagement": 4,
+    "decision": "stay",
+    "why": "六成、九成第三次重講；下請 75%、作畫負責人 50% 丟上畫面又說不比，像在吊胃口",
+    "confusing": [
+     "為何列下請與作畫負責人數字卻不解釋",
+     "作畫負責人指誰"
+    ]
+   },
+   {
+    "slide_id": "s10",
+    "engagement": 4,
+    "decision": "stay",
+    "why": "結論有價值（口徑不一致、缺重疊資料），但 s10.6 又把同兩個數字念第四遍"
+   },
+   {
+    "slide_id": "s11",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "進清單了，但情境一與 s02.4 幾乎逐字重複"
+   },
+   {
+    "slide_id": "s12",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "延期三個月、DVD 修正很具體",
+    "confusing": [
+     "第三類塞在第二類同一頁的句中，編號難跟"
+    ]
+   },
+   {
+    "slide_id": "s13",
+    "engagement": 7,
+    "decision": "stay",
+    "why": "扣匯款手續費、削減報酬養助手很具體",
+    "confusing": [
+     "這兩條不屬於七類任何一類，算第幾類？"
+    ]
+   },
+   {
+    "slide_id": "s14",
+    "engagement": 7,
+    "decision": "stay",
+    "why": "開工後取消、出資未到位是業內痛點"
+   },
+   {
+    "slide_id": "s15",
+    "engagement": 7,
+    "decision": "stay",
+    "why": "三成沒談的場合，解讀到位"
+   },
+   {
+    "slide_id": "s16",
+    "engagement": 7,
+    "decision": "stay",
+    "why": "串流收益分成與觀看數不公開，切中現況"
+   },
+   {
+    "slide_id": "s17",
+    "engagement": 5,
+    "decision": "stay",
+    "why": "克制，但內容很薄"
+   },
+   {
+    "slide_id": "s18",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "不知道的事列得誠實"
+   },
+   {
+    "slide_id": "s19",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "命名論點成立"
+   },
+   {
+    "slide_id": "s20",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "收在原畫師身上，有收尾感"
+   }
+  ],
+  "left_at_sentence": null,
+  "finish": true,
+  "top_fixes": [
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s10.6",
+      "s09.5",
+      "s09.6",
+      "s08.2"
+     ]
+    },
+    "category": "structure",
+    "severity": "med",
+    "problem": "「元請九成說上升／六成說赤字」在 s01、s08、s09、s10 共講了四遍，3:19–4:30 這段幾乎沒有新資訊，最容易在這裡流失觀眾。",
+    "fix": "刪掉 s10.6；s09.5、s09.6 合併成一句「並排就是開場那兩個數字」；s08.2 改成直接進入新資訊「含版稅也還有約四成赤字」。",
+    "evidence": "元請約九成說委託費上升，元請約六成說只看委託費是赤字；",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s13.1",
+      "s12.3",
+      "s11.1"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "「七類」是研究室自己的分類，但片中沒有說清楚。s13 的兩條（扣匯款手續費、削減報酬養助手）不在七類裡面，第三類又塞在 s12 的句子中間，懂行的人一算就對不上，還會誤以為七類是指針原文的分法。",
+    "fix": "s11.1 改成「指針的 43 個情境例，我們歸納成七類，外加兩條特別具體的」；s12.3 拆成獨立一句「第三類，驗收後修正：」；s13.1 改成「七類之外，還有兩條具體到讓人皺眉，都屬於減額」。",
+    "evidence": "有兩條，具體到讓人皺眉。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s09.7"
+     ]
+    },
+    "category": "content",
+    "severity": "low",
+    "problem": "畫面上放了下請 75%、作畫負責人 50% 兩個數字，卻說不拿來比，也沒講是哪一題、作畫負責人指誰。觀眾會誤把這兩個數字和元請的數字放在一起看。",
+    "fix": "要嘛從畫面和講稿一起刪掉；要嘛改成「下請約 75% 也說上升（題目同上），作畫負責人（自由接案原畫）約 50% 說赤字，回答者不同，只當參考」，並標出原題目。",
+    "evidence": "畫面上另外列的下請 75% 說上升、作畫負責人 50% 說赤字，回答者不同，這裡不混著比。",
+    "caused_by": "deck"
+   }
+  ],
+  "overall": "事實部分大致正確，例如取適法的改名日期和 60 日付款期限，也老實交代了樣本數看不到。清單段（s11–s16）是全片最有料的地方。主要毛病在中段：同兩個數字重講了四遍，拖慢節奏；「七類」的編號和 s13 那兩條對不上，懂行的觀眾會被絆住。改完這兩處，業內人會看完，也會轉傳。"
+ },
+ "draft": "cel1r2",
+ "round_dir": "/Users/lileon/project/content-farm/.claude/worktrees/cf-cel-run1/output/cel-run1/review/script_structure/round-2"
+}

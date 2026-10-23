@@ -107,7 +107,10 @@ def test_delta_checks_stop_after_the_limit(run_dir: Path) -> None:  # noqa: F811
     kwargs = dict(gate="deck_facts", stage_name="script_facts", config=load_review("chipcat"), channel="chipcat",
                   channel_name="晶片貓", locked_deck=run_dir / panel_flow.FACTS_LOCKED_DECK, client=panel)
     statuses = [delta_gate(run_dir, **kwargs).status for _ in range(DELTA_MAX + 1)]
-    assert statuses == ["rework"] * DELTA_MAX + ["exhausted"]
+    assert statuses == ["rework"] * DELTA_MAX + ["pass"]         # Leon 2026-10-23: the last allowed check is waved through
+    stage = kwargs["config"].stages["script_facts"].model_copy(update={"waive_on_last_round": False})
+    strict = kwargs["config"].model_copy(update={"stages": {**kwargs["config"].stages, "script_facts": stage}})
+    assert delta_gate(run_dir, **{**kwargs, "config": strict}).status == "exhausted"
     assert len(list((run_dir / FACTS).glob("round-*-delta-*"))) == DELTA_MAX
 
 

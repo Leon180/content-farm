@@ -115,8 +115,7 @@ COMPLIANCE = _obj(
                                            note=_STR)})
 
 FINAL_VIEWER = _obj(
-    ["persona", "segments", "left_at", "finish", "subscribe", "thumbnail_matches", "pronunciation", "top_fixes",
-     "overall"],
+    ["persona", "segments", "left_at", "finish", "subscribe", "thumbnail_matches", "top_fixes", "overall"],
     persona=_STR, overall=_STR, finish={"type": "boolean"}, subscribe={"type": "boolean"},
     left_at={"type": ["string", "null"]}, thumbnail_matches={"type": "boolean"},
     pronunciation={"type": "array", "items": _STR},

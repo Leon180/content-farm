@@ -1,0 +1,141 @@
+{
+ "rid": "chipcat1:viewer-engineer:sonnet",
+ "ok": true,
+ "errors": [],
+ "model": "sonnet",
+ "effort": "low",
+ "models_used": [
+  "claude-sonnet-5-5"
+ ],
+ "seconds": 26.4,
+ "cost_usd": 0.0859,
+ "tokens": {
+  "input": 4,
+  "output": 2698,
+  "cache_read": 17459,
+  "cache_write": 14288
+ },
+ "attempts": 1,
+ "infra": false,
+ "turns": 5,
+ "thinking_tokens": 542,
+ "started_at": "2026-10-23T07:28:04+00:00",
+ "output": {
+  "persona": "35 歲新竹封裝製程工程師，懂 CoWoS／中介層／HBM，用電腦看，對基礎科普與沒出處的數字很沒耐心",
+  "segments": [
+   {
+    "slide_id": "s01",
+    "engagement": 7,
+    "decision": "stay",
+    "why": "開頭點出數字沒官方背書，切題，我想看他怎麼拆。"
+   },
+   {
+    "slide_id": "s02",
+    "engagement": 7,
+    "decision": "stay",
+    "why": "追到工商時報轉述 wccftech，有出處意識，我喜歡。"
+   },
+   {
+    "slide_id": "s03",
+    "engagement": 5,
+    "decision": "stay",
+    "why": "台積電不評論，資訊量低，但還在鋪陳。"
+   },
+   {
+    "slide_id": "s04",
+    "engagement": 2,
+    "decision": "leave",
+    "why": "跳去講晶圓是餅乾烤盤。我在封裝廠每天碰晶圓，這種解釋是把我當小學生。前面快一分鐘都在講來源，還沒碰到任何成本結構，我就走了。",
+    "confusing": [
+     "餅乾烤盤"
+    ]
+   },
+   {
+    "slide_id": "s05",
+    "engagement": 2,
+    "decision": "leave",
+    "why": "（若還在看）製程節點比喻成手機世代，太淺。"
+   },
+   {
+    "slide_id": "s06",
+    "engagement": 2,
+    "decision": "leave",
+    "why": "EUV 用投影機比喻，太淺，沒有層數、光罩數等實質資訊。"
+   },
+   {
+    "slide_id": "s10",
+    "engagement": 4,
+    "decision": "leave",
+    "why": "兩萬加五成等於三萬，只是二手數字加減，沒有任何製程成本拆解。"
+   },
+   {
+    "slide_id": "s18",
+    "engagement": 2,
+    "decision": "leave",
+    "why": "1987 年台積電成立史與主題無關，而且封測的說法有事實問題。"
+   }
+  ],
+  "left_at_sentence": "s04.2",
+  "finish": false,
+  "top_fixes": [
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s04.2",
+      "s04.3",
+      "s05.1",
+      "s06.1"
+     ]
+    },
+    "category": "content",
+    "severity": "high",
+    "problem": "片頭才花不到一分鐘講傳聞，就用餅乾、手機世代、投影機三個幼兒級比喻解釋晶圓、節點、EUV，連續約 1 分鐘，對懂先進製程與封裝的觀眾是侮辱，會直接離開。同型：s16.2 良率餅乾。",
+    "fix": "刪掉比喻與重複的『定義上』雙層解釋，每個名詞改成一句帶數字的資訊，例如晶圓是 300mm 矽片，EUV 單次曝光對應多少關鍵層。或把名詞整段移到後面且只在需要時帶一句。",
+    "evidence": "晶圓，想像一張超大的圓形餅乾烤盤，上面一次烤出很多顆小餅乾。",
+    "caused_by": "deck",
+    "claim_change": false
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s13.2",
+      "s15.3",
+      "s17.3",
+      "s10.4"
+     ]
+    },
+    "category": "content",
+    "severity": "high",
+    "problem": "答應『買到什麼、墊高什麼』，但全片沒有任何成本結構：EUV 層數、光罩數、製程步驟、良率爬坡、CoWoS 與先進封裝佔比都沒講，只有二手報價加減與一台機器 2.5 億，墊高什麼只靠推測。工程師會覺得沒有實質分析。",
+    "fix": "補一段有出處的成本拆解，例如 2 奈米相對 3 奈米的 EUV 層數與光罩增加、單機折舊攤到每片的粗估並標明假設，並用封裝（CoWoS）成本說明整顆 AI 晶片的占比。不能補就把承諾縮到『誰在傳、傳什麼』。",
+    "evidence": "來源給得出的硬事實只有一個。",
+    "caused_by": "article",
+    "claim_change": true
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s18.4",
+      "s18.3"
+     ]
+    },
+    "category": "fact",
+    "severity": "med",
+    "problem": "說台積電『只做晶片製造、封裝測試』，與事實不符：台積電定位是專業晶圓代工，封測主要由日月光等業者做（台積電近年才自建 CoWoS 先進封裝）。懂封裝的人會留言糾正。且 1987 年資本額與主題無關。",
+    "fix": "改成『只做晶圓製造，不做自家設計』並刪除 s18.3 的資本額；或整段刪掉，改接 2 奈米產地。",
+    "evidence": "當時張忠謀選擇只做晶片製造、封裝測試，不像英特爾設計製造一手包辦。",
+    "caused_by": "article",
+    "claim_change": false
+   }
+  ],
+  "overall": "開頭追數字出處這點我喜歡，但很快用餅乾比喻講基礎名詞，我在 0:56 左右就走了。後面即使看完，也只是二手報價拼貼，沒有製程成本分析，封裝也被錯誤描述，我會留言糾正。"
+ },
+ "draft": "chipcat1",
+ "round_dir": "/Users/lileon/project/content-farm/.claude/worktrees/cf-chipcat-run1/output/chipcat-run1/review/script_structure/round-1"
+}

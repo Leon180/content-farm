@@ -52,8 +52,10 @@ def _load(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def enforce(card: dict[str, Any] | None, config: ReviewConfig, stage_name: str, current_inputs: str) -> list[str]:
-    """Why this scorecard may NOT open the gate ([] = it may)."""
+def enforce(card: dict[str, Any] | None, config: ReviewConfig, stage_name: str, current_inputs: str, *,
+            waived: bool = False) -> list[str]:
+    """Why this scorecard may NOT open the gate ([] = it may). ``waived``: the last round failed on its thresholds and
+    is waved through (``Stage.waive_on_last_round``); a missing or invalid seat still blocks."""
     if card is None:
         return ["no scorecard"]
     problems = []
@@ -86,7 +88,7 @@ def enforce(card: dict[str, Any] | None, config: ReviewConfig, stage_name: str, 
             problems.append(f"{seat['rid']}: no valid output")
         if stage.arbiter and seat.get("models_used") and not model_matches(stage.arbiter.model, tuple(seat["models_used"])):
             problems.append(f"{seat['rid']}: answered by {seat['models_used']}, not {stage.arbiter.model}")
-    if not (card.get("verdict") or {}).get("pass"):
+    if not waived and not (card.get("verdict") or {}).get("pass"):
         problems.append("verdict: " + "；".join((card.get("verdict") or {}).get("reasons", [])))
     return problems
 
@@ -178,8 +180,12 @@ def _ai_image_ids(run_dir: Path, issues: list[dict[str, Any]]) -> list[str]:
     return sorted(flagged & generated)
 
 
-def _after_pass(run_dir: Path, stage_name: str, card: dict[str, Any]) -> None:
+def _after_pass(run_dir: Path, stage_name: str, card: dict[str, Any], *, waived: bool = False) -> None:
     verdict = card["verdict"]
+    if waived and stage_name in ("topic", "shorts_topic") and not verdict.get("chosen"):
+        ranking = verdict["scores"].get("ranking") or []
+        need = 3 if stage_name == "shorts_topic" else 1
+        verdict = {**verdict, "chosen": [r["id"] for r in ranking if not r.get("vetoed")][:need]}   # best that was not vetoed
     if stage_name in ("topic", "shorts_topic"):
         data = _load(run_dir / "topics" / "candidates.json")
         candidates = {c["id"]: c for c in (data["candidates"] if isinstance(data, dict) else data)}
@@ -251,6 +257,33 @@ def reuse_enabled() -> bool:
     return os.environ.get("CF_REVIEW_REUSE", "1").strip() != "0"
 
 
+def _waive(run_dir: Path, gate: str, stage_name: str, config: ReviewConfig, card: dict[str, Any], current: str,
+           card_path: Path, why: str) -> GateResult | None:
+    """Leon 2026-10-23: the last allowed round does not stop the run. The failed verdict is recorded as a waiver
+    (decision file, message, scorecard stays as judged); invalid seats still block. None = cannot be waived
+    (a topic stage with no usable candidate)."""
+    problems = enforce(card, config, stage_name, card.get("inputs", current), waived=True)
+    if problems:
+        return GateResult("blocked", f"{stage_name}: 評分卡不符規則：{'；'.join(problems)}", card_path)
+    reasons = list(card["verdict"].get("reasons", []))
+    if not card["verdict"]["pass"] and not _waivable_topic(card, stage_name):
+        return None
+    _after_pass(run_dir, stage_name, card, waived=True)
+    data = write_decision(run_dir, gate, stage_name, card_path, card, current)
+    data["waived"] = {"why": why, "reasons": reasons, "round": card["round"]}
+    path = run_dir / "review" / f"{gate}.decision.json"
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
+    return GateResult("pass", f"{stage_name} 第 {card['round']} 輪放行（{why}；未過項目：{'；'.join(reasons)[:300]}）",
+                      card_path, scores=card["verdict"]["scores"])
+
+
+def _waivable_topic(card: dict[str, Any], stage_name: str) -> bool:
+    if stage_name not in ("topic", "shorts_topic"):
+        return True
+    ranking = card["verdict"].get("scores", {}).get("ranking") or []
+    return any(not r.get("vetoed") for r in ranking)
+
+
 def panel_gate(run_dir: Path, *, gate: str, stage_name: str, config: ReviewConfig, channel: str,
                channel_name: str, client: Callable[[Call], CallResult] | None = None,
                competitors: Path | None = None, vertical: bool = False,
@@ -261,6 +294,11 @@ def panel_gate(run_dir: Path, *, gate: str, stage_name: str, config: ReviewConfi
     last = _load(done[-1] / "scorecard.json") if done else None
     if last is None or last.get("inputs") != current:
         number = (last["round"] + 1) if last else 1
+        if number > stage.max_rounds and last is not None and stage.waive_on_last_round:
+            waiver = _waive(run_dir, gate, stage_name, config, last, current, done[-1] / "scorecard.json",
+                            f"第 {last['round']} 輪後內容又變動，不再開新輪")
+            if waiver is not None:
+                return waiver
         if number > stage.max_rounds:
             return GateResult("exhausted", f"{stage_name}: {stage.max_rounds} 輪用完仍未通過："
                               + "；".join(last["verdict"]["reasons"]) if last else "", done[-1] / "scorecard.json")
@@ -277,6 +315,10 @@ def panel_gate(run_dir: Path, *, gate: str, stage_name: str, config: ReviewConfi
     card_path = stage_dir(run_dir, stage_name) / last["label"] / "scorecard.json"
     if not last["verdict"]["pass"]:
         reasons = "；".join(last["verdict"]["reasons"])
+        if last["round"] >= stage.max_rounds and stage.waive_on_last_round:
+            waiver = _waive(run_dir, gate, stage_name, config, last, current, card_path, "最後一輪未通過")
+            if waiver is not None:
+                return waiver
         if last["round"] >= stage.max_rounds:
             return GateResult("exhausted", f"{stage_name}: 第 {last['round']} 輪（最後一輪）未通過：{reasons}", card_path,
                               scores=last["verdict"]["scores"])

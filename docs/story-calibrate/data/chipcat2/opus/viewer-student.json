@@ -1,0 +1,136 @@
+{
+ "rid": "chipcat2:viewer-student:opus",
+ "ok": true,
+ "errors": [],
+ "model": "opus",
+ "effort": "low",
+ "models_used": [
+  "claude-opus-5-5"
+ ],
+ "seconds": 24.0,
+ "cost_usd": 0.1616,
+ "tokens": {
+  "input": 4,
+  "output": 2189,
+  "cache_read": 17432,
+  "cache_write": 14285
+ },
+ "attempts": 1,
+ "infra": false,
+ "turns": 5,
+ "thinking_tokens": 211,
+ "started_at": "2026-10-23T07:24:39+00:00",
+ "output": {
+  "persona": "19 歲大一文組學生，用平板看；常聽說台積電但完全不懂半導體；喜歡梗、八卦、好笑畫面；名詞一多又沒比喻就跟不上",
+  "segments": [
+   {
+    "slide_id": "s01",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "IBM 吹 0.7 奈米、內文又說不是尺寸，「先賣再附說明書」這句有梗。不過開頭「卡住的是一把尺」聽不懂在講什麼。",
+    "confusing": [
+     "卡住的是一把尺",
+     "節點",
+     "sub-1 nm"
+    ]
+   },
+   {
+    "slide_id": "s02",
+    "engagement": 5,
+    "decision": "stay",
+    "why": "論點有講清楚，但「埃米」「間距」「密度」一下子全部丟出來。",
+    "confusing": [
+     "埃米",
+     "電晶體",
+     "製造技術的世代",
+     "間距與密度"
+    ]
+   },
+   {
+    "slide_id": "s03",
+    "engagement": 7,
+    "decision": "stay",
+    "why": "衣服尺碼的比方我秒懂，這段最友善。",
+    "confusing": [
+     "晶圓廠"
+    ]
+   },
+   {
+    "slide_id": "s04",
+    "engagement": 3,
+    "decision": "stay",
+    "why": "閘極長度、金屬半間距沒有任何比喻就連續出現，後面還接一串年代和數字，我開始放空。",
+    "confusing": [
+     "閘極長度",
+     "金屬半間距",
+     "關鍵特徵"
+    ]
+   },
+   {
+    "slide_id": "s05",
+    "engagement": 2,
+    "decision": "leave",
+    "why": "「22 奈米 FinFET、閘極 26、金屬半間距 40」一句塞了三個數字和兩個看不懂的詞，我滑走了。停車場的比喻要到 s07 才出現，太晚了。",
+    "confusing": [
+     "FinFET",
+     "閘極長度",
+     "金屬半間距"
+    ]
+   }
+  ],
+  "left_at_sentence": "s05.2",
+  "finish": false,
+  "top_fixes": [
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s05.2",
+      "s04.2",
+      "s04.3"
+     ]
+    },
+    "category": "structure",
+    "severity": "high",
+    "problem": "閘極長度和金屬半間距在 s04–s05 連用好幾次，卻沒有任何解釋。直到 s07 才用停車場比喻說明，文組觀眾在中間就斷線了。",
+    "fix": "把 s07 的停車場比喻（停車格中線距離＝閘極間距、走道距離＝金屬間距）移到 s04.2 之前。s04.2 改成：「早年，停車格寬度和走道寬度差不多，兩者就定義了節點數字。」後面的數字一律回扣「停車格」「走道」。",
+    "evidence": "IEEE Spectrum 舉例，Intel 的 22 奈米 FinFET 製程，閘極長度是 26 奈米，金屬半間距是 40 奈米，兩個都不是 22。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s05.2"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "一句裡塞進 FinFET 這個沒解釋的術語，還有三個數字（22、26、40）。在平板上聽一次記不住，重點「名字比實際還小」被淹沒了。",
+    "fix": "刪掉「FinFET」。改寫成兩句：「Intel 叫它 22 奈米。實際量下去，停車格是 26、走道一半是 40，沒有一個是 22。」畫面上放三個數字並排對照。",
+    "evidence": "Intel 的 22 奈米 FinFET 製程",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s01.1"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "開場第一句「卡住的是一把尺」沒有上下文，聽不出誰被卡住、哪來的尺。我第一秒就困惑，鉤子不成立。",
+    "fix": "改成：「0.7 奈米，比病毒還小？IBM 自己都說，這數字不是真的尺寸。」先丟反差，再介紹晶片貓。",
+    "evidence": "卡住的是一把尺。",
+    "caused_by": "deck"
+   }
+  ],
+  "overall": "衣服尺碼和停車場的比喻都很好，但停車場比喻放得太晚。s04–s05 出現大量術語和數字，我在 s05.2 離開。把停車場比喻挪到 s04 之前，就能撐到後半段的八卦（Intel 改名、馬斯克回應、三星 4 奈米其實沒差）。後半段其實是我最想看的。"
+ },
+ "draft": "chipcat2",
+ "round_dir": "/Users/lileon/project/content-farm/.claude/worktrees/cf-chipcat-run2/output/chipcat-run2/review/script_structure/round-1"
+}

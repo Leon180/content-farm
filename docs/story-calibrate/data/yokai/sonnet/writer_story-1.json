@@ -1,0 +1,214 @@
+{
+ "rid": "yokai:writer_story-1:sonnet",
+ "ok": true,
+ "errors": [],
+ "model": "sonnet",
+ "effort": "low",
+ "models_used": [
+  "claude-sonnet-5-5"
+ ],
+ "seconds": 29.8,
+ "cost_usd": 0.0969,
+ "tokens": {
+  "input": 4,
+  "output": 3142,
+  "cache_read": 16805,
+  "cache_write": 15956
+ },
+ "attempts": 1,
+ "infra": false,
+ "turns": 5,
+ "thinking_tokens": 0,
+ "started_at": "2026-10-23T07:22:53+00:00",
+ "output": {
+  "role": "科普節目編劇（故事結構）",
+  "score": 7,
+  "rubric": {
+   "十五秒鉤子": 6,
+   "留人點密度": 7,
+   "國高中比喻": 8,
+   "八卦與冷笑話節拍": 8,
+   "收尾回扣": 7
+  },
+  "issues": [
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s01.7",
+      "s01.18",
+      "s02.19"
+     ]
+    },
+    "category": "structure",
+    "severity": "high",
+    "problem": "開場 15 秒內鉤子被打斷：剛丟出「牠是怎麼一路變成妲己的？」，下一句馬上又講漢代吉兆，接著才跳到新聞，三個方向互相稀釋。吉兆的揭曉也被提前燒掉，第二站就沒有反轉可看。",
+    "fix": "s01.18 的漢代吉兆移出開場，留到第二站再揭曉。開場順序改成：妲己印象 → 原典會吃人 → 問題 → 殺生石新聞，承諾在 0:35 前講完。",
+    "evidence": "牠是怎麼一路變成妲己的？",
+    "claim_change": false,
+    "affected_slides": [
+     "s01",
+     "s02"
+    ],
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s03.6",
+      "s04.1",
+      "s04.18"
+     ]
+    },
+    "category": "structure",
+    "severity": "med",
+    "problem": "從 0:35 到 0:54 是預告、站名、成書年代的資訊堆疊，沒有留人點。第一站的書史細節在觀眾還不在乎這隻狐狸時就給了。",
+    "fix": "把 s04.18 的成書年代縮成半句，或移到 s04.29 之後。s04.1 直接接怪獸畫面，用「這隻狐狸一開場就不太友善」之類的鉤子帶入。",
+    "evidence": "這本書最早的部分，可以追溯到西元前四世紀，到漢代初年才定型成現在的樣子。",
+    "claim_change": false,
+    "affected_slides": [
+     "s04"
+    ],
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s11.22",
+      "s11.25",
+      "s11a.10",
+      "s11a.11"
+     ]
+    },
+    "category": "structure",
+    "severity": "med",
+    "problem": "2:50 到 3:23 連續是學術性交代（郭璞兩說、先後排不出來、墓頂壁畫轉引維基），留人點稀薄，節奏掉下來。「我們的看法」的說法也生硬。",
+    "fix": "濃縮成一個反差句，例如「同一個人的筆下，這隻狐狸既能吃，又是祥瑞」。墓頂壁畫改成一句畫面描述，維基出處放字幕。",
+    "evidence": "我們的看法是：漢代哪一版先、哪一版後，排不出來；",
+    "claim_change": false,
+    "affected_slides": [
+     "s11",
+     "s11a"
+    ],
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s14.25",
+      "s14.35",
+      "s14.27"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "「那狐狸是從什麼時候開始被當成壞人的？」問完後，答案是「二手整理、還沒查到」。承諾的揭曉落空，3:23 到 5:14 的第三站結尾變成洩氣。s14.25 還是口述畫面（「畫面上分成…」），沒有資訊量。",
+    "fix": "把「查不到」包成有懸念的說法，例如「這個轉折點，史料沒留下日期，但留下了兩個線索」，再接祭祀與驅狐符咒。刪掉 s14.25 的旁白式描述。",
+    "evidence": "唐宋之間確切哪一年轉壞，我們還沒查到。",
+    "claim_change": false,
+    "affected_slides": [
+     "s14"
+    ],
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s17a.1",
+      "s17a.16",
+      "s17a.18",
+      "s17a.11"
+     ]
+    },
+    "category": "structure",
+    "severity": "med",
+    "problem": "7:00 到 7:25 回頭比對兩張圖（圖鑑 vs 妖狐），畫面描述多，沒有新故事，在加速進日本之前拖慢節奏。年代與題字細節堆在一起，觀眾也記不住。",
+    "fix": "縮成兩句：「同一隻狐狸，十八世紀初在圖鑑裡是異獸，一個世紀後題字就成了妖狐」，並結束在 s17a.11。",
+    "evidence": "再看一次開場那張北齋一派的素描，十八到十九世紀，題字直接叫牠白面金毛九尾之妖狐，已經是妖狐了。",
+    "claim_change": false,
+    "affected_slides": [
+     "s17a"
+    ],
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s21a.13",
+      "s21a.11",
+      "s21a.12"
+     ]
+    },
+    "category": "structure",
+    "severity": "low",
+    "problem": "歌川國芳這一段用畫面題簽反推「班足王就是斑足太子」，是推理過程，不是故事，觀眾聽到會迷失。s21.7 才講的履歷，在這裡先被拆開了。",
+    "fix": "先講 s21.7 到 s21.9 的完整履歷，再用國芳畫作當佐證，一句帶過；推理那句改成字幕。",
+    "evidence": "對照華陽夫人這個名字，我們判斷，班足王就是三國妖婦傳裡的斑足太子。",
+    "claim_change": false,
+    "affected_slides": [
+     "s21a",
+     "s21"
+    ],
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s23.10",
+      "s26.5",
+      "s23.12"
+     ]
+    },
+    "category": "structure",
+    "severity": "low",
+    "problem": "回扣開場的揭曉過於平：「現在你知道，網友預言裡那隻妖狐是誰了」像結案報告。s23.12 的觀光協會稱瑞獸，正好呼應漢代吉兆，卻只被當成宣傳用語帶過，錯過了最漂亮的首尾呼應。",
+    "fix": "在 s23.12 後補一句：「同一塊石頭，網友說妖狐，觀光協會說瑞獸，兩千年前的兩張臉又同時出現了」，再接 s23.10。",
+    "evidence": "那須町觀光協會倒是發新聞稿，把九尾狐稱作復活的瑞獸，這是觀光宣傳的用語，新聞稿沒有引任何古書。",
+    "claim_change": false,
+    "affected_slides": [
+     "s23",
+     "s25"
+    ],
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s26b.4",
+      "s26b.5",
+      "s25.12"
+     ]
+    },
+    "category": "structure",
+    "severity": "low",
+    "problem": "結論一開頭先列未查到與推測清單，情感收束被延後，也削弱了「鏡子」的收尾力道。「溯源所的解讀」的語氣偏報告。",
+    "fix": "把未查到清單挪到 s25 之前，或放在最後一句預告之前。以 s25.11 的「變的是人用什麼眼光看牠」作為結論高潮，緊接 s26.5。",
+    "evidence": "這集有兩處還沒查到：武王伐紂平話的原文，和狐狸在唐宋之間轉壞的確切年份。",
+    "claim_change": false,
+    "affected_slides": [
+     "s26b",
+     "s25"
+    ],
+    "caused_by": "deck"
+   }
+  ],
+  "verdict": "結構完整，比喻（老師蓋優、輕小說、能劇）與冷笑話（保健食品說明書、催婚親戚、經紀人、簽證）節拍自然，也有標出處。主要弱點是開場鉤子被稀釋、第三站與圖像比對段的資訊密度過高，以及結尾沒有把觀光協會的「瑞獸」用成漂亮的首尾呼應。修掉開場順序和幾段學術堆疊後可上線。"
+ },
+ "draft": "yokai",
+ "round_dir": "/Users/lileon/project/content-farm/.claude/worktrees/cf-cost-accept/output/yokai-kyubi-v2/review/script_structure/round-1"
+}

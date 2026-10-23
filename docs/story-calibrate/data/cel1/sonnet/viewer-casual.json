@@ -1,0 +1,65 @@
+{
+ "rid": "cel1:viewer-casual:sonnet",
+ "ok": true,
+ "errors": [],
+ "model": "sonnet",
+ "effort": "low",
+ "models_used": [
+  "claude-sonnet-5-5"
+ ],
+ "seconds": 16.3,
+ "cost_usd": 0.0745,
+ "tokens": {
+  "input": 4,
+  "output": 1512,
+  "cache_read": 17383,
+  "cache_write": 14409
+ },
+ "attempts": 1,
+ "infra": false,
+ "turns": 5,
+ "thinking_tokens": 315,
+ "started_at": "2026-10-23T07:23:21+00:00",
+ "output": {
+  "persona": "27 歲上班族，前 15 秒不有趣就走",
+  "segments": [
+   {
+    "slide_id": "s01",
+    "engagement": 3,
+    "decision": "leave",
+    "why": "前 12 秒全是「公平會概要頁載明、元請約九成說」這種公文句，「元請」沒人解釋，數字也沒有畫面可想像。真正的鉤子「價格在漲，帳卻是虧的」拖到 0:19 才出現，我在 0:12 之前就已經滑走。原畫師重畫的故事要等到 0:26，太晚。",
+    "confusing": [
+     "元請",
+     "概要頁",
+     "委託費與營業損益的關係"
+    ]
+   }
+  ],
+  "left_at_sentence": "s01.3",
+  "finish": false,
+  "top_fixes": [
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s01.3",
+      "s01.2",
+      "s01.1",
+      "s01.4"
+     ]
+    },
+    "category": "structure",
+    "severity": "high",
+    "problem": "開場前 15 秒是公文式的雙句並排，帶著未解釋的行話「元請」和長篇出處說明（概要頁、2026 年 6 月），沒有人物也沒有衝突。鉤子「價格在漲，帳卻是虧的」排在 0:19，已經超過 15 秒。",
+    "fix": "把 s02 的原畫師情境（交稿、被要求重畫、問重畫費卻被回「完成保證義務」）搬到開頭，用 10 秒內講完。緊接著丟出「價格在漲，帳卻是虧的」。出處（公平會、2026 年 6 月）和「約九成、約六成」的數字留到 s08 再細講。開場出現「元請」時就換成「接案公司」，或加一句「發包的那一層公司」。",
+    "evidence": "左邊：日本公平會 2026 年 6 月公布的概要頁載明，元請約九成說，委託費在上升。",
+    "caused_by": "deck",
+    "claim_change": false
+   }
+  ],
+  "overall": "開場像在唸公文，我撐不到原畫師的故事就走了。內容本身（七類做法、老實交代未知）很扎實，但前 15 秒沒有人、沒有衝突，只有行話和出處。把重畫情境和「價格在漲、帳卻是虧」提前到最前面，開頭才留得住人。"
+ },
+ "draft": "cel1",
+ "round_dir": "/Users/lileon/project/content-farm/.claude/worktrees/cf-cel-run1/output/cel-run1/review/script_structure/round-1"
+}

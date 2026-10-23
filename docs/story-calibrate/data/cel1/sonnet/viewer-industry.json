@@ -1,0 +1,214 @@
+{
+ "rid": "cel1:viewer-industry:sonnet",
+ "ok": true,
+ "errors": [],
+ "model": "sonnet",
+ "effort": "low",
+ "models_used": [
+  "claude-sonnet-5-5"
+ ],
+ "seconds": 28.0,
+ "cost_usd": 0.0878,
+ "tokens": {
+  "input": 4,
+  "output": 2833,
+  "cache_read": 17412,
+  "cache_write": 14438
+ },
+ "attempts": 1,
+ "infra": false,
+ "turns": 5,
+ "thinking_tokens": 359,
+ "started_at": "2026-10-23T07:23:23+00:00",
+ "output": {
+  "persona": "33 歲動畫業界從業者，懂製作委員會與外包，數字講錯會糾正",
+  "segments": [
+   {
+    "slide_id": "s01",
+    "engagement": 7,
+    "decision": "stay",
+    "why": "赤字與漲價並列的開場抓得到我，這個矛盾我在業界確實聽過。"
+   },
+   {
+    "slide_id": "s02",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "重畫不付錢是我熟的痛點，但冷笑話很尬，預告也還沒給出什麼新東西。"
+   },
+   {
+    "slide_id": "s03",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "43 件、聯名公布，資訊還算紮實。"
+   },
+   {
+    "slide_id": "s04",
+    "engagement": 5,
+    "decision": "stay",
+    "why": "時間軸平淡，但短，可忍。"
+   },
+   {
+    "slide_id": "s05",
+    "engagement": 2,
+    "decision": "leave",
+    "why": "拿班上分組作業講製作委員會和元請下請，對業界人是在教我 ABC，直接跳走。",
+    "confusing": [
+     "製作委員會，像班上分組作業的出資者聯合會"
+    ]
+   },
+   {
+    "slide_id": "s06",
+    "engagement": 2,
+    "decision": "leave",
+    "why": "又是組長組員比喻，重複解釋。"
+   },
+   {
+    "slide_id": "s07",
+    "engagement": 3,
+    "decision": "leave",
+    "why": "法條改名與付款期限，後面沒真正用到。"
+   },
+   {
+    "slide_id": "s08",
+    "engagement": 5,
+    "decision": "stay",
+    "why": "回到主題，但承認沒有樣本數，說服力下降。"
+   },
+   {
+    "slide_id": "s09",
+    "engagement": 5,
+    "decision": "stay",
+    "why": "數字多且不同口徑混著用，我會挑錯。",
+    "confusing": [
+     "九成與七成、六成與五成的口徑"
+    ]
+   },
+   {
+    "slide_id": "s10",
+    "engagement": 4,
+    "decision": "stay",
+    "why": "結論是『證明不了』，答應的事沒交付。"
+   },
+   {
+    "slide_id": "s11",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "清單內容實在。"
+   },
+   {
+    "slide_id": "s12",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "延期加工不加錢是真的常見。"
+   },
+   {
+    "slide_id": "s13",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "手續費扣款這種細節有料。"
+   },
+   {
+    "slide_id": "s14",
+    "engagement": 5,
+    "decision": "stay",
+    "why": "還行。"
+   },
+   {
+    "slide_id": "s15",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "沒談比談不成多，這點有意思。"
+   },
+   {
+    "slide_id": "s16",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "串流分成議題有關。"
+   },
+   {
+    "slide_id": "s17",
+    "engagement": 4,
+    "decision": "stay",
+    "why": "台灣段只說沒資料，等於空。"
+   },
+   {
+    "slide_id": "s18",
+    "engagement": 5,
+    "decision": "stay",
+    "why": "誠實但偏長。"
+   },
+   {
+    "slide_id": "s19",
+    "engagement": 5,
+    "decision": "stay",
+    "why": "命名的論點可以，但沒證據。"
+   },
+   {
+    "slide_id": "s20",
+    "engagement": 5,
+    "decision": "stay",
+    "why": "收尾呼應開場。"
+   }
+  ],
+  "left_at_sentence": "s05.2",
+  "finish": false,
+  "top_fixes": [
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s05.2",
+      "s05.3",
+      "s05.4",
+      "s06.2"
+     ]
+    },
+    "category": "structure",
+    "severity": "high",
+    "problem": "在 2 分鐘後用分組作業比喻向觀眾解釋製作委員會、元請、下請、優越地位；同型：s06.3、s06.4、s06.6、s07.1–s07.3 的詞彙課。目標觀眾是懂產業的人，這段會直接流失，且 60 日期限後面沒用上。",
+    "fix": "刪掉比喻與術語課，只留一句『三段交易：委員會對元請、元請對下請、製作公司對自由工作者』，取適法 60 日若不在付款情境出現就刪，直接進入帳為什麼對不上。",
+    "evidence": "製作委員會，像班上分組作業的出資者聯合會，幾家公司一起出錢，一起持有作品的權利",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s09.2",
+      "s01.2",
+      "s10.2",
+      "s09.3"
+     ]
+    },
+    "category": "fact",
+    "severity": "med",
+    "problem": "同一頁數字口徑混亂：開場『九成元請說委託費上升』，s09 卻是『元請約七成說委託費多半談得成，下請 75% 說上升』，赤字則一處『約六成元請』、一處『作畫負責人 50%』，沒標明誰是誰，懂行的人會糾正。",
+    "fix": "並排表格明確標出每個數字的回答對象（元請／下請／作畫負責人／自由工作者）與題目，九成與 75% 分開標註，不要混成同一組對照。",
+    "evidence": "好看的一邊：元請約七成說委託費多半談得成，下請有 75% 說委託費上升。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s10.4",
+      "s10.3",
+      "s17.2"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "承諾要解釋『為什麼漲價同時虧損』，結果自承證明不了；台灣段也只說沒資料。觀眾得到的是一個沒交付的承諾。",
+    "fix": "把片頭承諾改成『這份概要頁能證明什麼、不能證明什麼』，或補上業界已知的成本結構（如外包單價與工時）作為明標為推測的解釋；台灣段縮成一句或刪除。",
+    "evidence": "要證明這筆帳到底怎麼虧，這份概要頁還不夠。",
+    "caused_by": "deck"
+   }
+  ],
+  "overall": "開場的矛盾有勾住我，但 2 分鐘後的比喻式名詞解釋對業界人是侮辱，我會在 s05.2 離開。清單本身有料，但數字口徑混亂，核心問題最後也沒答案。"
+ },
+ "draft": "cel1",
+ "round_dir": "/Users/lileon/project/content-farm/.claude/worktrees/cf-cel-run1/output/cel-run1/review/script_structure/round-1"
+}

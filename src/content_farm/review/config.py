@@ -39,7 +39,7 @@ REQUIRED_ROLES: dict[str, dict[str, int]] = {
     "script_facts": {"fact_checker": 2},
     "title_thumb": {"viewer": 5, "designer": 1, "producer": 1},
     "media": {"compliance": 1},
-    "final": {"viewer": 5, "editor_visual": 1, "editor_audio": 1, "director": 1},
+    "final": {"viewer": 5, "editor_visual": 1, "director": 1},   # no sound seat (Leon 2026-10-23)
     "shorts_topic": {"viewer": 3},
     "shorts_script": {"viewer": 3, "writer_story": 1},
     "shorts_title": {"viewer": 3},
@@ -154,6 +154,9 @@ class Stage(_Strict):
     arbiter: Tier | None = None                  # third fact-checker for disagreements (ARBITRATED_STAGES)
     rework: str                                 # step a failed round goes back to by default
     max_rounds: int = Field(ge=1, le=5)
+    # Leon 2026-10-23: at most 3 rounds per gate; a failed last round is waved through (recorded as a waiver, listed
+    # in the scorecard and the production log) instead of stopping the run. ``false`` restores the old stop.
+    waive_on_last_round: bool = True
     seats: tuple[Seat, ...]
     threshold: Threshold = Threshold()
 

@@ -1,0 +1,159 @@
+{
+ "rid": "chipcat2:writer_density-1:sonnet",
+ "ok": true,
+ "errors": [],
+ "model": "sonnet",
+ "effort": "low",
+ "models_used": [
+  "claude-sonnet-5-5"
+ ],
+ "seconds": 35.0,
+ "cost_usd": 0.0973,
+ "tokens": {
+  "input": 4,
+  "output": 3874,
+  "cache_read": 17036,
+  "cache_write": 14215
+ },
+ "attempts": 1,
+ "infra": false,
+ "turns": 5,
+ "thinking_tokens": 737,
+ "started_at": "2026-10-23T07:24:49+00:00",
+ "output": {
+  "role": "科普節目編劇（資訊密度）",
+  "score": 6,
+  "rubric": {
+   "內容撐得起片長": 6,
+   "無灌水重講": 5,
+   "數字密度與單位": 6,
+   "名詞密度": 6,
+   "論點推進": 7
+  },
+  "issues": [
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s18.3",
+      "s19.2",
+      "s19.4",
+      "s20.1"
+     ]
+    },
+    "category": "content",
+    "severity": "high",
+    "problem": "結尾把前面已講過的內容再講一遍：間距沒給、效能預估、比的是自家 2 奈米（s14）、密度近兩倍（s11）、5 年量產路徑（s14.3）、「0.7 是型號不是尺寸」（s18.2、s02.4）。結論段約 1 分鐘幾乎沒有新資訊，觀眾已聽過三次。同型：s10.2、s10.4 重複 s02.4 的論點。",
+    "fix": "刪掉 s18.3 的逐項複述，並把 s19.2–s19.4 縮成一句帶過。s20.1 改成只留一句收束。省下的時間留給 s19.1 的三問，用一個其他廠商的新聞標題做示範。",
+    "evidence": "還有幾件事沒有答案：間距數字沒給，效能是預估，而且比的是 IBM 自己的 2 奈米。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s15.4",
+      "s15.6",
+      "s15.3"
+     ]
+    },
+    "category": "fact",
+    "severity": "high",
+    "problem": "TOPS 數字缺基準：9000 與 1500 沒有說明精度（INT8 或 FP16）或功耗條件，也沒說「現今熱門 AI 加速器」是哪一款。這樣的對照容易被當成 6 倍的實力差。「3 個月縮到數週」也沒有基準。s15.6 的玩笑「不用付電費」沒有資訊量，還削弱了「這是假設」的警告。",
+    "fix": "補上報導給的精度與比較對象。若報導沒給，就明講「報導沒說明精度與比較對象，所以這兩個數字不能直接相除」。刪掉電費玩笑，改成「假設情境，沒有實測資料」。",
+    "evidence": "Network World 轉述的答案是約 9000，對照現今熱門的 AI 加速器約 1500。",
+    "caused_by": "article"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s14.2",
+      "s11.2"
+     ]
+    },
+    "category": "fact",
+    "severity": "med",
+    "problem": "數字的單位與基準不清。s14.2「最多多 50%」有誤字，70% 的能源效率沒說是什麼條件下、比什麼。s11.2「近 1000 億顆」只給「指甲大小」，沒有面積，無法換算成密度，卻在 s19.2 被當成「密度有交代」。這與 s14.4「沒有間距數字」互相矛盾，也讓三問的示範不成立。",
+    "fix": "改成「效能最多提升 50%、同效能下耗電最多降 70%，基準是 IBM 自家 2 奈米」，只有稿件出處有寫才這樣說，否則照原文限定。s19.2 改成「只有電晶體總數與相對倍數，沒有每平方毫米的密度」。",
+    "evidence": "新聞稿稱效能最多多 50%，或能源效率最多高 70%，而且這是預估",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s18.4",
+      "s18.5"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "40% SRAM 微縮在全片第一次出現就放在結論，前面沒有鋪陳，也沒有基準，不知道是比什麼縮 40%。接著又說「最大的未知」，但沒解釋為什麼它比別的未知更重要，觀眾只會困惑。",
+    "fix": "把 SRAM 40% 移到 s14 的限定詞段落，補上「相對哪一代、哪一種單元」。結論只列在 s14 已出現過的未知。或者乾脆刪掉。",
+    "evidence": "報導提到 40% 的 SRAM 微縮是研究成果，沒有說已進入產品。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s13.2",
+      "s13.4",
+      "s12.2",
+      "s17.2"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "名詞堆疊，卻與承諾（世代名、改看密度間距量產）關係薄弱。s13 一口氣丟 Lam Research、Tokyo Electron、SCREEN、ASML、高數值孔徑 EUV、奧爾巴尼；s12 馬斯克的一句意見只是插曲；s17.2 的 4LPX／5LPE 沒解釋。這些是灌長度的名單，觀眾記不住也用不上。",
+    "fix": "s13 縮成一句「設備商是共同開發者、不是量產客戶」並刪掉廠商名單。s12 刪除或併入一句話。s17.2 改成「分析後發現兩者沒有差別」，不留三星型號代號。",
+    "evidence": "IBM 的新聞稿列出，Lam Research、Tokyo Electron、SCREEN 在開發高數值孔徑 EUV 的製程與工具。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s07.4",
+      "s08.2",
+      "s09.2",
+      "s06.2"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "名詞密度在中段過高。s07 到 s09 在約 1 分鐘內連續引入閘極間距、金屬間距、半間距、層數、GMT、G48M36T1、LMC、IRDS、Gargini、Berkeley。停車場比喻一次對應三個量，還要再換算金屬半間距。s06.2 也同時塞兩組 Intel 舊新節點名稱。",
+    "fix": "s07 只講閘極間距與金屬間距兩個量，層數留給 s08 的 T1。s09 刪掉 Gargini 人名與 IRDS，只留「兩個提案：LMC 和 GMT」。s06.2 只留一組例子 10nm Enhanced SuperFin → Intel 7。",
+    "evidence": "金屬間距，像相鄰兩條走道的距離，前面說的金屬半間距，就是它的一半。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s16.2",
+      "s16.4",
+      "s16.5"
+     ]
+    },
+    "category": "content",
+    "severity": "low",
+    "problem": "s16 的論點跳躍：先講 TSMC N2 量產，再轉去 N4 與 N5 的尺寸相同，兩者不同代，與「N2 是世代名」沒有直接連結。s16.5 的未標日期與付費牆說明占掉時間，也拉低證據可信度，卻沒有證明結論。",
+    "fix": "把 s16.4 改成直接證明命名不等於尺寸的那一個比較，例如「N4 與 N5 關鍵尺寸相同」。s16.5 縮成一句「僅引用摘要可見部分」。s16.2 的量產時程與主題無關，可以刪。",
+    "evidence": "TechInsights 的社論指出，TSMC 的 N4 首顆晶片，關鍵製程尺寸與更早的 N5 產品完全相同。",
+    "caused_by": "deck"
+   }
+  ],
+  "verdict": "論點主線清楚，前半的歷史與證據扎實。但結尾約 1 分鐘重講前文，中段名詞堆疊，TOPS、效能百分比與 40% 這類數字缺基準。名單式段落（設備商、馬斯克、三星型號）撐長度，卻對承諾沒有貢獻。刪掉重複、補齊基準後會更緊湊，目前約 6 分。"
+ },
+ "draft": "chipcat2",
+ "round_dir": "/Users/lileon/project/content-farm/.claude/worktrees/cf-chipcat-run2/output/chipcat-run2/review/script_structure/round-1"
+}

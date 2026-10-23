@@ -1,0 +1,146 @@
+{
+ "rid": "chipcat2r3:writer_density-1:sonnet",
+ "ok": true,
+ "errors": [],
+ "model": "sonnet",
+ "effort": "low",
+ "models_used": [
+  "claude-sonnet-5-5"
+ ],
+ "seconds": 22.8,
+ "cost_usd": 0.053,
+ "tokens": {
+  "input": 4,
+  "output": 2416,
+  "cache_read": 24649,
+  "cache_write": 6589
+ },
+ "attempts": 1,
+ "infra": false,
+ "turns": 5,
+ "thinking_tokens": 0,
+ "started_at": "2026-10-23T07:26:30+00:00",
+ "output": {
+  "role": "科普節目編劇（資訊密度）",
+  "score": 6.5,
+  "rubric": {
+   "內容撐得起片長": 7,
+   "無灌水重講": 5,
+   "數字密度與單位": 6,
+   "名詞密度": 6,
+   "論點推進": 7
+  },
+  "issues": [
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s10.2",
+      "s10.6",
+      "s10.4",
+      "s10.5"
+     ]
+    },
+    "category": "content",
+    "severity": "high",
+    "problem": "s10 整段把「換一把尺、比名字可比」重講第三次（s02.4 開頭已押論點、s03 衣服比喻、s08 GMT），且「爭論 0.7 算不算真，只是在替世代名稱打分數」是修辭而非新資訊。同型：s20.1、s18.2 再次重述結論。",
+    "fix": "刪掉 s10.4、s10.5，s10.2 與 s10.6 合併成一句承接 s09；把省下的時間用在補一個可比數字，例如 s08 的 5 奈米 G48M36T1 對照另一代的間距。",
+    "evidence": "而爭論 0.7 算不算真，只是在替世代名稱打分數。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s09.1",
+      "s09.5",
+      "s12.4"
+     ]
+    },
+    "category": "content",
+    "severity": "high",
+    "problem": "「學界不只一個提案」只點名 Berkeley 2019 年 6 月提案，卻不說內容，是沒資訊的空段，還占一張 compare 投影片（s09）。s12.4 又拿馬斯克一句意見湊成「已有人提議換把尺」，等於重複 s09。",
+    "fix": "s09 要嘛補上 Berkeley 指標的具體定義與跟 GMT 的差別，要嘛刪掉 s09.1、s09.5 與 s09 投影片；s12.4 只留「不是業界標準」。",
+    "evidence": "GMT 只是其中一個，Berkeley 的教授們在 2019 年 6 月也提過另一個指標。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s07.3",
+      "s07.4",
+      "s07.5",
+      "s07.7"
+     ]
+    },
+    "category": "content",
+    "severity": "high",
+    "problem": "承諾要教「改看密度、間距」，但停車場比喻只給定義，沒有任何數字示範；s07.7 一口丟出標準單元高度、SRAM 位元格面積兩個新名詞卻不解釋。閘極間距、金屬間距、金屬半間距三詞密集出現，觀眾難以吸收。",
+    "fix": "刪 s07.7 的兩個未解釋名詞，或各補一句白話；改在 s07 直接帶入 s08.6 的 48／36 奈米數字，讓比喻立刻落地。",
+    "evidence": "閘極間距、金屬間距與層數是比較的起點，實際還要看標準單元高度與 SRAM 位元格面積；",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s11.7",
+      "s14.5",
+      "s15.16",
+      "s18.4"
+     ]
+    },
+    "category": "fact",
+    "severity": "med",
+    "problem": "數字缺基準與出處不一致：近 1000 億顆是「指甲大小」卻沒給面積；40% SRAM 微縮在 s18.4 才首次出現，沒說比什麼、哪一代；9000 TOPS 未說單位基準，s15 又用整段講無法比較的數字，資訊價值低。",
+    "fix": "s18.4 的 40% 在 s11 或 s14 就交代比較基準（對哪一代、何種 SRAM），否則刪除；s15 縮成一句，只保留「精度未說明，不能比」。",
+    "evidence": "報導提到 40% 的 SRAM 微縮是研究成果，沒有說已進入產品。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s19.6",
+      "s19.3",
+      "s19.4",
+      "s19.7"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "結尾 s19 逐條重講 s11、s14 已說過的密度相對值、間距沒給、5 年路徑，s18.3 又先講一次，同一組事實出現三次，且 s19.7 再總結一遍。",
+    "fix": "刪 s18.3 與 s19.7，s19 只保留三問加一句示範結論；或把 s18 與 s19 合併。",
+    "evidence": "三題的答案是密度只有相對值、間距沒有、量產只有路徑，答完再決定要不要興奮。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s17.6",
+      "s17.7",
+      "s16.6",
+      "s13.5"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "「短期不會改變台積電 N2 的量產與客戶」是推論，卻與 s16、s17 的 TechInsights 軼事混在一起，論點跳躍；s16.5 的免責說明（頁面未標日期、付費牆）打斷節奏。s17.2 的 4 奈米軼事與 s16.6 都是同一個「名字不等於實力」論點。",
+    "fix": "合併 s16.6 與 s17.2 為一個 TechInsights 例子；s17.6 前加明確標示為推論，或刪掉。",
+    "evidence": "這是分析機構的說法，頁面未標日期，全文部分付費牆，我們只引用摘要可見的部分。",
+    "caused_by": "deck"
+   }
+  ],
+  "verdict": "資料紮實、出處清楚，但中後段有三處重講（論點、結論、三問答案）與一個空洞的學界提案段，名詞（標準單元高度、SRAM 位元格）未解釋；刪減重複並補上具體間距數字後可上線。"
+ },
+ "draft": "chipcat2r3",
+ "round_dir": "/Users/lileon/project/content-farm/.claude/worktrees/cf-chipcat-run2/output/chipcat-run2/review/script_structure/round-3"
+}

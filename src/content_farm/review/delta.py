@@ -22,7 +22,7 @@ from content_farm.production.state import fingerprint
 from content_farm.review.article_diff import ArticleSentence, added_sentences, deck_narration, normalize
 from content_farm.review.client import Call, CallResult
 from content_farm.review.config import ReviewConfig
-from content_farm.review.gate import GateResult, _rework, enforce, set_aside, write_decision
+from content_farm.review.gate import GateResult, _rework, _waive, enforce, set_aside, write_decision
 from content_farm.review.rounds import rounds_of, run_round, stage_dir
 
 DELTA_MAX = 2
@@ -67,6 +67,12 @@ def delta_gate(run_dir: Path, *, gate: str, stage_name: str, config: ReviewConfi
     earlier = _deltas_against(run_dir, stage_name, base)
     if len(earlier) >= DELTA_MAX:
         last = earlier[-1]
+        if stage.waive_on_last_round:       # Leon 2026-10-23: the last allowed check does not stop the run
+            waiver = _waive(run_dir, gate, stage_name, config, last,
+                            current, stage_dir(run_dir, stage_name) / last["label"] / "scorecard.json",
+                            f"差異查核 {DELTA_MAX} 次用完")
+            if waiver is not None:
+                return waiver
         return GateResult("exhausted", f"{stage_name}：差異查核 {DELTA_MAX} 次用完仍未通過："
                           + "；".join(last["verdict"]["reasons"]),
                           stage_dir(run_dir, stage_name) / last["label"] / "scorecard.json")

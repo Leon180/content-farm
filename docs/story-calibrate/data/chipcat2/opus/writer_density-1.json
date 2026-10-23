@@ -1,0 +1,137 @@
+{
+ "rid": "chipcat2:writer_density-1:opus",
+ "ok": true,
+ "errors": [],
+ "model": "opus",
+ "effort": "low",
+ "models_used": [
+  "claude-opus-5-5"
+ ],
+ "seconds": 30.4,
+ "cost_usd": 0.1738,
+ "tokens": {
+  "input": 4,
+  "output": 2832,
+  "cache_read": 17032,
+  "cache_write": 14211
+ },
+ "attempts": 1,
+ "infra": false,
+ "turns": 5,
+ "thinking_tokens": 427,
+ "started_at": "2026-10-23T07:24:51+00:00",
+ "output": {
+  "role": "科普編劇（資訊密度）",
+  "score": 6.6,
+  "rubric": {
+   "內容撐得起片長": 7,
+   "無灌水重講": 5,
+   "數字密度與單位": 6,
+   "名詞密度": 6,
+   "論點推進": 7
+  },
+  "issues": [
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s18.3",
+      "s19.2",
+      "s19.3",
+      "s19.4"
+     ]
+    },
+    "category": "content",
+    "severity": "high",
+    "problem": "「間距沒給、效能是預估、比的是自家 2 奈米、5 年內」在 s14.2–s14.4 講過一次，s18.3 再講一次，s19.2–19.4 第三次。結尾約 30 秒都在重講，觀眾會在收尾前流失。",
+    "fix": "刪掉 s18.3。s19.2–19.4 合併成一句：「拿 IBM 來套：密度有，間距沒有，量產最快 5 年。」s18 只保留新資訊。",
+    "evidence": "還有幾件事沒有答案：間距數字沒給，效能是預估，而且比的是 IBM 自己的 2 奈米。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s18.4"
+     ]
+    },
+    "category": "content",
+    "severity": "high",
+    "problem": "40% SRAM 微縮是到結論才第一次出現的數字，沒有基準（是相對什麼縮了 40%？面積還是密度？），沒有來源，前面也沒鋪陳。接著 s18.5 又把它稱為「最大的未知」，觀眾無從理解。",
+    "fix": "把它移到 s14，補上基準與出處，例如「〈來源〉稱 SRAM 單元面積比 IBM 2 奈米縮小 40%，仍屬研究成果」。補不出基準就整句刪除，s18.5 一併刪。",
+    "evidence": "報導提到 40% 的 SRAM 微縮是研究成果，沒有說已進入產品。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s15.4"
+     ]
+    },
+    "category": "fact",
+    "severity": "med",
+    "problem": "9000 對 1500 TOPS 的比較沒交代精度（INT8 或其他），也沒說「熱門 AI 加速器」是哪一款，基準不明，會讓觀眾誤讀成「快 6 倍」。",
+    "fix": "補上精度與比較對象，例如「約 9000 TOPS（報導未註明精度），報導拿來對照的是約 1500 TOPS 的〈具體產品〉」。原文沒有這些資訊，就明講「報導未說明比較條件」。",
+    "evidence": "Network World 轉述的答案是約 9000，對照現今熱門的 AI 加速器約 1500。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s17.2",
+      "s17.4"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "這一章叫「台灣在哪個位置」，但 s17 的例子是三星 4LPX 與 5LPE，不是台灣廠。s17.4 卻拿它推出「台灣廠商也活在這套命名裡」，推論跳了一步。另外 Snapdragon、4LPX、5LPE 三個名詞連發，沒有解釋。",
+    "fix": "s17.2 明講「這是三星的例子」，並刪掉「行銷上叫 4 奈米」以外的型號細節。s17.4 改成以 s16.4 的 TSMC N4/N5 為依據：「TSMC N4 和三星 4LPX 都一樣，所以不能拿數字跨廠比。」",
+    "evidence": "三星的 4LPX 與 5LPE 沒有差別。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s13.2",
+      "s13.4",
+      "s12.2",
+      "s12.3"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "s12 的馬斯克插曲和 s13 的設備商名單（Lam、TEL、SCREEN、ASML、奧爾巴尼）約 1 分鐘，不推進「改看間距與密度」這個論點，名詞又很密。s12.3 自己也承認那「不是業界標準」。",
+    "fix": "刪掉整個 s12。s13 縮成一句：「這是和 ASML 等設備商在紐約研究室做的技術展示，不是量產。」",
+    "evidence": "Lam Research、Tokyo Electron、SCREEN 在開發高數值孔徑 EUV 的製程與工具。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s01.3",
+      "s02.2"
+     ]
+    },
+    "category": "content",
+    "severity": "low",
+    "problem": "開場 45 秒內講了三次「新聞稿說不是實體尺寸」（s01.3、s01.5、s02.2），s02.1 也重講了 0.7 這個數字。同型：s20.1 是第四次。",
+    "fix": "刪掉 s01.3，保留 s02.2 的原文引用；s02.1 只留「7 埃米」這個新資訊。",
+    "evidence": "可是同一份新聞稿也寫了，這個數字不是精確的實體尺寸。",
+    "caused_by": "deck"
+   }
+  ],
+  "verdict": "論點主線清楚，GMT、停車場的比喻和 Intel 22nm 的例子都扎實。後半段灌水重講太多，結論區還丟出沒有基準的新數字；TOPS 比較缺條件；台灣那章拿三星當例子推出台灣的結論。刪掉 s12/s13 的枝節、去掉 s18–19 的重講後，片長大約可以從 9:45 壓到 8 分左右，密度也會明顯提升。"
+ },
+ "draft": "chipcat2",
+ "round_dir": "/Users/lileon/project/content-farm/.claude/worktrees/cf-chipcat-run2/output/chipcat-run2/review/script_structure/round-1"
+}

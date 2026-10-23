@@ -169,6 +169,20 @@ def test_third_round_is_the_last(tmp_path):
     for n in range(3):
         (run_dir / "article.md").write_text(ARTICLE + f"\n版本 {n}。\n", encoding="utf-8")
         result = _gate(run_dir, ArticlePanel(DISPUTED, rulings={"fact_checker-1#0": "wrong"}))
+    # Leon 2026-10-23: round 3 failing is waved through (and recorded) unless the stage opts out
+    assert result.status == "pass" and "放行" in result.message and "第 3 輪" in result.message
+    decision = json.loads((run_dir / "review" / "article.decision.json").read_text(encoding="utf-8"))
+    assert decision["waived"]["round"] == 3 and decision["waived"]["reasons"]
+
+
+def test_third_round_is_the_last_when_waiving_is_off(tmp_path):
+    run_dir = _article_run(tmp_path)
+    stage = CONFIG.stages["article"].model_copy(update={"waive_on_last_round": False})
+    strict = CONFIG.model_copy(update={"stages": {**CONFIG.stages, "article": stage}})
+    for n in range(3):
+        (run_dir / "article.md").write_text(ARTICLE + f"\n版本 {n}。\n", encoding="utf-8")
+        result = panel_gate(run_dir, gate="article", stage_name="article", config=strict, channel="chipcat",
+                            channel_name="晶片貓", client=ArticlePanel(DISPUTED, rulings={"fact_checker-1#0": "wrong"}))
     assert result.status == "exhausted" and "第 3 輪" in result.message
 
 

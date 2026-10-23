@@ -263,14 +263,52 @@ def test_gate_rework_then_pass(tmp_path):
     assert "未過" in html and "通過" in html
 
 
-def test_gate_exhausts_after_max_rounds(tmp_path):
-    for n in range(CONFIG.stages["script_structure"].max_rounds):
+def _strict(config=CONFIG):
+    stage = config.stages["script_structure"].model_copy(update={"waive_on_last_round": False})
+    return config.model_copy(update={"stages": {**config.stages, "script_structure": stage}})
+
+
+def _spend_rounds(tmp_path, config):
+    for n in range(config.stages["script_structure"].max_rounds):
         (tmp_path / "deck.json").write_text(json.dumps(_deck(f"版本{n}。開場第二句。"), ensure_ascii=False),
                                             encoding="utf-8")
-        result = _gate(tmp_path, FakePanel(writer=5))
+        result = panel_gate(tmp_path, gate="deck", stage_name="script_structure", config=config, channel="chipcat",
+                            channel_name="晶片貓", client=FakePanel(writer=5))
+    return result
+
+
+def test_gate_exhausts_after_max_rounds_when_waiving_is_off(tmp_path):
+    result = _spend_rounds(tmp_path, _strict())
     assert result.status == "exhausted" and "最後一輪" in result.message
     last = json.loads((tmp_path / "review" / "script_structure" / "round-3" / "scorecard.json").read_text(encoding="utf-8"))
     assert any(s["holdout"] for s in last["seats"])                      # holdout sits in the last round
+    assert not (tmp_path / "review" / "deck.decision.json").exists()
+
+
+def test_a_failed_last_round_is_waved_through_and_recorded(tmp_path):
+    """Leon 2026-10-23: at most 3 rounds per gate; round 3 failing still lets the run go on."""
+    assert CONFIG.stages["script_structure"].max_rounds == 3
+    result = _spend_rounds(tmp_path, CONFIG)
+    assert result.status == "pass" and "放行" in result.message and "writer_story-1" in result.message
+    decision = json.loads((tmp_path / "review" / "deck.decision.json").read_text(encoding="utf-8"))
+    assert decision["status"] == "approved" and decision["waived"]["round"] == 3 and decision["waived"]["reasons"]
+    again = panel_gate(tmp_path, gate="deck", stage_name="script_structure", config=CONFIG, channel="chipcat",
+                       channel_name="晶片貓", client=FakePanel(writer=5))
+    assert again.status == "pass"                                       # same inputs: still waved, no fourth round
+    assert not (tmp_path / "review" / "script_structure" / "round-4").exists()
+
+
+def test_a_waiver_never_hides_a_reviewer_that_failed(tmp_path):
+    for n in range(3):
+        (tmp_path / "deck.json").write_text(json.dumps(_deck(f"版本{n}。開場第二句。"), ensure_ascii=False), encoding="utf-8")
+        result = panel_gate(tmp_path, gate="deck", stage_name="script_structure", config=CONFIG, channel="chipcat",
+                            channel_name="晶片貓", client=FakePanel(writer=5, model="haiku"))
+    assert result.status == "blocked" and "answered by" in result.message
+
+
+def test_every_stage_is_at_most_three_rounds_and_waives_by_default():
+    assert all(1 <= stage.max_rounds <= 3 for stage in CONFIG.stages.values())
+    assert all(stage.waive_on_last_round for stage in CONFIG.stages.values())
 
 
 def test_gate_blocks_wrong_model(tmp_path):

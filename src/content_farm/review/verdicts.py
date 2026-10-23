@@ -319,6 +319,16 @@ def media(stage: Stage, seats: list[Seat], *, pending: list | None = None, **con
                    extra={"rework_assets": rework})
 
 
+SOUND_CATEGORIES = ("audio", "pronunciation")
+SOUND_STEPS = ("voice", "mix")
+
+
+def _without_sound(issues: list[dict]) -> list[dict]:
+    """Sound is not part of any panel's remit (Leon 2026-10-23): issues about it are not fixes."""
+    return [i for i in issues if i.get("category") not in SOUND_CATEGORIES and i.get("caused_by") not in SOUND_STEPS
+            and (i.get("ref") or {}).get("target") != "audio"]
+
+
 def final(stage: Stage, seats: list[Seat], *, sentences: list[Sentence] | None = None, duration: float = 0,
           columns: dict[str, dict] | None = None, **context: Any) -> Verdict:
     reasons, regular = _base(seats)
@@ -327,6 +337,7 @@ def final(stage: Stage, seats: list[Seat], *, sentences: list[Sentence] | None =
 
         columns = column_scores(objective_checks(context["objective"], context.get("thumbs"),
                                                           mix=context.get("audio_mix", True)))
+    columns = {name: col for name, col in (columns or {}).items() if name != "audio"} if columns is not None else None   # sound is not judged
     viewers = [s for s in regular if s.kind == "viewer"]
     leave = _leave(viewers, [], duration)
     median = round(statistics.median(leave), 3) if leave else 0.0
@@ -342,14 +353,13 @@ def final(stage: Stage, seats: list[Seat], *, sentences: list[Sentence] | None =
         reasons += [f"{s.rid} {s.output.get('score')}/10 < {t.pro_min:g}" for s in regular
                     if s.kind == "pro" and s.output and float(s.output.get("score", 0)) < t.pro_min]
     holdout = [s for s in seats if s.holdout and s.ok]
-    kept, dropped = split_issues(_collect(seats), **_context({**context, "sentences": sentences or [],
+    kept, dropped = split_issues(_without_sound(_collect(seats)), **_context({**context, "sentences": sentences or [],
                                                                "duration": duration}))
     times = context.get("sentence_times") or []      # time → sentence: the fix list gets ids instead of a bare m:ss
     kept = [with_sentences_from_time(i, times, seconds((i.get("ref") or {}).get("t"))) for i in kept]
     scores = {"leave_median_pct": median, "leave": leave, "columns": columns or {},
               "thumbnail_matches": f"{sum(matches)}/{len(matches)}",
               "pros": {s.rid: s.output.get("score") for s in regular if s.kind == "pro" and s.output},
-              "pronunciation": sorted({w for s in viewers for w in (s.output or {}).get("pronunciation") or []}),
               "holdout_leave": _leave(holdout, [], duration) if holdout else None}
     return Verdict(not reasons, reasons, scores, kept, dropped)
 

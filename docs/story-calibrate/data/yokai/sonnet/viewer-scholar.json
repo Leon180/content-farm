@@ -1,0 +1,271 @@
+{
+ "rid": "yokai:viewer-scholar:sonnet",
+ "ok": true,
+ "errors": [],
+ "model": "sonnet",
+ "effort": "low",
+ "models_used": [
+  "claude-sonnet-5-5"
+ ],
+ "seconds": 78.3,
+ "cost_usd": 0.2302,
+ "tokens": {
+  "input": 4,
+  "output": 9836,
+  "cache_read": 17056,
+  "cache_write": 32532
+ },
+ "attempts": 1,
+ "infra": false,
+ "turns": 7,
+ "thinking_tokens": 5905,
+ "started_at": "2026-10-23T07:22:03+00:00",
+ "output": {
+  "persona": "50 歲中文系講師，查引文與年代，討厭把傳說講成史實",
+  "segments": [
+   {
+    "slide_id": "s00",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "開場standard，但「最早的原典」未指名，先按住。"
+   },
+   {
+    "slide_id": "s01",
+    "engagement": 5,
+    "decision": "stay",
+    "why": "s01.7 問「怎麼變成妲己」後立刻接 s01.18「漢代吉兆」，順序亂，提前劇透，也沒交代這個「漢代」是哪本書。"
+   },
+   {
+    "slide_id": "s02",
+    "engagement": 5,
+    "decision": "stay",
+    "why": "新聞鉤子和「五站」預告擠在 0:14–0:44，才進第一站，開場偏雜，但還能忍。"
+   },
+   {
+    "slide_id": "s02a",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "有衛報出處，可核對。"
+   },
+   {
+    "slide_id": "s04",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "引文對得上，但 s04.18 說「漢代初年才定型」與來源清單改採的「西漢末年劉向劉歆校定十八篇」不符，年代錯。"
+   },
+   {
+    "slide_id": "s06",
+    "engagement": 7,
+    "decision": "stay",
+    "why": "野獸、無變身的說法有《山海經》文本支持，保健食品笑話可接受。"
+   },
+   {
+    "slide_id": "s08",
+    "engagement": 8,
+    "decision": "stay",
+    "why": "王褒、白虎通、郭璞注都標了朝代和出處，這段我最滿意。"
+   },
+   {
+    "slide_id": "s09",
+    "engagement": 7,
+    "decision": "stay",
+    "why": "吳越春秋標為「傳說」，引文準確；但 s10.5 把白虎通「九妃」的解釋硬套到禹的故事上，兩本書的邏輯混在一起。"
+   },
+   {
+    "slide_id": "s11",
+    "engagement": 8,
+    "decision": "stay",
+    "why": "明講漢代先後排不出來，態度老實。"
+   },
+   {
+    "slide_id": "s11a",
+    "engagement": 5,
+    "decision": "stay",
+    "why": "「據維基百科」講墓室壁畫，講師不會接受；明明有高莉芬論文可用。"
+   },
+   {
+    "slide_id": "s12",
+    "engagement": 7,
+    "decision": "stay",
+    "why": "玄中記「作者題的也是郭璞」寫得小心。"
+   },
+   {
+    "slide_id": "s13",
+    "engagement": 7,
+    "decision": "stay",
+    "why": "諺語照原句「魅」念，並標為「我們的看法」，不錯。"
+   },
+   {
+    "slide_id": "s24a",
+    "engagement": 5,
+    "decision": "stay",
+    "why": "「田邊和墳地」無出處；「狐死首丘」是更早的說法，卻被講成漢代「需要祥瑞」的因果，是臆測。"
+   },
+   {
+    "slide_id": "s24b",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "白虎通引文可查。"
+   },
+   {
+    "slide_id": "s14",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "二手來源都標明了；但先說晉唐已有「魅」，又問「什麼時候開始變壞」，前後有點打架。"
+   },
+   {
+    "slide_id": "s15",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "「在我們看來才真正家喻戶曉」有標示。"
+   },
+   {
+    "slide_id": "s16",
+    "engagement": 7,
+    "decision": "stay",
+    "why": "回目差異是好材料，第九十六回與來源一致；但「底牌」說法靠檢索而非通讀。"
+   },
+   {
+    "slide_id": "s16a",
+    "engagement": 5,
+    "decision": "stay",
+    "why": "推測「九尾名號後來才貼上去」，與「元代平話已有九尾金毛狐子」、《山海經》本來就有九尾，互相打架。"
+   },
+   {
+    "slide_id": "s17",
+    "engagement": 4,
+    "decision": "stay",
+    "why": "拿清代畫的帝鑑圖說冊頁，對比明代小說，是體裁不同（史鑑 vs 小說）的比較，推不出「小說多了狐狸可以怪」。"
+   },
+   {
+    "slide_id": "s17d",
+    "engagement": 4,
+    "decision": "stay",
+    "why": "「元明以後才變反派」與前面晉唐已有「魅」的材料不一致，結論下得太滿。"
+   },
+   {
+    "slide_id": "s17a",
+    "engagement": 4,
+    "decision": "stay",
+    "why": "「第一站那張」十八世紀初的圖，放在山海經那一站，年代錯位；與北齋差不多同時，拿來示範「時代演變」不成立。"
+   },
+   {
+    "slide_id": "s19",
+    "engagement": 7,
+    "decision": "stay",
+    "why": "「傳說她是十二世紀…」有標示為傳說，室町時間點也有交代。"
+   },
+   {
+    "slide_id": "s20",
+    "engagement": 7,
+    "decision": "stay",
+    "why": "讀本、能劇都用比喻再定義，年代對。"
+   },
+   {
+    "slide_id": "s21a",
+    "engagement": 7,
+    "decision": "stay",
+    "why": "題簽逐字對過，「班足王=斑足太子」標為判斷。"
+   },
+   {
+    "slide_id": "s21",
+    "engagement": 7,
+    "decision": "stay",
+    "why": "四個身分與日本資料一致。"
+   },
+   {
+    "slide_id": "s22",
+    "engagement": 8,
+    "decision": "stay",
+    "why": "傳說與硫化氫分開講，正合我意。"
+   },
+   {
+    "slide_id": "s23",
+    "engagement": 7,
+    "decision": "stay",
+    "why": "觀光協會稱「瑞獸」並註明不引古書，誠實。"
+   },
+   {
+    "slide_id": "s26b",
+    "engagement": 8,
+    "decision": "stay",
+    "why": "集中交代「未查到」與「推測」，與承諾一致。"
+   },
+   {
+    "slide_id": "s25",
+    "engagement": 5,
+    "decision": "stay",
+    "why": "「我們找到的元明以後材料多半只寫狐狸精」，只有一則二手轉引加封神演義，「多半」不成立。"
+   },
+   {
+    "slide_id": "s26",
+    "engagement": 6,
+    "decision": "stay",
+    "why": "結尾有點雞湯，但可接受。"
+   }
+  ],
+  "left_at_sentence": null,
+  "finish": true,
+  "top_fixes": [
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s04.18"
+     ]
+    },
+    "category": "fact",
+    "severity": "high",
+    "problem": "講稿說《山海經》「到漢代初年才定型」，但 sources.json 的 shj-zhwiki 已改成「西漢末年劉向、劉歆校訂成十八篇」，註明取代英文維基的 early Han 說法；講稿沒跟著改。這會影響王褒、白虎通等漢代材料與《山海經》的先後。",
+    "fix": "改成「最早的部分可以追溯到西元前四世紀，到西漢末年才由劉向、劉歆父子校訂成現在的十八篇。」",
+    "evidence": "到漢代初年才定型成現在的樣子",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s17a.16",
+      "s17a.18",
+      "s17a.11"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "「第一站那張古今圖書集成的九尾狐圖」是十八世紀初的清代圖，卻被當成《山海經》那一站的視覺，又拿來和北齋一派（十八到十九世紀）對比「時代演變」。兩張圖幾乎同時，不能示範由異獸到妖狐的轉變。",
+    "fix": "第一站不要說成「山海經那張」，改成「後世畫家怎麼畫山海經的異獸，清代類書這張十八世紀初的圖」。圖像段只講「同一時期的不同畫法，取決於誰畫、為誰畫」，刪掉暗示年代先後的說法。",
+    "evidence": "第一站那張古今圖書集成的九尾狐圖，十八世紀初畫的，牠還站在樹枝上，是圖鑑裡的異獸，重點在長相。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s17.24",
+      "s17.15",
+      "s17.20",
+      "s25.12"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "結論把「變壞」歸到元明小說：(1) 帝鑑圖說（史鑑教材）和封神演義（小說）體裁不同，拿來比不出「多了一隻狐狸可以怪」；(2) 前面已有晉代玄中記、唐代「無狐魅」，說「元明以後才變反派」與自己材料衝突；(3) 「元明以後材料多半只寫狐狸精」只有一則二手轉引加封神演義。",
+    "fix": "s17.24 刪掉體裁不同的比較，只說「帝鑑圖說沒畫狐狸」。s17.20 改為「漢代是吉祥物，晉唐起狐妖漸多，到明代小說才和妲己、九尾合流」。s25.12 改成「我們查到的元明材料很少，只有封神演義和一則轉引的平話，樣本不夠下結論」。",
+    "evidence": "我們找到的元明以後材料，多半只寫狐狸精那一面。",
+    "caused_by": "deck",
+    "claim_change": true,
+    "affected_slides": [
+     "s17",
+     "s17d",
+     "s25"
+    ]
+   }
+  ],
+  "overall": "這支片在出處標示上比一般科普老實：引文可查，傳說與推測、二手與原典大致分得清，片尾還集中交代未查到的部分。我會看完。要修的有三處。第一，山海經定型年代沒跟上來源清單的更正。第二，圖像年代錯位。第三，結論把「變壞」歸到元明小說，說得比證據滿，又和晉唐已有狐魅的材料矛盾。次要問題有三個：開場亂，經文引用有 Wikipedia，還有「第九十六回」只靠檢索未通讀。"
+ },
+ "draft": "yokai",
+ "round_dir": "/Users/lileon/project/content-farm/.claude/worktrees/cf-cost-accept/output/yokai-kyubi-v2/review/script_structure/round-1"
+}

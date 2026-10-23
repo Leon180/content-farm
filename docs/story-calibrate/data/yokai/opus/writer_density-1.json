@@ -1,0 +1,132 @@
+{
+ "rid": "yokai:writer_density-1:opus",
+ "ok": true,
+ "errors": [],
+ "model": "opus",
+ "effort": "low",
+ "models_used": [
+  "claude-opus-5-5"
+ ],
+ "seconds": 26.9,
+ "cost_usd": 0.2096,
+ "tokens": {
+  "input": 4,
+  "output": 2384,
+  "cache_read": 12710,
+  "cache_write": 19921
+ },
+ "attempts": 1,
+ "infra": false,
+ "turns": 5,
+ "thinking_tokens": 463,
+ "started_at": "2026-10-23T07:22:46+00:00",
+ "output": {
+  "role": "科普編劇（資訊密度）",
+  "score": 7,
+  "rubric": {
+   "內容撐得起片長": 8,
+   "無灌水重講": 6,
+   "數字密度與單位": 8,
+   "名詞密度": 7,
+   "論點推進": 7
+  },
+  "issues": [
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s22.7",
+      "s23.9"
+     ]
+    },
+    "category": "structure",
+    "severity": "med",
+    "problem": "殺生石裂開的原因先在 s22.7 講完，s23.9 才說「回到開場」，順序倒過來，揭曉的力道沒了，2022 年的事也講了兩次。",
+    "fix": "把 s22.7 移到 s23.12 之後，當成網友預言和觀光說法之後的現實解釋；s23.9 縮成「回到開場那塊石頭。」",
+    "evidence": "至於二零二二年那次為什麼裂，衛報引述當地媒體的說法比較無聊",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s14.34"
+     ]
+    },
+    "category": "content",
+    "severity": "low",
+    "problem": "s13.32 剛說過的結論，不到一分鐘又重講一次。",
+    "fix": "刪掉 s14.34，s14.35 直接以「據一篇文化專欄的整理，唐代狐狸…」開頭。",
+    "evidence": "唐代，祭祀與妖魅並存；",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s01.7",
+      "s01.18"
+     ]
+    },
+    "category": "structure",
+    "severity": "med",
+    "problem": "開場先問「怎麼變成妲己」，下一句才補「漢代也是吉兆」，接著又轉去講新聞，三條線搶在 30 秒內，觀眾抓不到主軸。",
+    "fix": "順序改成 s01.16 → s01.18 → s01.7（吃人野獸、吉兆，最後怎麼變妲己），再接新聞。",
+    "evidence": "不過到了漢代，牠也被當成代表皇帝有德的吉兆。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s17a.18"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "說「再看一次開場那張北齋一派的素描」，可是開場旁白從沒提過這張圖，觀眾沒有可以回想的對象。s17a.16 說的「第一站那張古今圖書集成」也一樣，旁白沒有交代過。",
+    "fix": "改成「再看這張北齋一派的素描」，不要回指；或在 s00.4 / s04.1 用半句話先點出圖名。",
+    "evidence": "再看一次開場那張北齋一派的素描",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s21a.11",
+      "s21a.12"
+     ]
+    },
+    "category": "content",
+    "severity": "low",
+    "problem": "題簽比對用掉兩句、約 12 秒，只為了推出「班足王＝斑足太子」，資訊量低，還打斷了三國巡迴的敘事。",
+    "fix": "合併成一句：「題簽寫天羅國班足王和惡狐華陽夫人，對得上三國妖婦傳裡的斑足太子。」",
+    "evidence": "對照華陽夫人這個名字，我們判斷，班足王就是三國妖婦傳裡的斑足太子。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s11a.11"
+     ]
+    },
+    "category": "fact",
+    "severity": "low",
+    "problem": "墓頂有九尾狐這筆只引維基百科條目，跟其他標原典的段落相比，來源太弱，卻被當成「還是神仙那隊」的論據。",
+    "fix": "改引發掘報告或博物館資料；如果找不到，就在 s11a.12 降成「至少據維基的描述」，並在 s26b 的待查清單補上這一筆。",
+    "evidence": "據維基百科的條目，其中有九尾狐和飛馬。",
+    "caused_by": "article"
+   }
+  ],
+  "verdict": "內容紮實，撐得起約 11 分鐘：出處清楚，推測也有標明，符合 promise。主要問題有三個：殺生石的揭曉順序倒了，唐代結論講了兩次，開場三條線互相搶戲。修完就可以上線。"
+ },
+ "draft": "yokai",
+ "round_dir": "/Users/lileon/project/content-farm/.claude/worktrees/cf-cost-accept/output/yokai-kyubi-v2/review/script_structure/round-1"
+}

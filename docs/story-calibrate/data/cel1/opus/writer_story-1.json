@@ -1,0 +1,105 @@
+{
+ "rid": "cel1:writer_story-1:opus",
+ "ok": true,
+ "errors": [],
+ "model": "opus",
+ "effort": "low",
+ "models_used": [
+  "claude-opus-5-5"
+ ],
+ "seconds": 25.3,
+ "cost_usd": 0.1614,
+ "tokens": {
+  "input": 4,
+  "output": 2116,
+  "cache_read": 17104,
+  "cache_write": 14456
+ },
+ "attempts": 1,
+ "infra": false,
+ "turns": 5,
+ "thinking_tokens": 328,
+ "started_at": "2026-10-23T07:24:06+00:00",
+ "output": {
+  "role": "科普節目編劇（故事結構）",
+  "score": 7,
+  "rubric": {
+   "十五秒鉤子": 6,
+   "留人點密度": 6,
+   "國高中比喻": 7,
+   "八卦與冷笑話節拍": 8,
+   "收尾回扣": 9
+  },
+  "issues": [
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s01.1",
+      "s01.2"
+     ]
+    },
+    "category": "structure",
+    "severity": "high",
+    "problem": "開場第一句念出製作標籤「CUT 01」，等於浪費前 2 秒；第二句馬上丟出「元請」這個詞，觀眾要到 2:17 才知道它是什麼，鉤子的衝突（漲價卻虧錢）被生詞擋住。",
+    "fix": "刪 s01.1。s01.2 改為「日本公平會今年 6 月的調查：接下整部動畫的製作公司，約九成說委託費在漲。」s01.3 同樣先用「這些製作公司」代稱，「元請」留到 s05.3 再定義。",
+    "evidence": "CUT 01，兩句話並排。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s07.2",
+      "s07.3"
+     ]
+    },
+    "category": "structure",
+    "severity": "med",
+    "problem": "要觀眾「記得這個數字」（60 日），但後面講付款相關情境（s14.2、s14.4）時完全沒有再提到 60 日，前面埋了伏筆卻沒有回收，觀眾會白記。",
+    "fix": "在 s14.4 後面加一句回收伏筆，例如「還記得 60 日嗎？出資沒到位，付款期日一樣不會等。」若不想加，就刪掉 s07.3。",
+    "evidence": "後面談到付款的情境，記得這個數字。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s08.4",
+      "s09.4",
+      "s10.3",
+      "s10.4"
+     ]
+    },
+    "category": "structure",
+    "severity": "med",
+    "problem": "3:27–4:50 連續約 80 秒都是比例數字加保留說明，中間沒有任何問題、反轉或笑點，是全片最容易流失觀眾的一段。保留說明一連出現四次，把「為什麼漲價還虧錢」的懸念講散了。",
+    "fix": "保留說明合併成一句，放在 s08.4（「樣本數看不到，只能當比例看」），s10.3 和 s10.4 合併為「原因，來源沒說」。s09.4 的「十分之一」要當作揭曉點來講：先問「追加費用要求 100，實際拿到多少？」再給答案。",
+    "evidence": "要注意，概要頁沒有交代各項回答的樣本數，我們也沒打開報告書本體，所以這些只能當比例看，不能判斷樣本大小。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s13.1",
+      "s12.3"
+     ]
+    },
+    "category": "structure",
+    "severity": "med",
+    "problem": "片子承諾講「七類」，但第三類藏在 s12.3 句中，而 s13 的「兩條」夾在第三類和第四類之間、沒有編號，觀眾會數亂，搞不清楚它是不是另外的類別。分鏡標題「第二、三類」也無法對應到講稿的節奏。",
+    "fix": "s12.3 獨立成一句開頭：「第三類，交貨後的無償修正。」s13.1 改為「另外，指針裡有兩條不算一類、但具體到讓人皺眉的例子。」",
+    "evidence": "有兩條，具體到讓人皺眉。",
+    "caused_by": "deck"
+   }
+  ],
+  "verdict": "結構完整，結尾有回扣開場的帳和原畫師，冷笑話的節拍也自然。主要問題有三個：開場被製作標籤和生詞拖慢；數據段大約 80 秒沒有留人點；七類做法的編號不清楚。另外 60 日的伏筆沒有回收。改完這幾處就能上線。"
+ },
+ "draft": "cel1",
+ "round_dir": "/Users/lileon/project/content-farm/.claude/worktrees/cf-cel-run1/output/cel-run1/review/script_structure/round-1"
+}

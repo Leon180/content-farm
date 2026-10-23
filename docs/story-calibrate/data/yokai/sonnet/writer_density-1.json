@@ -1,0 +1,210 @@
+{
+ "rid": "yokai:writer_density-1:sonnet",
+ "ok": true,
+ "errors": [],
+ "model": "sonnet",
+ "effort": "low",
+ "models_used": [
+  "claude-sonnet-5-5"
+ ],
+ "seconds": 44.0,
+ "cost_usd": 0.1358,
+ "tokens": {
+  "input": 4,
+  "output": 5364,
+  "cache_read": 16744,
+  "cache_write": 20107
+ },
+ "attempts": 1,
+ "infra": false,
+ "turns": 6,
+ "thinking_tokens": 1985,
+ "started_at": "2026-10-23T07:22:39+00:00",
+ "output": {
+  "role": "科普節目編劇（資訊密度）",
+  "score": 6.8,
+  "rubric": {
+   "內容撐得起片長": 8,
+   "無灌水重講": 5.5,
+   "數字密度與單位": 6.5,
+   "名詞密度": 6,
+   "論點推進": 7
+  },
+  "issues": [
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s16.10"
+     ]
+    },
+    "category": "fact",
+    "severity": "high",
+    "problem": "講稿說九尾出現在第九十六回，文章依據是第九十七回（妲己伏誅時）；回數會被觀眾查證，且與出處標記 fengshen-97 不符。",
+    "fix": "改成「九尾要到第九十七回、妲己伏誅時才出現」，並核對 fengshen-97 原文回數。",
+    "evidence": "九尾要到第九十六回才出現",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s04.30",
+      "s11.24",
+      "s11.25"
+     ]
+    },
+    "category": "fact",
+    "severity": "high",
+    "problem": "文章裡「食者不蠱」是山海經正文，郭璞注的是「太平則出而為瑞也」。講稿把「吃了不會中邪」也算成郭璞的話，「同一人的注裡兩種說法並存」的結論因此站不住，這是第二站的核心論證。",
+    "fix": "s04.30 改成「書裡還說，吃了牠不會中邪」；s11.24 改成「山海經正文說吃了不會中邪，晉代郭璞的注又說牠天下太平才出現」；s11.25 改成「至遲到晉代，兩種說法已經同時留在山海經和它的注裡」。",
+    "evidence": "據晉代學者郭璞作注，吃了牠不會中邪。",
+    "caused_by": "deck",
+    "claim_change": true,
+    "affected_slides": [
+     "s04",
+     "s11"
+    ]
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s01.7",
+      "s01.18",
+      "s02.19",
+      "s02a.1",
+      "s02.13",
+      "s03.6"
+     ]
+    },
+    "category": "structure",
+    "severity": "med",
+    "problem": "開場連放三個鉤子：九尾狐吃人、問怎麼變成妲己、漢代吉兆，接著又跳到殺生石新聞。s01.18 的「不過」插在問句後面，語意斷掉，前 35 秒焦點散。這段也沒有講清楚全片要答的問題。",
+    "fix": "把 s01.18 併進 s01.16 成一句「最早的原典裡牠會吃人，到漢代卻成了皇帝有德的吉兆」，刪掉 s01.7 的獨立問句，直接用殺生石新聞帶出「那隻妖狐是誰」。",
+    "evidence": "不過到了漢代，牠也被當成代表皇帝有德的吉兆。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s13.32",
+      "s14.34",
+      "s14.18",
+      "s15.11"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "同一結論重講：s13.32 剛講完「唐代，祭祀與妖魅並存」，s14.34 又原句重複。s14.25 只是在說畫面。s14.18 的「下一站才家喻戶曉」跟 s15.11 重複。中間夾 s24a 的「為什麼是狐狸」，讓第三站的線被打斷。",
+    "fix": "刪掉 s14.25 和 s14.34 的重複句，s14.35 直接接「宋代道教出現驅狐符咒」；刪 s14.18 或 s15.11 其中之一。",
+    "evidence": "唐代，祭祀與妖魅並存；",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s25.8",
+      "s25.2",
+      "s25.11",
+      "s24a.13",
+      "s24a.14",
+      "s26b.5"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "結論把自己標為推測的「亡國推給狐狸」當成事實（「牠就成了替罪的美女」），與 s26b.5 自承推測矛盾。「動物沒變，變的是眼光」和「漢代看祥瑞、後來看替罪羊」在 s24a 已講過一次，結論只是重述。",
+    "fix": "s25.2 加上「依我們的推測」，並刪去 s24a 裡與結論重複的收尾句，或結論改以上面的未查證清單總結論點的證據強度。",
+    "evidence": "後來的人需要解釋王朝為什麼會亡，牠就成了替罪的美女。",
+    "caused_by": "deck",
+    "claim_change": true,
+    "affected_slides": [
+     "s25",
+     "s26b"
+    ]
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s19.10",
+      "s21.7",
+      "s21.9",
+      "s21a.13",
+      "s21a.11",
+      "s21a.12"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "第五站名詞過密：鳥羽天皇、那須野、斑足太子、華陽夫人、天羅國班足王、褒姒、周幽王，加上天竺、中國、日本的來回順序，約 40 秒內全是口說人名，沒有畫面支撐就聽不完。s21a.12 還要觀眾自己做「班足王＝斑足太子」的推論。",
+    "fix": "只保留玉藻前、妲己、華陽夫人、褒姒四個身分，用 s21 時間線逐一點名；班足王、斑足太子的對照留在畫面字幕，口白只說「天竺的王」。",
+    "evidence": "對照華陽夫人這個名字，我們判斷，班足王就是三國妖婦傳裡的斑足太子。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s17a.16",
+      "s17a.18",
+      "s20.13",
+      "s20.16",
+      "s19.7",
+      "s17.17"
+     ]
+    },
+    "category": "content",
+    "severity": "low",
+    "problem": "7:00 到 8:20 一連串年代與畫作（18 世紀初、18–19 世紀、14–16 世紀、1779、1803），每個年代都附一張畫，卻沒有一條時間軸整理，觀眾難以對齊「誰先誰後」。畫的段落也被拆散在第四、五站。",
+    "fix": "每個年份只講一次，改在 s17a 把三張畫並排成時間軸，口白只說「圖鑑時期、妖婦時期」，細年代放字幕。",
+    "evidence": "畫面上是鳥山石燕在一七七九年的妖怪畫冊裡畫的玉藻前",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s13.31",
+      "s13.32"
+     ]
+    },
+    "category": "content",
+    "severity": "low",
+    "problem": "由「魅」字推出「祭祀與妖魅並存」，證據只有一個字和一句諺語。s11a.11 的墓頂畫則靠維基百科，稱不上第二站「漢代」的支撐，而且是五世紀。",
+    "fix": "s13.32 改成較保守的「這句諺語說明狐魅已是日常話題」；s11a 改標為「五世紀，仍在天界」，不歸入漢代論證。",
+    "evidence": "魅字帶著妖魅的意思，所以我們的看法是：唐代的狐，祭祀與妖魅並存。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s04.18"
+     ]
+    },
+    "category": "fact",
+    "severity": "low",
+    "problem": "「西元前四世紀」「漢代初年定型」在文章裡沒有依據，也沒有標出處，與承諾的「查得到原典的標出處」不符。",
+    "fix": "補上來源，或刪去年代，改成「這本書成書時間跨很長，早於漢代」。",
+    "evidence": "這本書最早的部分，可以追溯到西元前四世紀，到漢代初年才定型成現在的樣子。",
+    "caused_by": "article"
+   }
+  ],
+  "verdict": "內容紮實，11 分鐘撐得起來，論證結構（怪獸、吉兆、妖狐、日本）也清楚。需要先修兩處事實：九十六、九十七回的回數矛盾，以及郭璞注的歸屬錯位，後者還影響第二站結論。其次要刪掉第三、四站與結論的重複句，並降低第五站的人名密度。"
+ },
+ "draft": "yokai",
+ "round_dir": "/Users/lileon/project/content-farm/.claude/worktrees/cf-cost-accept/output/yokai-kyubi-v2/review/script_structure/round-1"
+}

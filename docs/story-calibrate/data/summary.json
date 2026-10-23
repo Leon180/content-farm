@@ -1,0 +1,292 @@
+{
+ "per_draft": {
+  "cel1": {
+   "sonnet": 0.171,
+   "opus": 0.219,
+   "gap": 0.048,
+   "seats": 4
+  },
+  "cel1r2": {
+   "sonnet": 0.227,
+   "opus": 0.48,
+   "gap": 0.253,
+   "seats": 4
+  },
+  "chipcat1": {
+   "sonnet": 0.19,
+   "opus": 0.362,
+   "gap": 0.172,
+   "seats": 4
+  },
+  "chipcat2": {
+   "sonnet": 0.29,
+   "opus": 0.398,
+   "gap": 0.108,
+   "seats": 4
+  },
+  "chipcat2r3": {
+   "sonnet": 0.292,
+   "opus": 1.0,
+   "gap": 0.708,
+   "seats": 5
+  },
+  "yokai": {
+   "sonnet": 0.689,
+   "opus": 0.722,
+   "gap": 0.033,
+   "seats": 4
+  }
+ },
+ "conversion": {
+  "gap_mean": 0.22,
+  "gap_ci90": [
+   0.087,
+   0.391
+  ],
+  "n": 6,
+  "sonnet_equivalent": 0.28,
+  "sonnet_equivalent_ci90": [
+   0.109,
+   0.413
+  ],
+  "threshold": 0.35
+ },
+ "seat_gap_ci90": [
+  0.153,
+  0.315
+ ],
+ "writer": {
+  "n": 12,
+  "mean_gap": 0.59,
+  "ci90": [
+   0.358,
+   0.817
+  ],
+  "systematic": true
+ },
+ "rows": [
+  {
+   "draft": "cel1",
+   "seat": "viewer-anime_fan",
+   "sonnet": 0.171,
+   "opus": 0.219
+  },
+  {
+   "draft": "cel1",
+   "seat": "viewer-casual",
+   "sonnet": 0.021,
+   "opus": 0.198
+  },
+  {
+   "draft": "cel1",
+   "seat": "viewer-industry",
+   "sonnet": 0.219,
+   "opus": 1.0
+  },
+  {
+   "draft": "cel1",
+   "seat": "viewer-investor",
+   "sonnet": 0.171,
+   "opus": 0.219
+  },
+  {
+   "draft": "cel1",
+   "seat": "writer_density-1",
+   "sonnet": 6,
+   "opus": 6.8
+  },
+  {
+   "draft": "cel1",
+   "seat": "writer_story-1",
+   "sonnet": 6,
+   "opus": 7
+  },
+  {
+   "draft": "cel1r2",
+   "seat": "viewer-anime_fan",
+   "sonnet": 0.249,
+   "opus": 0.464
+  },
+  {
+   "draft": "cel1r2",
+   "seat": "viewer-casual",
+   "sonnet": 0.025,
+   "opus": 0.025
+  },
+  {
+   "draft": "cel1r2",
+   "seat": "viewer-industry",
+   "sonnet": 0.289,
+   "opus": 1.0
+  },
+  {
+   "draft": "cel1r2",
+   "seat": "viewer-investor",
+   "sonnet": 0.206,
+   "opus": 0.495
+  },
+  {
+   "draft": "cel1r2",
+   "seat": "writer_density-1",
+   "sonnet": 5.5,
+   "opus": 6.5
+  },
+  {
+   "draft": "cel1r2",
+   "seat": "writer_story-1",
+   "sonnet": 5.5,
+   "opus": 6.8
+  },
+  {
+   "draft": "chipcat1",
+   "seat": "viewer-commuter",
+   "sonnet": 0.044,
+   "opus": 0.168
+  },
+  {
+   "draft": "chipcat1",
+   "seat": "viewer-engineer",
+   "sonnet": 0.11,
+   "opus": 0.568
+  },
+  {
+   "draft": "chipcat1",
+   "seat": "viewer-investor",
+   "sonnet": 0.312,
+   "opus": 0.332
+  },
+  {
+   "draft": "chipcat1",
+   "seat": "viewer-student",
+   "sonnet": 0.269,
+   "opus": 0.391
+  },
+  {
+   "draft": "chipcat1",
+   "seat": "writer_density-1",
+   "sonnet": 5.5,
+   "opus": 5.5
+  },
+  {
+   "draft": "chipcat1",
+   "seat": "writer_story-1",
+   "sonnet": 5.5,
+   "opus": 5.8
+  },
+  {
+   "draft": "chipcat2",
+   "seat": "viewer-commuter",
+   "sonnet": 0.133,
+   "opus": 0.41
+  },
+  {
+   "draft": "chipcat2",
+   "seat": "viewer-engineer",
+   "sonnet": 0.605,
+   "opus": 1.0
+  },
+  {
+   "draft": "chipcat2",
+   "seat": "viewer-investor",
+   "sonnet": 0.386,
+   "opus": 0.386
+  },
+  {
+   "draft": "chipcat2",
+   "seat": "viewer-student",
+   "sonnet": 0.194,
+   "opus": 0.194
+  },
+  {
+   "draft": "chipcat2",
+   "seat": "writer_density-1",
+   "sonnet": 6,
+   "opus": 6.6
+  },
+  {
+   "draft": "chipcat2",
+   "seat": "writer_story-1",
+   "sonnet": 6,
+   "opus": 6.8
+  },
+  {
+   "draft": "chipcat2r3",
+   "seat": "viewer-commuter",
+   "sonnet": 0.186,
+   "opus": 0.379
+  },
+  {
+   "draft": "chipcat2r3",
+   "seat": "viewer-engineer",
+   "sonnet": 0.292,
+   "opus": 1.0
+  },
+  {
+   "draft": "chipcat2r3",
+   "seat": "viewer-investor",
+   "sonnet": 0.349,
+   "opus": 1.0
+  },
+  {
+   "draft": "chipcat2r3",
+   "seat": "viewer-student",
+   "sonnet": 0.124,
+   "opus": 0.186
+  },
+  {
+   "draft": "chipcat2r3",
+   "seat": "viewer-teacher",
+   "sonnet": 0.741,
+   "opus": 1.0
+  },
+  {
+   "draft": "chipcat2r3",
+   "seat": "writer_density-1",
+   "sonnet": 6.5,
+   "opus": 6.4
+  },
+  {
+   "draft": "chipcat2r3",
+   "seat": "writer_story-1",
+   "sonnet": 5.8,
+   "opus": 7
+  },
+  {
+   "draft": "yokai",
+   "seat": "viewer-casual",
+   "sonnet": 0.378,
+   "opus": 0.444
+  },
+  {
+   "draft": "yokai",
+   "seat": "viewer-folklore_fan",
+   "sonnet": 1.0,
+   "opus": 1.0
+  },
+  {
+   "draft": "yokai",
+   "seat": "viewer-scholar",
+   "sonnet": 1.0,
+   "opus": 1.0
+  },
+  {
+   "draft": "yokai",
+   "seat": "viewer-student",
+   "sonnet": 0.285,
+   "opus": 0.444
+  },
+  {
+   "draft": "yokai",
+   "seat": "writer_density-1",
+   "sonnet": 6.8,
+   "opus": 7
+  },
+  {
+   "draft": "yokai",
+   "seat": "writer_story-1",
+   "sonnet": 7,
+   "opus": 7
+  }
+ ],
+ "cost_usd_notional": 10.099
+}

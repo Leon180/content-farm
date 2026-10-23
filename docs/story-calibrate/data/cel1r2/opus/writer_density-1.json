@@ -1,0 +1,122 @@
+{
+ "rid": "cel1r2:writer_density-1:opus",
+ "ok": true,
+ "errors": [],
+ "model": "opus",
+ "effort": "low",
+ "models_used": [
+  "claude-opus-5-5"
+ ],
+ "seconds": 41.9,
+ "cost_usd": 0.1067,
+ "tokens": {
+  "input": 4,
+  "output": 2367,
+  "cache_read": 24671,
+  "cache_write": 6804
+ },
+ "attempts": 1,
+ "infra": false,
+ "turns": 5,
+ "thinking_tokens": 402,
+ "started_at": "2026-10-23T07:27:27+00:00",
+ "output": {
+  "role": "科普節目編劇（資訊密度）",
+  "score": 6.5,
+  "rubric": {
+   "內容撐得起片長": 7,
+   "無灌水重講": 5,
+   "數字密度與單位": 7,
+   "名詞密度": 6,
+   "論點推進": 6
+  },
+  "issues": [
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s08.2",
+      "s09.5",
+      "s09.6",
+      "s10.6"
+     ]
+    },
+    "category": "content",
+    "severity": "high",
+    "problem": "「元請約九成說上升／約六成說赤字」在 s01.7–8 講過後，又在 s08.2、s09.5–6、s10.6 重講三輪，約 30 秒是原地踏步，觀眾會覺得在灌水。同型：s20.1 收尾再講一次（收尾回扣可保留）。",
+    "fix": "s08.2 刪掉，s08 直接從 s08.6「含版稅仍約四成」切入；s09.5–6 合成一句「九成說漲、六成說虧，就是開場那兩個數字」；s10.6 刪掉，s10.5 直接接 s10.7 的口徑問題。",
+    "evidence": "[s10.6] 元請約九成說委託費上升，元請約六成說只看委託費是赤字；",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s07.3",
+      "s07.2"
+     ]
+    },
+    "category": "structure",
+    "severity": "med",
+    "problem": "s07.3 叫觀眾記住「60 日」，但後面講付款的情境（s13.2 扣手續費、s14.2 取消不付、s14.4 付款期日付不出）都沒再用到這個數字，鋪了梗沒有收，等於白記。",
+    "fix": "在 s14.4 補半句回扣：「取適法規定收到成果 60 日內要付款，出資沒到位不是延後的理由」；做不到就把 s07.2–s07.3 刪掉。",
+    "evidence": "[s07.3] 後面談到付款的情境，記得這個數字。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s06.7",
+      "s06.4",
+      "s06.6"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "「優越地位濫用」連講四次：組長比喻 s06.7、動畫例 s06.3、白話定義 s06.4、組長冷笑話 s06.6，同一個概念講了 30 秒，沒有新資訊。",
+    "fix": "只留 s06.4 的白話定義，加上 s06.3 的動畫例，再加 s06.5 的來源；s06.7 和 s06.6 刪掉。",
+    "evidence": "[s06.6] 組長握分數，組員只能握鉛筆。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s13.1",
+      "s13.2",
+      "s13.3"
+     ]
+    },
+    "category": "structure",
+    "severity": "med",
+    "problem": "清單說「七類」，s13 的兩條（扣匯款手續費、壓低報酬去付助手）卻沒有編號，夾在第三類和第四類中間，觀眾會數不清自己現在聽到第幾類，也不知道這兩條歸哪一類。",
+    "fix": "s13.1 改成「第二、三類之外，減額這一型有兩條具體到讓人皺眉」，並在 s13.2 標明這是指針裡的減額例子，跟七類分開；或把它們併進某一類，並明講是哪一類。",
+    "evidence": "[s13.1] 有兩條，具體到讓人皺眉。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s07.4"
+     ]
+    },
+    "category": "content",
+    "severity": "low",
+    "problem": "取適法改名在 s04.5 已經交代過（日期和改名都講了），s07.4 又整句重講一次。",
+    "fix": "改成「最後一個詞，取適法，也就是改名後的下請法。」把日期刪掉。",
+    "evidence": "[s07.4] 最後一個詞，取適法，就是剛才提到的下請法，2026 年 1 月 1 日起改稱取適法。",
+    "caused_by": "deck"
+   }
+  ],
+  "verdict": "七類清單內容紮實，數字也大多有基準和回答者。主要的毛病是開場那組九成／六成重講了四輪，優越地位這個詞的說明也灌水；「60 日」鋪了梗沒有收回；s13 那兩條沒有編號，清單結構看不清。把重講的句子壓掉，可以省約 45 秒，論點推進也會順得多。"
+ },
+ "draft": "cel1r2",
+ "round_dir": "/Users/lileon/project/content-farm/.claude/worktrees/cf-cel-run1/output/cel-run1/review/script_structure/round-2"
+}

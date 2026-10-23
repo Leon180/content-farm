@@ -1,0 +1,152 @@
+{
+ "rid": "chipcat1:writer_density-1:opus",
+ "ok": true,
+ "errors": [],
+ "model": "opus",
+ "effort": "low",
+ "models_used": [
+  "claude-opus-5-5"
+ ],
+ "seconds": 39.1,
+ "cost_usd": 0.1864,
+ "tokens": {
+  "input": 4,
+  "output": 3479,
+  "cache_read": 17025,
+  "cache_write": 14180
+ },
+ "attempts": 1,
+ "infra": false,
+ "turns": 5,
+ "thinking_tokens": 492,
+ "started_at": "2026-10-23T07:28:42+00:00",
+ "output": {
+  "role": "科普節目編劇（資訊密度）",
+  "score": 5.5,
+  "rubric": {
+   "內容撐得起片長": 5,
+   "無灌水重講": 4,
+   "數字密度與單位": 6,
+   "名詞密度": 7,
+   "論點推進": 5
+  },
+  "issues": [
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s08.2",
+      "s09.3",
+      "s08.3"
+     ]
+    },
+    "category": "content",
+    "severity": "high",
+    "problem": "同一則工商時報的「上看 3 萬、轉述 wccftech」在 s02.2 已經完整講過，2:19 又用一張新聞卡原封不動再講一次，s09.3 再提第三次。這段一分鐘左右的內容沒有新資訊，觀眾會覺得在原地打轉。",
+    "fix": "刪掉 s08 整張投影片（s08.1–s08.3），把「上看／轉述」兩個限定詞併進 s02.2。s09.3 改成「8 月，工商時報說高出 3 奈米五成」，順勢帶出 s10 要用的「五成」。",
+    "evidence": "工商時報 2025 年 8 月寫，2 奈米單片報價上看 3 萬美元，較 3 奈米高出五成，並註明轉述 wccftech。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s17.1",
+      "s17.3"
+     ]
+    },
+    "category": "content",
+    "severity": "high",
+    "problem": "s17.2 才說 Nvidia 大顆 AI 晶片的「一百顆」不能直接套，s17.3 馬上拿三萬除以一百，得出每顆三百美元，還做成 big_number 投影片。後面 s22.3 又出現「高通晶片高於 300 美元」，兩個 300 美元撞在一起，觀眾會以為手機晶片的成本已經被算出來了，這會誤導。",
+    "fix": "不要用三萬除以一百當主數字。改寫成「如果一片切一百顆大晶片，光晶圓攤到每顆就是數百美元等級，小顆手機晶片會少很多」，s17 的 big_number 改放「一片約一百顆（AI 大晶片）」。s22.3 要明講那 300 美元是晶片售價，不是晶圓成本。",
+    "evidence": "換算起來，三萬美元除以一百顆，每顆約三百美元，還沒算良率與封裝。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s18.2",
+      "s18.3",
+      "s18.4"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "1987 年成立的資本額新台幣 13.775 億元、張忠謀選擇只做製造，這兩件事跟「三萬美元貴在哪、誰在付」沒有關係，而且還占掉一整張 title 投影片。論點在這裡斷掉約 20 秒。",
+    "fix": "刪掉 s18.2–s18.4，s18 投影片也拿掉，s18.1 直接接 s19.1。如果一定要放代工模式，壓成一句「台積電只代工、不賣自有晶片，所以成本會沿著客戶轉嫁」，讓它服務後面「誰在付」的論點。",
+    "evidence": "台積電 1987 年成立，靠台灣政府與荷蘭飛利浦的資金，加上民間資本，合計新台幣 13.775 億元。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s09.5",
+      "s11.1"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "「價差縮到 10% 至 20%」在 s09.5 先講一次，s11.1 又講一次，s11.1 一句還塞了 N3E、N3P、2.5 萬、2.7 萬、三萬、10–20% 六個項目，數字太擠，聽一次記不住。",
+    "fix": "s09.5 刪掉，時間軸停在 9 月。s11.1 拆成兩句：「自由時報 10 月另說，3 奈米成本約 2.5 萬到 2.7 萬美元。」「這樣算，2 奈米只貴一到兩成。」N3E、N3P 放在畫面上就好，不要念出來。",
+    "evidence": "到了 10 月，又冒出另一個說法：價差縮到 10% 至 20%。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s21.2"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "一句話連報 4 個節點的營收占比，論點其實只需要 2 奈米的 8% 和用來對照的 7 奈米 10%。3 奈米和 5 奈米的數字是多出來的負擔。另外「占晶圓營收」的基準只講了一次，沒有講清楚是當季的。",
+    "fix": "改成「台積電 2026 年第三季新聞稿：2 奈米已占當季晶圓營收 8%，跟老牌的 7 奈米 10% 差不多。」3 奈米、5 奈米只放在 s21 的比較圖上。",
+    "evidence": "2 奈米出貨占晶圓營收 8%，3 奈米 33%，5 奈米 28%，7 奈米 10%。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s13.4",
+      "s15.3"
+     ]
+    },
+    "category": "content",
+    "severity": "med",
+    "problem": "promise 說要講清楚「買到什麼」，但整片只有一台 EUV 2.5 億美元這一個硬事實。s13.4 是空話，s15.3 用三層「推測／判斷」把唯一的因果解釋給收回去，「為什麼貴」這章幾乎沒有資訊量。",
+    "fix": "s13.4 刪掉，或換成來源有的具體內容（例如一座晶圓廠需要的 EUV 台數）。s15.3 壓成一句：「設備貴是原因之一，但來源沒算到晶圓價上，我們不硬接。」如果沒有更多來源，就承認這章短，不要用 hedge 填時間。",
+    "evidence": "晶圓代工廠買的，不是一台機器，是一整座設備。",
+    "caused_by": "deck"
+   },
+   {
+    "ref": {
+     "target": "script",
+     "scope": "sentences",
+     "sentence_ids": [
+      "s23.4",
+      "s23.5"
+     ]
+    },
+    "category": "content",
+    "severity": "low",
+    "problem": "結尾 s23.4–s23.5 跟 s24.1 把同一個論點（階梯墊高、誰吃下）連講兩次，s12.1 前面也講過，收尾變成重播。",
+    "fix": "刪掉 s23.4–s23.5，s23.3 直接接 s24.1。s24.1 補一句「證據目前只到單一款手機晶片」，取代被刪掉的保留語。",
+    "evidence": "晶片貓的判斷是，整條價格階梯很可能一起被墊高；",
+    "caused_by": "deck"
+   }
+  ],
+  "verdict": "論點本身誠實，來源也標得清楚，但資訊撐不起 8 分半。我判 5.5 分，問題集中在三個地方。\n\n- **重講：**同一則傳聞講了三次，10–20% 的價差講了兩次，結論講了三次。\n- **離題：**1987 年建廠史跟主題無關。\n- **誤導：**每顆 300 美元那個換算會被當成手機晶片成本。\n\n照上面的修改刪併後，片長大約縮到 6.5 分鐘，密度才夠。"
+ },
+ "draft": "chipcat1",
+ "round_dir": "/Users/lileon/project/content-farm/.claude/worktrees/cf-chipcat-run1/output/chipcat-run1/review/script_structure/round-1"
+}
