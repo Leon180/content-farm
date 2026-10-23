@@ -46,6 +46,8 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--dump-params", action="store_true", help="also write assembly/mascot_params.json")
     parser.add_argument("--allow-subtitle-overlap", action="store_true",
                         help="overlay even if a subtitle line reaches the cat's column")
+    parser.add_argument("--motion-profile", metavar="NAME", default=None,
+                        help="PNGtuber motion profile (legacy, calm, nod, beat); default legacy")
     parser.add_argument("--pngtuber", metavar="REF",
                         help="draw a PNGtuber pack (e.g. pngtuber/frog-scribe) instead of the vector rig")
     return parser.parse_args(argv)
@@ -54,7 +56,8 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
 def _pngtuber(args: argparse.Namespace) -> int:
     from content_farm.explainer.pngtuber.run import run_host_overlay
 
-    result = run_host_overlay(args.run_dir, args.pngtuber, seed=args.seed, seconds=args.seconds, out=args.out)
+    result = run_host_overlay(args.run_dir, args.pngtuber, seed=args.seed, seconds=args.seconds, out=args.out,
+                              motion_profile=args.motion_profile)
     t = result.timings
     print(f"Host:   {args.pngtuber} ({result.placement}), {result.render.frames} frames, "
           f"{result.render.faces} composited faces")

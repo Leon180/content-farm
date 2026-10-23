@@ -60,11 +60,21 @@ class Mascot(_Strict):
     rig_ready: bool = Field(default=False, description="False = skip the mascot overlay step")
     # rig: the vector 晶片貓 (explainer.mascot). pngtuber: a still-image pack, ref = "pngtuber/<pack id>"
     host: Literal["rig", "pngtuber"] = "rig"
+    # pngtuber.profiles name; "legacy" = the shipped motion. Only used when host is pngtuber
+    motion_profile: str = "legacy"
 
     @model_validator(mode="after")
     def _pngtuber_ref(self) -> Mascot:
         if self.host == "pngtuber" and not self.ref.startswith("pngtuber/"):
             raise ValueError(f"mascot.host pngtuber needs ref 'pngtuber/<pack id>', got {self.ref!r}")
+        return self
+
+    @model_validator(mode="after")
+    def _known_motion_profile(self) -> Mascot:
+        from content_farm.explainer.pngtuber.profiles import PROFILES
+
+        if self.motion_profile not in PROFILES:
+            raise ValueError(f"mascot.motion_profile {self.motion_profile!r} not in {', '.join(PROFILES)}")
         return self
 
 

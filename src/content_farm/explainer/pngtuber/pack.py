@@ -47,6 +47,9 @@ class Pack:
     # speech effect drawn by the renderer, e.g. {"kind": "bubbles", "emit": [x, y], "surface_y": y,
     # "x_range": [x0, x1]} in canvas px: bubbles rise from ``emit`` while the host speaks
     speech_fx: dict | None = None
+    # procedural jaw drop (pngtuber.jaw): {"x_range", "rows", "depth", "falloff"} in canvas px; used by
+    # motion profiles with ``jaw`` instead of the mouth_half / mouth_open patches
+    jaw: dict | None = None
 
     def expression_for(self, pose: str) -> str:
         return self.pose_map.get(pose, "neutral")
@@ -94,5 +97,8 @@ def load_pack(ref: str, root: Path = PACK_ROOT) -> Pack:
         missing = [k for k in ("emit", "surface_y", "x_range") if k not in speech_fx]
         if speech_fx.get("kind") != "bubbles" or missing:
             raise PackError(f"pack {folder.name}: speech_fx must be kind 'bubbles' with emit, surface_y, x_range")
+    jaw = manifest.get("jaw")
+    if jaw is not None and any(k not in jaw for k in ("x_range", "rows", "depth", "falloff")):
+        raise PackError(f"pack {folder.name}: jaw needs x_range, rows, depth, falloff")
     return Pack(id=manifest.get("id", folder.name), name=manifest.get("name", folder.name), base=base,
-                layers=layers, pose_map=pose_map, mouth_mode=mouth_mode, depth=depth, speech_fx=speech_fx)
+                layers=layers, pose_map=pose_map, mouth_mode=mouth_mode, depth=depth, speech_fx=speech_fx, jaw=jaw)

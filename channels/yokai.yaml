@@ -10,6 +10,7 @@ mascot:
   ref: pngtuber/frog-scribe
   host: pngtuber
   rig_ready: true
+  motion_profile: frog     # Leon 2026-10-23：只要像真青蛙張嘴閉嘴；固定 neutral、身體不動（profiles.FROG）
 voice:                  # Leon 2026-10-17：本機 VoxCPM2（Apache-2.0）複製參考聲
   provider: voxcpm2
   tempo: 1.29             # Leon 2026-10-17 944769e1fc01：參考聲語速慢，整片加速（音高不變）；2026-10-18 40e6b445a7ed：1.20→1.29 壓進 10:00

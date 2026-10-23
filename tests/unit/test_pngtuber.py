@@ -275,3 +275,48 @@ def test_committed_packs_load() -> None:
     for folder in sorted(p for p in pack.PACK_ROOT.iterdir() if p.is_dir()):
         loaded = pack.load_pack(folder.name)
         assert loaded.base.getchannel("A").getbbox() is not None
+
+
+def test_legacy_profile_is_the_shipped_motion() -> None:
+    from content_farm.explainer.pngtuber.profiles import LEGACY, get_profile
+
+    assert get_profile(None) is LEGACY and get_profile("legacy") is LEGACY
+    assert (LEGACY.mouth_half_at, LEGACY.mouth_open_at, LEGACY.mouth_hold) == (0.12, 0.45, 2)
+    assert (LEGACY.bounce_px, LEGACY.sway_deg, LEGACY.breath_scale) == (6.0, 1.4, 0.018)
+    with pytest.raises(ValueError, match="unknown motion profile"):
+        get_profile("nope")
+
+
+def test_mouth_open_max_eases_a_long_vowel_to_half() -> None:
+    levels = motion.mouth_levels(np.ones(20), hold=2, half_at=0.2, open_at=0.6, open_max=5)
+    assert levels.tolist()[:10] == [2, 2, 2, 2, 2, 1, 1, 2, 2, 2]
+    assert 1 in levels.tolist()
+    assert 1 not in motion.mouth_levels(np.ones(20), hold=2).tolist()[2:]    # legacy: stays wide open
+
+
+def test_beat_track_hops_once_per_onset_and_lands_with_a_squash() -> None:
+    env = np.zeros(40)
+    env[10:] = 0.9                       # one sharp onset at frame 10
+    hop, stretch = motion.beat_track(env)
+    assert hop[:10].max() == 0 and hop[10:10 + motion.BEAT_FRAMES].min() > 0
+    assert stretch[10 + motion.BEAT_FRAMES:10 + motion.BEAT_FRAMES + motion.BEAT_LAND_FRAMES].max() < 0
+    assert (np.diff((hop > 0).astype(int)) == 1).sum() == 1
+
+
+def test_head_warp_pins_the_feet() -> None:
+    img = Image.new("RGBA", (40, 60), (200, 50, 50, 255))
+    out = np.asarray(render.head_warp(img, 0.0, 6.0))
+    assert out[-1, 20, 3] == 255 and tuple(out[-1, 20, :3]) == (200, 50, 50)    # bottom row unchanged
+    shifted = np.asarray(render.head_warp(Image.fromarray(np.tile(np.arange(60, dtype=np.uint8)[:, None, None] * 4,
+                                                                     (1, 40, 4))), 0.0, 6.0))
+    assert shifted[0, 0, 0] == 0 and shifted[1, 0, 0] < 8                      # head rows moved ~dy down, edge-held
+    assert shifted[-1, 0, 0] == 59 * 4                                          # feet row identical
+
+
+def test_mascot_motion_profile_is_validated() -> None:
+    from content_farm.production.channels import Mascot
+
+    assert Mascot(name="x", ref="pngtuber/x", host="pngtuber").motion_profile == "legacy"
+    assert Mascot(name="x", ref="pngtuber/x", host="pngtuber", motion_profile="calm").motion_profile == "calm"
+    with pytest.raises(ValueError, match="motion_profile"):
+        Mascot(name="x", ref="pngtuber/x", host="pngtuber", motion_profile="wobble")

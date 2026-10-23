@@ -97,7 +97,10 @@ def _run_dir(ctx: Context) -> str:
 def _host_args(ctx: Context) -> tuple[str, ...]:
     """The mascot step draws the vector rig unless the channel uses a PNGtuber pack."""
     mascot = ctx.channel.mascot
-    return ("--pngtuber", mascot.ref) if mascot.host == "pngtuber" else ()
+    if mascot.host != "pngtuber":
+        return ()
+    profile = ("--motion-profile", mascot.motion_profile) if mascot.motion_profile != "legacy" else ()
+    return ("--pngtuber", mascot.ref, *profile)
 
 
 def voice_choice(ctx: Context) -> VoiceChoice:

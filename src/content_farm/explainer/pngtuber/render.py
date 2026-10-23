@@ -20,8 +20,10 @@ from PIL import Image, ImageDraw, ImageFilter
 
 from content_farm.explainer.mascot.overlay import ORIGIN, Rect
 from content_farm.explainer.mascot.render import ALPHA_CODEC_ARGS, CANVAS_H, CANVAS_W
+from content_farm.explainer.pngtuber.jaw import JAW_STEPS, JawRig
 from content_farm.explainer.pngtuber.motion import HostFrame
 from content_farm.explainer.pngtuber.pack import MOUTH_LAYERS, Pack
+from content_farm.explainer.pngtuber.warp import remap
 
 
 @dataclass(frozen=True)
@@ -53,23 +55,22 @@ SHADOW_ALPHA = 0.30
 
 
 def depth_warp(img: Image.Image, depth: np.ndarray, dx: float, dy: float) -> Image.Image:
-    """Backward bilinear remap: a pixel at depth d samples from (x - dx·(d-½), y - dy·(d-½)), so near
-    parts slide past far ones like a small head turn. Premultiplied alpha keeps edges clean."""
-    arr = np.asarray(img, dtype=np.float32) / 255.0
-    rgb = arr[..., :3] * arr[..., 3:4]
-    pre = np.concatenate([rgb, arr[..., 3:4]], axis=-1)
-    h, w = depth.shape
-    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    """A pixel at depth d samples from (x - dx·(d-½), y - dy·(d-½)), so near parts slide past far
+    ones like a small head turn."""
     off = depth - 0.5
-    sx = np.clip(xx - dx * off, 0, w - 1.001)
-    sy = np.clip(yy - dy * off, 0, h - 1.001)
-    x0, y0 = sx.astype(np.int32), sy.astype(np.int32)
-    fx, fy = (sx - x0)[..., None], (sy - y0)[..., None]
-    out = (pre[y0, x0] * (1 - fx) * (1 - fy) + pre[y0, x0 + 1] * fx * (1 - fy)
-           + pre[y0 + 1, x0] * (1 - fx) * fy + pre[y0 + 1, x0 + 1] * fx * fy)
-    alpha = out[..., 3:4]
-    rgb = np.where(alpha > 1e-4, out[..., :3] / np.maximum(alpha, 1e-4), 0.0)
-    return Image.fromarray((np.concatenate([rgb, alpha], axis=-1) * 255).round().astype(np.uint8))
+    return remap(img, dx * off, dy * off)
+
+
+HEAD_FALLOFF = 2.0   # head_warp weight = (1 - y/h) ** this: the head moves, the belly barely, the feet never
+
+
+def head_warp(img: Image.Image, dx: float, dy: float) -> Image.Image:
+    """Move the top of a flat figure by (dx, dy) px with the feet pinned: a nod / head drift that
+    needs no depth map and no body split."""
+    h, w = img.height, img.width
+    weight = np.clip(1.0 - np.arange(h, dtype=np.float32) / h, 0.0, 1.0) ** HEAD_FALLOFF
+    col = np.broadcast_to(weight[:, None], (h, w))
+    return remap(img, dx * col, dy * col)
 
 
 def draw_bubbles(img: Image.Image, bubbles: Sequence[tuple[float, float, float, float]], offset: tuple[int, int],
@@ -127,14 +128,17 @@ class Composer:
             size = (round(w * self.scale), round(h * self.scale))
             crop = Image.fromarray(np.ascontiguousarray(pack.depth[bbox[1]:bbox[3], bbox[0]:bbox[2]], dtype=np.float32))
             self.depth = np.asarray(crop.resize(size, Image.BILINEAR), dtype=np.float32)
-        self._faces: dict[tuple[str, int, bool], Image.Image] = {}
+        self._faces: dict[tuple[str, int, bool, int], Image.Image] = {}
+        self._jaw = JawRig(pack.base, pack.jaw) if pack.jaw else None
 
-    def face(self, expression: str, mouth: int, blink: bool) -> Image.Image:
+    def face(self, expression: str, mouth: int, blink: bool, jaw_step: int = 0) -> Image.Image:
         if self.pack.mouth_mode == "none":
             mouth = 0
         elif self.pack.mouth_mode == "small_o" and expression != "neutral":
             mouth = 0   # the 'o' only replaces the neutral mouth; an expression keeps its own (no ghost smile)
-        key = (expression, mouth, blink)
+        if jaw_step and self._jaw is None:
+            raise ValueError(f"pack {self.pack.id} has no jaw geometry in its manifest")
+        key = (expression, mouth, blink, jaw_step)
         if key not in self._faces:
             img = self.pack.base.copy()
             if expression != "neutral":
@@ -143,6 +147,8 @@ class Composer:
                 img.alpha_composite(self.pack.layers["blink"])
             if mouth:
                 img.alpha_composite(self.pack.layers[MOUTH_LAYERS[mouth - 1]])
+            if jaw_step:
+                img = self._jaw.open_face(img, jaw_step / JAW_STEPS)
             img = img.crop(self.bbox)
             size = (round(img.width * self.scale), round(img.height * self.scale))
             self._faces[key] = img.resize(size, Image.LANCZOS)
@@ -150,10 +156,12 @@ class Composer:
 
     def canvas(self, frame: HostFrame) -> Image.Image:
         p = self.placement
-        img = self.face(frame.expression, frame.mouth, frame.blink)
+        img = self.face(frame.expression, frame.mouth, frame.blink, round(frame.jaw * JAW_STEPS))
         if frame.bubbles:
             img = draw_bubbles(img, frame.bubbles, self.bbox[:2], self.scale)
         base_w = img.width
+        if frame.head_dx or frame.head_dy:
+            img = head_warp(img, frame.head_dx, frame.head_dy)
         squash = frame.squash if self.depth is not None else 0.0
         if self.depth is not None:
             img = depth_warp(img, self.depth, YAW_SHIFT * img.width * frame.yaw, NOD_SHIFT * img.height * frame.nod)
