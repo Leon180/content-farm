@@ -16,3 +16,5 @@
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-story-calibrate/REPORT-story-calibrate.md","min_bytes":2000,"why":"派工宣告的預期產物"}
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-story-calibrate/docs/story-calibrate/data/summary.json","why":"校正原始數據"}
 {"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-story-calibrate/src","pattern":"editor_audio","why":"評審拿掉聲音席次"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-pipeline-speed2/REPORT-pipeline-speed2.md","min_bytes":2000,"why":"派工預期產物"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-pipeline-speed2/src","pattern":"TODO-pipeline-speed2","why":"沒有留暫時碼"}
