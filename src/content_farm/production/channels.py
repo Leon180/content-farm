@@ -255,6 +255,12 @@ class YouTube(_Strict):
         return _check_env_name(value)
 
 
+class WanPolicy(_Strict):
+    """Per-channel rules for Wan image-to-video shots (Leon 2026-10-24: Wan warps faces)."""
+    negative_prompt: str = Field(default="", max_length=200)   # sent as --negative-prompt; empty = model default
+    motion_only: bool = False   # prompt = the slide's motion_prompt only (environment + camera), not the still's prompt
+
+
 class Channel(_Strict):
     code: str = Field(pattern="^[a-z][a-z0-9_]{1,31}$")
     # False = retired (Leon 2026-10-23: offwork). The yaml, assets and code stay; load_all() skips it,
@@ -277,6 +283,7 @@ class Channel(_Strict):
     youtube: YouTube
     identity: Identity | None = None   # opening / sign-off / description per channel
     audio: AudioMix = AudioMix()       # BGM / SFX / mastering (long videos)
+    wan: WanPolicy = WanPolicy()       # Wan shot prompt rules
     publish: dict = {}                 # release windows; validated by production.publish_slot.PublishPlan
     notes: tuple[str, ...] = ()
     # Recurring series run by their own modules (e.g. ``hn`` → production/news), validated there.

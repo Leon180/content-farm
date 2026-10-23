@@ -60,6 +60,7 @@ class WanParams:
     guide_scale: float = 5.0
     tiling: str = "aggressive"
     seed: int = 42
+    negative_prompt: str = ""   # empty = the model's own default; kept out of the cache key when empty
 
     def __post_init__(self) -> None:
         if (self.num_frames - 1) % 4:
@@ -83,20 +84,38 @@ def build_prompt(image_prompt: str, motion_prompt: str) -> str:
     return f"{image_prompt.strip()} Motion: {(motion_prompt or DEFAULT_MOTION).strip()}".strip()
 
 
+def policy_for(run_dir: Path):
+    """The run's channel Wan policy (default policy when the run has no readable channel)."""
+    from content_farm.production.channels import WanPolicy, load_channel
+    from content_farm.production.state import read_channel_code
+
+    try:
+        return load_channel(read_channel_code(run_dir)).wan
+    except (OSError, ValueError, KeyError):
+        return WanPolicy()
+
+
 def request_for(slide_id: str, image: Path, image_record: dict | None, motion_prompt: str,
-                fallback_prompt: str = "") -> WanRequest:
+                fallback_prompt: str = "", policy=None) -> WanRequest:
     record = image_record or {}
-    prompt = build_prompt(str(record.get("prompt") or fallback_prompt), motion_prompt)
+    if policy is not None and policy.motion_only:
+        prompt = (motion_prompt or DEFAULT_MOTION).strip()
+    else:
+        prompt = build_prompt(str(record.get("prompt") or fallback_prompt), motion_prompt)
     bad = forbidden_prompt_terms(prompt)
     if bad:
         raise ValueError(f"slide {slide_id}: Wan prompt asks for {bad} (rule: 非擬真、不模仿畫家)")
     seed = record.get("seed")
-    return WanRequest(slide_id, image, prompt, WanParams(seed=seed if isinstance(seed, int) else 42))
+    negative = policy.negative_prompt if policy is not None else ""
+    return WanRequest(slide_id, image, prompt,
+                      WanParams(seed=seed if isinstance(seed, int) else 42, negative_prompt=negative))
 
 
 def key_for(request: WanRequest, image_sha: str) -> str:
-    return cache_key(kind=KIND, image=image_sha, model=WAN_MODEL["id"], prompt=request.prompt,
-                     params=asdict(request.params))
+    params = asdict(request.params)
+    if not params["negative_prompt"]:
+        params.pop("negative_prompt")        # keep the keys of clips baked before the field existed
+    return cache_key(kind=KIND, image=image_sha, model=WAN_MODEL["id"], prompt=request.prompt, params=params)
 
 
 def cached(run_dir: Path, request: WanRequest) -> tuple[Path, dict] | None:
@@ -111,7 +130,7 @@ def argv(paths: MotionPaths, request: WanRequest, out: Path) -> list[str]:
             "--prompt", request.prompt, "--image", str(request.image), "--width", str(p.width),
             "--height", str(p.height), "--num-frames", str(p.num_frames), "--steps", str(p.steps),
             "--guide-scale", str(p.guide_scale), "--tiling", p.tiling, "--seed", str(p.seed),
-            "--output-path", str(out)]
+            "--output-path", str(out), *(["--negative-prompt", p.negative_prompt] if p.negative_prompt else [])]
 
 
 def busy_processes(own_pids: set[int], ps_output: str | None = None) -> list[str]:
