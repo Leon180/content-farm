@@ -376,6 +376,8 @@ def cmd_timing(args: argparse.Namespace) -> int:
         print(timing_view.gantt(ledgers[0]))
         print()
         print(timing_view.bottlenecks(ledgers[0]))
+        print()
+        print(timing_view.lanes_table(ledgers[0]))
     return 0
 
 

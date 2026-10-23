@@ -60,6 +60,24 @@ def test_views_render(tmp_path):
     assert tmp_path.name in timing_view.compare([data])
 
 
+def test_local_steps_split_queue_wait_from_execution(tmp_path):
+    write_lines(tmp_path / "production.log.jsonl", [
+        {"at": at(20), "step": "illustrate", "exit_code": 0, "seconds": 300, "lane": "local"},
+        {"at": at(40), "step": "illustrate", "exit_code": 0, "seconds": 60, "lane": "local"},
+        {"at": at(50), "step": "assembly", "exit_code": 0, "seconds": 90, "lane": "local"},
+    ])
+    write_lines(tmp_path / "timing.events.jsonl", [
+        {"at": at(15), "event": "queue", "step": "illustrate", "waited_s": 600},
+        {"at": at(48), "event": "queue", "step": "assembly", "waited_s": 30},
+    ])
+    rows = {r["step"]: r for r in timing.build(tmp_path)["steps"]}
+    assert (rows["illustrate"]["execute_s"], rows["illustrate"]["queue_s"], rows["illustrate"]["queued_runs"]) == (360, 600, 1)
+    assert rows["illustrate"]["queue_share"] == round(600 / 960, 3)
+    assert rows["assembly"]["queue_s"] == 30
+    table = timing_view.lanes_table(timing.build(tmp_path))
+    assert "illustrate" in table and "queued%" in table and "total" in table
+
+
 def test_trace_summary_counts_tools_and_model_time():
     rows = [[1.0, "model", "", {}], [1.0, "tool_use", "Read", {"id": "a", "arg": "x"}],
             [3.0, "tool_result", "", {"id": "a"}], [10.0, "model", "", {}],
