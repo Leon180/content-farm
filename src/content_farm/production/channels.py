@@ -45,7 +45,7 @@ class Gate(str, Enum):
 # gate is opened by an agent panel, so none of a pipeline's gates may be switched off.
 PIPELINE_GATES: dict[Pipeline, tuple[Gate, ...]] = {
     Pipeline.EXPLAINER: (Gate.TOPIC, Gate.ARTICLE, Gate.DECK, Gate.TITLE, Gate.MEDIA, Gate.FINAL),
-    Pipeline.SHORTS_SKIT: (Gate.SCRIPT, Gate.FINAL),
+    Pipeline.SHORTS_SKIT: (Gate.TOPIC, Gate.SCRIPT, Gate.FINAL),
 }
 REQUIRED_GATES: dict[Pipeline, frozenset[Gate]] = {p: frozenset(g) for p, g in PIPELINE_GATES.items()}
 

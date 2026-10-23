@@ -261,8 +261,13 @@ EXPLAINER_STEPS: tuple[Step, ...] = (
 )
 
 SHORTS_SKIT_STEPS: tuple[Step, ...] = (
-    Step("skit_script", "agent", "冷笑話劇本", outputs=("script.json",),
-         hint="寫 script.json（鋪陳→停頓→笑點，20–50 秒）；skit skill 尚未建立，見 roadmap"),
+    Step("topic", "agent", "冷笑話選題候選（8–10 題）", outputs=("topics/candidates.json",),
+         hint="選題 agent 寫 topics/candidates.json（produce.py run --auto-agents 會自動呼叫）"),
+    Step("gate_topic", "gate", "選題評審", gate=Gate.TOPIC, artifacts=("topics/candidates.json",),
+         applies=_gate_enabled(Gate.TOPIC)),
+    Step("skit_script", "agent", "冷笑話劇本（鋪陳→停 0.6 秒→笑點→收尾）", outputs=("script.json",),
+         verify=lambda c: _py(c, "check_skit.py", "--run-dir", _run_dir(c)),
+         hint="跑 /skit-script（讀 topic.json 的 chosen[0] → 寫 script.json；produce.py run --auto-agents 會自動呼叫）"),
     Step("gate_script", "gate", "劇本審稿", gate=Gate.SCRIPT, artifacts=("script.json",),
          applies=_gate_enabled(Gate.SCRIPT)),
     Step("voice", "cmd", "配音＋字幕對齊", outputs=("audio/scene_*.mp3", "subtitles/subtitles.srt"),

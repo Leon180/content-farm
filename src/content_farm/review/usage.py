@@ -18,7 +18,8 @@ from content_farm.review.client import TOKEN_KEYS, call_usage
 from content_farm.review.rounds import REVIEW_DIR
 
 # producer step -> review stage it answers (review.producers.STEP_STAGE, kept literal: no import cycle)
-PRODUCER_STAGE = {"topic": "topic", "article": "article", "deck": "script_structure", "thumbnail_spec": "title_thumb"}
+PRODUCER_STAGE = {"topic": "topic", "article": "article", "deck": "script_structure", "thumbnail_spec": "title_thumb",
+                  "skit_script": "shorts_script"}
 
 
 @dataclass

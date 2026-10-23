@@ -26,7 +26,7 @@ from typing import Any
 
 from content_farm.review.sentences import Sentence
 
-PIPELINE_ORDER = ("topic", "article", "deck", "thumbnail_spec", "voice", "illustrate", "media", "assembly",
+PIPELINE_ORDER = ("topic", "article", "deck", "skit_script", "thumbnail_spec", "voice", "illustrate", "media", "assembly",
                   "mascot", "mix")
 COMMON_TERM_HITS = 6          # a linked term found in more sentences than this does not link
 MAX_AFFECTED_SLIDES = 3       # extra slides a claim_change issue may name (ref: ``affected_slides``)

@@ -39,6 +39,13 @@ personas:
     - {id: scholar, who: 50 歲中文系講師, traits: [會檢查引文與年代, 討厭把傳說講成史實]}
     - {id: senior, who: 65 歲退休阿嬤, traits: [手機看、字幕要大, 喜歡台灣在地傳說, 語速要慢]}
     - {id: parent, holdout: true, who: 38 歲家長, traits: [陪小孩一起看, 在意會不會太恐怖, 喜歡有知識點]}
+  offwork:       # 冷笑話小劇場（Shorts，滑著看；笑點成敗取決於前幾秒的鋪陳有沒有留住人）
+    - {id: office_worker, who: 28 歲台北上班族, traits: [下班後在床上滑 Shorts、隨時滑走, 職場梗一聽就懂但看過太多爛梗, 鋪陳超過幾秒還沒進入狀況就走, 笑點如果被預告或被解釋就翻白眼]}
+    - {id: engineer, who: 32 歲後端工程師, traits: [懂部署／會議／需求變更這類工程師日常, 對網路上轉了無數次的梗沒反應, 笑點要有一點巧思才算數, 太刻意的諧音梗會直接滑走]}
+    - {id: student, who: 20 歲大學生, traits: [Shorts 重度使用者、沒上過班, 需要不靠職場經驗也看得懂的鋪陳, 喜歡節奏快、停頓有張力的短片, 字幕沒跟上就走]}
+    - {id: manager, who: 45 歲科技公司主管, traits: [通勤時用手機看、聲音開著, 喜歡自嘲型的職場幽默, 不喜歡拿同事或公司開刀的內容, 語速太快會漏掉鋪陳]}
+    - {id: casual, who: 24 歲剛入職的行政助理, traits: [午休滑手機, 愛轉發給同事的才算好笑, 看完要能一句話轉述給別人, 角色可愛有加分]}
+    - {id: comedy_fan, holdout: true, who: 35 歲愛看脫口秀的觀眾, traits: [在意笑話是不是原創、有沒有搬運常見段子, 笑點被講白或重複就扣分, 停頓時機不對會覺得拖, 討厭靠音效或字幕硬撐的笑點]}
   cel:
     - {id: anime_fan, who: 22 歲動漫迷, traits: [每季追番, 想知道製作內幕, 討厭被說教]}
     - {id: industry, who: 33 歲動畫業界從業者, traits: [懂製作委員會與外包, 數字講錯會糾正]}
@@ -155,6 +162,16 @@ review:
       brief: >-
         你是十年經驗的知識類長片剪輯師，只看畫面：換場頻率、靜止畫面、轉場、畫面與旁白同步、素材貼題、字幕可讀、縮圖與影片一致。
       rubric: [節奏與換場, 畫面與旁白同步, 素材貼題, 字幕與版面]
+    writer_comedy:
+      title: 編劇（冷笑話）
+      kind: pro
+      brief: >-
+        你是冷笑話與短劇編劇，審的是一支 20–50 秒、由一隻飲水機金魚演出的直式 Short 劇本：鋪陳（1–3 場）→ 停頓約 0.6 秒（記在最後一場
+        鋪陳的 transition）→ 笑點（單句、短）→ 可省的收尾。要判斷：笑點有沒有真的翻轉鋪陳建立的預期、鋪陳有沒有提前洩漏或太長、
+        停頓放的位置對不對（笑點之前，不是之後）、全片長度是否落在 20–50 秒（約 5.5 字／秒加停頓）、有沒有解釋笑點或重複笑點、
+        是否原創（看起來像常見段子或其他頻道的口頭禪就扣分）、是否符合頻道調性（下班族的冷面幽默、口語、不爆粗、不拿真實公司或個人開刀、
+        不用過期流行語如「狂」「絕了」、「欸」不超過一次）、角色只有頻道設定裡的金魚。不要評音效與配樂（後期才加）。
+      rubric: [笑點, 鋪陳, 停頓, 時長, 頻道調性]
     editor_audio:
       title: 剪輯（聲音）
       kind: pro
@@ -274,4 +291,12 @@ review:
         - {role: viewer, count: 3, model: sonnet, effort: low}
         - {role: editor_visual, count: 1, model: sonnet, effort: low}
       threshold: {leave_median_pct: 0.4}
-  channels: {}      # 頻道覆寫：<code>: {stages: {<stage>: {...}}}，合併後重新驗證（只能更嚴）
+  # 頻道覆寫：<code>: {stages: {<stage>: {...}}}，合併後重新驗證（只能更嚴）
+  channels:
+    offwork:        # 冷笑話小劇場沒有 deck：劇本退回給 skit_script；劇本審稿由冷笑話編劇（笑點／鋪陳／停頓／時長／頻道調性）代替故事編劇
+      stages:
+        shorts_script:
+          rework: skit_script
+          seats:
+            - {role: viewer, count: 3, model: sonnet, effort: low}
+            - {role: writer_comedy, count: 1, model: sonnet, effort: low}

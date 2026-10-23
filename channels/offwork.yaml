@@ -35,7 +35,7 @@ media:
   ai_image: false         # 全部用角色與自製素材，不碰別人影片
   artwork: false
   source_footage: false
-gates: [script, final]
+gates: [topic, script, final]
 youtube:
   refresh_token_env: CF_YT_OFFWORK_REFRESH_TOKEN
   channel_id_env: CF_YT_OFFWORK_CHANNEL_ID

@@ -28,12 +28,15 @@ RECEIPT = {"type": "object", "additionalProperties": False, "required": ["files"
                                                                               "(only when the fix list names no sentence)"}}}
 TOOLS = ("Read", "Write", "Edit", "Glob", "Grep", "WebSearch", "WebFetch")   # + Bash scoped to the repo python
 
-SCRIPTS = ("check_article.py", "deck_to_script.py", "apply_deck_patch.py", "make_thumbnail.py", "render_slides.py")
-TIMEOUT_S = {"topic": 1500, "article": 2700, "deck": 3600, "thumbnail_spec": 1800}
+SCRIPTS = ("check_article.py", "deck_to_script.py", "apply_deck_patch.py", "make_thumbnail.py", "render_slides.py",
+           "check_skit.py")
+TIMEOUT_S = {"topic": 1500, "article": 2700, "deck": 3600, "thumbnail_spec": 1800, "skit_script": 900}
 
 # step → (stage whose producer tier applies, gate whose fixes apply)
 STEP_STAGE = {"topic": ("topic", "topic"), "article": ("article", "article"), "deck": ("script_structure", "deck"),
-              "thumbnail_spec": ("title_thumb", "title")}
+              "thumbnail_spec": ("title_thumb", "title"), "skit_script": ("shorts_script", "script")}
+# a short channel's topic step is the shorts_topic stage (sonnet producer, not the long videos' opus plan stage)
+SHORT_TOPIC_STAGE = "shorts_topic"
 
 COMMON = """你是 content-farm（繁中 YouTube 內容工廠）的製作 agent，工作目錄就是這支片的 run-dir：{run_dir}
 頻道設定：{repo}/channels/{channel}.yaml（讀它：品牌、角色、片長、規則）。既定規則：艱深名詞先用國高中程度比喻再給定義；
@@ -72,7 +75,18 @@ TASKS = {
 2. 寫 thumbnail.json（主縮圖）與 thumbnail_variants.json（3 款：A 角色大表情、B 主視覺問句、C 數字對比），格式見
    {repo}/src/content_farm/production/thumbnail.py（ThumbnailSpec／ThumbnailVariants）；promise 必須是講稿前 60 秒內的原句。
 3. 跑 `{python} {repo}/scripts/make_thumbnail.py --run-dir {run_dir} --channel {channel} --variants` 確認能渲染。""",
+    "skit_script": """任務：冷笑話小劇場劇本。題目在 topic.json 的 chosen[0]（title、hook、note）。照 {repo}/.claude/skills/skit-script/SKILL.md 的格式與規則
+（不要停下來等人審）寫 script.json：鋪陳 → 停 0.6 秒（最後一場鋪陳的 transition 填 pause:0.6）→ 笑點（≤ 40 字）→ 可省的收尾；總長 20–50 秒。
+角色只有頻道設定裡的飲水機金魚（{repo}/channels/{channel}.yaml），不新增角色或設定；笑話必須原創，不搬運他人段子、不用其他頻道的口頭禪。
+寫完跑 `{python} {repo}/scripts/check_skit.py --run-dir {run_dir}`，改到 0 problem(s)。""",
 }
+# A short joke channel's topic step: jokes need no sources, only premises the single character can act out.
+TASK_SKIT_TOPIC = """任務：冷笑話選題候選。讀 {repo}/channels/{channel}.yaml（topic_categories、角色飲水機金魚、規則）與
+{repo}/channels/backlog/{channel}.yaml（kind: short、status 不是 dropped／published 的題目可沿用或改寫），整理 8–10 個原創冷笑話題目，
+排除 topics/channel_history.txt 裡已做過的。不需要上網查資料。寫 topics/candidates.json：
+{{"candidates":[{{"id":"t01","title":"標題草案（≤ 14 字，不爆雷）","hook":"一句話寫出：鋪陳 → 笑點","minutes":0.5,"sources":[],"note":"類別（topic_categories 之一）＋為何好笑"}}]}}
+每題要能只靠一隻飲水機金魚在 20–50 秒內演完（鋪陳 → 停 0.6 秒 → 笑點）；不搬運他人段子、不改編既有梗圖或知名笑話的原句、
+不拿真實公司事故或個人開玩笑、不講時事政治。題目之間類別要分散。"""
 
 
 TASKS_REWORK = {
@@ -87,6 +101,9 @@ TASKS_REWORK = {
     "thumbnail_spec": """任務：標題與縮圖退回重做。titles.json、thumbnail.json、thumbnail_variants.json 已經存在；
 只改清單點名的標題與縮圖款，沒被點名的標題一字不動（程式會比對）。
 改完跑 `{python} {repo}/scripts/make_thumbnail.py --run-dir {run_dir} --channel {channel} --variants` 確認能渲染。""",
+    "skit_script": """任務：冷笑話劇本退回重做。script.json 已經存在；依下面的修改清單改被點名的句子（句子 id c<場>.<序>），不要換題、不要換笑點的梗，
+其他場景不動。結構（鋪陳／笑點／收尾 的 title、最後一場鋪陳的 transition pause:0.6、金魚表情）不能破壞。
+整體問題（例如鋪陳太長、笑點沒翻轉）才可以重寫該場景。改完跑 `{python} {repo}/scripts/check_skit.py --run-dir {run_dir}`，改到 0 problem(s)。""",
 }
 # Article sent back by the script_structure panel (Leon 2026-10-23): a structure-level rewrite, not a fact fix.
 ARTICLE_STRUCTURE_REWORK = """任務：文章結構退回重做。腳本評審指出文章的結構問題（例如名詞表／時間軸堆疊、缺留人點、論點不推進）；article.md 與 sources.json 已經存在。
@@ -101,16 +118,17 @@ NAMED_LIMIT = 14        # sentences quoted per rework brief
 
 def _named_sentences(run_dir: Path, plan: dict, step: str) -> str:
     """The sentences the fix list names, with their current wording: the agent edits these and nothing else."""
-    deck_path = run_dir / "deck.json"
-    if step != "deck" or not deck_path.is_file():
+    deck_path = run_dir / ("script.json" if step == "skit_script" else "deck.json")
+    if step not in ("deck", "skit_script") or not deck_path.is_file():
         return ""
-    from content_farm.review.sentences import deck_sentences
+    from content_farm.review.sentences import deck_sentences, script_sentences
     from content_farm.review.touch_guard import named_in
 
     named = named_in(plan, step)
     if not named.sentence_ids:
         return ""
-    by_id = {s.id: s for s in deck_sentences(json.loads(deck_path.read_text(encoding="utf-8")))}
+    read = script_sentences if step == "skit_script" else deck_sentences
+    by_id = {s.id: s for s in read(json.loads(deck_path.read_text(encoding="utf-8")))}
     rows = [f"- {i}（{by_id[i].slide_id}）｜{by_id[i].text}" for i in sorted(named.sentence_ids) if i in by_id]
     more = f"\n（另有 {len(rows) - NAMED_LIMIT} 句見修改清單的連動範圍）" if len(rows) > NAMED_LIMIT else ""
     return "\n要改的句子（id｜現文）：\n" + "\n".join(rows[:NAMED_LIMIT]) + more
@@ -163,8 +181,20 @@ def is_fact(fix: dict) -> bool:
     return fix.get("category") == "fact" or str(fix.get("who", "")).startswith("fact_checker")
 
 
-def producer_tier(config: ReviewConfig, step: str) -> Tier:
+def is_skit_channel(channel: str) -> bool:
+    """A 冷笑話小劇場 channel (pipeline ``shorts_skit``): its topic and script steps have their own tasks."""
+    from content_farm.production.channels import Pipeline, load_channel
+
+    try:
+        return load_channel(channel).pipeline is Pipeline.SHORTS_SKIT
+    except (FileNotFoundError, ValueError):     # an unknown channel code (tests, ad-hoc runs): the long-video tasks
+        return False
+
+
+def producer_tier(config: ReviewConfig, step: str, *, skit: bool = False) -> Tier:
     stage, _ = STEP_STAGE[step]
+    if skit and step == "topic":
+        stage = SHORT_TOPIC_STAGE
     tier = config.stages[stage].producer
     return tier or Tier(model="sonnet", effort="medium")
 
@@ -210,14 +240,17 @@ def produce(step: str, run_dir: Path, *, channel: str, config: ReviewConfig, pyt
     gate = gate or STEP_STAGE[step][1]
     fmt = {"run_dir": run_dir, "repo": REPO, "channel": channel, "python": python}
     fixes = _fixes_text(run_dir, gate)
+    skit = is_skit_channel(channel)
     task = TASKS_REWORK[step] if fixes and step in TASKS_REWORK else TASKS[step]     # a rework is a diff, not a redo
+    if skit and step == "topic":
+        task = TASK_SKIT_TOPIC
     if step == "article" and fixes and gate != "article":      # sent back by the script panel: a structure rewrite
         task = ARTICLE_STRUCTURE_REWORK
     guide = (deck_brief(config, channel, python, str(REPO), rework=task is TASKS_REWORK[step])
              if step == "deck" else "")          # rubric + channel rules + Bash, from the first call
     prompt = "\n\n".join(part for part in (COMMON.format(**fmt), task.format(**fmt), guide, fixes,
                                            extra, "完成後用結構化輸出回報寫了哪些檔。") if part)
-    tier = producer_tier(config, step)
+    tier = producer_tier(config, step, skit=skit)
     log_dir = run_dir / "review" / "producers"
     log_dir.mkdir(parents=True, exist_ok=True)
     if step == "deck" and fixes and quick_enabled():       # a small rework: one no-tool turn, the program applies it

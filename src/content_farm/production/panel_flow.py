@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from content_farm.production.runner import RunResult
     from content_farm.production.steps import Context, Step
 
-PRODUCER_STEPS = ("topic", "article", "deck", "thumbnail_spec")
+PRODUCER_STEPS = ("topic", "article", "deck", "thumbnail_spec", "skit_script")
 APPROVED_DECK = "review/deck.approved.json"   # same path as feat/incremental-render's runner.APPROVED_DECK
 LOCKED_DECK = "review/deck.locked.json"       # deck at the last structure / facts approval (the fact lock's baseline)
 FACTS_LOCKED_DECK = "review/deck_facts.locked.json"   # deck at the last fact-stage approval (delta fact-check baseline)
@@ -278,7 +278,8 @@ def rework_gate(note: str) -> str | None:
     return name.removesuffix(".fixes.json") if name.endswith(".fixes.json") else None
 
 
-RULE_OUTPUTS = {"deck": ("deck.json",), "thumbnail_spec": ("titles.json", "thumbnail.json", "thumbnail_variants.json")}
+RULE_OUTPUTS = {"deck": ("deck.json",), "thumbnail_spec": ("titles.json", "thumbnail.json", "thumbnail_variants.json"),
+               "skit_script": ("script.json",)}
 
 
 def channel_rule_violations(ctx: Context, step_name: str) -> list[str]:
@@ -296,6 +297,13 @@ def channel_rule_violations(ctx: Context, step_name: str) -> list[str]:
         except (ValidationError, ValueError):   # not a valid deck: the deck step's own verify (--strict) reports it
             return []
         return [f.message for f in qc.deck_findings(ctx.channel, deck) if f.level == "error"]
+    if step_name == "skit_script" and (ctx.run_dir / "script.json").is_file():
+        from content_farm.production.skit import skit_problems
+
+        try:
+            return skit_problems(json.loads((ctx.run_dir / "script.json").read_text(encoding="utf-8")))
+        except json.JSONDecodeError as exc:
+            return [f"script.json 不是合法 JSON：{exc}"]
     if step_name == "thumbnail_spec":
         from content_farm.production.thumbnail import OUT_FILE, thumbnail_findings
 

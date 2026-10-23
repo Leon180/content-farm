@@ -11,7 +11,7 @@ from content_farm.review.materials import Materials
 
 CAUSED_BY = ("caused_by：問題是哪一步造成的——topic（選題）、article（研究文章）、deck（講稿與分鏡）、"
              "thumbnail_spec（標題縮圖）、voice（配音／念錯）、illustrate（AI 插圖）、media（素材／B-roll）、"
-             "assembly（剪接／字幕）、mascot（角色疊加）、mix（配樂混音）。")
+             "assembly（剪接／字幕）、mascot（角色疊加）、mix（配樂混音）；冷笑話小劇場的劇本問題（鋪陳、笑點、停頓、用字）填 skit_script，不要填 deck。")
 
 # Topic rubric (cf-chipcat-run2, from run1: a 3 nm wafer-price topic lived on rumour and conflicting quotes, and its
 # fact items kept coming back). Applies to the pro and producer topic seats.
