@@ -134,11 +134,13 @@ def popularity(candidates: Sequence[Candidate], weights: Weights) -> dict[str, f
     best = max(raw.values(), default=0.0) or 1.0
     lob_n = sum(any(d.site == "lobsters" for d in c.discussions) for c in candidates)
     arx_n = sum(any(d.site == "arxiv" for d in c.discussions) for c in candidates)
+    gh_n = sum(any(d.site == "github" for d in c.discussions) for c in candidates)
     out = {}
     for c in candidates:
         values = [raw[c.id] / best,
                   0.6 * _rank_score(c, "lobsters", lob_n),   # a Lobsters front page < an HN front page
-                  0.3 * _rank_score(c, "arxiv", arx_n)]      # a fresh paper alone is rarely news
+                  0.3 * _rank_score(c, "arxiv", arx_n),      # a fresh paper alone is rarely news
+                  0.55 * _rank_score(c, "github", gh_n)]     # a trending repo alone: a tool, rarely a story
         bonus = 0.1 if len({d.site for d in c.discussions}) > 1 else 0.0  # on two sites
         out[c.id] = round(min(1.0, max(values) + bonus), 3)
     return out

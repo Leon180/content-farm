@@ -89,7 +89,7 @@ THRESHOLD_FLOOR: dict[str, dict[str, tuple[str, float]]] = {
 }
 
 # Steps a fix may be routed back to (``caused_by`` in reviewer output).
-REWORK_STEPS = ("topic", "article", "deck", "skit_script", "thumbnail_spec", "voice", "illustrate", "media",
+REWORK_STEPS = ("topic", "article", "deck", "skit_script", "news_script", "thumbnail_spec", "voice", "illustrate", "media",
                 "assembly", "mascot", "mix")
 
 

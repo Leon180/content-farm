@@ -28,7 +28,8 @@ from content_farm.production.news.script import ITEM_FILE
 from content_farm.production.news.series import NewsSeries
 
 TIMING_FILE = "timing.jsonl"
-SOURCE_FETCHERS = {"hn": fetch.fetch_hn, "lobsters": fetch.fetch_lobsters, "arxiv": fetch.fetch_arxiv}
+SOURCE_FETCHERS = {"hn": fetch.fetch_hn, "lobsters": fetch.fetch_lobsters, "arxiv": fetch.fetch_arxiv,
+                   "github": fetch.fetch_github}
 SECOND_SHORT_OFFSET = timedelta(hours=7)   # 12:30 and 19:30 when two are picked
 
 
@@ -50,8 +51,11 @@ def log_timing(directory: Path, phase: str, seconds: float, **extra: object) -> 
 
 def _fetch(series: NewsSeries, get: fetch.Getter) -> fetch.FetchReport:
     found, errors, counts = [], [], {}
+    allowed = verify.robots_allows(get)
     for name in series.sources:
         try:
+            if name == "github" and not allowed(fetch.GITHUB_TRENDING):   # HTML page: honour robots.txt
+                raise fetch.FetchError("github.com/robots.txt disallows /trending for us; skipped")
             items = SOURCE_FETCHERS[name](get)
         except (fetch.FetchError, ValueError, KeyError, TypeError) as exc:
             errors.append(f"{name}: {exc}")
@@ -135,6 +139,31 @@ def pick(root: Path, day: str, picks: Sequence[int], series: NewsSeries, channel
     log_timing(day_dir(root, day), "pick", 0.0, picks=list(picks),
                run_dirs=[str(p.run_dir) for p in chosen], below_min=len(picks) < low)
     return chosen
+
+
+def long_runs(root: Path, day: str) -> list[Path]:
+    """Long-video run-dirs the selection panel started for ``day``."""
+    return sorted(p.parent for p in root.glob(f"technews-long-{day}-*/format_decision.json"))
+
+
+def start_long(root: Path, day: str, row: dict, ranked: list[Ranked], channel: Channel) -> Path:
+    """A story the panel judged worth a long video: an explainer run-dir whose topic step is already
+    answered by the one candidate (the topic panel then still scores it; article → deck → … as usual)."""
+    from content_farm.production.news import select
+
+    item = next(r for r in ranked if r.candidate.id == row["id"])
+    run_dir = root / f"technews-long-{day}-{re.sub(r'[^a-z0-9.-]+', '-', row['id'].lower())}"
+    (run_dir / "topics").mkdir(parents=True, exist_ok=True)
+    urls = [item.candidate.url, *(d.url for d in item.candidate.discussions)]
+    candidate = {"id": "t01", "title": item.candidate.title, "hook": row["format_why"], "minutes": 8,
+                 "sources": urls[:3], "note": f"每日選題評審團 {row['mean']} 分；原文 {item.candidate.domain}，已於 "
+                                              f"{item.read.read_at if item.read else ''} 讀過"}
+    (run_dir / "topics" / "candidates.json").write_text(
+        json.dumps({"candidates": [candidate]}, ensure_ascii=False, indent=2), encoding="utf-8")
+    (run_dir / "news_origin.json").write_text(json.dumps(
+        {"series": "news", "day": day, **item.model_dump()}, ensure_ascii=False, indent=2), encoding="utf-8")
+    select.write_decision(run_dir, row)
+    return run_dir
 
 
 def picked_runs(root: Path, day: str) -> list[Path]:

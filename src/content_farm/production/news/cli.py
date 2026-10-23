@@ -10,18 +10,22 @@ Every run that stops at the final gate gets ``upload/manual/`` (README + preview
 from __future__ import annotations
 
 import argparse
+import json
+import time
 from datetime import date, datetime
 from pathlib import Path
 
 from content_farm.production.channels import load_channel
 from content_farm.production.manual_kit import KitOptions, write_kit
-from content_farm.production.news import daily, weekly
+from content_farm.production.news import daily, select, weekly
+from content_farm.production.news.fetch import CACHE_TTL_SECONDS as fetch_cache_ttl_default
 from content_farm.production.news.fetch import PoliteHttp
 from content_farm.production.news.series import NewsSeries, news_series
 from content_farm.production.runner import Outcome, Runner, RunResult
 from content_farm.production.steps import Context, RunOptions
 
 DEFAULT_ROOT = Path("output")
+CACHE_DIR = Path(".cache/news")     # response cache (gitignored): a re-run within the TTL sends no requests
 
 
 def add_parser(sub: argparse._SubParsersAction) -> None:
@@ -35,6 +39,11 @@ def add_parser(sub: argparse._SubParsersAction) -> None:
     news.add_argument("--week", default=None, help="weekly: ISO week, e.g. 2026-W42 (default this week)")
     news.add_argument("--include-unapproved", action="store_true",
                       help="weekly: also use Shorts whose final gate is not approved (trial runs)")
+    news.add_argument("--auto", type=int, default=0, metavar="N",
+                      help="daily: the selection panel picks the best N stories and decides Shorts vs long for each "
+                           "(no inbox; writes selection.json + format_decision.json)")
+    news.add_argument("--auto-agents", action="store_true", help="producer agents write the scripts / articles")
+    news.add_argument("--budget-usd", type=float, default=None, help="cloud-lane allowance per video (review.budget)")
     news.add_argument("--mock-voice", action="store_true")
     news.add_argument("--allow-paid", action="store_true")
     news.add_argument("--until", help="stop each run after this step")
@@ -42,9 +51,13 @@ def add_parser(sub: argparse._SubParsersAction) -> None:
     news.add_argument("--env-file", type=Path)
 
 
+def fetch_cache_ttl() -> float:
+    return float(fetch_cache_ttl_default)
+
+
 def _options(args: argparse.Namespace) -> RunOptions:
-    return RunOptions(mock_voice=args.mock_voice, allow_paid=args.allow_paid,
-                      **({"env_file": args.env_file} if args.env_file else {}))
+    return RunOptions(mock_voice=args.mock_voice, allow_paid=args.allow_paid, auto_agents=args.auto_agents,
+                      budget_usd=args.budget_usd, **({"env_file": args.env_file} if args.env_file else {}))
 
 
 def _advance(run_dir: Path, channel, args: argparse.Namespace) -> RunResult:
@@ -64,6 +77,31 @@ def _series(channel) -> NewsSeries:
     return news_series(channel)
 
 
+def auto_pick(args: argparse.Namespace, channel, series: NewsSeries, day: str) -> list[str]:
+    """Selection panel → Short run-dirs (``daily.pick``) and long run-dirs (``daily.start_long``)."""
+    directory = daily.day_dir(args.root, day)
+    done = directory / select.SELECTION_FILE
+    if done.is_file() and not args.refetch:       # resume: never pay for the same panel twice
+        rows = json.loads(done.read_text(encoding="utf-8"))["items"]
+        chosen = [r for r in rows if r["decision"] == "pick"]
+    else:
+        ranked = [r.model_dump() for r in daily.load_candidates(directory)]
+        seats = select.seats_for(channel.code)
+        started = time.monotonic()
+        outcome = select.select(directory, ranked, seats, series.name, count=args.auto)
+        daily.log_timing(directory, "select", time.monotonic() - started, usd=outcome.selection["usd"],
+                         picked=[r["id"] for r in outcome.chosen])
+        chosen = outcome.chosen
+    shorts = [r for r in chosen if r["format"] == "short"]
+    longs = [r for r in chosen if r["format"] == "long"]
+    if shorts:
+        for row, picked in zip(shorts, daily.pick(args.root, day, [r["position"] for r in shorts], series, channel)):
+            select.write_decision(picked.run_dir, row)
+    for row in longs:
+        daily.start_long(args.root, day, row, [r for r in daily.load_candidates(directory)], channel)
+    return [f"{r['id']}:{r['format']}({r['mean']})" for r in chosen]
+
+
 def run_daily(args: argparse.Namespace) -> int:
     channel = load_channel(args.channel)
     series = _series(channel)
@@ -71,7 +109,7 @@ def run_daily(args: argparse.Namespace) -> int:
     date.fromisoformat(day)
     candidates = daily.day_dir(args.root, day) / "candidates.json"
     if args.refetch or not candidates.is_file():
-        http = PoliteHttp()
+        http = PoliteHttp(cache_dir=CACHE_DIR, cache_ttl=0 if args.refetch else fetch_cache_ttl())
         try:
             page = daily.collect(args.root, day, series, http, datetime.now().astimezone())
         finally:
@@ -79,9 +117,12 @@ def run_daily(args: argparse.Namespace) -> int:
         if not args.pick:
             print(f"候選頁：{page}\n挑完：python scripts/produce.py news daily --date {day} --pick 1,3")
             return 3
-    if args.pick:
+    if args.auto:
+        picks = auto_pick(args, channel, series, day)
+        print(f"評審團自動挑題：{picks}")
+    elif args.pick:
         daily.pick(args.root, day, daily.parse_picks(args.pick), series, channel)
-    runs = daily.picked_runs(args.root, day)
+    runs = daily.picked_runs(args.root, day) + daily.long_runs(args.root, day)
     if not runs:
         print(f"{day} 還沒挑題：開 {daily.day_dir(args.root, day) / 'candidates.html'}")
         return 3

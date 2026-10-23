@@ -12,7 +12,7 @@ class _Frozen(BaseModel):
 class Discussion(_Frozen):
     """Where people talk about the story. Leads only — never quoted as fact."""
 
-    site: str = Field(pattern="^(hn|lobsters|arxiv)$")
+    site: str = Field(pattern="^(hn|lobsters|arxiv|github)$")
     url: str
     points: int | None = None        # Lobsters RSS and arXiv carry no score
     comments: int | None = None

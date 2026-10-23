@@ -42,6 +42,8 @@ BRANDS: tuple[BrandSpec, ...] = (
               "下班貓（晶片貓便服）＋配角 PM 狗", ("collage", "pastel")),
     BrandSpec("cel", "賽璐璐研究室", "動畫產業拆解", "knowledge",
               "格仔（新角色，底片格身體）", ("blueprint", "swiss", "chalk")),
+    BrandSpec("technews", "科技新知", "每日科技新聞講解", "tech",
+              "（無角色：新聞截圖、卡片、圖表）", ("datajournal", "newspaper")),
 )
 
 _BY_CODE = {spec.code: spec for spec in BRANDS}
