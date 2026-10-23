@@ -1,2 +1,6 @@
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-kyubi-tweak/REPORT-kyubi-tweak.md","min_bytes":1500,"why":"merged-in kyubi-tweak claim"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ent/REPORT-ent.md","min_bytes":2000,"why":"merged-in ent claim"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-visual-v4/REPORT-visual-v4.md","min_bytes":2000,"why":"派工預期產物"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-visual-v4/artifacts/cel-run2-v4/compare.jpg","min_bytes":50000,"why":"前後對照圖"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-visual-v4/artifacts/cel-run2-v4/cel-run2-v4-part1.mp4","min_bytes":1000000,"why":"540p 第一段"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-visual-v4/artifacts/cel-run2-v4/cel-run2-v4-part2.mp4","min_bytes":1000000,"why":"540p 第二段"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-visual-v4/src/content_farm/review/license_rules.py","min_bytes":500,"why":"授權程式規則"}
+{"kind":"no_unpushed","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-visual-v4","why":"（預期不符：依規定不 push，commit 只在本機）"}
