@@ -13,6 +13,7 @@ so it is always arbitrated rather than silently merged.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -105,6 +106,11 @@ def prompt(disputes: list[dict[str, Any]], *, material: str = "文章（article.
 
 def upheld(rulings: dict[str, Any] | None, disputes: list[dict[str, Any]]) -> tuple[list[str], list[str]]:
     """(dispute keys the arbiter upheld as errors, dispute keys it did not answer)."""
-    answers = {str(r.get("item")): r for r in (rulings or {}).get("rulings") or []}
+    # the arbiter often copies the whole line ("fact_checker-1#24：說法…") instead of just the key: match on the key
+    answers = {}
+    for r in (rulings or {}).get("rulings") or []:
+        item = str(r.get("item")).strip()
+        match = re.match(r"(?:item\s+)?([\w.-]+#\d+)", item)
+        answers.setdefault(match.group(1) if match else item, r)
     keys = [d["item"] for d in disputes]
     return [k for k in keys if answers.get(k, {}).get("status") in ERROR], [k for k in keys if k not in answers]
