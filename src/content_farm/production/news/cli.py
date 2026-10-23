@@ -47,6 +47,7 @@ def add_parser(sub: argparse._SubParsersAction) -> None:
     news.add_argument("--mock-voice", action="store_true")
     news.add_argument("--allow-paid", action="store_true")
     news.add_argument("--until", help="stop each run after this step")
+    news.add_argument("--long-until", help="stop each long-video run after this step (default: --until is for Shorts only)")
     news.add_argument("--max-load", type=float, default=None)
     news.add_argument("--env-file", type=Path)
 
@@ -62,7 +63,8 @@ def _options(args: argparse.Namespace) -> RunOptions:
 
 def _advance(run_dir: Path, channel, args: argparse.Namespace) -> RunResult:
     runner = Runner(Context(channel, run_dir.resolve(), _options(args)), max_load=args.max_load)
-    result = runner.run(until=args.until)
+    is_long = run_dir.name.startswith("technews-long-")
+    result = runner.run(until=(args.long_until if is_long else args.until))
     print(f"  [{result.outcome.value}] {run_dir.name} · {result.step}: {result.message}")
     if result.outcome is Outcome.GATE and result.step == "gate_final":
         kit = write_kit(run_dir.resolve(), channel, KitOptions(playlist=_series(channel).playlist))
@@ -79,11 +81,13 @@ def _series(channel) -> NewsSeries:
 
 def auto_pick(args: argparse.Namespace, channel, series: NewsSeries, day: str) -> list[str]:
     """Selection panel → Short run-dirs (``daily.pick``) and long run-dirs (``daily.start_long``)."""
-    directory = daily.day_dir(args.root, day)
+    directory = daily.day_dir(args.root, day, series.dir_prefix)
     done = directory / select.SELECTION_FILE
     if done.is_file() and not args.refetch:       # resume: never pay for the same panel twice
-        rows = json.loads(done.read_text(encoding="utf-8"))["items"]
-        chosen = [r for r in rows if r["decision"] == "pick"]
+        record = json.loads(done.read_text(encoding="utf-8"))
+        record["items"] = select.cap_longs(record["items"], 1)
+        done.write_text(json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8")
+        chosen = [r for r in record["items"] if r["decision"] == "pick"]
     else:
         ranked = [r.model_dump() for r in daily.load_candidates(directory)]
         seats = select.seats_for(channel.code)
@@ -107,14 +111,14 @@ def run_daily(args: argparse.Namespace) -> int:
     series = _series(channel)
     day = args.date or date.today().isoformat()
     date.fromisoformat(day)
-    candidates = daily.day_dir(args.root, day) / "candidates.json"
+    candidates = daily.day_dir(args.root, day, series.dir_prefix) / "candidates.json"
     if args.refetch or not candidates.is_file():
         http = PoliteHttp(cache_dir=CACHE_DIR, cache_ttl=0 if args.refetch else fetch_cache_ttl())
         try:
             page = daily.collect(args.root, day, series, http, datetime.now().astimezone())
         finally:
             http.close()
-        if not args.pick:
+        if not args.pick and not args.auto:
             print(f"候選頁：{page}\n挑完：python scripts/produce.py news daily --date {day} --pick 1,3")
             return 3
     if args.auto:
@@ -122,9 +126,9 @@ def run_daily(args: argparse.Namespace) -> int:
         print(f"評審團自動挑題：{picks}")
     elif args.pick:
         daily.pick(args.root, day, daily.parse_picks(args.pick), series, channel)
-    runs = daily.picked_runs(args.root, day) + daily.long_runs(args.root, day)
+    runs = daily.picked_runs(args.root, day, series.dir_prefix) + daily.long_runs(args.root, day)
     if not runs:
-        print(f"{day} 還沒挑題：開 {daily.day_dir(args.root, day) / 'candidates.html'}")
+        print(f"{day} 還沒挑題：開 {daily.day_dir(args.root, day, series.dir_prefix) / 'candidates.html'}")
         return 3
     print(f"{day}：{len(runs)} 支 Short")
     results = [_advance(run, channel, args) for run in runs]

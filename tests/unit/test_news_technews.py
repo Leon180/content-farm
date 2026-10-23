@@ -56,6 +56,13 @@ def test_panel_picks_top_stories_and_long_needs_votes_and_enough_material(tmp_pa
     assert got.selection["usd"] == pytest.approx(0.3)
 
 
+def test_only_one_long_per_day_the_rest_become_shorts() -> None:
+    rows = [{"id": f"s{i}", "decision": "pick", "format": "long", "format_why": "4/4"} for i in range(3)]
+    got = select.cap_longs(rows, 1)
+    assert [r["format"] for r in got] == ["long", "short", "short"] and "上限 1" in got[1]["format_why"]
+    assert rows[1]["format"] == "long"          # input untouched
+
+
 def test_panel_with_every_seat_failing_is_an_error_not_a_silent_empty_pick() -> None:
     with pytest.raises(RuntimeError, match="every seat failed"):
         select.aggregate([{"id": "hn-1", "title": "t", "read": {"chars": 1}, "position": 1}],
@@ -105,3 +112,23 @@ def test_long_run_dir_seeds_a_topic_and_records_the_format(tmp_path: Path) -> No
     assert topics[0]["title"] == "Story 1" and topics[0]["sources"][0] == "https://ex1.com/a"
     assert json.loads((run_dir / select.DECISION_FILE).read_text())["why"] == "3/4 席判長片"
     assert daily.long_runs(tmp_path, "2026-10-23") == [run_dir]
+
+
+def test_review_page_keeps_the_best_of_each_non_hn_source_visible() -> None:
+    def ranked(i: int, site: str) -> Ranked:
+        cand = Candidate(id=f"{site}-{i}", title=f"T{i}", url=f"https://e{i}.com/x", domain="e.com",
+                         posted_at="2026-10-23T01:00:00+00:00", discussions=(Discussion(site=site, url="u"),))
+        return Ranked(candidate=cand, score=1 - i / 100, popularity=0.5, freshness=1, relevance=0, age_hours=1)
+
+    pool = [ranked(i, "hn") for i in range(10)] + [ranked(20, "arxiv"), ranked(21, "arxiv"), ranked(22, "arxiv"),
+                                                    ranked(30, "github")]
+    ids = [r.candidate.id for r in daily.with_source_floor(pool, 6, 2)]
+    assert len(ids) == 6 and {"arxiv-20", "arxiv-21", "github-30"} <= set(ids) and "arxiv-22" not in ids
+    assert [r.candidate.id for r in daily.with_source_floor(pool, 3, 0)] == ["hn-0", "hn-1", "hn-2"]
+
+
+def test_technews_outputs_do_not_share_chipcats_directories(tmp_path: Path) -> None:
+    prefix = news_series(load_channel("technews")).dir_prefix
+    assert prefix == "technews" and news_series(load_channel("chipcat")).dir_prefix == "hn"
+    assert daily.day_dir(tmp_path, "2026-10-23", prefix).name == "technews-2026-10-23"
+    assert daily.short_dir(tmp_path, "2026-10-23", "hn-1", prefix).name == "technews-2026-10-23-hn-1"

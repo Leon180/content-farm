@@ -115,8 +115,23 @@ def _format_for(votes: list[str], read_chars: int) -> tuple[str, str]:
     return "short", f"{len(votes) - long_votes}/{len(votes)} 席判 Shorts"
 
 
+def cap_longs(rows: list[dict[str, Any]], max_long: int) -> list[dict[str, Any]]:
+    """At most ``max_long`` picked stories stay long (a long video is hours of machine time and a full fact-check
+    pipeline); the rest become Shorts, the demotion written into ``format_why``. Rows are in score order."""
+    kept, out = 0, []
+    for row in rows:
+        if row["decision"] == "pick" and row["format"] == "long":
+            if kept >= max_long:
+                row = {**row, "format": "short",
+                       "format_why": row["format_why"] + f"；每日長片上限 {max_long} 支，改做 Shorts"}
+            else:
+                kept += 1
+        out.append(row)
+    return out
+
+
 def aggregate(items: list[dict[str, Any]], results: dict[str, CallResult], *, count: int,
-              min_score: float = MIN_SCORE) -> Outcome:
+              min_score: float = MIN_SCORE, max_long: int = 1) -> Outcome:
     per_seat: dict[str, dict[str, dict[str, Any]]] = {}
     for seat_id, result in results.items():
         if result.ok and result.output:
@@ -137,11 +152,11 @@ def aggregate(items: list[dict[str, Any]], results: dict[str, CallResult], *, co
                                      "format_reason": g["format_reason"]} for sid, g in given.items()},
                      "format": fmt, "format_why": why})
     rows.sort(key=lambda r: (-r["mean"], r["position"]))
-    eligible = [r for r in rows if r["mean"] >= min_score]
-    chosen = eligible[:count]
-    picked = {r["id"] for r in chosen}
+    picked = {r["id"] for r in [r for r in rows if r["mean"] >= min_score][:count]}
     for r in rows:
         r["decision"] = "pick" if r["id"] in picked else ("skip: below floor" if r["mean"] < min_score else "skip: over count")
+    rows = cap_longs(rows, max_long)
+    chosen = [r for r in rows if r["decision"] == "pick"]
     usd = round(sum(r.cost_usd for r in results.values()), 4)
     return Outcome(chosen, {"min_score": min_score, "count": count, "usd": usd, "items": rows,
                             "seats": {sid: {"ok": r.ok, "model": r.model, "seconds": r.seconds,

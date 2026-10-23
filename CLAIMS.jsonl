@@ -16,3 +16,9 @@
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-story-calibrate/REPORT-story-calibrate.md","min_bytes":2000,"why":"派工宣告的預期產物"}
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-story-calibrate/docs/story-calibrate/data/summary.json","why":"校正原始數據"}
 {"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-story-calibrate/src","pattern":"editor_audio","why":"評審拿掉聲音席次"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-technews/REPORT-technews.md","min_bytes":2000,"why":"派工預期產物"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-technews/channels/technews.yaml","min_bytes":1000,"why":"新頻道設定"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-technews/src/content_farm/production/news/select.py","min_bytes":1000,"why":"選題與格式判定"}
+{"kind":"file_exists","path":"/Users/lileon/.local/share/content-farm-voices/technews-ref.wav","min_bytes":10000,"why":"聲音參考檔——預期不通過：swap 閘門沒放行，聲音未設計"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-technews/artifacts/technews/short1.mp4","min_bytes":10000,"why":"成片——預期不通過：沒有成片"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-technews/src","pattern":"TODO-technews","why":"沒留暫時碼"}

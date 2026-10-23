@@ -81,6 +81,9 @@ publish:
 series:
   news:                   # production/news；produce.py news daily --channel technews [--auto]
     name: 科技新知
+    dir_prefix: technews     # output/technews-<day>…（不和晶片貓的 hn-<day> 混）
+    min_per_source: 2        # 候選頁每個非 HN 來源（Lobsters／arXiv／GitHub）至少露出 2 則
+    chars_per_second: 4.6    # 本機 VoxCPM2 女聲 tempo 1.1 的暫估，聲音定案後實測校正
     playlist: 科技新知｜每日快報
     take_label: 編輯觀點
     end_label: 每週六・長片整理

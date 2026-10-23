@@ -33,12 +33,12 @@ SOURCE_FETCHERS = {"hn": fetch.fetch_hn, "lobsters": fetch.fetch_lobsters, "arxi
 SECOND_SHORT_OFFSET = timedelta(hours=7)   # 12:30 and 19:30 when two are picked
 
 
-def day_dir(root: Path, day: str) -> Path:
-    return root / f"hn-{day}"
+def day_dir(root: Path, day: str, prefix: str = "hn") -> Path:
+    return root / f"{prefix}-{day}"
 
 
-def short_dir(root: Path, day: str, item_id: str) -> Path:
-    return root / f"hn-{day}-{re.sub(r'[^a-z0-9.-]+', '-', item_id.lower())}"
+def short_dir(root: Path, day: str, item_id: str, prefix: str = "hn") -> Path:
+    return root / f"{prefix}-{day}-{re.sub(r'[^a-z0-9.-]+', '-', item_id.lower())}"
 
 
 def log_timing(directory: Path, phase: str, seconds: float, **extra: object) -> None:
@@ -68,7 +68,7 @@ def _fetch(series: NewsSeries, get: fetch.Getter) -> fetch.FetchReport:
 def collect(root: Path, day: str, series: NewsSeries, http: fetch.PoliteHttp, now: datetime,
             log: Callable[[str], None] = print) -> Path:
     """Fetch, rank, read the top ``review_candidates`` originals, write the review page."""
-    directory = day_dir(root, day)
+    directory = day_dir(root, day, series.dir_prefix)
     started = time.monotonic()
     report = _fetch(series, http.get)
     log_timing(directory, "fetch", time.monotonic() - started, counts=report.counts, errors=list(report.errors))
@@ -77,13 +77,31 @@ def collect(root: Path, day: str, series: NewsSeries, http: fetch.PoliteHttp, no
     started = time.monotonic()
     robots = verify.robots_allows(http.get)
     shown = [r.model_copy(update={"read": verify.read_original(r.candidate, http.get, robots, directory / "reads")})
-             for r in ranked[:series.review_candidates]]
+             for r in with_source_floor(ranked, series.review_candidates, series.min_per_source)]
     readable = sum(bool(r.read and r.read.ok) for r in shown)
     log_timing(directory, "verify", time.monotonic() - started, read=len(shown), readable=readable)
     page = write_candidates(directory, day, series, shown, fetched_at=now.astimezone(),
                             counts=report.counts, errors=report.errors)
     log(f"read {len(shown)} originals ({readable} readable) → {page}")
     return page
+
+
+def _site(r: Ranked) -> str:
+    return r.candidate.discussions[0].site if r.candidate.discussions else "hn"
+
+
+def with_source_floor(ranked: list[Ranked], limit: int, per_source: int) -> list[Ranked]:
+    """Top ``limit`` by score, but the best ``per_source`` stories of every non-HN source are always shown
+    (HN's points would otherwise crowd out arXiv papers and trending repos), in score order."""
+    if per_source <= 0:
+        return ranked[:limit]
+    forced: list[Ranked] = []
+    for site in sorted({_site(r) for r in ranked} - {"hn"}):
+        forced += [r for r in ranked if _site(r) == site][:per_source]
+    keep = {r.candidate.id for r in forced}
+    rest = [r for r in ranked if r.candidate.id not in keep][:max(0, limit - len(forced))]
+    chosen = {r.candidate.id for r in (*forced, *rest)}
+    return [r for r in ranked if r.candidate.id in chosen]
 
 
 def parse_picks(text: str) -> list[int]:
@@ -111,9 +129,9 @@ class Picked:
 
 def pick(root: Path, day: str, picks: Sequence[int], series: NewsSeries, channel: Channel) -> list[Picked]:
     """Create one Short run-dir per picked position; refuses stories whose original was not read."""
-    ranked = load_candidates(day_dir(root, day))
+    ranked = load_candidates(day_dir(root, day, series.dir_prefix))
     low, high = series.daily_shorts
-    total = len({*picked_runs(root, day), *(short_dir(root, day, ranked[p - 1].candidate.id)
+    total = len({*picked_runs(root, day, series.dir_prefix), *(short_dir(root, day, ranked[p - 1].candidate.id, series.dir_prefix)
                                             for p in picks if p <= len(ranked))})
     if total > high:  # a guideline (policy review D6: quality over volume), not a hard stop
         print(f"⚠ {day} 共 {total} 支 Short，超過系列設定的每日 {high} 支")
@@ -125,7 +143,7 @@ def pick(root: Path, day: str, picks: Sequence[int], series: NewsSeries, channel
         if item.read is None or not item.read.ok:
             raise ValueError(f"#{position} {item.candidate.title!r}: original not readable "
                              f"({item.read.reason if item.read else 'never read'}); pick another")
-        run_dir = short_dir(root, day, item.candidate.id)
+        run_dir = short_dir(root, day, item.candidate.id, series.dir_prefix)
         run_dir.mkdir(parents=True, exist_ok=True)
         payload = {"version": 1, "series": "hn", "day": day, "position": position,
                    "picked_at": datetime.now().astimezone().isoformat(timespec="seconds"),
@@ -136,7 +154,7 @@ def pick(root: Path, day: str, picks: Sequence[int], series: NewsSeries, channel
             when = publish_slot(day, series, channel, order)
             schedule.write_text(json.dumps({"publish_at": when.isoformat()}), encoding="utf-8")
         chosen.append(Picked(run_dir, item))
-    log_timing(day_dir(root, day), "pick", 0.0, picks=list(picks),
+    log_timing(day_dir(root, day, series.dir_prefix), "pick", 0.0, picks=list(picks),
                run_dirs=[str(p.run_dir) for p in chosen], below_min=len(picks) < low)
     return chosen
 
@@ -166,6 +184,6 @@ def start_long(root: Path, day: str, row: dict, ranked: list[Ranked], channel: C
     return run_dir
 
 
-def picked_runs(root: Path, day: str) -> list[Path]:
+def picked_runs(root: Path, day: str, prefix: str = "hn") -> list[Path]:
     """Run-dirs already created for ``day`` (to resume without re-picking)."""
-    return sorted(p.parent for p in root.glob(f"hn-{day}-*/{ITEM_FILE}"))
+    return sorted(p.parent for p in root.glob(f"{prefix}-{day}-*/{ITEM_FILE}"))

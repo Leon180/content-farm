@@ -37,6 +37,8 @@ class NewsSeries(_Strict):
     name: str
     playlist: str
     sources: tuple[str, ...] = ("hn", "lobsters", "arxiv")
+    dir_prefix: str = Field(default="hn", pattern="^[a-z][a-z0-9]{1,15}$")   # output/<prefix>-<day>… (channels must not share)
+    min_per_source: int = Field(default=0, ge=0, le=5)   # review page: at least this many readable stories from each non-HN source
     take_label: str = "晶片貓觀點"          # label of the 5th beat (commentary) on screen
     end_label: str = "每週六・長片整理"       # end-card ribbon
     # Narration speed of this channel's voice (visible chars / s, after tempo); lint and scene-length
