@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 344" fill="currentColor">
+  <!-- 深海生物：沒有角色，只放一隻鮟鱇魚的燈籠（頻道識別符號，不是主持人） -->
+  <path d="M40 250 Q40 170 120 170 Q200 170 200 250 Q200 300 120 300 Q40 300 40 250 Z"/>
+  <path d="M120 170 Q120 90 170 60" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="176" cy="54" r="22"/>
+  <path d="M64 262 L86 246 L104 264 L124 246 L144 264 L164 246 L182 262" fill="none" stroke="#04101c" stroke-width="8" stroke-linejoin="round"/>
+  <circle cx="82" cy="222" r="9" fill="#04101c"/>
+</svg>

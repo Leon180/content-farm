@@ -1,0 +1,57 @@
+{# 深海生物 — 深潛日誌. Tokens come from themes/brands/deepsea.css :root. #}
+{% macro style() %}
+body { background: var(--bg); color: var(--fg); font-family: "Noto Sans CJK TC", sans-serif; }
+.glow { position: absolute; inset: 0; background:
+  radial-gradient(900px 600px at 78% 30%, rgba(61,125,255,.28), transparent 70%),
+  radial-gradient(600px 400px at 12% 90%, rgba(54,224,196,.12), transparent 70%); }
+.tag { display: inline-block; background: var(--accent); color: var(--bg); font: 700 30px Menlo, monospace; padding: 6px 18px; letter-spacing: .08em; }
+.mono { font-family: Menlo, monospace; }
+.hl { color: var(--accent); }
+.gauge { position: absolute; left: 0; top: 0; bottom: 0; background: repeating-linear-gradient(180deg, var(--accent) 0 3px, transparent 3px 40px); opacity: .5; }
+{% endmacro %}
+
+{% macro thumb(t, sil) %}
+<div class="glow"></div><div class="gauge" style="width:14px;left:28px"></div>
+<div style="position:absolute;left:84px;top:70px;width:760px">
+  <span class="tag">{{ t.kicker }}</span>
+  <div style="margin-top:34px;font-weight:900;font-size:{{ t.size|default(132) }}px;line-height:1.18">
+    {% for line in t.lines %}<div>{{ line | replace(t.hl, '<span class="hl">' ~ t.hl ~ '</span>') | safe }}</div>{% endfor %}
+  </div>
+  <div class="mono" style="margin-top:30px;font-size:34px;font-weight:700;color:var(--accent-2)">› {{ t.sub }}</div>
+</div>
+{{ sil(900, 300, 300) }}
+<div class="mono" style="position:absolute;left:84px;bottom:34px;font-size:24px;color:var(--muted)">● 深海生物 DEEP SEA</div>
+{% endmacro %}
+
+{% macro icon() %}
+<div style="position:absolute;inset:0;background:var(--bg)"></div>
+<svg viewBox="0 0 800 800" style="position:absolute;inset:0">
+  <circle cx="400" cy="400" r="300" fill="#0a1d2e"/>
+  <path d="M200 520 Q200 380 360 380 Q520 380 520 520 Q520 620 360 620 Q200 620 200 520 Z" fill="#36e0c4"/>
+  <path d="M360 380 Q360 250 500 190" fill="none" stroke="#36e0c4" stroke-width="22" stroke-linecap="round"/>
+  <circle cx="520" cy="178" r="48" fill="#dcecf5"/>
+  <circle cx="260" cy="470" r="20" fill="#04101c"/>
+</svg>
+{% endmacro %}
+
+{% macro banner(sil) %}
+<div class="glow"></div>
+<div style="position:absolute;left:507px;top:509px;width:1546px;height:423px;display:flex;align-items:center;gap:56px">
+  <div style="flex:1">
+    <div style="font-weight:900;font-size:150px;line-height:1">深海生物</div>
+    <div style="margin-top:22px;font-size:46px;font-weight:700">往下一千公尺，沒有陽光的那個世界</div>
+    <div class="mono" style="margin-top:20px;font-size:32px;color:var(--accent)">深海科普長片 ＋ Shorts</div>
+  </div>
+  {{ sil(1290, 40, 240) }}
+</div>
+{% endmacro %}
+
+{% macro shorts(sil) %}
+<div class="glow"></div>
+<div style="position:absolute;left:80px;top:250px;width:820px">
+  <span class="tag">深潛 #01</span>
+  <div style="margin-top:30px;font-size:76px;font-weight:900;line-height:1.2">牠們為什麼<br>要在黑暗裡發光？</div>
+</div>
+<div class="mono" style="position:absolute;left:70px;top:720px;font-size:300px;font-weight:700;letter-spacing:-.06em;line-height:1;color:var(--accent)">1000<span style="font-size:110px;color:var(--fg)">公尺</span></div>
+{{ sil(640, 1060, 280) }}
+{% endmacro %}

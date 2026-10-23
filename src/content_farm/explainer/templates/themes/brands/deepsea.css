@@ -1,0 +1,83 @@
+/* brand: deepsea — 深海生物（深海科普，不用角色）
+ * 「深潛日誌」: a field guide read inside a submersible. Near-black navy water,
+ * pale plankton-white text, one bioluminescent teal for numbers and depth marks,
+ * a depth gauge down the left edge instead of decoration.
+ */
+:root {
+  --bg: #04101c;
+  --fg: #dcecf5;
+  --muted: #8ba6ba;
+  --rule: #17324a;
+  --card: #0a1d2e;
+  --accent: #36e0c4;      /* 生物發光青：數字、深度、重點 */
+  --accent-2: #b79bff;    /* 水母紫：第二系列、學名 */
+  --glow: #3d7dff;        /* 深水藍：只當光暈與細線 */
+  --font-heading: "Noto Sans CJK TC", sans-serif;
+  --font-number: "Menlo", monospace;
+}
+body {
+  background-image:
+    radial-gradient(1000px 640px at 78% 30%, rgba(61,125,255,.16), transparent 70%),
+    radial-gradient(700px 500px at 12% 90%, rgba(54,224,196,.07), transparent 70%);
+}
+/* depth gauge down the left edge, stops above the subtitle zone */
+.stage::before {
+  content: "DEPTH ／ 深潛日誌"; position: absolute; left: 0; top: 0; width: 64px; height: 880px;
+  background: rgba(10,29,46,.95); color: var(--muted); border-right: 2px solid var(--rule);
+  writing-mode: vertical-rl; text-align: center; padding-top: 120px;
+  font: 600 18px/64px var(--font-number); letter-spacing: .3em;
+}
+.stage::after {
+  content: ""; position: absolute; left: 64px; top: 0; width: 10px; height: 880px; pointer-events: none;
+  background: repeating-linear-gradient(180deg, var(--accent) 0 3px, transparent 3px 40px);
+  opacity: .55;
+}
+.topbar { left: 72px; height: 88px; border-bottom: 1px solid var(--rule); font-family: var(--font-number); font-size: 22px; color: var(--muted); }
+.topbar .series { color: var(--fg); font-family: var(--font-heading); font-weight: 900; }
+.topbar .series::before { content: "● "; color: var(--accent); }
+.topbar .section::before { content: "› "; color: var(--accent-2); }
+.topbar .pageno::before { content: "P."; }
+.heading { font-weight: 900; letter-spacing: 0; text-shadow: 0 0 28px rgba(61,125,255,.35); }
+.heading::after {
+  width: 360px; height: 6px; margin-top: 20px; border-radius: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--glow) 60%, transparent);
+}
+
+.layout-title .content { right: 360px; }
+.layout-title .title-main { font-size: 108px; font-weight: 900; text-wrap: balance; text-shadow: 0 0 44px rgba(54,224,196,.28); }
+.layout-title .title-sub { font-family: var(--font-heading); color: var(--accent); font-size: 42px; }
+.layout-title .title-sub::before { content: "下潛 › "; color: var(--muted); }
+.layout-title .title-rule {
+  width: 520px; height: 18px; border-radius: 0;
+  background: repeating-linear-gradient(90deg, var(--accent) 0 3px, transparent 3px 26px);
+}
+
+.bignum .value { color: var(--accent); font-family: var(--font-number); font-weight: 700; letter-spacing: -0.06em; text-shadow: 0 0 36px rgba(54,224,196,.4); }
+.bignum .unit { color: var(--fg); font-family: var(--font-number); }
+.bignum .value-row { border-bottom: 2px solid var(--rule); padding-bottom: 12px; align-self: flex-start; }
+.bignum .caption { color: var(--muted); margin-top: 40px; }
+.bignum .caption::before { content: "▼ "; color: var(--accent); }
+
+.compare { grid-template-columns: 1fr 80px 1fr; }
+.compare .side { background: var(--card); border-radius: 10px; border: 1px solid var(--rule); border-top: 4px solid var(--glow); }
+.compare .side.right { border-top-color: var(--accent); }
+.compare .label { color: var(--fg); }
+.compare li::before { content: "◦ "; color: var(--accent); }
+.compare .vs { font-family: var(--font-number); color: var(--muted); font-size: 36px; }
+
+.timeline::before { height: 3px; border-radius: 0; background: linear-gradient(90deg, transparent, var(--glow) 6%, var(--accent) 94%, transparent); }
+.timeline .when { font-family: var(--font-number); color: var(--accent); font-weight: 700; }
+.timeline .dot { background: var(--bg); border: 3px solid var(--accent); box-shadow: 0 0 14px rgba(54,224,196,.55); }
+
+.quote .text { font-weight: 500; }
+.meta { font-family: var(--font-number); font-size: 20px; }
+.meta .sources::before { content: "REF › "; color: var(--accent-2); }
+.anim-meter { border-radius: 0; height: 16px; background: var(--rule); }
+.anim-meter-fill { border-radius: 0; background: linear-gradient(90deg, var(--glow), var(--accent)); }
+.anim-line { height: 3px; border-radius: 0; background: var(--accent); }
+body.media-overlay .stage::before, body.media-overlay .stage::after { display: none; }
+body.media-overlay .topbar { left: 0; }
+body.media-overlay .topbar.on-footage { background: rgba(4,16,28,.85); color: var(--fg); }
+body.media-overlay .lower-third { background: rgba(4,16,28,.88); border-left: 8px solid var(--accent); border-radius: 0; }
+body.media-overlay .lt-heading { color: var(--fg); }
+body.media-overlay .lt-key { color: var(--accent); font-family: var(--font-number); }

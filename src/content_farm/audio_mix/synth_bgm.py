@@ -8,6 +8,7 @@ Presets (``audio.synth_bgm`` in a channel yaml):
 - ``studio`` (cel): a warm, light C-major-pentatonic bed — soft pad, marimba-like plucks, a slow bass root.
 - ``pulse`` (technews / chipcat without recorded tracks): a clean A-minor-pentatonic bed — airy pad and a very
   quiet, regular sine blip grid (75 bpm), nothing that competes with a voice reading figures.
+- ``abyss`` (deepsea): a very low D drone, slow D-minor pad and rare distant sonar-like pings in a long reverb.
 Visual v4 (Leon 2026-10-24): each long channel has one local synthesized style, switched on or off with
 ``audio.enabled`` in its yaml; real ``audio.bgm`` files, when listed, win over the preset.
 """
@@ -194,10 +195,35 @@ def pulse(seconds: float = LOOP_SECONDS, seed: int = SEED) -> np.ndarray:
     return _normalised(0.7 * _normalised(pad) + 0.3 * _normalised(blips) + 0.3 * wet)
 
 
-PRESETS = {"wafu": wafu, "studio": studio, "pulse": pulse}
+_D_MINOR = tuple(293.66 * 2 ** (semi / 12) for semi in (0, 3, 5, 7, 10, 12, 15))
+
+
+def _ping(freq: float, seconds: float = 5.0) -> np.ndarray:
+    """A soft sonar-like bell: pure tone, slow decay, a faint inharmonic partial."""
+    n = int(seconds * RATE)
+    t = _time(n)
+    body = np.sin(2 * np.pi * freq * t) * np.exp(-t * 1.1) + 0.2 * np.sin(2 * np.pi * freq * 2.76 * t) * np.exp(-t * 3.0)
+    return body * np.clip(t / 0.02, 0, 1)
+
+
+def abyss(seconds: float = LOOP_SECONDS, seed: int = SEED) -> np.ndarray:
+    """Deep sea: a very low D drone, a slow D-minor pad and rare, distant sonar pings in a long reverb."""
+    n = int(round(seconds * RATE))
+    rng = np.random.default_rng(seed + 3)
+    t = _time(n)
+    drone = sum(np.sin(2 * np.pi * _periodic(hz) * t) * (0.7 + 0.3 * np.sin(2 * np.pi * (3 + k) / LOOP_SECONDS * t + k))
+                for k, hz in enumerate((36.71, 55.0)))
+    pad = _soft_pad(n, rng, _D_MINOR[:5], step=14.0)
+    pings = _sparse(n, rng, _D_MINOR, _ping, (7.0, 13.0))
+    wet = _reverb(_normalised(pad) * 0.4 + _normalised(pings), rng, seconds=4.0)
+    return _normalised(0.5 * _normalised(drone) + 0.4 * _normalised(pad) + 0.4 * _normalised(pings) + 0.7 * wet)
+
+
+PRESETS = {"wafu": wafu, "studio": studio, "pulse": pulse, "abyss": abyss}
 _SOURCE = {"wafu": "本機以 numpy 程式合成（audio_mix/synth_bgm.py 的 wafu 預設，和風音階 D 都節旋法）",
            "studio": "本機以 numpy 程式合成（audio_mix/synth_bgm.py 的 studio 預設，C 大調五聲音階、木琴與柔和和聲）",
-           "pulse": "本機以 numpy 程式合成（audio_mix/synth_bgm.py 的 pulse 預設，A 小調五聲音階、低調節拍點）"}
+           "pulse": "本機以 numpy 程式合成（audio_mix/synth_bgm.py 的 pulse 預設，A 小調五聲音階、低調節拍點）",
+           "abyss": "本機以 numpy 程式合成（audio_mix/synth_bgm.py 的 abyss 預設，D 小調超低頻持續音、緩慢和聲與稀疏聲納鈴音）"}
 
 
 def with_synth_bgm(config: AudioMix, directory: Path) -> AudioMix:

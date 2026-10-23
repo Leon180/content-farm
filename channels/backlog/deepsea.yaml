@@ -1,0 +1,33 @@
+# 深海生物 選題池。status: idea → researching → ready → in_production → published（或 dropped）
+# 來源：市調 niche-topics-20261024 §1（華語深海科普查不到明顯對手；英文頭部 22–88 萬訂閱）
+# 規則：事實出處以學術機構、論文、博物館、NOAA／MBARI 官方說明為主；MBARI／NOAA 的影片與照片只當出處引用、不可用。
+channel: deepsea
+topics:
+  - id: glow
+    title: 深海裡的會發光生物，牠們為什麼要發光？
+    kind: long
+    status: in_production
+    priority: 5
+    category: 生物發光
+    notes: 開台第一支。生物發光的四種用途（誘捕、防禦、溝通、偽裝）；鮟鱇魚、火球魷、管水母、燈籠魚
+  - id: glow-short
+    title: 一分鐘深海：為什麼深海魚自己帶燈？
+    kind: short
+    status: idea
+    priority: 4
+    category: 生物發光
+    notes: 從 glow 長片同稿切出
+  - id: mariana
+    title: 馬里亞納海溝裡，為什麼也有魚？
+    kind: long
+    status: idea
+    priority: 4
+    category: 極端環境
+    notes: 蝸牛魚（snailfish）、超深淵帶；壓力與細胞膜（TMAO）的說法需查原始論文
+  - id: giant-squid
+    title: 大王烏賊：人類為什麼花了百年才拍到活體？
+    kind: long
+    status: idea
+    priority: 3
+    category: 傳說與發現
+    notes: 2004 年首張活體照片、2012 年首度拍到活體影像；日期與人名必須回原始報導確認

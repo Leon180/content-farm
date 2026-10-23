@@ -69,7 +69,7 @@ def test_yokai_mixes_a_synth_bed_and_keeps_the_voice_level() -> None:
     assert not load_channel("yokai").mascot.rig_ready
 
 
-@pytest.mark.parametrize("style", ["studio", "pulse"])
+@pytest.mark.parametrize("style", ["studio", "pulse", "abyss"])
 def test_v4_styles_are_deterministic_seamless_and_wired_in(style, tmp_path) -> None:
     from content_farm.audio_mix import synth_bgm
 
@@ -85,3 +85,9 @@ def test_long_channels_each_have_one_local_style_that_can_be_switched_off() -> N
     assert {c: load_channel(c).audio.synth_bgm for c in ("yokai", "cel", "technews")} == {
         "yokai": "wafu", "cel": "studio", "technews": "pulse"}
     assert all(load_channel(c).audio.enabled for c in ("yokai", "cel", "technews"))
+
+
+def test_deepsea_uses_the_abyss_bed_at_the_voice_level() -> None:
+    channel = load_channel("deepsea")
+    assert channel.audio.enabled and channel.audio.synth_bgm == "abyss" and not channel.mascot.rig_ready
+    assert channel.audio.voice_lufs == channel.audio.master_lufs
