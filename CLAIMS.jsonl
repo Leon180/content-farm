@@ -1,2 +1,4 @@
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-lanes-deadlock/REPORT-lanes-deadlock.md","min_bytes":1500,"why":"派工宣告的預期產物"}
-{"kind":"no_unpushed","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-lanes-deadlock","why":"不 push 是任務規定；此項預期不符（commit 只在本機分支），據實列出"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ent/REPORT-ent.md","min_bytes":2000,"why":"派工預期產物"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ent/artifacts/ent/ent-2026-10-23-golden-bell-delay.mp4","min_bytes":1000000,"why":"成片"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ent/src/content_farm/production/news/claims.py","min_bytes":1000,"why":"護欄：逐句出處查核"}
+{"kind":"no_unpushed","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ent","why":"本任務不 push；此條預期不符（無 remote 推送），如實列出"}
