@@ -18,7 +18,13 @@
   </header>
 
 {% if kind == "overlay" %}
-  {% if lower_third is not defined or lower_third %}<div class="footage-shade"></div>
+  {% if frame is defined and frame != "lower" %}
+  <section class="text-panel {{ 'panel-left' if frame == 'panel_left' else 'panel-right' }}">
+    <div class="tp-heading">{{ slide.heading }}</div>
+    {% if panel_big %}<div class="tp-big">{{ panel_big }}</div>{% endif %}
+    {% for line in panel_lines %}<div class="tp-line">{{ line }}</div>{% endfor %}
+  </section>
+  {% elif lower_third is not defined or lower_third %}<div class="footage-shade"></div>
   <section class="lower-third">
     <div class="lt-heading">{{ slide.heading }}</div>
     {% if key_line %}<div class="lt-key">{{ key_line }}</div>{% endif %}

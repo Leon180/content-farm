@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from content_farm.explainer.deck import Deck, Layout, MediaKind
+from content_farm.explainer.deck import Deck, Layout, MediaKind, Motion
 
 MIN_SLIDES = 15
 MAX_SLIDES = 30
@@ -21,6 +21,12 @@ MIN_DISTINCT_LAYOUTS = 3
 MAX_BULLETS_SHARE = 0.5
 MAX_PLAIN_SLIDE_RUN = 2  # 3+ static slides in a row reads as a slideshow
 MIN_FOOTAGE_SHARE = 0.2  # stock + ai_image share of all slides
+# Visual v4 (Leon 2026-10-24): the picture leads, the slide text supports.
+MAX_TEXT_ONLY_SHARE = 0.30   # slides that are only text (static / animated slide) of all slides
+MIN_WAN_SHOTS = 2            # key shots moved by Wan2.2 I2V (baked overnight)
+MAX_WAN_SHOTS = 3
+WAN_MIN_DECK_SLIDES = 10     # a short sample deck is not asked for key shots
+TEXT_ONLY_KINDS = (MediaKind.SLIDE, MediaKind.ANIMATED)
 
 # Wording that reads as buy/sell advice — the channel never gives it.
 _ADVICE = re.compile(r"(買進|賣出|加碼|減碼|目標價|進場|出場|抄底|停損|值得買|推薦買)")
@@ -43,6 +49,7 @@ def lint_deck(deck: Deck) -> tuple[LintIssue, ...]:
         *_check_advice(deck),
         *_check_draft(deck),
         *_check_media(deck),
+        *_check_visuals_v4(deck),
     )
 
 
@@ -160,4 +167,41 @@ def _check_media(deck: Deck) -> list[LintIssue]:
                 f"slide {slide.id!r}: source {source.id!r} needs the outlet's verbatim headline "
                 f"(shown as 媒體原標題, apart from the channel summary)",
             ))
+    return issues
+
+
+def _form(slide) -> str:
+    """The on-screen form of a slide: the layout of a text page, the text frame of an AI picture, else its media kind."""
+    if slide.media_kind in TEXT_ONLY_KINDS:
+        return f"text:{slide.layout.value}"
+    if slide.media_kind == MediaKind.AI_IMAGE and slide.media is not None:
+        return f"ai:{slide.media.frame_kind.value}"
+    return slide.media_kind.value
+
+
+def _check_visuals_v4(deck: Deck) -> list[LintIssue]:
+    """Every section has an AI picture; text-only pages are at most 30 %; no two consecutive slides share a form;
+    a long deck has 2-3 Wan key shots."""
+    issues: list[LintIssue] = []
+    for section in deck.sections:
+        if not any(s.media_kind == MediaKind.AI_IMAGE for s in section.slides):
+            issues.append(LintIssue("section-no-ai-image", f"section {section.title!r}: no ai_image slide (need >= 1 per section)"))
+    slides = list(deck.slides)
+    text_only = sum(s.media_kind in TEXT_ONLY_KINDS for s in slides)
+    if slides and text_only / len(slides) > MAX_TEXT_ONLY_SHARE:
+        issues.append(LintIssue(
+            "text-only-share",
+            f"{text_only}/{len(slides)} slides are text only; target <= {MAX_TEXT_ONLY_SHARE:.0%} (give them an ai_image)",
+        ))
+    for before, after in zip(slides, slides[1:]):
+        if _form(before) == _form(after):
+            issues.append(LintIssue(
+                "form-repeat", f"slide {after.id!r}: same form as {before.id!r} ({_form(after)}); vary layout / media.frame",
+            ))
+    wan = [s.id for s in slides if s.media_kind == MediaKind.AI_IMAGE and s.media is not None
+           and s.media.motion_kind == Motion.WAN]
+    if len(slides) >= WAN_MIN_DECK_SLIDES and not MIN_WAN_SHOTS <= len(wan) <= MAX_WAN_SHOTS:
+        issues.append(LintIssue(
+            "wan-shots", f"{len(wan)} Wan key shots ({', '.join(wan) or 'none'}); target {MIN_WAN_SHOTS}-{MAX_WAN_SHOTS}",
+        ))
     return issues

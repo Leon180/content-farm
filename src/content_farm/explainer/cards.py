@@ -47,6 +47,32 @@ def key_line(slide: Slide) -> str:
     return text if len(text) <= KEY_LINE_MAX else _cut_at_clause(text, KEY_LINE_MAX)
 
 
+PANEL_LINES_MAX = 4
+PANEL_LINE_MAX = 22
+
+
+def _short(text: str) -> str:
+    return text if len(text) <= PANEL_LINE_MAX else (_cut_at_clause(text, PANEL_LINE_MAX) or text[:PANEL_LINE_MAX])
+
+
+def panel_content(slide: Slide) -> tuple[str, tuple[str, ...]]:
+    """What a text panel over an AI picture shows: one big line and up to four short ones, from the slide body
+    (the same facts the plain slide has, only fewer of them; the narration carries the rest)."""
+    body = slide.body
+    if slide.layout == Layout.BULLETS:
+        return "", tuple(_short(i) for i in body.items[:PANEL_LINES_MAX])
+    if slide.layout == Layout.BIG_NUMBER:
+        return f"{body.value}{body.unit}", ((_short(body.caption),) if body.caption else ())
+    if slide.layout == Layout.COMPARE:
+        rows = [f"{body.left.label}：{body.left.items[0]}", f"{body.right.label}：{body.right.items[0]}"]
+        return "", tuple(_short(r) for r in rows)
+    if slide.layout == Layout.TIMELINE:
+        return "", tuple(_short(f"{e.when}　{e.what}") for e in body.events[:PANEL_LINES_MAX])
+    if slide.layout == Layout.QUOTE:
+        return "", (_short(f"「{body.text}」"),)
+    return "", ((_short(body.subtitle),) if body.subtitle else ())
+
+
 def _cut_at_clause(text: str, limit: int) -> str:
     """Longest prefix ending at a clause break (no 「…」, CoWoS v3 eval); "" if there is none."""
     cut = max((i for i, ch in enumerate(text[:limit]) if ch in "　，。；：、 "), default=0)
@@ -96,17 +122,22 @@ def _render(
 def overlay_html(
     deck: Deck, section: Section, slide: Slide, index: int, style: str | None = None,
     brand: str | None = None, artwork_caption: str = "", ai_label: str = "", lower_third: bool = True,
+    frame: str = "lower",
 ) -> str:
     """Transparent page: top bar, lower-third (heading + key line), meta row.
 
     ``artwork_caption`` names the work on screen (artist, title, year); ``ai_label``
     puts the fixed 「AI 示意圖」 badge in the top-left corner of AI illustrations.
     ``lower_third=False``: no heading box and no footage shade (diagrams draw their own heading).
+    ``frame``: ``lower`` (default) or ``panel_left`` / ``panel_right``: a translucent text card carrying the heading
+    and the slide body's short lines instead of the lower third (visual v4: the picture leads, the text supports).
     """
     line = key_line(slide)
+    panel_big, panel_lines = panel_content(slide) if frame != "lower" else ("", ())
     return _render(deck, section, slide, index, "overlay", style=style, brand=brand,
                    key_line="" if line == slide.heading else line, artwork_caption=artwork_caption,
-                   ai_label=ai_label, lower_third=lower_third)
+                   ai_label=ai_label, lower_third=lower_third, frame=frame, panel_big=panel_big,
+                   panel_lines=panel_lines)
 
 
 def title_card_html(

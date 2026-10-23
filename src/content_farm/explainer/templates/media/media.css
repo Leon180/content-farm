@@ -20,6 +20,17 @@ html:has(body.media-overlay), body.media-overlay { background: transparent !impo
 }
 .lt-heading { font-size: 60px; font-weight: 900; line-height: 1.2; color: #fff; }
 .lt-key { margin-top: 10px; font-size: 36px; line-height: 1.35; color: var(--accent); font-weight: 700; }
+/* visual v4: text panel over a full-screen AI picture (the picture leads, the text supports) */
+.text-panel {
+  position: absolute; top: 170px; width: 600px; max-height: 540px; overflow: hidden;
+  padding: 28px 34px 30px; background: rgba(16, 18, 22, .80); border-radius: 18px;
+}
+.text-panel.panel-left { left: var(--pad-x); border-left: 12px solid var(--accent); }
+.text-panel.panel-right { right: var(--pad-x); border-right: 12px solid var(--accent); }
+.tp-heading { font-size: 46px; font-weight: 900; line-height: 1.22; color: #fff; }
+.tp-big { margin-top: 14px; font-size: 96px; font-weight: 900; line-height: 1.05; color: var(--accent); }
+.tp-line { margin-top: 12px; font-size: 32px; line-height: 1.35; color: #f1f1f1; font-weight: 600; }
+.tp-line::before { content: "▸ "; color: var(--accent); }
 .meta.on-footage { color: #d6d6d6; text-shadow: 0 2px 6px rgba(0,0,0,.8); }
 /* artwork: who made it, when, and that it is public domain (top-right, clear of the lower third) */
 .art-caption {

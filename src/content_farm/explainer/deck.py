@@ -148,8 +148,17 @@ class Motion(str, Enum):
     """How an ``ai_image`` still moves (Leon 2026-10-16, decision 2bacb8a2b8b0)."""
 
     PARALLAX = "parallax"    # default: 2.5D depth parallax, ≤3 s, ping-ponged over the slot
-    WAN = "wan"              # key shot: Wan2.2 I2V clip baked overnight (≤2 per video)
+    WAN = "wan"              # key shot: Wan2.2 I2V clip baked overnight (≤3 per video)
     KEN_BURNS = "ken_burns"  # flat push-in (the pre-motion behaviour)
+
+
+class Frame(str, Enum):
+    """How an ``ai_image`` slide carries its text (visual v4, Leon 2026-10-24): the picture always fills the screen and
+    moves; the slide's own text sits over it in one of these forms. Consecutive slides must not share a form."""
+
+    LOWER = "lower"              # default: heading + key line in a lower third
+    PANEL_LEFT = "panel_left"    # translucent text card on the left (heading + the slide body as short lines)
+    PANEL_RIGHT = "panel_right"  # same, on the right
 
 
 class Animation(str, Enum):
@@ -206,6 +215,7 @@ class Media(_Frozen):
     artwork: str = Field(default="", max_length=40)      # artwork: id in assets/artwork/artwork.json
     motion: Motion | None = None                         # ai_image: None = parallax
     motion_prompt: str = Field(default="", max_length=600)  # ai_image + wan: what moves (English)
+    frame: Frame | None = None                           # ai_image: text form over the picture (None = lower third)
     # ai_image: a correction shown beside the 「AI 示意圖」 badge when the picture cannot match the
     # text (e.g. the model draws 6 tails for 「九尾」): say so on screen rather than let it mislead.
     ai_note: str = Field(default="", max_length=24)
@@ -230,11 +240,17 @@ class Media(_Frozen):
             raise ValueError("motion / motion_prompt only apply to media kind 'ai_image'")
         if self.ai_note and self.kind != MediaKind.AI_IMAGE:
             raise ValueError("ai_note only applies to media kind 'ai_image'")
+        if self.frame is not None and self.kind != MediaKind.AI_IMAGE:
+            raise ValueError("frame only applies to media kind 'ai_image'")
         return self
 
     @property
     def motion_kind(self) -> Motion:
         return self.motion or Motion.PARALLAX
+
+    @property
+    def frame_kind(self) -> Frame:
+        return self.frame or Frame.LOWER
 
 
 class Source(_Frozen):

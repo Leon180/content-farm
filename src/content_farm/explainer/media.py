@@ -143,9 +143,11 @@ def _animated(ctx: MediaContext, job: SlideJob, note: str = "") -> ClipResult:
 
 
 def _overlay_png(ctx: MediaContext, job: SlideJob, ai_label: str = "", lower_third: bool = True) -> Path:
+    media = job.slide.media
+    frame = media.frame_kind.value if media is not None and media.kind == MediaKind.AI_IMAGE else "lower"
     html = ctx.html(f"overlay_{job.index:03d}.html",
                     overlay_html(ctx.deck, job.section, job.slide, job.index, brand=ctx.brand,
-                                 ai_label=ai_label, lower_third=lower_third))
+                                 ai_label=ai_label, lower_third=lower_third, frame=frame))
     return ctx.capturer.still(html, ctx.work_dir / "overlays" / f"overlay_{job.index:03d}.png",
                               transparent=True)
 

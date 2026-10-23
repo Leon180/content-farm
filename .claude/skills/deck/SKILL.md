@@ -72,7 +72,18 @@ Body per layout (limits are enforced; the renderer fails on overflow anyway):
 | `ai_image` | an analogy, a mood, a scene reconstruction or a transition that has no footage and **no public-domain artwork** (e.g. "a cat assembling LEGO on a silicon plate") — rules below | `prompt` (English, content only: the channel adds its style prefix) | the `illustrate` step draws it with the channel's local model (`channels/<code>.yaml` → `ai_illustration`), then moves it (2.5D parallax by default, `motion` below) under the fixed 「AI 示意圖」 badge; a red "AI 插圖待補" placeholder until it exists |
 | `title_card` | a dated news event from the article timeline | `source_id` (must be in `sources`; `headline` recommended) | self-made news card (publisher, date, headline, `summary`); give that source `publisher` and `published` (YYYY-MM[-DD]). Never a screenshot |
 
-Mix: about a third `slide`, ≥ 1 `title_card`, no more than 3 `stock` in a row. Lint (`--strict`) wants no 3 plain `slide`s in a row and `stock` + `ai_image` ≥ 20 % of slides.
+#### Visual v4 (Leon 2026-10-24): the picture leads, the slide text supports
+
+Every long-form channel (chipcat, cel, technews long, yokai) now looks like the 九尾狐 videos: AI pictures first, slide text second. Lint (`--strict`) enforces:
+
+1. **Every section has ≥ 1 `ai_image` slide.** Spend the picture where the narration describes a scene, an analogy, a workplace, a process or a turning point.
+2. **Text-only pages (`slide` / `animated`) ≤ 30 % of all slides.** Dense comparisons and tables may stay text; a bullets page that only lists three phrases becomes an `ai_image` whose `frame` carries those phrases.
+3. **No two consecutive slides share a form.** The form of a text page is its `layout`; of an AI picture, its `media.frame`: `lower` (default heading + key line), `panel_left` or `panel_right` (a translucent card with the heading and the slide body's 1–4 short lines — big_number puts the number large). Rotate `lower → panel_left → panel_right` across consecutive pictures.
+4. **All AI pictures move** (2.5D parallax by default). **Pick 2–3 key shots** (the opening picture, the turning point, the closing image) and set `motion: "wan"` + `motion_prompt`; they are baked overnight (`scripts/ai_motion.py bake`, exclusive lane) and fall back to parallax until then. A long deck outside 2–3 gets a `wan-shots` lint line.
+5. **Style, per channel** (`ai_illustration.style_prefix`): cel = animation-industry editorial illustration; chipcat = technology illustration; technews = information illustration; yokai = ink wash. Always illustration — never photo-real, never a named artist, never a real person's likeness, no text in the picture. Write prompts that do not hinge on a countable detail.
+6. The slide's own `body` is unchanged by `frame` (the same facts, fewer of them, as the panel); narration, ids, `source_ids` and `mascot` stay as they are. A visual-only redo of an existing deck edits only `media`, `layout`/`body` where a form must change, and `heading` — never `narration` (the voice is already recorded).
+
+Mix: about a third `slide`, ≥ 1 `title_card`, no more than 3 `stock` in a row. Lint (`--strict`) wants no 3 plain `slide`s in a row and `stock` + `ai_image` ≥ 20 % of slides, plus the v4 rules above.
 
 #### AI image rules (Leon 2026-10-16)
 
@@ -94,7 +105,7 @@ Every `ai_image` moves; `media.motion` picks how:
 | `wan` | Wan2.2-TI2V-5B image-to-video, ≤3 s (832×480, upscaled). Add `motion_prompt` (English, what moves: "the tails sway slowly, mist drifts, static camera") | ~15 min and ~26 GB each, baked beforehand |
 | `ken_burns` | flat push-in (old behaviour) | ffmpeg only |
 
-- **At most 2 `wan` per video** — policy and QC error on a third. Spend them on the opening image or a turning point where something should visibly move (a tail, mist, smoke), not on a still landscape.
+- **At most 3 `wan` per video (aim for 2–3)** — policy and QC error on a fourth. Spend them on the opening image or a turning point where something should visibly move (a tail, mist, smoke), not on a still landscape.
 - Wan clips are never made during a render. Bake them first, when the machine is idle (nightly): `python scripts/ai_motion.py status|bake --run-dir <run_dir>`; it waits for the render lock and for no other ffmpeg / mflux / mlx_video process. A `wan` slide without a baked clip falls back to parallax and QC warns.
 - `motion_prompt` follows the same rules as `prompt` (no photo-real, no artist names).
 - Paths: `CF_MLX_VIDEO_HOME` (venv + models, e.g. `~/.local/share/mlx-video`), or `CF_MLX_VIDEO_PYTHON` / `CF_DEPTH_MODEL_DIR` / `CF_WAN_MODEL_DIR`. Unset → every `ai_image` falls back to Ken Burns (QC warns).

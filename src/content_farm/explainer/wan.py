@@ -32,7 +32,7 @@ from content_farm.explainer.motion_cache import (
 )
 
 KIND = "wan"
-MAX_WAN_PER_VIDEO = 2
+MAX_WAN_PER_VIDEO = 3      # visual v4 (Leon 2026-10-24): 2–3 key shots per long video
 GENERATE_TIMEOUT_SECONDS = 1800
 ESTIMATED_MINUTES_PER_CLIP = 15  # trial: 12.6–17.7 min per 69-frame clip
 WAN_MODEL = {

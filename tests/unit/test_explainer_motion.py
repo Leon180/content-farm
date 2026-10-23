@@ -205,9 +205,9 @@ def test_busy_gate_matches_renders_and_models_but_not_mentions() -> None:
     assert wan.busy_processes(set(), "1 /bin/zsh\n2 python scripts/ai_motion.py bake") == []  # control
 
 
-def test_bake_refuses_more_than_two_and_generates_only_missing(tmp_path: Path) -> None:
-    with pytest.raises(ValueError, match="max 2"):
-        motion_bake.wan_shots(_deck("wan", "wan", "wan"), tmp_path)
+def test_bake_refuses_more_than_three_and_generates_only_missing(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="max 3"):
+        motion_bake.wan_shots(_deck("wan", "wan", "wan", "wan"), tmp_path)
     deck = _deck("wan", None, "wan")
     _image(tmp_path, "m0")
     shots = motion_bake.wan_shots(deck, tmp_path)
@@ -228,11 +228,11 @@ def test_bake_refuses_more_than_two_and_generates_only_missing(tmp_path: Path) -
 
 # --- QC / credits / steps ------------------------------------------------------------------
 
-def test_qc_limits_wan_to_two_per_video() -> None:
+def test_qc_limits_wan_to_three_per_video() -> None:
     channel = load_channel("yokai")
-    assert qc.wan_count_findings(_deck("wan", "wan")) == []
-    [finding] = qc.policy_findings(channel, _deck("wan", "wan", "wan"))
-    assert finding.level == "error" and "max 2" in finding.message
+    assert qc.wan_count_findings(_deck("wan", "wan", "wan")) == []
+    [finding] = qc.policy_findings(channel, _deck("wan", "wan", "wan", "wan"))
+    assert finding.level == "error" and "max 3" in finding.message
 
 
 def _entry(slide_id: str, move: dict) -> dict:
@@ -250,8 +250,8 @@ def test_qc_checks_motion_records_and_warns_on_fallback(tmp_path: Path) -> None:
     assert [f.level for f in ok] == ["ok", "ok"] and "parallax, wan" in ok[0].message
     unseeded = qc.ai_image_findings([_entry("a", {**wan_move, "seed": None})])
     assert any(f.level == "error" and "a" in f.message for f in unseeded)
-    three = qc.ai_image_findings([_entry(s, wan_move) for s in "abc"])
-    assert any(f.level == "error" and "3 Wan clips" in f.message for f in three)
+    four = qc.ai_image_findings([_entry(s, wan_move) for s in "abcd"])
+    assert any(f.level == "error" and "4 Wan clips" in f.message for f in four)
     fell = qc.ai_image_findings([_entry("a", {**px_move, "requested": "wan", "fallback_reason": "not baked"})])
     assert [f.level for f in fell] == ["warn", "ok"]
 
