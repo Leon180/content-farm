@@ -27,6 +27,7 @@ from typing import Any
 
 import yaml
 
+from content_farm.production.news import guard
 from content_farm.review.client import Call, CallResult, run_call
 
 PANELS_FILE = Path(__file__).resolve().parents[4] / "channels" / "shared" / "review_panels.yaml"
@@ -47,7 +48,10 @@ SCHEMA: dict[str, Any] = {
             "score": {"type": "number", "minimum": 1, "maximum": 10},
             "reason": {"type": "string"},
             "format": {"type": "string", "enum": ["short", "long"]},
-            "format_reason": {"type": "string"}}}}}}
+            "format_reason": {"type": "string"},
+            # ent guardrail: the seat flags a story that touches a forbidden topic; any flag excludes it
+            "sensitive": {"type": "boolean"},
+            "sensitive_reason": {"type": "string"}}}}}}
 
 PRODUCER = {"id": "producer", "who": "頻道製作人",
             "traits": ["在意每則新聞值不值得做、做成哪種格式最划算", "長片要有至少 6 分鐘的內容：多個層面、可講的背景、數字或對比；"
@@ -78,19 +82,26 @@ def excerpt(read: dict[str, Any]) -> str:
     return " ".join(text.split())[:EXCERPT_CHARS]
 
 
-def prompt_for(seat: Seat, items: list[dict[str, Any]], channel_name: str) -> str:
+SENSITIVE_RULE = ("\n另外請標記 sensitive：只要這則牽涉未成年人、性醜聞細節、病情或死因的臆測、私人住址或家人，"
+                  "或內容主要是未經證實的傳聞，sensitive 填 true 並在 sensitive_reason 寫一句理由（這類題目一律排除，不做）；"
+                  "其他填 false。")
+
+
+def prompt_for(seat: Seat, items: list[dict[str, Any]], channel_name: str, brief: str = "",
+               topic_guard: bool = False) -> str:
     rows = []
     for it in items:
         read = it["read"]
         rows.append(f"### {it['id']}｜{it['title']}\n來源：{it['domain']}｜原文可讀字數：{read.get('chars', 0)}｜"
                     f"熱度：{it['popularity']}\n摘錄：{excerpt(read)}")
     traits = "；".join(seat.traits)
-    return (f"你是{seat.who}（{traits}）。你要幫「{channel_name}」（台灣中文的每日科技新知頻道，沒有主持角色，"
-            "畫面是新聞卡片與圖表）從下面的候選挑要做的題目。\n"
+    about = brief or "台灣中文的每日科技新知頻道，沒有主持角色，畫面是新聞卡片與圖表"
+    return (f"你是{seat.who}（{traits}）。你要幫「{channel_name}」（{about}）從下面的候選挑要做的題目。\n"
             "對每一則：1) score 1–10：以你的身分，看到這則的中文講解會不會點開、看完（10＝一定看；6 以下＝不值得做）；"
             "2) format：這則內容撐得起 6–10 分鐘長片（有多個層面、足夠的背景與數字，能講出 3 個以上不同的重點）就判 long，"
             "只有一個結論或一個數字的消息判 short（≤60 秒）；3) 各給一句理由。\n"
-            "只憑摘錄判斷，不要編造原文沒有的事。依 id 逐則回答。\n\n" + "\n\n".join(rows))
+            "只憑摘錄判斷，不要編造原文沒有的事。依 id 逐則回答。" + (SENSITIVE_RULE if topic_guard else "")
+            + "\n\n" + "\n\n".join(rows))
 
 
 @dataclass(frozen=True)
@@ -100,8 +111,8 @@ class Outcome:
 
 
 def _ask(seat: Seat, items: list[dict[str, Any]], channel_name: str, cwd: Path,
-         client: Callable[[Call], CallResult], timeout_s: int) -> CallResult:
-    call = Call(f"select-{seat.id}", prompt_for(seat, items, channel_name), SCHEMA, SEAT_MODEL, SEAT_EFFORT,
+         client: Callable[[Call], CallResult], timeout_s: int, brief: str = "", topic_guard: bool = False) -> CallResult:
+    call = Call(f"select-{seat.id}", prompt_for(seat, items, channel_name, brief, topic_guard), SCHEMA, SEAT_MODEL, SEAT_EFFORT,
                 tools=(), cwd=cwd, timeout_s=timeout_s, retries=1)
     return client(call)
 
@@ -131,7 +142,9 @@ def cap_longs(rows: list[dict[str, Any]], max_long: int) -> list[dict[str, Any]]
 
 
 def aggregate(items: list[dict[str, Any]], results: dict[str, CallResult], *, count: int,
-              min_score: float = MIN_SCORE, max_long: int = 1) -> Outcome:
+              min_score: float = MIN_SCORE, max_long: int = 1,
+              blocked: list[dict[str, Any]] | None = None) -> Outcome:
+    """``blocked``: stories the topic guard removed before the panel (recorded as skipped, never picked)."""
     per_seat: dict[str, dict[str, dict[str, Any]]] = {}
     for seat_id, result in results.items():
         if result.ok and result.output:
@@ -146,15 +159,22 @@ def aggregate(items: list[dict[str, Any]], results: dict[str, CallResult], *, co
             continue
         votes = [g["format"] for g in given.values()]
         fmt, why = _format_for(votes, int(it["read"].get("chars", 0)))
+        flagged = {sid: g.get("sensitive_reason") or "（未寫理由）" for sid, g in given.items() if g.get("sensitive")}
         rows.append({"id": it["id"], "title": it["title"], "position": it["position"],
-                     "mean": round(mean(g["score"] for g in given.values()), 2),
+                     "mean": round(mean(g["score"] for g in given.values()), 2), "sensitive": flagged,
                      "seats": {sid: {"score": g["score"], "reason": g["reason"], "format": g["format"],
                                      "format_reason": g["format_reason"]} for sid, g in given.items()},
                      "format": fmt, "format_why": why})
     rows.sort(key=lambda r: (-r["mean"], r["position"]))
-    picked = {r["id"] for r in [r for r in rows if r["mean"] >= min_score][:count]}
+    eligible = [r for r in rows if r["mean"] >= min_score and not r["sensitive"]]
+    picked = {r["id"] for r in eligible[:count]}
     for r in rows:
-        r["decision"] = "pick" if r["id"] in picked else ("skip: below floor" if r["mean"] < min_score else "skip: over count")
+        r["decision"] = ("pick" if r["id"] in picked else
+                         "skip: 禁碰題材（評審標記）" if r["sensitive"] else
+                         "skip: below floor" if r["mean"] < min_score else "skip: over count")
+    rows += [{"id": b["id"], "title": b["title"], "position": b.get("position", 0), "mean": 0.0, "sensitive": {},
+              "seats": {}, "format": "short", "format_why": "", "decision": f"skip: 禁碰題材（程式過濾）{b['why']}"}
+             for b in blocked or []]
     rows = cap_longs(rows, max_long)
     chosen = [r for r in rows if r["decision"] == "pick"]
     usd = round(sum(r.cost_usd for r in results.values()), 4)
@@ -164,20 +184,32 @@ def aggregate(items: list[dict[str, Any]], results: dict[str, CallResult], *, co
                                       for sid, r in results.items()}})
 
 
+def _blocked(r: dict[str, Any]) -> str | None:
+    """The topic guard over what the story says about itself: headline, feed summary, page description."""
+    return guard.blocked_reason(r["candidate"]["title"], r["candidate"].get("summary", ""),
+                                (r.get("read") or {}).get("description", ""))
+
+
 def select(day_dir: Path, ranked: list[dict[str, Any]], seats: tuple[Seat, ...], channel_name: str, *,
-           count: int, client: Callable[[Call], CallResult] | None = None, timeout_s: int = 900) -> Outcome:
-    """Run the seats in parallel over the readable candidates; write ``selection.json`` into ``day_dir``."""
+           count: int, client: Callable[[Call], CallResult] | None = None, timeout_s: int = 900,
+           brief: str = "", topic_guard: bool = False) -> Outcome:
+    """Run the seats in parallel over the readable candidates; write ``selection.json`` into ``day_dir``.
+    ``topic_guard`` (ent): stories touching a forbidden topic are removed here, before any seat sees them."""
+    readable = [(pos, r) for pos, r in enumerate(ranked, start=1) if r.get("read") and r["read"].get("ok")]
+    blocked = [{"id": r["candidate"]["id"], "title": r["candidate"]["title"], "position": pos, "why": why}
+               for pos, r in readable if topic_guard and (why := _blocked(r))]
+    skip = {b["id"] for b in blocked}
     items = [{"id": r["candidate"]["id"], "title": r["candidate"]["title"], "domain": r["candidate"]["domain"],
               "popularity": r["popularity"], "read": r["read"], "position": pos}
-             for pos, r in enumerate(ranked, start=1) if r.get("read") and r["read"].get("ok")]
+             for pos, r in readable if r["candidate"]["id"] not in skip]
     if not items:
         raise RuntimeError("selection: no readable candidate")
     log_dir = day_dir / "select"
     run = client or (lambda call: run_call(call, log_dir=log_dir))
     with ThreadPoolExecutor(max_workers=len(seats)) as pool:
-        futures = {seat.id: pool.submit(_ask, seat, items, channel_name, day_dir, run, timeout_s) for seat in seats}
+        futures = {seat.id: pool.submit(_ask, seat, items, channel_name, day_dir, run, timeout_s, brief, topic_guard) for seat in seats}
         results = {sid: future.result() for sid, future in futures.items()}
-    outcome = aggregate(items, results, count=count)
+    outcome = aggregate(items, results, count=count, blocked=blocked)
     (day_dir / SELECTION_FILE).write_text(json.dumps(outcome.selection, ensure_ascii=False, indent=2), encoding="utf-8")
     return outcome
 

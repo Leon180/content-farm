@@ -63,7 +63,7 @@ def _options(args: argparse.Namespace) -> RunOptions:
 
 def _advance(run_dir: Path, channel, args: argparse.Namespace) -> RunResult:
     runner = Runner(Context(channel, run_dir.resolve(), _options(args)), max_load=args.max_load)
-    is_long = run_dir.name.startswith("technews-long-")
+    is_long = run_dir.name.startswith(f"{_series(channel).dir_prefix}-long-")
     result = runner.run(until=(args.long_until if is_long else args.until))
     print(f"  [{result.outcome.value}] {run_dir.name} · {result.step}: {result.message}")
     if result.outcome is Outcome.GATE and result.step == "gate_final":
@@ -92,7 +92,8 @@ def auto_pick(args: argparse.Namespace, channel, series: NewsSeries, day: str) -
         ranked = [r.model_dump() for r in daily.load_candidates(directory)]
         seats = select.seats_for(channel.code)
         started = time.monotonic()
-        outcome = select.select(directory, ranked, seats, series.name, count=args.auto)
+        outcome = select.select(directory, ranked, seats, series.name, count=args.auto,
+                                brief=series.panel_brief, topic_guard=series.topic_guard)
         daily.log_timing(directory, "select", time.monotonic() - started, usd=outcome.selection["usd"],
                          picked=[r["id"] for r in outcome.chosen])
         chosen = outcome.chosen
@@ -126,7 +127,7 @@ def run_daily(args: argparse.Namespace) -> int:
         print(f"評審團自動挑題：{picks}")
     elif args.pick:
         daily.pick(args.root, day, daily.parse_picks(args.pick), series, channel)
-    runs = daily.picked_runs(args.root, day, series.dir_prefix) + daily.long_runs(args.root, day)
+    runs = daily.picked_runs(args.root, day, series.dir_prefix) + daily.long_runs(args.root, day, series.dir_prefix)
     if not runs:
         print(f"{day} 還沒挑題：開 {daily.day_dir(args.root, day, series.dir_prefix) / 'candidates.html'}")
         return 3

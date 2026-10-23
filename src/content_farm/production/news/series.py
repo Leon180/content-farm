@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from content_farm.production.channels import Channel
@@ -33,6 +35,21 @@ class RankWeights(_Strict):
     comments: float = Field(default=0.6, ge=0, le=2)
 
 
+class Feed(_Strict):
+    """One whitelisted outlet (ent): the only way a story can enter the channel."""
+
+    id: str = Field(pattern="^[a-z][a-z0-9-]{1,15}$")
+    name: str = Field(min_length=1, max_length=20)        # how the narration credits it: 「據{name}報導」
+    aliases: tuple[str, ...] = ()                         # other spellings the narration may use for the same outlet
+    domains: tuple[str, ...] = Field(min_length=1)        # hosts (and sub-domains) its articles live on
+    url: str = Field(pattern=r"^https://")                # public RSS / Atom feed
+    lang: Literal["zh", "ja", "ko", "en"] = "zh"
+    spacing_seconds: float = Field(default=1.0, ge=0.5, le=10)   # minimum gap between requests to the feed host
+
+    def names(self) -> tuple[str, ...]:
+        return (self.name, *self.aliases)
+
+
 class NewsSeries(_Strict):
     name: str
     playlist: str
@@ -50,13 +67,33 @@ class NewsSeries(_Strict):
     shorts_time: str = Field(default="12:30", pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
     weekly: Weekly = Weekly()
     rank_weights: RankWeights = RankWeights()
+    # ── entertainment news (channel ``ent``): everything below is opt-in; the tech channels leave it unset ──
+    feeds: tuple[Feed, ...] = ()                  # the source whitelist; "rss" in ``sources`` reads exactly these
+    rank_profile: Literal["tech", "ent"] = "tech"
+    topic_guard: bool = False                     # guard.blocked_reason on candidates, panel flag, finished script
+    claims_audit: bool = False                    # every factual sentence needs a sourced claim (news/claims.py)
+    analogy_required: bool = True                 # tech Shorts explain a glossary term; ent has no analogy beat
+    beat_labels: dict[str, str] = {}              # on-screen name per beat kind (overrides news.script.BEAT_LABELS)
+    panel_brief: str = ""                         # one sentence on the channel for the selection panel
+    series_line: str = ""                         # description footer line (replaces the tech default)
+    tags: tuple[str, ...] = ()                    # extra tags; replaces the tech default tags when set
 
     @model_validator(mode="after")
     def _sources(self) -> NewsSeries:
-        bad = set(self.sources) - {"hn", "lobsters", "arxiv", "github"}
+        bad = set(self.sources) - {"hn", "lobsters", "arxiv", "github", "rss"}
         if bad:
             raise ValueError(f"unknown/forbidden sources {sorted(bad)} (free sources only; no X)")
+        if ("rss" in self.sources) != bool(self.feeds):
+            raise ValueError("sources has 'rss' exactly when feeds (the whitelist) is non-empty")
+        if len({f.id for f in self.feeds}) != len(self.feeds):
+            raise ValueError("feeds: duplicate id")
         return self
+
+    def outlet(self, url: str) -> Feed | None:
+        """The whitelisted outlet publishing ``url``; None when it is not on the whitelist."""
+        from content_farm.production.news.guard import outlet_for
+
+        return outlet_for(url, self.feeds)
 
     def weights(self) -> Weights:
         w = self.rank_weights
@@ -80,5 +117,6 @@ def branding_for(channel: Channel):
     footer = channel.identity.description.footer if channel.identity else ""
     return Branding(take_label=series.take_label,
                     byline=footer or f"本片是{series.name}對原文的摘要與評論，不是翻譯；細節與數字以原文為準。",
-                    series_line=f"{series.name}：每天整理國外科技圈值得知道的消息，用台灣中文講給你聽。",
-                    tags=("Shorts", series.name, "科技新聞", "科技新知"))
+                    series_line=series.series_line or f"{series.name}：每天整理國外科技圈值得知道的消息，用台灣中文講給你聽。",
+                    tags=("Shorts", series.name, *(series.tags or ("科技新聞", "科技新知"))),
+                    beat_labels=dict(series.beat_labels))

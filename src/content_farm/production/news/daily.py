@@ -21,8 +21,9 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from content_farm.production.channels import Channel
-from content_farm.production.news import fetch, rank, verify
-from content_farm.production.news.models import Ranked
+from content_farm.production.news import feeds as feed_sources
+from content_farm.production.news import fetch, guard, rank, verify
+from content_farm.production.news.models import Candidate, Ranked
 from content_farm.production.news.review import load_candidates, write_candidates
 from content_farm.production.news.script import ITEM_FILE
 from content_farm.production.news.series import NewsSeries
@@ -53,6 +54,12 @@ def _fetch(series: NewsSeries, get: fetch.Getter) -> fetch.FetchReport:
     found, errors, counts = [], [], {}
     allowed = verify.robots_allows(get)
     for name in series.sources:
+        if name == "rss":       # the whitelist: each declared feed, nothing else
+            items, feed_errors, feed_counts = feed_sources.fetch_feeds(get, series.feeds)
+            errors.extend(feed_errors)
+            counts.update({f"rss:{k}": v for k, v in feed_counts.items()})
+            found.extend(items)
+            continue
         try:
             if name == "github" and not allowed(fetch.GITHUB_TRENDING):   # HTML page: honour robots.txt
                 raise fetch.FetchError("github.com/robots.txt disallows /trending for us; skipped")
@@ -65,6 +72,26 @@ def _fetch(series: NewsSeries, get: fetch.Getter) -> fetch.FetchReport:
     return fetch.FetchReport(tuple(found), tuple(errors), counts)
 
 
+EXCLUDED_FILE = "excluded.json"
+
+
+def admit(candidates: Sequence[Candidate], series: NewsSeries) -> tuple[list[Candidate], list[dict[str, str]]]:
+    """The ent guardrails at the door (code, not prompt): a story from an outlet that is not on the whitelist, or whose
+    headline / feed summary touches a topic we never cover (minors, sexual-scandal detail, illness and death,
+    private addresses and family), never reaches the ranking, the panel or a script. Tech channels pass unchanged."""
+    if not series.feeds and not series.topic_guard:
+        return list(candidates), []
+    kept, excluded = [], []
+    for cand in candidates:
+        if series.feeds and series.outlet(cand.url) is None:
+            excluded.append({"id": cand.id, "title": cand.title, "url": cand.url, "why": "不在來源白名單"})
+        elif series.topic_guard and (why := guard.blocked_reason(cand.title, cand.summary)):
+            excluded.append({"id": cand.id, "title": cand.title, "url": cand.url, "why": f"禁碰題材 {why}"})
+        else:
+            kept.append(cand)
+    return kept, excluded
+
+
 def collect(root: Path, day: str, series: NewsSeries, http: fetch.PoliteHttp, now: datetime,
             log: Callable[[str], None] = print) -> Path:
     """Fetch, rank, read the top ``review_candidates`` originals, write the review page."""
@@ -72,7 +99,12 @@ def collect(root: Path, day: str, series: NewsSeries, http: fetch.PoliteHttp, no
     started = time.monotonic()
     report = _fetch(series, http.get)
     log_timing(directory, "fetch", time.monotonic() - started, counts=report.counts, errors=list(report.errors))
-    ranked = rank.rank(report.candidates, now, series.weights(), series.max_age_hours)
+    admitted, excluded = admit(report.candidates, series)
+    if excluded:
+        directory.mkdir(parents=True, exist_ok=True)
+        (directory / EXCLUDED_FILE).write_text(json.dumps(excluded, ensure_ascii=False, indent=2), encoding="utf-8")
+        log(f"guard: {len(excluded)} stories excluded before ranking → {directory / EXCLUDED_FILE}")
+    ranked = rank.rank(admitted, now, series.weights(), series.max_age_hours, profile=series.rank_profile)
     log(f"fetched {report.counts}; {len(ranked)} within {series.max_age_hours:.0f} h after dedupe")
     started = time.monotonic()
     robots = verify.robots_allows(http.get)
@@ -159,9 +191,9 @@ def pick(root: Path, day: str, picks: Sequence[int], series: NewsSeries, channel
     return chosen
 
 
-def long_runs(root: Path, day: str) -> list[Path]:
+def long_runs(root: Path, day: str, prefix: str = "technews") -> list[Path]:
     """Long-video run-dirs the selection panel started for ``day``."""
-    return sorted(p.parent for p in root.glob(f"technews-long-{day}-*/format_decision.json"))
+    return sorted(p.parent for p in root.glob(f"{prefix}-long-{day}-*/format_decision.json"))
 
 
 def start_long(root: Path, day: str, row: dict, ranked: list[Ranked], channel: Channel) -> Path:
@@ -169,8 +201,10 @@ def start_long(root: Path, day: str, row: dict, ranked: list[Ranked], channel: C
     answered by the one candidate (the topic panel then still scores it; article → deck → … as usual)."""
     from content_farm.production.news import select
 
+    from content_farm.production.news.series import news_series
+
     item = next(r for r in ranked if r.candidate.id == row["id"])
-    run_dir = root / f"technews-long-{day}-{re.sub(r'[^a-z0-9.-]+', '-', row['id'].lower())}"
+    run_dir = root / f"{news_series(channel).dir_prefix}-long-{day}-{re.sub(r'[^a-z0-9.-]+', '-', row['id'].lower())}"
     (run_dir / "topics").mkdir(parents=True, exist_ok=True)
     urls = [item.candidate.url, *(d.url for d in item.candidate.discussions)]
     candidate = {"id": "t01", "title": item.candidate.title, "hook": row["format_why"], "minutes": 8,

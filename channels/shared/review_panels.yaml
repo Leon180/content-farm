@@ -53,6 +53,13 @@ personas:
     - {id: manager, who: 45 歲傳產公司主管, traits: [想知道科技新聞會不會影響公司與工作, 不要技術細節要結論, 不喜歡太像廣告或標題殺人]}
     - {id: senior, who: 63 歲退休公務員, traits: [手機看、字幕要大, 不喜歡英文縮寫和閃太快的畫面, 沒有角色也沒關係但畫面要清楚]}
     - {id: teacher, holdout: true, who: 42 歲國中資訊老師, traits: [想找能給學生看的科技時事, 在意比喻是否正確、有沒有誤導, 討厭誇大標題]}
+  ent:           # 娛樂快報：手機滑、沒有角色；留人靠「誰說的」講清楚（已證實 vs 報導）、短、不八卦私生活
+    - {id: fan, who: 25 歲追星上班族, traits: [追台日韓藝人與影集, 午休和通勤滑手機、隨時滑走, 想第一時間知道消息但討厭被標題殺人, 傳聞當事實講會直接取消追蹤]}
+    - {id: casual, who: 31 歲不追星的一般觀眾, traits: [偶爾看娛樂新聞聊天用, 前 10 秒沒講出「發生什麼事」就滑走, 不認識的藝人需要一句話交代是誰, 討厭名詞堆疊]}
+    - {id: media_literate, who: 38 歲新聞系畢業的行銷, traits: [在意出處與用字，「據報導」跟「證實」分得很清楚, 看到把傳聞寫成事實會留言糾正, 不喜歡窺探私生活]}
+    - {id: parent, who: 46 歲家長, traits: [不想讓孩子看到八卦細節, 對藝人私生活與未成年相關內容很敏感, 喜歡客觀、點到為止的整理]}
+    - {id: senior, who: 63 歲退休公務員, traits: [手機看、字幕要大, 不熟網路用語和藝人暱稱, 畫面要清楚不閃]}
+    - {id: critic, holdout: true, who: 35 歲影評部落客, traits: [在意是否有出處與論證, 討厭灌水與標題黨, 評論要有自己的觀點而不是複述新聞]}
   cel:
     - {id: anime_fan, who: 22 歲動漫迷, traits: [每季追番, 想知道製作內幕, 討厭被說教]}
     - {id: industry, who: 33 歲動畫業界從業者, traits: [懂製作委員會與外包, 數字講錯會糾正]}
@@ -310,3 +317,9 @@ review:
         script_facts: {waive_on_last_round: false}
         media: {waive_on_last_round: false}
         shorts_script: {rework: news_script}   # 科技新聞 Short：退回給 news_script 步驟（稿是 news_script.json，script.json 由它產生）
+    ent:            # 娛樂快報：同科技新知——事實與授權不放行（policy 為 auto_fix_then_pass 時走自動修一次）；Short 稿退回給 news_script
+      stages:
+        article: {waive_on_last_round: false}
+        script_facts: {waive_on_last_round: false}
+        media: {waive_on_last_round: false}
+        shorts_script: {rework: news_script}

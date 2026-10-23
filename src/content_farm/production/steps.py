@@ -361,6 +361,12 @@ NEWS_SHORT_STEPS: tuple[Step, ...] = (
     Step("news_script", "agent", "HN 快報稿（讀原文後寫五段）", outputs=(NEWS_SCRIPT_FILE,),
          verify=lambda c: _py(c, "news.py", "lint", "--run-dir", _run_dir(c)),
          hint="跑 /news-short（讀 news_short.json 的原文快取 → 寫 news_script.json）"),
+    # Entertainment channels (series.news.claims_audit): every factual sentence needs a sourced claim; what has none
+    # is an error that gets ONE automatic fix (delete / rewrite as 「據…報導」), then the run goes on without a re-check.
+    Step("fact_audit", "cmd", "事實出處查核（無出處＝錯誤，自動修一次）", outputs=("review/fact_audit.json",),
+         inputs=(NEWS_SCRIPT_FILE, NEWS_ITEM_FILE),
+         command=lambda c: _py(c, "news.py", "audit", "--run-dir", _run_dir(c)),
+         applies=lambda channel: _claims_audit(channel)),
     Step("news_prepare", "cmd", "稿 → script.json（五段＝五個場景）", outputs=("script.json", "voice_text.json"),
          inputs=(NEWS_SCRIPT_FILE,),
          command=lambda c: _py(c, "news.py", "prepare", "--run-dir", _run_dir(c))),
@@ -384,6 +390,10 @@ NEWS_SHORT_STEPS: tuple[Step, ...] = (
     Step("package", "internal", "上傳資料（#Shorts、來源、排程）", outputs=("upload/youtube_meta.json",),
          inputs=("script.json", "credits.json", "assembly/*.mp4", "production.schedule.json")),
 )
+
+
+def _claims_audit(channel: Channel) -> bool:
+    return bool((channel.series.get("news") or {}).get("claims_audit"))
 
 
 def news_weekly_steps(channel: Channel) -> tuple[Step, ...]:

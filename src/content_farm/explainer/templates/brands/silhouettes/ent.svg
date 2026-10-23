@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 344" fill="currentColor">
+  <!-- 娛樂快報：沒有角色，只放麥克風＋聚光星芒（頻道識別符號，不是主持人） -->
+  <rect x="92" y="60" width="56" height="110" rx="28"/>
+  <path d="M64 140a56 56 0 0 0 112 0" fill="none" stroke="currentColor" stroke-width="14" stroke-linecap="round"/>
+  <rect x="113" y="196" width="14" height="70" rx="6"/>
+  <rect x="80" y="266" width="80" height="14" rx="7"/>
+  <path d="M120 8l8 22 22 8-22 8-8 22-8-22-22-8 22-8z"/>
+  <path d="M196 70l5 13 13 5-13 5-5 13-5-13-13-5 13-5z"/>
+  <path d="M44 80l4 10 10 4-10 4-4 10-4-10-10-4 10-4z"/>
+</svg>

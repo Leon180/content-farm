@@ -1,6 +1,7 @@
 """Step commands for HN 快報 Shorts (called by the production runner, not by hand).
 
     python scripts/news.py lint    --run-dir output/hn-2026-10-16-hn-50117451
+    python scripts/news.py audit   --run-dir …     # ent: sourced-claim audit, one auto-fix (review/fact_audit.json)
     python scripts/news.py prepare --run-dir …     # news_script.json → script.json
     python scripts/news.py render  --run-dir …     # pages + mascot + subtitles → assembly/final.mp4
 
@@ -31,14 +32,31 @@ def _channel_words(run_dir: Path):
     return branding_for(channel), cps
 
 
+def _series(run_dir: Path):
+    from content_farm.production.news.series import news_series
+
+    channel = load_channel(read_channel_code(run_dir))
+    return news_series(channel) if ("news" in channel.series or "hn" in channel.series) else None
+
+
 def cmd_lint(run_dir: Path) -> int:
+    from content_farm.production.news import audit_step
+
     news = ns.load_script(run_dir)
     _, cps = _channel_words(run_dir)
-    problems = ns.lint(news, ns.load_item(run_dir), cps=cps)
+    problems = ns.lint(news, ns.load_item(run_dir), cps=cps, series=_series(run_dir),
+                       after_fix=audit_step.was_fixed(run_dir))
     for problem in problems:
         print(f"✗ {problem}")
     print(f"{'FAIL' if problems else 'OK'}: {len(problems)} problem(s), ≈{ns.estimate_seconds(news, cps)}s narration")
     return 1 if problems else 0
+
+
+def cmd_audit(run_dir: Path) -> int:
+    from content_farm.production.news import audit_step
+
+    channel = load_channel(read_channel_code(run_dir))
+    return audit_step.run(run_dir, channel.code, _series(run_dir))
 
 
 def cmd_prepare(run_dir: Path) -> int:
@@ -82,10 +100,10 @@ def cmd_weekly_check(run_dir: Path) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("command", choices=("lint", "prepare", "render", "weekly-check"))
+    parser.add_argument("command", choices=("lint", "audit", "prepare", "render", "weekly-check"))
     parser.add_argument("--run-dir", type=Path, required=True)
     args = parser.parse_args(argv)
-    handler = {"lint": cmd_lint, "prepare": cmd_prepare, "render": cmd_render,
+    handler = {"lint": cmd_lint, "audit": cmd_audit, "prepare": cmd_prepare, "render": cmd_render,
                "weekly-check": cmd_weekly_check}[args.command]
     try:
         return handler(args.run_dir.resolve())

@@ -1,0 +1,110 @@
+# 娛樂快報（暫名）— 每日娛樂新聞／八卦，台灣中文；台日韓與華語演藝圈為主
+# Leon 2026-10-23（決策 eb0977f43c81＝B）：來源只採有名媒體已報導的內容、傳聞不當事實講、不碰未成年／性醜聞細節／病情死因／私人住址家人、
+# 畫面不用影視片段／劇照／新聞照片／真人照片、不要角色、聲音與晶片貓／cel／科技新知都聽得出不同。Secrets never go here.
+# 護欄是程式不是提示：series.news.feeds（白名單）→ news/guard.py、news/claims.py、news/audit_step.py（REPORT-ent.md §護欄）。
+code: ent
+name: 娛樂快報
+line: 每日娛樂新聞（台日韓與華語演藝圈，只講有名媒體報導過、有出處的內容）
+pipeline: explainer
+brand: ent
+deck_category: knowledge
+mascot:                   # 不要角色：rig_ready false → mascot 步驟、縮圖角色規則、deck 吉祥物占比全部不適用
+  name: （無角色）
+  ref: chipcat            # 佔位；rig_ready false 時沒有任何步驟會讀
+  rig_ready: false
+voice:                    # 與晶片貓（女）、cel、科技新知（新聞感女聲）區隔：輕快俏皮的男聲。Qwen3-TTS VoiceDesign 設計 → 固定參考聲 → VoxCPM2 複製
+  provider: voxcpm2
+  tempo: 1.1
+  reference:
+    audio: ~/.local/share/content-farm-voices/ent-ref.wav
+    text: 大家好，這裡是娛樂快報。今天整理的是演藝圈剛傳出的幾則消息。先說清楚，哪些是當事人已經證實的，哪些只是媒體報導，我們都會分開講。接下來，直接進入重點。
+    note: Qwen3-TTS VoiceDesign 設計的輕快男聲（REPORT-ent §聲音）；原文同上
+topic_categories: [台灣演藝, 日本演藝, 韓國演藝, 影視與票房, 音樂與演唱會, 頒獎典禮]
+format:                   # 預設長片規格；實際格式每則由評審團判定（news/select.py → format_decision.json），Shorts 走 series.news
+  length: long
+  aspect: "16:9"
+  target_seconds: [360, 600]
+  goal_seconds: 420
+cadence:
+  long_per_week: 0.5
+  shorts_per_week: 10
+  publish_days: [sat]
+  shorts_days: []          # 每天
+  lead_days: 2
+  publish_time: "10:00"
+  timezone: Asia/Taipei
+shorts_strategy: 每則新聞由評審團看內容撐不撐得起：撐不起長片的做 ≤60 秒 Shorts；撐得起的做 6–10 分鐘長片
+media:                    # 畫面護欄：不用影視片段、劇照、新聞照片、真人照片；只用自製文字卡／時間軸／圖表，或 Wikimedia CC 授權照片（標作者與授權）
+  stock: false
+  ai_image: false
+  artwork: false
+  source_footage: false
+gates: [topic, article, deck, title, media, final]
+youtube:
+  client_id_env: CF_YOUTUBE_CLIENT_ID
+  client_secret_env: CF_YOUTUBE_CLIENT_SECRET
+  refresh_token_env: CF_YT_ENT_REFRESH_TOKEN
+  channel_id_env: CF_YT_ENT_CHANNEL_ID
+  ai_disclosure: true
+  default_privacy: private
+identity:
+  opening:
+    format: 結論先行式開場：第一句直接講這則消息是哪家媒體報導了什麼（用「據某某報導」），再用一句話說明它為什麼值得知道；不自我介紹角色，不在鉤子裡放免責聲明
+    signature: 這裡是娛樂快報
+  take_label: 快報點評
+  outro:
+    signature: 我們下則消息見
+    endcard: 下一則，娛樂快報接著整理
+  description:
+    header: "【娛樂快報】{title}"
+    sources_label: 這集依據的報導：
+    footer: 娛樂快報只整理有名媒體已報導的內容，標明哪些已由當事人或經紀公司證實、哪些只是媒體報導；不報導傳聞細節、不評論私生活；畫面為自製文字卡，無影視片段或新聞照片。內容若有錯誤，歡迎留言附上來源。
+notes:
+  - 不給投資建議；每句事實標出處；未經當事人或經紀公司證實的內容一律用「據某某報導」
+  - 不碰：未成年人、性醜聞細節、病情與死因臆測、私人住址與家人（news/guard.py，選題前即排除）
+  - 來源只採白名單媒體的公開 RSS／頁面，遵守各站 rate limit 與 robots；X／Twitter 一律不抓
+  - 畫面：自製來源卡、文字卡、字幕；不用影視片段、劇照、新聞照片、真人照片
+  - 頻道名稱為暫名，候選見 REPORT-ent.md
+publish:
+  timezone: Asia/Taipei
+  long: {days: [sat], window: "10:00-11:00"}
+  shorts: {windows: ["12:00-13:00", "20:00-21:00"], per_day: 3, min_gap_hours: 3}
+  urgent_news_asap: true
+  source: research/upload-timing-2026-10.md
+series:
+  news:                   # production/news；produce.py news daily --channel ent [--auto]
+    name: 娛樂快報
+    dir_prefix: ent          # output/ent-<day>…
+    playlist: 娛樂快報｜每日快報
+    take_label: 快報點評
+    end_label: 每日更新
+    chars_per_second: 4.6    # 本機 VoxCPM2 男聲 tempo 1.1 的暫估，聲音定案後實測校正
+    sources: [rss]
+    max_age_hours: 36
+    review_candidates: 20
+    daily_shorts: [1, 3]
+    shorts_time: "12:30"
+    rank_profile: ent
+    rank_weights: {popularity: 0.6, relevance: 0.4, comments: 0.6}
+    topic_guard: true        # news/guard.py：標題＋摘要碰到禁碰題材就在排名前剔除；評審席也可標 sensitive；完稿 lint 再擋一次
+    claims_audit: true       # news/claims.py：每句事實要有出處與原文佐證；無出處＝錯誤，自動修一次（fact_audit 步驟）
+    analogy_required: false  # 娛樂新聞沒有「國高中比喻」段；第四段改成「各方說法」（已證實 vs 媒體報導）
+    beat_labels: {hook: 先講重點, what: 媒體報導了什麼, why: 背景脈絡, analogy: 各方說法}
+    series_line: 娛樂快報：每天整理台日韓與華語演藝圈有名媒體報導過的消息，標明出處，分清楚哪些已證實、哪些只是報導。
+    tags: [娛樂新聞, 演藝圈]
+    panel_brief: 台灣中文的每日娛樂新聞頻道，只講有名媒體已報導、有出處的內容，沒有主持角色，畫面是自製來源卡與文字卡
+    weekly:
+      items: [3, 5]
+      target_seconds: [360, 600]
+      publish_day: sat
+      publish_time: "10:00"
+    feeds:                   # 來源白名單（只有這些媒體進得來；off-list 連結在抓取時就丟掉）。全部是公開 RSS，每站每次一個請求
+      - {id: cna, name: 中央社, aliases: [中央社記者, CNA], domains: [cna.com.tw], lang: zh, url: "https://feeds.feedburner.com/rsscna/culture"}
+      - {id: ltn, name: 自由時報, aliases: [自由娛樂, 自由時報娛樂], domains: [ltn.com.tw], lang: zh, url: "https://news.ltn.com.tw/rss/entertainment.xml"}
+      - {id: udn, name: 聯合報, aliases: [聯合新聞網, 聯合娛樂, 聯合報系], domains: [udn.com], lang: zh, url: "https://udn.com/rssfeed/news/2/6644?ch=news"}
+      - {id: ettoday, name: ETtoday, aliases: [ETtoday星光雲, 星光雲], domains: [ettoday.net], lang: zh, url: "https://feeds.feedburner.com/ettoday/star"}
+      - {id: yahoo, name: Yahoo奇摩娛樂, aliases: [Yahoo奇摩新聞, Yahoo新聞, 奇摩娛樂], domains: [yahoo.com], lang: zh, url: "https://tw.news.yahoo.com/rss/entertainment"}
+      - {id: nhk, name: NHK, aliases: [NHK新聞], domains: [nhk.or.jp], lang: ja, url: "https://www3.nhk.or.jp/rss/news/cat3.xml"}
+      - {id: soompi, name: Soompi, aliases: [], domains: [soompi.com], lang: en, url: "https://www.soompi.com/feed"}
+      - {id: variety, name: Variety, aliases: [綜藝報], domains: [variety.com], lang: en, url: "https://variety.com/feed/"}
+      - {id: deadline, name: Deadline, aliases: [], domains: [deadline.com], lang: en, url: "https://deadline.com/feed/"}
