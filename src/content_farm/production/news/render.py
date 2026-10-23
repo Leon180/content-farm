@@ -20,7 +20,9 @@ from content_farm.explainer.brands import brand_css_path
 from content_farm.production import shorts_cut as cut
 from content_farm.production.channels import Channel
 from content_farm.production.news import script as ns
+from content_farm.production.news import visuals
 from content_farm.production.shorts_render import _ffmpeg, ass_text
+from content_farm.explainer.illustrate import AI_LABEL
 from content_farm.script_gen.schemas import Script
 from content_farm.subtitle.line_wrap import wrap_text
 
@@ -91,7 +93,7 @@ def source_card(run_dir: Path) -> dict[str, str]:
 
 def page_html(mode: str, *, news: ns.NewsScript, channel: Channel, day: str, index: int = 0,
               duration: float = 0.1, mascot: dict[str, str] | None = None,
-              card: dict[str, str] | None = None) -> str:
+              card: dict[str, str] | None = None, pic: visuals.BeatPicture | None = None) -> str:
     from content_farm.production.news.series import branding_for, news_series
 
     beat = news.beats[index] if mode != "end" else None
@@ -107,7 +109,8 @@ def page_html(mode: str, *, news: ns.NewsScript, channel: Channel, day: str, ind
         bubble=(beat.term if beat and beat.kind == "analogy" and beat.term else
                 {**BUBBLES, **series.bubbles}.get(kind, "週六見！" if "news" not in channel.series else series.end_label)),
         end_headline=series.end_headline.split("\n"), end_points=series.end_points,
-        source=source_strip(news))
+        source=source_strip(news),
+        pic={"frames": list(pic.frames), "image": pic.image.name, "label": AI_LABEL} if pic is not None else None)
 
 
 def mascot_stills(work: Path, poses: set[str]) -> dict[str, dict[str, str]]:
@@ -165,9 +168,12 @@ def _compose(work: Path, clips: list[Path], audio: Path, total: float, out: Path
     return out
 
 
-def write_credits(run_dir: Path, news: ns.NewsScript) -> Path:
-    """No third-party media: self-made pages, the chipcat rig, our narration. Sources go in the description."""
-    payload = {"version": 1, "title": news.title, "entries": [], "pending": [], "description_text": "",
+def write_credits(run_dir: Path, news: ns.NewsScript,
+                  pictures: dict[int, visuals.BeatPicture] | None = None) -> Path:
+    """No third-party media: self-made pages, the chipcat rig, our narration, and the channel's own AI pictures
+    (model, prompt, seed, badge, motion). Sources go in the description."""
+    payload = {"version": 1, "title": news.title,
+               "entries": visuals.credit_entries(run_dir, news, pictures or {}), "pending": [], "description_text": "",
                "derived_from": {"series": ns.load_item(run_dir).get("series", "hn"), "item_id": news.item_id,
                                 "sources": [s.model_dump() for s in news.sources]}}
     path = run_dir / "credits.json"
@@ -186,7 +192,7 @@ def _subtitles(run_dir: Path, work: Path) -> int:
     return len(cues)
 
 
-def render_news_short(run_dir: Path, channel: Channel) -> RenderResult:
+def render_news_short(run_dir: Path, channel: Channel, env_file: Path | None = None) -> RenderResult:
     from content_farm.explainer.capture import PageCapturer
 
     news = ns.load_script(run_dir)
@@ -202,6 +208,10 @@ def render_news_short(run_dir: Path, channel: Channel) -> RenderResult:
     work.mkdir(parents=True, exist_ok=True)
     cues = _subtitles(run_dir, work)
     card = source_card(run_dir)
+    pictures: dict[int, visuals.BeatPicture] = {}
+    if visuals.needs_pictures(channel):      # visual v4: >= 3 AI pictures per Short, all moving
+        visuals.ensure_images(run_dir, news, channel, env_file=env_file)
+        pictures = visuals.ensure_motion(run_dir, news, env_file=env_file)
     if channel.mascot.rig_ready:
         poses = {b.pose or ns.DEFAULT_POSE[b.kind] for b in news.beats} | {"wave"}
         cats = mascot_stills(work, poses)
@@ -212,7 +222,8 @@ def render_news_short(run_dir: Path, channel: Channel) -> RenderResult:
         for i, (beat, seconds) in enumerate(zip(news.beats, durations)):
             html = work / f"beat_{i + 1}_{beat.kind}.html"
             html.write_text(page_html("beat", news=news, channel=channel, day=day, index=i, duration=seconds,
-                                      mascot=cats[beat.pose or ns.DEFAULT_POSE[beat.kind]], card=card), encoding="utf-8")
+                                      mascot=cats[beat.pose or ns.DEFAULT_POSE[beat.kind]], card=card,
+                                      pic=pictures.get(i)), encoding="utf-8")
             clips.append(capturer.animate(html, work / f"beat_{i + 1}.mp4", seconds).clip)
         end = work / "end.html"
         end.write_text(page_html("end", news=news, channel=channel, day=day, duration=ns.END_CARD_SECONDS,
@@ -227,5 +238,5 @@ def render_news_short(run_dir: Path, channel: Channel) -> RenderResult:
         capturer.still(thumb, run_dir / "thumbnails" / "thumbnail.png")
     audio = _concat_audio(run_dir, len(durations), work / "narration.wav")
     video = _compose(work, clips, audio, total, run_dir / "assembly" / "final.mp4")
-    write_credits(run_dir, news)
+    write_credits(run_dir, news, pictures)
     return RenderResult(video=video, seconds=round(total, 2), cues=cues)

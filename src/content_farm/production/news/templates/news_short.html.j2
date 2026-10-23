@@ -50,6 +50,19 @@ body { background-color:var(--bg); color:var(--fg); font-family:var(--font-headi
 .callout { position:absolute; right:48px; top:1446px; transform:translateY(-50%); background:var(--accent-2); color:#fff;
   border-radius:999px; padding:6px 28px; font:900 36px var(--font-heading); }
 .reveal { opacity:0; }
+/* visual v4: a moving AI picture fills the beat card, the text sits on a shade at the bottom */
+.card.hasimg { padding:0; justify-content:flex-end; color:#fff; background:var(--fg); }
+.pic { position:absolute; inset:0; overflow:hidden; }
+.pic img.pf { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.pic .shade { position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,.04) 30%, rgba(0,0,0,.80) 100%); }
+.pic .ailabel { position:absolute; left:24px; top:22px; background:rgba(16,18,22,.78); color:#fff; border-radius:8px;
+  padding:6px 18px; font:700 30px var(--font-heading); letter-spacing:.04em; }
+.card.hasimg .txt { position:relative; z-index:2; padding:0 52px 50px; display:flex; flex-direction:column; gap:8px; }
+.card.hasimg .headline { font-size:96px; text-shadow:0 3px 14px rgba(0,0,0,.7); }
+.card.hasimg .number { font-size:150px; margin-top:6px; text-shadow:0 3px 14px rgba(0,0,0,.7); }
+.card.hasimg .points { margin-top:18px; gap:18px; }
+.card.hasimg .points li { font-size:52px; text-shadow:0 2px 10px rgba(0,0,0,.7); }
+.card.hasimg .points li::before { top:20px; }
 .end .card { display:flex; flex-direction:column; justify-content:center; }
 .thumb .headline { font-size:132px; }
 .end .headline { font-size:100px; }
@@ -60,13 +73,15 @@ body { background-color:var(--bg); color:var(--fg); font-family:var(--font-headi
 {% if mode == "beat" %}
   <div class="dots">{% for k in kinds %}<i class="{{ 'on' if k == beat.kind else ('done' if loop.index0 < index else '') }}"></i>{% endfor %}</div>
   <div class="label">{{ label }}</div>
-  <div class="card">
-    {% set n = beat.screen.headline|length %}<div class="headline"{% if n in [8, 9] or n > 14 %} style="font-size:96px"{% endif %}>{{ beat.screen.headline }}</div>
+  <div class="card{{ ' hasimg' if pic else '' }}">
+    {% if pic %}<div class="pic">{% if pic.frames %}{% for f in pic.frames %}<img class="pf" src="{{ f }}" alt="" style="display:none">{% endfor %}{% else %}<img class="pf still" src="../assets/ai_images/{{ pic.image }}" alt="">{% endif %}<div class="shade"></div><div class="ailabel">{{ pic.label }}</div></div><div class="txt">{% endif %}
+    {% set n = beat.screen.headline|length %}<div class="headline"{% if (n in [8, 9] or n > 14) and not pic %} style="font-size:96px"{% endif %}>{{ beat.screen.headline }}</div>
     {% if beat.screen.number %}<div class="number reveal" data-at="0.5">{{ beat.screen.number }}</div>{% endif %}
     {% if beat.kind == "analogy" and beat.term %}<div class="term reveal" data-at="0.4">{{ beat.term }}</div>{% endif %}
     {% if beat.screen.points %}
     <ul class="points">{% for p in beat.screen.points %}<li class="reveal" data-at="{{ reveal_at[loop.index0] }}">{{ p }}</li>{% endfor %}</ul>
     {% endif %}
+    {% if pic %}</div>{% endif %}
   </div>
 {% elif mode == "end" %}
   <div class="label">{{ end_label }}</div>
@@ -100,6 +115,8 @@ body { background-color:var(--bg); color:var(--fg); font-family:var(--font-headi
   const open = document.getElementById("cat-open"), closed = document.getElementById("cat-closed");
   const catBox = document.querySelector(".cat");
   const card = document.querySelector(".card");
+  const frames = Array.from(document.querySelectorAll(".pic img.pf:not(.still)"));
+  const still = document.querySelector(".pic img.still");
   window.__anim = {
     duration: DURATION,
     seek(t) {
@@ -109,6 +126,12 @@ body { background-color:var(--bg); color:var(--fg); font-family:var(--font-headi
         node.style.opacity = String(p);
         node.style.transform = "translateY(" + (1 - p) * 24 + "px)";
       });
+      if (frames.length) {  // 2.5D parallax frames, played forward then backward (ping-pong) at 30 fps
+        const n = frames.length, period = Math.max(1, 2 * (n - 1)), k = Math.floor(t * 30) % period;
+        const idx = k < n ? k : period - k;
+        frames.forEach((img, i) => { img.style.display = i === idx ? "block" : "none"; });
+      }
+      if (still) still.style.transform = "scale(" + (1 + 0.06 * Math.min(1, t / Math.max(DURATION, 0.1))) + ")";
       if (card) card.style.transform = "scale(" + (1 + 0.025 * Math.min(1, t / Math.max(DURATION, 0.1))) + ")";
       if (open) {  // mouth flap while talking: ~5.5 syllables/s, closed in the last 0.3 s
         const talking = {{ 'true' if talking else 'false' }} && t < DURATION - 0.3;

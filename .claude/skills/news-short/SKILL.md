@@ -34,6 +34,11 @@ Schema and rules: `src/content_farm/production/news/script.py` (`NewsScript`, `l
     New term → add it to `glossary.yaml` first (`analogy` + precise `definition`, `say` if TTS needs it).
   - **take**: 晶片貓's own view (required; lint looks for 我覺得／重點不是… style markers).
     An argument or a "what to watch next", not a summary. No investment advice (no 買進／目標價).
+- **Pictures (visual v4, Leon 2026-10-24): at least 3 of the 5 beats carry `image_prompt`** (English, content only — the
+  channel adds its style prefix). The picture fills the beat card, moves by 2.5D parallax, and the screen text sits on it, so
+  write the prompt for a scene that helps the sentence (hook: the surprise as a scene; analogy: the analogy drawn; take: a
+  closing image) and keep the lower third calm. Illustration only: no photo-real, no artist names, no real people, no logos or
+  text in the picture, nothing that hinges on a countable detail. `render` stops with a message if fewer than 3 beats have one.
 - Spoken numbers as they should be read (百分之七十, 二零零八年); screen numbers in Arabic.
 - Length: lint estimates 6.3 chars/s (measured on the chipcat Fish voice); aim for 35–50 s.
 - Tone: casual and durable; at most one 「欸」; no 狂／絕了／炸裂.

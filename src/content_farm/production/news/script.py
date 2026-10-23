@@ -94,6 +94,9 @@ class Beat(_Frozen):
     pose: Pose | None = None
     term: str = ""                                         # analogy: the glossary term explained
     claims: tuple[Claim, ...] = ()                         # ent: one sourced claim per factual sentence (news/claims.py)
+    # visual v4: English picture brief for this beat (content only; the channel's style prefix is added). At least 3 of the 5
+    # beats of a Short on an AI-illustration channel carry one (news/visuals.py); "" = this beat stays a text card.
+    image_prompt: str = Field(default="", max_length=400)
 
 
 class NewsScript(_Frozen):

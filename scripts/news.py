@@ -81,7 +81,8 @@ def cmd_prepare(run_dir: Path) -> int:
 def cmd_render(run_dir: Path) -> int:
     from content_farm.production.news.render import render_news_short
 
-    result = render_news_short(run_dir, load_channel(read_channel_code(run_dir)))
+    result = render_news_short(run_dir, load_channel(read_channel_code(run_dir)),
+                               env_file=Path(__file__).resolve().parents[1] / ".env")
     print(f"{result.video} ({result.seconds}s, {result.cues} subtitle cues)")
     return 0
 
