@@ -18,7 +18,7 @@ import difflib
 import re
 from dataclasses import dataclass
 
-_SENTENCE_END = re.compile(r"(?<=[。！？!?])")
+_SENTENCE_END = re.compile(r"(?<=[。！？!?])(?!\s*\[src:)")   # a trailing [src:…] stays with its sentence
 _NORMALIZE = re.compile(r"[\s「」『』“”\"'‘’，,。．.！!？?：:；;、（）()\[\]【】—\-…~～|*#>`]+")
 EDIT_SIMILARITY_MIN = 0.5      # an in-place edit keeps at least half the sentence (difflib ratio)
 

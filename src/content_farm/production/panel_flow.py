@@ -5,6 +5,7 @@ producer agents for agent steps when ``--auto-agents`` is on."""
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -446,6 +447,9 @@ def _delete_only_guard(run_dir: Path, step_name: str, gate: str | None = None) -
     snapshot.write_text(before, encoding="utf-8")
     if step_name == "article":
         quotes = [str(f.get("evidence") or "") for f in fixes]
+        # the fix text may quote a second place that needs the same correction (『一份只針對動畫』 in the opening)
+        quotes += [q for f in fixes for text in (f.get("problem"), f.get("fix"))
+                   for q in re.findall(r"[『「]([^』」]{4,})[』」]", str(text or ""))]
         flagged = flagged_sentences(quotes, split_article(before)) | changed_since_lock(run_dir, before)
         return _DeleteOnly(target, before, frozenset(flagged))
     ids = {str(i) for f in fixes for i in [*((f.get("ref") or {}).get("sentence_ids") or []),
