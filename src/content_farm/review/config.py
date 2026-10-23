@@ -13,8 +13,9 @@ validated again, so an override can raise a tier or tighten a threshold but neve
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -87,6 +88,9 @@ THRESHOLD_FLOOR: dict[str, dict[str, tuple[str, float]]] = {
     "shorts_script": {"leave_median_pct": ("min", LEAVE_MEDIAN_FLOOR)},
     "shorts_final": {"leave_median_pct": ("min", LEAVE_MEDIAN_FLOOR)},
 }
+
+# Stages that judge facts or licences: article, the script's fact stage, and the media (licence) stage.
+FACT_STAGES = ("article", "script_facts", "media")
 
 # Steps a fix may be routed back to (``caused_by`` in reviewer output).
 REWORK_STEPS = ("topic", "article", "deck", "skit_script", "thumbnail_spec", "voice", "illustrate", "media",
@@ -176,7 +180,20 @@ class Budget(_Strict):
     usd_per_video: float = Field(default=15.0, gt=0)    # nominal list-price USD of one video's `claude -p` calls
 
 
+class Policy(_Strict):
+    """Leon 2026-10-23. ``score_only``: every non-fact stage is judged once, scores and comments recorded, nothing
+    blocks, returns or rewrites (views / retention / CTR are compared after the first real uploads; the topic stage
+    still ranks by score). ``fact_on_fail`` for the fact stages: ``stop`` = rounds as configured, a miss stops the run;
+    ``auto_fix_then_pass`` = checked once, the confirmed-wrong sentences are deleted or reworded with a source (no new
+    content) and unlicensed material is replaced, no re-check, the run goes on, errors and fixes land in
+    ``review/auto_fix.jsonl`` (decision a53960fc4b1d = A)."""
+
+    score_only: bool = True
+    fact_on_fail: Literal["stop", "auto_fix_then_pass"] = "auto_fix_then_pass"
+
+
 class ReviewConfig(_Strict):
+    policy: Policy = Policy()
     defaults: Defaults = Defaults()
     budget: Budget = Budget()
     aggregator: Aggregator = Aggregator()
@@ -283,15 +300,43 @@ def _merge(base: dict, override: dict) -> dict:
     return out
 
 
+def legacy_policy() -> bool:
+    """``CF_REVIEW_POLICY=legacy``: the rounds / thresholds / waivers exactly as written in the yaml
+    (before / after comparisons, and the unit tests of the round machinery)."""
+    return os.environ.get("CF_REVIEW_POLICY", "").strip() == "legacy"
+
+
+def _apply_policy(raw: dict[str, Any], policy: Policy | None) -> dict[str, Any]:
+    """The yaml with ``review.policy`` applied: score-only stages get one round and a waiver, the topic floor
+    goes; fact stages follow ``fact_on_fail``. Idempotent, so a channel override is re-checked after merging."""
+    if legacy_policy() and policy is None:     # an explicit policy argument still wins
+        policy = None
+    else:
+        policy = policy or Policy.model_validate(raw.get("policy") or {})
+    if policy is None:
+        return {**raw, "policy": {"score_only": False, "fact_on_fail": "stop"}}
+    stages = {}
+    for name, stage in raw["stages"].items():
+        if name in FACT_STAGES:
+            fix = policy.fact_on_fail == "auto_fix_then_pass"
+            stage = {**stage, "waive_on_last_round": False,
+                     **({"max_rounds": 1} if fix else {})}     # one check; the gate does the fix and the pass
+        elif policy.score_only:
+            threshold = {**stage.get("threshold", {}), **({"topic_min_score": None} if "topic" in name else {})}
+            stage = {**stage, "max_rounds": 1, "waive_on_last_round": True, "threshold": threshold}
+        stages[name] = stage
+    return {**raw, "policy": policy.model_dump(), "stages": stages}
+
+
 def load_review(channel: str | None = None, *, path: Path = PANELS_FILE,
-                raise_tier: Tier | None = None) -> ReviewConfig:
-    """The validated review config, with ``channel``'s overrides merged in. ``raise_tier`` lifts
-    every seat to at least that tier (the all-opus comparison run, ``tier_mode='lifted'``); it can
-    never lower one."""
-    raw = yaml.safe_load(path.read_text(encoding="utf-8"))["review"]
+                raise_tier: Tier | None = None, policy: Policy | None = None) -> ReviewConfig:
+    """The validated review config, with ``channel``'s overrides merged in and ``review.policy`` applied
+    (``policy`` overrides the yaml's). ``raise_tier`` lifts every seat to at least that tier (the all-opus
+    comparison run, ``tier_mode='lifted'``); it can never lower one."""
+    raw = _apply_policy(yaml.safe_load(path.read_text(encoding="utf-8"))["review"], policy)
     config = ReviewConfig.model_validate(raw)
     if channel and channel in config.channels:
-        raw = {**raw, "stages": _merge(raw["stages"], config.channels[channel].get("stages", {}))}
+        raw = _apply_policy({**raw, "stages": _merge(raw["stages"], config.channels[channel].get("stages", {}))}, policy)
         config = ReviewConfig.model_validate(raw)
     if raise_tier is not None:
         config = _lift(raw, config, raise_tier)

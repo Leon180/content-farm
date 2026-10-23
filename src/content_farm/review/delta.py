@@ -22,7 +22,7 @@ from content_farm.production.state import fingerprint
 from content_farm.review.article_diff import ArticleSentence, added_sentences, deck_narration, normalize
 from content_farm.review.client import Call, CallResult
 from content_farm.review.config import ReviewConfig
-from content_farm.review.gate import GateResult, _rework, _waive, enforce, set_aside, write_decision
+from content_farm.review.gate import GateResult, _rework, _waive, auto_fix_enabled, enforce, set_aside, write_decision
 from content_farm.review.rounds import rounds_of, run_round, stage_dir
 
 DELTA_MAX = 2
@@ -61,6 +61,8 @@ def delta_gate(run_dir: Path, *, gate: str, stage_name: str, config: ReviewConfi
     stage = config.stages[stage_name]
     current = fingerprint(run_dir, stage.reviews)
     edited = edited_sentences(locked, now)
+    if edited and auto_fix_enabled(config, stage_name):    # checked once; later edits are not re-checked (a53960fc4b1d = A)
+        return GateResult("pass", f"{stage_name}：核可後改寫 {len(edited)} 句，依「事實只查一次」不重查，事實段核可沿用")
     if not edited:
         return GateResult("pass", f"{stage_name}：核可後只刪句，沒有改寫的句子，事實段核可沿用")
     base = baseline_hash(locked_deck)

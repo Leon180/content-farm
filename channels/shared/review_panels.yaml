@@ -107,6 +107,11 @@ sentence_id_field: sentence_ids   # feat/incremental-render ec2c126: slide.sente
 # 由 src/content_farm/review/config.py 驗證；硬規則（必要角色、事實查核 opus·high、門檻下限、輪數上限）寫在程式裡，
 # 這裡只能「更嚴」不能「更鬆」。每位評審是 pipeline 自己啟動的 `claude -p --model --effort --json-schema` 子程序。
 review:
+  # Leon 2026-10-23。score_only：非事實關評一次、記分數與意見，不擋、不退回、不改稿（選題仍依分數取最高）；分數寫進
+  # review/score_ledger.json，views／留存／CTR 欄位待上片後填。fact_on_fail（決策 a53960fc4b1d＝A）：article／script_facts／media
+  # 查一次，確認錯的句子自動刪或改成有出處的說法（不新增）、授權有問題的素材自動換掉、不重查、往下走，錯誤與修法記進
+  # review/auto_fix.jsonl；stop＝照下面各關的輪數與門檻，沒過就停。
+  policy: {score_only: true, fact_on_fail: auto_fix_then_pass}
   defaults: {max_parallel: 8, timeout_s: 1200, schema_retries: 1}   # 2026-10-19 4→8；入場檢查仍依可用記憶體往下調
   budget: {usd_per_video: 15}                  # 雲端車道（評審＋產出 agent）每支片的名目上限；用完就停下回報，不自動繼續（review/budget.py）
   aggregator: {model: haiku, effort: low}      # 修改清單整理、退回路由、彙整

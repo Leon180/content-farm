@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import Iterator
 from pathlib import Path
 from unittest.mock import AsyncMock
@@ -12,6 +13,8 @@ from content_farm.config import Settings
 from content_farm.llm.cache import NullCache, ResponseCache
 from content_farm.llm.client import LLMClient
 from tests._shared_path_guard import install
+
+os.environ["CF_REVIEW_POLICY"] = "legacy"   # before test modules call load_review() at import (see _no_real_claude)
 
 REPO = Path(__file__).resolve().parents[1]
 SHARED_PATH_GUARD = install(REPO)   # inactive until pytest_configure
@@ -54,6 +57,8 @@ def _no_real_claude(monkeypatch: pytest.MonkeyPatch, tmp_path_factory: pytest.Te
     # Unit tests do not wait in the machine-wide heavy queue (tests of the queue clear this).
     monkeypatch.setenv("CF_HEAVY_SLOT", "unit-test")
     monkeypatch.setenv("CF_ADMISSION_UNIT_TEST", "1")      # only honoured inside pytest (lanes.queue)
+    # The round machinery is tested with the yaml's rounds / thresholds / waivers; policy tests clear this.
+    monkeypatch.setenv("CF_REVIEW_POLICY", "legacy")
 
 
 @pytest.fixture
