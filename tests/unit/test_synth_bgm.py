@@ -49,6 +49,19 @@ def test_real_bgm_files_win_over_the_synth_preset(tmp_path) -> None:
     assert with_synth_bgm(off, tmp_path) is off
 
 
+def test_a_channel_without_a_mascot_never_mixes_under_a_leftover_final(tmp_path) -> None:
+    from content_farm.audio_mix.run import source_video
+
+    (tmp_path / "assembly").mkdir()
+    for name in ("draft.mp4", "final.mp4"):
+        (tmp_path / "assembly" / name).write_bytes(b"x")
+    yokai = load_channel("yokai")
+    assert not yokai.mascot.rig_ready
+    assert source_video(tmp_path, yokai).name == "draft.mp4"    # a cloned run's old final.mp4 carries the frog
+    with_rig = yokai.model_copy(update={"mascot": yokai.mascot.model_copy(update={"rig_ready": True})})
+    assert source_video(tmp_path, with_rig).name == "final.mp4"
+
+
 def test_yokai_mixes_a_synth_bed_and_keeps_the_voice_level() -> None:
     audio = load_channel("yokai").audio
     assert audio.enabled and audio.synth_bgm == "wafu" and not audio.bgm

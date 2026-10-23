@@ -14,9 +14,13 @@ from content_farm.retention.beats import lint, slide_beats
 from content_farm.retention.timing import load_scenes, sentence_timeline
 
 
-def source_video(run_dir: Path) -> Path:
-    """The picture to put the mix under: the host-composited final, else the draft (never release)."""
-    for name in ("final.mp4", "draft.mp4"):
+def source_video(run_dir: Path, channel: Channel) -> Path:
+    """The picture to put the mix under: the host-composited final, else the draft (never release).
+
+    A channel without a mascot overlay (``rig_ready: false``) never uses ``final.mp4`` when a draft
+    exists: a final left over from an earlier run (cloned run-dir) would bring the old mascot back."""
+    names = ("final.mp4", "draft.mp4") if channel.mascot.rig_ready else ("draft.mp4", "final.mp4")
+    for name in names:
         path = run_dir / "assembly" / name
         if path.is_file():
             return path
@@ -37,7 +41,7 @@ def run_mix(run_dir: Path, channel: Channel) -> dict:
     if not channel.audio.enabled:
         raise ValueError(f"channel {channel.code} has audio.enabled: false")
     config = with_synth_bgm(channel.audio, run_dir / MIX_DIR / "bgm")
-    video = source_video(run_dir)
+    video = source_video(run_dir, channel)
     scenes = load_scenes(run_dir)
     beats = lint(scenes, sentence_timeline(run_dir, scenes), slide_beats(run_dir))
     cues = plan_cues(scenes, beats.hooks, sfx=config.sfx)
