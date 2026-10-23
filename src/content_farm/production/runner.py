@@ -28,7 +28,7 @@ from content_farm.production.state import (
     Decision, RunState, StepRecord, fingerprint, load_state, now_iso, save_state,
 )
 from content_farm.production.steps import (REPO_ROOT, VOICE_SPOKEN_FILE, Command, Context, Step, steps_for,
-                                           voice_nothing_to_synthesize)
+                                           voice_choice, voice_nothing_to_synthesize)
 from content_farm.review.freeze import FROZEN_FILE, frozen_steps
 
 LOCK_PATH = paths.render_lock_path()   # legacy, unused; heavy work goes through lanes.queue
@@ -42,6 +42,7 @@ class Outcome(str, Enum):
     GATE = "waiting_gate"
     AGENT = "waiting_agent"
     PAID = "needs_paid_consent"
+    PREREQ = "missing_prerequisite"   # an input only another step can make (the reference voice); no ticket queued
     REWORK = "rework"            # a review panel sent work back to an earlier step
     FAILED = "failed"
 
@@ -82,6 +83,11 @@ def render_lock(max_load: float | None, log: Callable[[str], None], ticket: Tick
             log(f"load {os.getloadavg()[0]:.1f} > {max_load}; waiting {LOAD_POLL_SECONDS}s")
             time.sleep(LOAD_POLL_SECONDS)
         yield
+
+
+def _voice_ref_product(ctx: Context) -> str:
+    """Queue product name of a channel's reference voice (what voice-design ``--provides``)."""
+    return f"voice-ref:{ctx.channel.code}"
 
 
 def _event(run_dir: Path, **fields: object) -> None:
@@ -305,13 +311,26 @@ class Runner:
                                     mem_gb=need.mem_gb, gpu=need.gpu)
             yield
 
+    def _missing_voice_reference(self, step: Step) -> str:
+        """A local clone voice without its reference clip must not queue: its ticket would age into an
+        anti-starvation reservation and hold back the voice-design job that makes the clip."""
+        if step.name != "voice" or self.ctx.options.mock_voice or not step.heavy_if(self.ctx):
+            return ""
+        reference = voice_choice(self.ctx).reference
+        if reference is None or reference.audio_path().is_file():
+            return ""
+        return (f"參考聲不存在：{reference.audio_path()}。先排 voice-design（scripts/heavy --step voice_design "
+                f"--provides {_voice_ref_product(self.ctx)} -- … scripts/design_voice.py …），再重跑；"
+                f"這一步不登記佇列票，以免預約擋住 voice-design")
+
     def _ticket(self, state: RunState, step: Step) -> Ticket:
         """Queue ticket: Shorts first, then the long video closest to done."""
         names = [s.name for s in steps_for(self.ctx.channel, self.run_dir)]
         done = sum(1 for n in names if (r := state.steps.get(n)) is not None and r.status in ("done", "approved"))
         kind = "short" if panel_flow._short(self.ctx) else "long"  # noqa: SLF001
+        needs = _voice_ref_product(self.ctx) if step.name == "voice" and step.heavy_if(self.ctx) else ""
         return Ticket(job=f"{self.ctx.channel.code}/{self.run_dir.name}:{step.name}", kind=kind,
-                      progress=round(done / max(len(names), 1), 3))
+                      progress=round(done / max(len(names), 1), 3), needs=needs)
 
     def _cmd_inputs(self, step: Step) -> str:
         files = fingerprint(self.run_dir, step.inputs)
@@ -345,6 +364,10 @@ class Runner:
             identity = step.identity(self.ctx)
             self.log(f"{step.name}: {identity}")
             _event(self.run_dir, step=step.name, identity=identity)
+        missing = self._missing_voice_reference(step)
+        if missing:
+            self.log(f"⏸ {step.name}: {missing}")
+            return state, RunResult(Outcome.PREREQ, step.name, missing)
         command = step.command(self.ctx)
         with self._admit(state, step):
             state, result = self._execute(state, step, command, lambda: self._cmd_inputs(step))

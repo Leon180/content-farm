@@ -1,4 +1,2 @@
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-pipeline-speed3/REPORT-pipeline-speed3.md","min_bytes":2000,"why":"派工宣告的預期產物"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-pipeline-speed3/tests/unit/test_lanes_overlap.py","min_bytes":500,"why":"拆鎖的兩片重疊測試"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-pipeline-speed3/tests/unit/test_review_policy.py","min_bytes":500,"why":"只記分數與事實自動修的測試"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-pipeline-speed3/channels/shared/heavy_work.json","pattern":"\"(illustrate|assembly|mix|media|mascot|cut|bgm|ai_motion)\": \\{[^}]*\"render\"","why":"GPU 與 CPU 渲染步驟不再拿 render 鎖"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-lanes-deadlock/REPORT-lanes-deadlock.md","min_bytes":1500,"why":"派工宣告的預期產物"}
+{"kind":"no_unpushed","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-lanes-deadlock","why":"不 push 是任務規定；此項預期不符（commit 只在本機分支），據實列出"}

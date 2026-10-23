@@ -6,7 +6,7 @@ import pytest
 
 from content_farm.lanes import resources as res
 
-CFG = res.Config(margin_gb=6, swap_max_pct=90, load_factor=1.5, starve_after_s=1200, recent_start_s=90,
+CFG = res.Config(margin_gb=6, margin_idle_gb=6, swap_max_pct=90, load_factor=1.5, starve_after_s=1200, recent_start_s=90,
                  reviewer_gb=0.6, max_parallel_reviewers=8)
 ROOMY = res.Probe(total_gb=32, free_gb=28, swap_pct=10, load1=3, cores=10)
 NOW = 10_000.0
@@ -88,3 +88,58 @@ def test_step_needs_from_config():
     assert not res.need_for("gate_deck", config).local
     with pytest.raises(ValueError):
         res.need_for("x", res.Config(steps={"x": {"gpu": "maybe"}}))
+
+
+# --- 2026-10-23 lanes deadlock -----------------------------------------------------------------
+
+VOICE_DESIGN = res.Need(19.5, "exclusive", 2, ("local_tts",))
+IDLE_CFG = res.Config(margin_gb=6, margin_idle_gb=3, starve_after_s=1200)
+IDLE_MAC = res.Probe(total_gb=32, free_gb=23.0, swap_pct=10, load1=3, cores=10)       # measured 22.7–23.7 GB free
+
+
+def test_waiter_does_not_reserve_against_the_job_that_feeds_it():
+    starving = res.Job("technews:voice", "technews:voice", VOICE, (0, 0.0, "a"), "waiting", NOW - 1300, False,
+                       needs="voice-ref:technews")
+    design = res.Job("d", "technews:voice-design", VOICE_DESIGN, (2, 0.0, "b"), "waiting", NOW - 5,
+                     provides="voice-ref:technews")
+    assert res.decide(design, [starving], IDLE_MAC, IDLE_CFG, NOW) == []
+    stranger = res.Job("s", "yokai:illustrate", VOICE_DESIGN, (2, 0.0, "c"), "waiting", NOW - 5)
+    assert "anti-starvation" in res.decide(stranger, [starving], IDLE_MAC, IDLE_CFG, NOW)[0]
+
+
+def test_fresh_higher_priority_waiter_does_not_go_first_over_its_feeder():
+    short_voice = res.Job("v", "technews:voice", VOICE, (0, 0.0, "a"), "waiting", NOW - 10, True,
+                          needs="voice-ref:technews")
+    design = res.Job("d", "technews:voice-design", VOICE_DESIGN, (2, 0.0, "b"), "waiting", NOW - 5,
+                     provides="voice-ref:technews")
+    assert res.decide(design, [short_voice], IDLE_MAC, IDLE_CFG, NOW) == []
+
+
+def test_idle_machine_takes_the_smaller_margin():
+    cfg = res.Config(margin_gb=6, margin_idle_gb=3)
+    assert res.decide(job("x:voice_design", VOICE_DESIGN), [], IDLE_MAC, cfg, NOW) == []      # 23.0 ≥ 19.5+3
+    busy = job("y:media", res.Need(4, "shared", 4, ("render",)), state="running", since=NOW - 600)
+    reasons = res.decide(job("x:voice_design", VOICE_DESIGN), [busy], IDLE_MAC, cfg, NOW)
+    assert any(r.startswith("memory:") for r in reasons)                                      # needs the full 6 GB
+
+
+def test_cloud_job_running_does_not_count_as_local_work():
+    cfg = res.Config(margin_gb=6, margin_idle_gb=3)
+    reviewer = job("y:gate_deck", REVIEW, state="running", since=NOW - 600)
+    assert res.decide(job("x:voice_design", VOICE_DESIGN), [reviewer], IDLE_MAC, cfg, NOW) == []
+
+
+def test_reason_names_the_shortfall_after_twenty_minutes():
+    cfg = res.Config(margin_gb=6, margin_idle_gb=3, shortfall_after_s=1200)
+    tight = res.Probe(32, 20.0, 10, 3, 10)
+    early = res.decide(job("x:voice_design", VOICE_DESIGN, since=NOW - 60), [], tight, cfg, NOW)
+    late = res.decide(job("x:voice_design", VOICE_DESIGN, since=NOW - 1300), [], tight, cfg, NOW)
+    assert "差" not in early[0] and "差 2.5 GB" in late[0]                                      # 19.5+3−20
+
+
+def test_voice_steps_use_increments_over_idle_and_a_machine_ceiling():
+    config = res.load_config()
+    assert res.need_for("voice", config).mem_gb == 16.7 and res.need_for("voice_design", config).mem_gb == 19.5
+    assert config.margin_idle_gb == 3 and config.margin_gb == 6
+    assert res.impossible(res.need_for("voice_design", config), IDLE_MAC, config) == ""
+    assert "can never run here" in res.impossible(res.Need(30), IDLE_MAC, config)              # 30+3 > 32
