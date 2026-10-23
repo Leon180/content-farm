@@ -46,6 +46,9 @@ REQUIRED_ROLES: dict[str, dict[str, int]] = {
     "shorts_final": {"viewer": 3, "editor_visual": 1},
 }
 REQUIRED_HOLDOUT = {"script_structure": 1, "final": 1}
+# A stage's required role may be filled by an alternate: the joke channel's script panel seats a comedy writer
+# (brief and rubric for 笑點／鋪陳／停頓／時長／頻道調性) where the explainer Shorts seat the story writer.
+ROLE_ALTERNATES: dict[str, dict[str, tuple[str, ...]]] = {"shorts_script": {"writer_story": ("writer_comedy",)}}
 
 # Cost policy (Leon 2026-10-22: "除了 plan 階段外都應該用 sonnet"). The plan stage is the topic producer agent, the
 # step that decides what the video is about; it alone may use opus. Everything else — article / deck / thumbnail
@@ -83,7 +86,7 @@ THRESHOLD_FLOOR: dict[str, dict[str, tuple[str, float]]] = {
 }
 
 # Steps a fix may be routed back to (``caused_by`` in reviewer output).
-REWORK_STEPS = ("topic", "article", "deck", "thumbnail_spec", "voice", "illustrate", "media",
+REWORK_STEPS = ("topic", "article", "deck", "skit_script", "thumbnail_spec", "voice", "illustrate", "media",
                 "assembly", "mascot", "mix")
 
 
@@ -214,8 +217,9 @@ def _seat_errors(name: str, stage: Stage, roles: dict[str, Role], lifted: bool =
             errors.append(f"{name}: {seat.role} holdout {seat.holdout} must leave regular viewers")
         errors += _tier_errors(f"{name}: {seat.role}", seat.tier, _floor(roles[seat.role].kind), opus_ok=lifted)
     for role, need in REQUIRED_ROLES[name].items():
-        if counts.get(role, 0) < need:
-            errors.append(f"{name}: needs {role} ×{need}, has ×{counts.get(role, 0)}")
+        have = counts.get(role, 0) + sum(counts.get(alt, 0) for alt in ROLE_ALTERNATES.get(name, {}).get(role, ()))
+        if have < need:
+            errors.append(f"{name}: needs {role} ×{need}, has ×{have}")
     if holdouts < REQUIRED_HOLDOUT.get(name, 0):
         errors.append(f"{name}: needs {REQUIRED_HOLDOUT[name]} holdout viewer(s)")
     return errors

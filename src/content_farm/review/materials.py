@@ -63,7 +63,8 @@ def topic(run_dir: Path, out: Path, **_: Any) -> Materials:
     order = list(candidates)
     random.Random(f"topics:{out.name}").shuffle(order)          # order differs every round
     lines = [f"[{c['id']}] {c['title']}\n  鉤子：{c.get('hook', '')}\n  預估片長：{c.get('minutes', '?')} 分\n"
-             f"  來源：{'；'.join(str(s) for s in c.get('sources', []))}\n  備註：{c.get('note', '')}" for c in order]
+             + (f"  來源：{'；'.join(str(s) for s in c.get('sources', []))}\n" if c.get('sources') else "")
+             + f"  備註：{c.get('note', '')}" for c in order]
     text = "\n\n".join(lines) + "\n"
     files = [_put(out, "candidates.txt", text)]
     past = run_dir / "topics" / "channel_history.txt"
@@ -165,8 +166,29 @@ def short_script(run_dir: Path, out: Path, **_: Any) -> Materials:
     data = _read_json(run_dir / "script.json")
     sentences = script_sentences(data)
     text = f"# {data.get('video_title', '')}\n\n" + listing(sentences)
+    note = "Short 講稿逐句"
+    extra: dict[str, Any] = {}
+    if any(str(s.get("transition", "")).startswith("pause:") for s in data.get("scenes", [])):
+        from content_farm.production import skit
+
+        text = _skit_outline(data) + "\n" + text
+        note = ("冷笑話小劇場劇本：先列場景結構（場景 id、鋪陳／笑點／收尾、金魚表情、停頓秒數），再逐句（[句子 id] ~預估時間 句子）；"
+                "停頓是該場景之後的無聲留白，不是句子")
+        extra["duration_text"] = f"約 {skit.estimated_seconds(data):g} 秒（字數估計，含停頓）"
     files = [_put(out, "script.txt", text)]
-    return Materials(files, {files[0]: "Short 講稿逐句"}, corpus=text, sentences=sentences)
+    return Materials(files, {files[0]: note}, corpus=text, sentences=sentences, extra=extra)
+
+
+def _skit_outline(data: dict[str, Any]) -> str:
+    from content_farm.production import skit
+
+    lines = ["## 場景結構"]
+    for scene in data.get("scenes", []):
+        pause = skit.pause_after(scene)
+        face = (scene.get("visual_hint") or {}).get("description", "")
+        lines.append(f"[c{scene.get('scene_number')}] {skit.beat_of(scene) or scene.get('title')}｜金魚表情 {face}"
+                     + (f"｜之後停頓 {pause:g} 秒" if pause else ""))
+    return "\n".join(lines) + "\n"
 
 
 def titles_text(run_dir: Path) -> tuple[list[dict], str]:

@@ -8,3 +8,8 @@
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-frog-motion/artifacts/frog-motion/frog-smug-legacy.mp4","min_bytes":50000,"why":"現行版對照"}
 {"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-frog-motion/src/content_farm/explainer/pngtuber/packs/frog-scribe","pattern":"mouth_open_v2","why":"沒有新增任何生成貼片（只改 manifest jaw）"}
 {"kind":"clean_worktree","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-frog-motion","why":"commit 後乾淨"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-offwork-skit-build/REPORT-offwork-skit-build.md","min_bytes":2000,"why":"派工宣告的預期產物"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-offwork-skit-build/output/offwork-run2/audio/scene_001.mp3","why":"驗收：voice 產出音檔"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-offwork-skit-build/src/content_farm/production/skit.py","why":"(a) 劇本格式與檢查"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-offwork-skit-build/.claude/skills/skit-script/SKILL.md","why":"(a) skill"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-offwork-skit-build/src","pattern":"TODO-skit-temp","why":"沒留暫時碼"}
