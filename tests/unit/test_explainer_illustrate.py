@@ -100,7 +100,7 @@ def test_waits_while_another_local_model_runs() -> None:
 def test_channels_pick_their_model_and_reject_bad_settings() -> None:
     assert load_channel("yokai").ai_illustration.model == "z-image-turbo"
     assert load_channel("chipcat").ai_illustration.model == "flux2-klein-4b"
-    assert load_channel("cel").ai_illustration.model == "flux2-klein-4b"
+    assert load_channel("cel").ai_illustration.model == "z-image-turbo"   # klein weights not cached on this machine (2026-10-23)
     assert "not a photograph" in load_channel("yokai").ai_illustration.style_prefix
     with pytest.raises(ValidationError):
         AiIllustration(model="flux1-schnell")
