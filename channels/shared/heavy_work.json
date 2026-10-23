@@ -3,8 +3,10 @@
   "poll_seconds": 20,
   "max_wait_seconds": 21600,
   "admission": {
-    "_comment": "Entry check before every step (cloud lane too). margin/swap/load defaults from the 2026-10-18 prompt; reviewer_gb = measured claude -p RSS 0.42 GB (2026-10-18 15:2x, two opus fact-checkers) rounded up.",
+    "_comment": "Entry check before every step (cloud lane too). margin/swap/load defaults from the 2026-10-18 prompt; margin_idle_gb = the margin when no other local heavy job is running (2026-10-23: this 32 GB Mac idles at 22.7–23.7 GB free, 18+6 never fit); shortfall_after_s = a wait this long writes how many GB are missing into the ticket reason; reviewer_gb = measured claude -p RSS 0.42 GB (2026-10-18 15:2x, two opus fact-checkers) rounded up.",
     "margin_gb": 6,
+    "margin_idle_gb": 3,
+    "shortfall_after_s": 1200,
     "swap_max_pct": 90,
     "load_factor": 1.5,
     "starve_after_s": 1200,
@@ -13,7 +15,7 @@
     "max_parallel_reviewers": 8
   },
   "steps": {
-    "_comment": "mem_gb = the job's own increment over the idle machine (≈5 GB used at idle, 82–85% free). 🟢 measured system-wide peaks: VoxCPM2 21.7 / Qwen3 24.5 (local_worker.py), mlx_video ≈26, ACE-Step MLX peak 16.7 (footprint 41 incl. swap), ffmpeg encode RSS ≈0.5 (ps 2026-10-18), Z-Image (mflux) 6.4 GB peak at 54–61 s/image (REPORT-ai-illustration); system-wide peaks − 5 GB idle = increments 🟡; the rest are 🟡 estimates.",
+    "_comment": "mem_gb = the job's own increment over the idle machine (≈5 GB used at idle, 82–85% free). 🟢 measured system-wide peaks: VoxCPM2 21.7 / Qwen3 24.5 (local_worker.py), mlx_video ≈26, ACE-Step MLX peak 16.7 (footprint 41 incl. swap), ffmpeg encode RSS ≈0.5 (ps 2026-10-18), Z-Image (mflux) 6.4 GB peak at 54–61 s/image (REPORT-ai-illustration); system-wide peaks − 5 GB idle = increments 🟡 (2026-10-23: voice = VoxCPM2 21.7−5 = 16.7, voice_design = Qwen3 24.5−5 = 19.5, was 18 for both); the rest are 🟡 estimates.",
     "topic": {"mem_gb": 0.6},
     "article": {"mem_gb": 0.6},
     "deck": {"mem_gb": 0.6},
@@ -24,7 +26,8 @@
     "slides": {"mem_gb": 2.0, "cpu_cores": 2},
     "thumbnail": {"mem_gb": 1.5, "cpu_cores": 1},
     "thumbnail_variants": {"mem_gb": 2.0, "cpu_cores": 1},
-    "voice": {"mem_gb": 18.0, "gpu": "exclusive", "cpu_cores": 2, "locks": ["local_tts"]},
+    "voice": {"mem_gb": 16.7, "gpu": "exclusive", "cpu_cores": 2, "locks": ["local_tts"]},
+    "voice_design": {"mem_gb": 19.5, "gpu": "exclusive", "cpu_cores": 2, "locks": ["local_tts"]},
     "voice_retime": {"mem_gb": 1.0, "gpu": "shared", "cpu_cores": 2},
     "illustrate": {"mem_gb": 7.0, "gpu": "exclusive", "cpu_cores": 2},
     "ai_motion": {"mem_gb": 21.0, "gpu": "exclusive", "cpu_cores": 2},

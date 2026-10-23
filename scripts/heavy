@@ -3,6 +3,7 @@
 
     scripts/heavy --label "orchestrator: artifact transcode" -- ffmpeg -i in.mov out.mp4
     scripts/heavy --step voice --label "yokai/kyubi:voice" -- python scripts/run_stage.py --stage voice ...
+    scripts/heavy --step voice_design --provides voice-ref:technews --label "technews:voice-design" -- python scripts/design_voice.py ...
     scripts/heavy --mem-gb 21 --gpu exclusive --label "mlx_video trial" -- python -m mlx_video ...
     scripts/heavy --status                      # who runs, who waits, for how long, and why
     scripts/heavy --check "ffmpeg -i a b"       # hook classifier: exit 2 = block, 0 = allow
@@ -62,6 +63,8 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--mem-gb", type=float)
     parser.add_argument("--gpu", choices=res.GPU_MODES)
     parser.add_argument("--kind", default="other", choices=("short", "long", "other"))
+    parser.add_argument("--provides", default="", help="product this job makes, e.g. voice-ref:technews")
+    parser.add_argument("--needs", default="", help="product this job cannot start without")
     parser.add_argument("--status", action="store_true")
     parser.add_argument("--check", metavar="COMMAND")
     args = parser.parse_args(argv)
@@ -76,7 +79,7 @@ def main(argv: list[str]) -> int:
     if args.mem_gb is not None or args.gpu:
         need = res.Need(args.mem_gb if args.mem_gb is not None else need.mem_gb, args.gpu or need.gpu,
                         need.cpu_cores, need.locks)
-    ticket = q.Ticket(job=args.label or " ".join(command)[:60], kind=args.kind)
+    ticket = q.Ticket(job=args.label or " ".join(command)[:60], kind=args.kind, needs=args.needs, provides=args.provides)
     try:
         with q.slot(ticket, need, lambda m: print(m, file=sys.stderr, flush=True)) as waited:
             print(f"[heavy] slot after {waited:.0f}s: {ticket.job}", file=sys.stderr, flush=True)

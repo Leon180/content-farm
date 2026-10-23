@@ -320,3 +320,36 @@ def test_channel_mismatch_rejected(run_dir: Path) -> None:
     _runner(run_dir, FakeExecutor(run_dir)).run()
     with pytest.raises(ValueError, match="belongs to channel"):
         load_state(run_dir, "yokai")
+
+
+def _local_voice_runner(run_dir: Path, executor: FakeExecutor, audio: Path) -> Runner:
+    from content_farm.production.channels import Voice, VoiceReference
+
+    base = load_channel("chipcat")
+    voice = Voice(provider="voxcpm2", reference=VoiceReference(audio=str(audio), text="參考"))
+    ctx = Context(base.model_copy(update={"voice": voice}), run_dir, RunOptions(panels=False))
+    return Runner(ctx, executor=executor, log=lambda _: None)
+
+
+def test_local_voice_without_reference_queues_no_ticket(run_dir: Path, tmp_path: Path, monkeypatch) -> None:
+    def no_queue(*args: object, **kwargs: object) -> None:
+        raise AssertionError("a voice step without its reference must not take a queue ticket")
+
+    monkeypatch.setattr(runner_mod, "render_lock", no_queue)
+    executor = FakeExecutor(run_dir)
+    runner = _local_voice_runner(run_dir, executor, tmp_path / "missing-ref.wav")
+    step = next(s for s in runner_mod.steps_for(runner.ctx.channel, run_dir) if s.name == "voice")
+    state = load_state(run_dir, "chipcat")
+    new_state, result = runner._cmd(state, step, False)  # noqa: SLF001
+    assert result is not None and result.outcome is Outcome.PREREQ and result.exit_code == 3
+    assert "voice-ref:chipcat" in result.message and "missing-ref.wav" in result.message
+    assert "voice" not in executor.calls and new_state is state
+
+
+def test_local_voice_ticket_names_the_reference_it_needs(run_dir: Path, tmp_path: Path) -> None:
+    ref = tmp_path / "ref.wav"
+    ref.write_bytes(b"RIFF")
+    runner = _local_voice_runner(run_dir, FakeExecutor(run_dir), ref)
+    step = next(s for s in runner_mod.steps_for(runner.ctx.channel, run_dir) if s.name == "voice")
+    assert runner._missing_voice_reference(step) == ""  # noqa: SLF001
+    assert runner._ticket(load_state(run_dir, "chipcat"), step).needs == "voice-ref:chipcat"  # noqa: SLF001

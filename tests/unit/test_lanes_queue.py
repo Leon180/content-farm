@@ -163,3 +163,22 @@ def test_one_video_waiting_locally_does_not_stop_another_videos_cloud_step(tmp_p
     release.set()
     thread.join()
     assert order == ["a-voice", "b-review"]
+
+
+def test_tickets_carry_needs_and_provides_into_the_job(tmp_path):
+    _write(tmp_path, q.Ticket("technews:voice", "short", needs="voice-ref:technews"), res.Need(1))
+    record = q.records(tmp_path)[0]
+    job = q._as_job(record)
+    assert job.needs == "voice-ref:technews" and job.provides == ""
+
+
+def test_voice_design_runs_past_a_starving_voice_ticket(tmp_path):
+    starving = q.Ticket("technews/a:voice", "short", needs="voice-ref:technews")
+    _write(tmp_path, starving, VOICE, since=time.time() - 3000)
+    design = q.Ticket("technews:voice-design", provides="voice-ref:technews")
+    with q.slot(design, res.Need(19.5, "exclusive", 2, ("local_tts",)), lambda m: None, env=env(), queue_dir=tmp_path):
+        pass
+    stranger = q.Ticket("yokai:illustrate")
+    with pytest.raises(q.QueueTimeout):
+        with q.slot(stranger, res.Need(7, "exclusive", 2), lambda m: None, env=env(), queue_dir=tmp_path):
+            pass

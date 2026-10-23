@@ -53,6 +53,8 @@ class Ticket:
     job: str                    # "<channel>/<run>:<step>" or a scripts/heavy --label
     kind: str = "long"          # short | long | other (priority: short, then long closest to done)
     progress: float = 0.0
+    needs: str = ""             # product this ticket cannot start without, e.g. "voice-ref:technews"
+    provides: str = ""          # product it makes; a waiter that needs it never reserves against it
     pid: int = field(default_factory=os.getpid)
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:10])
     enqueued_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds"))
@@ -113,7 +115,8 @@ def _as_job(record: dict) -> res.Job:
     need = res.Need(**{**record.get("need", {}), "locks": tuple(record.get("need", {}).get("locks", ()))})
     ticket = Ticket(**{k: v for k, v in record.items() if k in _ticket_fields()})
     return res.Job(record["id"], record["job"], need, ticket.priority(), record.get("state", "waiting"),
-                   float(record.get("since", time.time())), bool(record.get("fits", True)))
+                   float(record.get("since", time.time())), bool(record.get("fits", True)),
+                   ticket.needs, ticket.provides)
 
 
 # --- locks: all or nothing, fixed order -------------------------------------------------------

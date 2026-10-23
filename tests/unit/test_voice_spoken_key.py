@@ -44,11 +44,11 @@ def test_nothing_to_synthesize_queues_light_without_the_tts_lock(run_dir: Path) 
     runner = Runner(ctx, executor=FakeExecutor(run_dir), log=lambda _: None)
     voice = next(s for s in steps_for(ctx.channel, run_dir) if s.name == "voice")
     heavy = runner._need(voice)                                  # noqa: SLF001 — nothing voiced yet
-    assert heavy.mem_gb >= 18 and "local_tts" in heavy.locks
+    assert heavy.mem_gb >= 16 and "local_tts" in heavy.locks
     (run_dir / VOICE_SPOKEN_FILE).parent.mkdir(parents=True, exist_ok=True)
     (run_dir / VOICE_SPOKEN_FILE).write_text(json.dumps({"key": voice_spoken_key(ctx)}), encoding="utf-8")
     assert voice_nothing_to_synthesize(ctx)
     light = runner._need(voice)                                  # noqa: SLF001
     assert light.mem_gb <= 1.0 and "local_tts" not in light.locks and light.gpu != "exclusive"
     _edit(run_dir, lambda s: s.update(narration=s["narration"] + "多一句。"))
-    assert runner._need(voice).mem_gb >= 18                      # noqa: SLF001 — a spoken change needs the model
+    assert runner._need(voice).mem_gb >= 16                      # noqa: SLF001 — a spoken change needs the model
