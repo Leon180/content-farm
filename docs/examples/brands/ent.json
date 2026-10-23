@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "category": "tech",
+  "title": "娛樂快報｜品牌示範",
+  "description": "【品牌示範 deck，非正式內容】娛樂快報頻道品牌系統的示範投影片。",
+  "as_of": "2026-10",
+  "sources": [
+    {"id": "demo", "title": "示範用來源（待查證）"}
+  ],
+  "sections": [
+    {"title": "開場", "slides": [
+      {"id": "s01", "layout": "title", "heading": "這週演藝圈最值得知道的一件事",
+       "body": {"subtitle": "三分鐘講完，不用看原文"},
+       "narration": "先講結論：這週值得你花三分鐘的，是一個很多人還沒注意到的變化。這裡是娛樂快報，我們直接進入重點。"}
+    ]},
+    {"title": "重點數字", "slides": [
+      {"id": "s02", "layout": "big_number", "heading": "一年之內成長了多少？",
+       "body": {"value": "70", "unit": "%", "caption": "示範數字，正式版附出處"},
+       "narration": "你可以把它想成班上的成績單：一年前只有一半的人及格，現在七成的人及格了。精確一點說，成長幅度是這個數字。", "source_ids": ["demo"]}
+    ]},
+    {"title": "比較", "slides": [
+      {"id": "s03", "layout": "compare", "heading": "以前 vs 現在",
+       "body": {
+         "left": {"label": "以前", "items": ["各做各的", "手動整合", "成本高"]},
+         "right": {"label": "現在", "items": ["共用標準", "自動整合", "成本低"]}
+       },
+       "narration": "左邊是以前的做法，各做各的，整合要靠人力；右邊是現在，大家共用標準，整合自動完成。這個數字有來源，放在左下角。", "source_ids": ["demo"]}
+    ]}
+  ]
+}

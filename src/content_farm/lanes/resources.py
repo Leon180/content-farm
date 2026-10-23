@@ -12,7 +12,8 @@ Rules (all from the 2026-10-18 prompt):
   swap < max, load1 < factor × cores, memory pressure not critical;
 - a higher-priority waiter that would also fit goes first; one that does not fit lets smaller
   jobs backfill — until it has waited ``starve_after_s``: then no new local job starts before it;
-- locks (gpu/render/local_tts) are taken all-or-nothing in a fixed order (queue.py).
+- CPU renders are budgeted by cores + memory, not a global render lock; cloud steps look at free
+  memory only (2026-10-23); locks (gpu/render/local_tts) are all-or-nothing in a fixed order (queue.py).
 """
 
 from __future__ import annotations
@@ -27,6 +28,7 @@ from pathlib import Path
 CONFIG = Path(__file__).resolve().parents[3] / "channels" / "shared" / "heavy_work.json"
 GPU_MODES = ("none", "shared", "exclusive")
 LOCK_ORDER = ("gpu", "render", "local_tts")
+CPU_HEAVY_CORES = 2.0       # >= this many cores and no GPU/lock: a CPU render (assembly, mix, cut, slides)
 
 
 @dataclass(frozen=True)
@@ -38,8 +40,13 @@ class Need:
 
     @property
     def local(self) -> bool:
-        """Local heavy lane (anything that uses the GPU or a render lock)."""
-        return self.gpu != "none" or bool(self.locks)
+        """Local heavy lane: uses the GPU, holds a lock, or is a CPU render (>= ``CPU_HEAVY_CORES``)."""
+        return self.gpu != "none" or bool(self.locks) or self.cpu_cores >= CPU_HEAVY_CORES
+
+    @property
+    def light(self) -> bool:
+        """Cloud-lane step (reviewer, producer agent): only free memory decides, never swap or load."""
+        return not self.local
 
 
 @dataclass(frozen=True)
@@ -61,11 +68,15 @@ class Job:
     state: str                  # waiting | running
     since: float                # epoch seconds: enqueued (waiting) or started (running)
     fits: bool = True           # waiting jobs: does the machine fit it right now (last check)
+    needs: str = ""             # a product this job cannot start without (e.g. "voice-ref:technews")
+    provides: str = ""          # the product this job makes; never held back by a waiter that needs it
 
 
 @dataclass(frozen=True)
 class Config:
     margin_gb: float = 6.0
+    margin_idle_gb: float = 3.0     # margin when no other local heavy job is running
+    shortfall_after_s: float = 1200.0   # a wait this long names how many GB are missing
     swap_max_pct: float = 90.0
     load_factor: float = 1.5
     starve_after_s: float = 1200.0
@@ -82,7 +93,10 @@ class Config:
 def load_config(path: Path = CONFIG) -> Config:
     data = json.loads(path.read_text(encoding="utf-8"))
     admission = data.get("admission", {})
-    return Config(margin_gb=admission.get("margin_gb", 6.0), swap_max_pct=admission.get("swap_max_pct", 90.0),
+    margin = admission.get("margin_gb", 6.0)
+    return Config(margin_gb=margin, margin_idle_gb=min(margin, admission.get("margin_idle_gb", 3.0)),
+                  shortfall_after_s=admission.get("shortfall_after_s", 1200.0),
+                  swap_max_pct=admission.get("swap_max_pct", 90.0),
                   load_factor=admission.get("load_factor", 1.5),
                   starve_after_s=admission.get("starve_after_s", 1200.0),
                   notify_after_s=admission.get("notify_after_s", 2700.0),
@@ -107,20 +121,26 @@ def need_for(step: str, config: Config, *, default: Need | None = None) -> Need:
 
 
 def impossible(need: Need, probe: Probe, config: Config) -> str:
-    if need.mem_gb + config.margin_gb > probe.total_gb:
-        return (f"needs {need.mem_gb:g} GB + {config.margin_gb:g} GB margin but the machine has "
+    margin = min(config.margin_gb, config.margin_idle_gb)     # the margin an idle machine needs
+    if need.mem_gb + margin > probe.total_gb:
+        return (f"needs {need.mem_gb:g} GB + {margin:g} GB margin but the machine has "
                 f"{probe.total_gb:.0f} GB: can never run here")
     if need.cpu_cores > probe.cores:
         return f"needs {need.cpu_cores:g} cores, the machine has {probe.cores}"
     return ""
 
 
-def _machine(need: Need, probe: Probe, promised_gb: float, config: Config) -> list[str]:
+def _machine(need: Need, probe: Probe, promised_gb: float, config: Config, *, margin_gb: float | None = None,
+             waited_s: float = 0.0) -> list[str]:
     reasons = []
+    margin = config.margin_gb if margin_gb is None else margin_gb
     free = probe.free_gb - promised_gb
-    if free < need.mem_gb + config.margin_gb:
+    if free < need.mem_gb + margin:
+        missing = f"，差 {need.mem_gb + margin - free:.1f} GB" if waited_s >= config.shortfall_after_s else ""
         reasons.append(f"memory: {free:.1f} GB free (after {promised_gb:.1f} GB promised to just-started jobs) "
-                       f"< {need.mem_gb:g} + {config.margin_gb:g} GB")
+                       f"< {need.mem_gb:g} + {margin:g} GB{missing}")
+    if need.light:          # cloud lane: actual free memory (margin_gb) only (Leon 2026-10-23)
+        return reasons
     if probe.swap_pct >= config.swap_max_pct:
         reasons.append(f"swap {probe.swap_pct:.0f}% ≥ {config.swap_max_pct:g}%")
     if probe.load1 >= config.load_factor * probe.cores and need.cpu_cores >= 1:
@@ -130,11 +150,25 @@ def _machine(need: Need, probe: Probe, promised_gb: float, config: Config) -> li
     return reasons
 
 
+def _cpu_budget(need: Need, running: list[Job], probe: Probe) -> list[str]:
+    """Core budget for CPU renders: running jobs' cores + mine must fit the machine; an idle
+    machine always admits one (``impossible`` already rejects a need above the core count)."""
+    if need.cpu_cores < 1:
+        return []
+    busy = sum(j.need.cpu_cores for j in running if j.need.cpu_cores >= 1)
+    if busy > 0 and busy + need.cpu_cores > probe.cores:
+        return [f"cpu: {busy:g} of {probe.cores} cores in use, needs {need.cpu_cores:g}"]
+    return []
+
+
 def decide(me: Job, others: list[Job], probe: Probe, config: Config, now: float) -> list[str]:
     """Why ``me`` must wait now ([] = start). ``others``: every other live job."""
     promised = sum(j.need.mem_gb for j in others if j.state == "running" and now - j.since < config.recent_start_s)
-    reasons = _machine(me.need, probe, promised, config)
     running = [j for j in others if j.state == "running"]
+    alone = me.need.local and not any(j.need.local for j in running)   # local step on a quiet machine: smaller margin
+    reasons = _machine(me.need, probe, promised, config, waited_s=now - me.since,
+                       margin_gb=min(config.margin_idle_gb, config.margin_gb) if alone else config.margin_gb)
+    reasons += _cpu_budget(me.need, running, probe)
     if me.need.gpu == "exclusive" and any(j.need.gpu != "none" for j in running):
         reasons.append("gpu: another job is using the GPU")
     if me.need.gpu == "shared" and any(j.need.gpu == "exclusive" for j in running):
@@ -145,11 +179,13 @@ def decide(me: Job, others: list[Job], probe: Probe, config: Config, now: float)
         reasons.append(f"lock {', '.join(taken)} held by {', '.join(j.job for j in running if set(j.need.locks) & set(taken))}")
     waiting = [j for j in others if j.state == "waiting"]
     if me.need.local:
+        feeds = [j for j in waiting if me.provides and j.needs == me.provides]    # my output unblocks them
         starving = [j for j in waiting if j.need.local and now - j.since >= config.starve_after_s
-                    and (j.priority < me.priority or now - j.since > now - me.since)]
+                    and (j.priority < me.priority or now - j.since > now - me.since) and j not in feeds]
         if starving:
             reasons.append(f"reserved for {starving[0].job} (waiting {int(now - starving[0].since)} s, anti-starvation)")
-        ahead = [j for j in waiting if j.need.local and j.fits and j.priority < me.priority]
+        ahead = [j for j in waiting if j.need.local and j.fits and j.priority < me.priority
+                 and j not in feeds]
         if ahead and not starving:
             reasons.append(f"priority: {ahead[0].job} goes first")
     return reasons

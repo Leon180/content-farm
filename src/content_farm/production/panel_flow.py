@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from content_farm.production.runner import RunResult
     from content_farm.production.steps import Context, Step
 
-PRODUCER_STEPS = ("topic", "article", "deck", "thumbnail_spec", "skit_script")
+PRODUCER_STEPS = ("topic", "article", "deck", "thumbnail_spec", "skit_script", "news_script")
 APPROVED_DECK = "review/deck.approved.json"   # same path as feat/incremental-render's runner.APPROVED_DECK
 LOCKED_DECK = "review/deck.locked.json"       # deck at the last structure / facts approval (the fact lock's baseline)
 FACTS_LOCKED_DECK = "review/deck_facts.locked.json"   # deck at the last fact-stage approval (delta fact-check baseline)
@@ -34,7 +34,8 @@ def _event(run_dir: Path, **fields: object) -> None:
 def _short(ctx: Context) -> bool:
     from content_farm.production.shorts_cut import is_short_cut
 
-    return ctx.channel.format.length == "short" or is_short_cut(ctx.run_dir)
+    return (ctx.channel.format.length == "short" or is_short_cut(ctx.run_dir)
+            or (ctx.run_dir / "news_short.json").is_file())      # an HN-style news Short on a long-video channel
 
 
 def stage_of(ctx: Context, gate: Gate) -> str | None:

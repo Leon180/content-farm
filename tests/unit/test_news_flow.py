@@ -93,7 +93,8 @@ def test_pick_refuses_unreadable_originals(tmp_path: Path, series: NewsSeries, c
 def test_news_run_dir_gets_the_news_steps(tmp_path: Path, chipcat) -> None:
     (tmp_path / ns.ITEM_FILE).write_text("{}", encoding="utf-8")
     steps = steps_for(chipcat, tmp_path)
-    assert steps == NEWS_SHORT_STEPS
+    # chipcat (series.hn): no script panel, no claim audit (entertainment-only)
+    assert steps == tuple(s for s in NEWS_SHORT_STEPS if s.name not in ("gate_script", "fact_audit"))
     assert [s.gate for s in steps if s.kind == "gate"] == [Gate.FINAL]
     voice = next(s for s in steps if s.name == "voice")
     assert voice.inputs == ("voice_text.json",) and voice.paid
@@ -150,3 +151,13 @@ def test_weekly_deck_check(tmp_path: Path) -> None:
     assert weekly.check_deck(deck, plan) == ["b: none of its read originals is in deck.sources (https://b.com/x)"]
     short_deck = SimpleNamespace(sections=[1, 2], sources=[SimpleNamespace(url=u) for u in ("https://a.com/x", "https://b.com/x")])
     assert "sections" in weekly.check_deck(short_deck, plan)[0]
+
+
+def test_series_news_channel_also_gets_the_script_panel_before_voice(tmp_path: Path) -> None:
+    from content_farm.production.channels import load_channel
+
+    technews = load_channel("technews")
+    (tmp_path / ns.ITEM_FILE).write_text("{}", encoding="utf-8")
+    names = [s.name for s in steps_for(technews, tmp_path)]
+    assert names.index("news_prepare") < names.index("gate_script") < names.index("voice")
+    assert [s.gate for s in steps_for(technews, tmp_path) if s.kind == "gate"] == [Gate.SCRIPT, Gate.FINAL]

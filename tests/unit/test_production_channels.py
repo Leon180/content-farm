@@ -24,8 +24,8 @@ def _write(tmp_path: Path, data: dict) -> Path:
 
 
 def test_four_channels_each_with_own_brand() -> None:
-    channels = {c.code: c for c in load_all()}
-    assert set(channels) == {"chipcat", "yokai", "offwork", "cel"}
+    channels = {c.code: c for c in load_all(include_disabled=True)}
+    assert set(channels) == {"chipcat", "yokai", "offwork", "cel", "technews", "ent"}
     assert {c.brand for c in channels.values()} == set(brand_codes())
     assert all(c.brand == c.code for c in channels.values())
     assert channels["chipcat"].name == "晶片貓"
@@ -35,7 +35,7 @@ def test_four_channels_each_with_own_brand() -> None:
 
 
 def test_channel_differences_are_expressed() -> None:
-    channels = {c.code: c for c in load_all()}
+    channels = {c.code: c for c in load_all(include_disabled=True)}
     offwork, yokai, cel = channels["offwork"], channels["yokai"], channels["cel"]
     assert offwork.pipeline is Pipeline.SHORTS_SKIT and Gate.ARTICLE not in offwork.gates
     assert "article" not in step_names(offwork)
@@ -58,7 +58,7 @@ def test_mascot_step_passes_the_pngtuber_pack() -> None:
         def __init__(self, channel):
             self.channel = channel
 
-    channels = {c.code: c for c in load_all()}
+    channels = {c.code: c for c in load_all(include_disabled=True)}
     assert _host_args(Ctx(channels["cel"])) == ("--pngtuber", "pngtuber/paint-bottle-3d")
     assert _host_args(Ctx(channels["chipcat"])) == ()
 
@@ -122,3 +122,14 @@ def test_unknown_field_rejected(tmp_path: Path) -> None:
     data["api_key"] = "x"
     with pytest.raises(ValidationError):
         load_channel(_write(tmp_path, data))
+
+
+def test_offwork_is_disabled_and_technews_replaces_it() -> None:
+    """Leon 2026-10-23: the goldfish channel is retired (kept on disk); 科技新知 takes its place, no mascot."""
+    active = {c.code for c in load_all()}
+    assert "offwork" not in active and {"chipcat", "yokai", "cel", "technews"} <= active
+    assert load_channel("offwork").enabled is False          # still loadable: old run-dirs can be opened
+    technews = load_channel("technews")
+    assert technews.mascot.rig_ready is False and "mascot" not in step_names(technews)
+    assert technews.voice.provider == "voxcpm2" and technews.voice.reference is not None
+    assert technews.series["news"]["sources"] == ["hn", "lobsters", "arxiv", "github"]

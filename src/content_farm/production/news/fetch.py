@@ -11,12 +11,16 @@ X/Twitter is never fetched (not a source; ``BLOCKED_DOMAINS``).
 
 from __future__ import annotations
 
+import hashlib
+import json
+import re
 import time
 import xml.etree.ElementTree as ET
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
+from pathlib import Path
 from urllib.parse import urlsplit
 
 import httpx
@@ -29,7 +33,9 @@ HN_ITEM = "https://news.ycombinator.com/item?id={id}"
 LOBSTERS_RSS = "https://lobste.rs/rss"
 ARXIV_API = "https://export.arxiv.org/api/query"
 ARXIV_CATEGORIES = ("cs.AR", "cs.AI", "cs.CL", "cs.LG", "cs.CR", "cs.ET")
-HOST_SPACING = {"hacker-news.firebaseio.com": 0.1, "export.arxiv.org": 3.0, "lobste.rs": 1.0}
+GITHUB_TRENDING = "https://github.com/trending?since=daily"
+HOST_SPACING = {"hacker-news.firebaseio.com": 0.1, "export.arxiv.org": 3.0, "lobste.rs": 1.0, "github.com": 2.0}
+CACHE_TTL_SECONDS = 1800        # a re-run within 30 minutes costs no requests (listings move slowly)
 DEFAULT_SPACING = 1.0
 TIMEOUT = 15.0
 MAX_BYTES = 3 * 1024 * 1024
@@ -60,8 +66,39 @@ class PoliteHttp:
     spacing: dict[str, float] = field(default_factory=lambda: dict(HOST_SPACING))
     sleep: Callable[[float], None] = time.sleep
     clock: Callable[[], float] = time.monotonic
+    cache_dir: Path | None = None          # on-disk response cache (200 only); None = no cache
+    cache_ttl: float = CACHE_TTL_SECONDS   # 0 = ignore cached answers (still refreshes them)
+    wall: Callable[[], float] = time.time
+    hits: int = 0
     _last: dict[str, float] = field(default_factory=dict)
     _client: httpx.Client | None = None
+
+    def _cache_path(self, url: str) -> Path | None:
+        if self.cache_dir is None:
+            return None
+        return self.cache_dir / f"{hashlib.sha1(url.encode()).hexdigest()}.json"
+
+    def _cache_get(self, url: str) -> Response | None:
+        path = self._cache_path(url)
+        if path is None or self.cache_ttl <= 0 or not path.is_file():
+            return None
+        try:
+            row = json.loads(path.read_text(encoding="utf-8"))
+            if self.wall() - float(row["at"]) > self.cache_ttl:
+                return None
+            body = bytes.fromhex(row["body_hex"])
+            return Response(row["url"], int(row["status"]), row["content_type"], body)
+        except (OSError, ValueError, KeyError):
+            return None        # a damaged cache entry is just a miss
+
+    def _cache_put(self, url: str, resp: Response) -> None:
+        path = self._cache_path(url)
+        if path is None or resp.status != 200:
+            return
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps({"at": self.wall(), "url": resp.url, "status": resp.status,
+                                    "content_type": resp.content_type, "body_hex": resp.body.hex()}),
+                        encoding="utf-8")
 
     def _wait(self, host: str) -> None:
         gap = self.spacing.get(host, DEFAULT_SPACING)
@@ -76,6 +113,10 @@ class PoliteHttp:
         host = urlsplit(url).hostname or ""
         if is_blocked(url):
             raise FetchError(f"{host} is not a source (X/Twitter is never fetched)")
+        cached = self._cache_get(url)
+        if cached is not None:
+            self.hits += 1
+            return cached
         self._wait(host)
         if self._client is None:
             self._client = httpx.Client(headers={"User-Agent": USER_AGENT}, timeout=TIMEOUT,
@@ -88,8 +129,10 @@ class PoliteHttp:
                     if size > MAX_BYTES:
                         break
                     chunks.append(chunk)
-                return Response(str(resp.url), resp.status_code,
-                                resp.headers.get("content-type", ""), b"".join(chunks))
+                result = Response(str(resp.url), resp.status_code,
+                                  resp.headers.get("content-type", ""), b"".join(chunks))
+                self._cache_put(url, result)
+                return result
         except httpx.HTTPError as exc:
             raise FetchError(f"GET {url}: {type(exc).__name__}: {exc}") from exc
 
@@ -239,6 +282,45 @@ def fetch_arxiv_abstract(get: Getter, ident: str) -> Candidate | None:
         raise FetchError(f"arXiv API id_list={ident}: http {resp.status}")
     found = parse_arxiv_atom(resp.body)
     return found[0] if found else None
+
+
+# ── GitHub Trending (public HTML page, robots-checked by the caller) ─────────
+
+_GH_ROW = re.compile(r'<article class="Box-row">(.*?)</article>', re.S)
+_GH_REPO = re.compile(r'href="/([\w.-]+/[\w.-]+)/stargazers"')
+_GH_DESC = re.compile(r'<p class="col-9[^"]*">\s*(.*?)\s*</p>', re.S)
+_GH_TODAY = re.compile(r"([\d,]+)\s+stars?\s+(?:today|this week|this month)")
+_GH_LANG = re.compile(r'itemprop="programmingLanguage">([^<]+)<')
+_GH_TAG = re.compile(r"<[^>]+>")
+
+
+def parse_github_trending(html: str, now: datetime) -> list[Candidate]:
+    out = []
+    for rank, block in enumerate(_GH_ROW.findall(html), start=1):
+        repo = _GH_REPO.search(block)
+        if not repo:
+            continue
+        slug = repo.group(1)
+        desc = " ".join(_GH_TAG.sub("", (_GH_DESC.search(block) or [None, ""])[1]).split())
+        today = _GH_TODAY.search(block)
+        lang = _GH_LANG.search(block)
+        url = f"https://github.com/{slug}"
+        title = f"{slug}: {desc}" if desc else slug
+        out.append(Candidate(
+            id=("gh-" + slug.replace("/", "-"))[:40], title=title[:300], url=url, domain="github.com",
+            posted_at=_iso(now),     # Trending carries no timestamp: "trending today" = now
+            discussions=(Discussion(site="github", url=url, rank=rank,
+                                    points=int(today.group(1).replace(",", "")) if today else None),),
+            tags=(lang.group(1).strip(),) if lang else (), summary=desc[:400],
+        ))
+    return out
+
+
+def fetch_github(get: Getter, now: datetime | None = None) -> list[Candidate]:
+    resp = get(GITHUB_TRENDING)
+    if resp.status != 200:
+        raise FetchError(f"GET {GITHUB_TRENDING}: http {resp.status}")
+    return parse_github_trending(resp.body.decode("utf-8", errors="replace"), now or datetime.now(timezone.utc))
 
 
 @dataclass(frozen=True)

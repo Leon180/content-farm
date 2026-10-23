@@ -1,5 +1,6 @@
 # 晶片貓下班了 — 冷笑話 Shorts（主力）＋迷因考古長片（之後）
 code: offwork
+enabled: false          # Leon 2026-10-23：金魚頻道取消，由 technews（科技新知）取代；素材與程式保留，排程／額度不再分給它
 name: 晶片貓下班了
 line: 冷笑話 Shorts＋迷因考古
 pipeline: shorts_skit     # 沒有文章、沒有 deck：劇本 → 配音 → 角色小劇場

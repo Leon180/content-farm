@@ -84,10 +84,31 @@ class Step:
     # Settings that change the output without touching any input file (e.g. the TTS
     # voice); folded into the fingerprint and logged when the step runs.
     identity: Callable[[Context], str] | None = None
+    # Cheap check before queueing for the machine: False = nothing to do (every output is already there), so the step
+    # is marked done without taking a slot. A step that waited 17 minutes behind another video's GPU job to print
+    # "nothing to generate" is what this prevents (yokai-kyubi-v3 2026-10-23). An error counts as "has work".
+    has_work: Callable[[Context], bool] | None = None
 
 
 def _py(ctx: Context, script: str, *args: str, env: dict[str, str] | None = None) -> Command:
     return Command((ctx.options.python, str(REPO_ROOT / "scripts" / script), *args), env or {})
+
+
+def _illustrate_pending(ctx: Context) -> bool:
+    """Is any ai_image slide still missing its image (the same test ``scripts/illustrate.py`` makes)?"""
+    from content_farm.explainer.deck import load_deck
+    from content_farm.explainer.illustrate import Settings, missing_images
+
+    deck_path = ctx.run_dir / "deck.json"
+    if not deck_path.is_file():
+        return True
+    config = ctx.channel.ai_illustration
+    try:
+        deck = load_deck(deck_path)
+        return bool(missing_images(deck, ctx.run_dir, Settings(config.model, config.style_prefix, config.seed,
+                                                              config.width, config.height)))
+    except (OSError, ValueError, KeyError):
+        return True
 
 
 def _run_dir(ctx: Context) -> str:
@@ -226,7 +247,7 @@ EXPLAINER_STEPS: tuple[Step, ...] = (
     Step("illustrate", "cmd", "AI 插圖（本機模型，一次一張）", inputs=("deck.json",),
          command=lambda c: _py(c, "illustrate.py", "--run-dir", _run_dir(c), "--channel", c.channel.code,
                                "--env-file", str(c.options.env_file)),
-         heavy=True, applies=lambda channel: channel.media.ai_image,
+         heavy=True, applies=lambda channel: channel.media.ai_image, has_work=lambda c: _illustrate_pending(c),
          identity=lambda c: c.channel.ai_illustration.model_dump_json()),
     Step("media", "cmd", "B-roll／動態投影片／AI 圖", outputs=("credits.json", "media/contact_sheet.png"),
          # assets/ai_motion/*: a Wan clip baked overnight (scripts/ai_motion.py bake) re-runs media.
@@ -340,15 +361,25 @@ NEWS_SHORT_STEPS: tuple[Step, ...] = (
     Step("news_script", "agent", "HN 快報稿（讀原文後寫五段）", outputs=(NEWS_SCRIPT_FILE,),
          verify=lambda c: _py(c, "news.py", "lint", "--run-dir", _run_dir(c)),
          hint="跑 /news-short（讀 news_short.json 的原文快取 → 寫 news_script.json）"),
+    # Entertainment channels (series.news.claims_audit): every factual sentence needs a sourced claim; what has none
+    # is an error that gets ONE automatic fix (delete / rewrite as 「據…報導」), then the run goes on without a re-check.
+    Step("fact_audit", "cmd", "事實出處查核（無出處＝錯誤，自動修一次）", outputs=("review/fact_audit.json",),
+         inputs=(NEWS_SCRIPT_FILE, NEWS_ITEM_FILE),
+         command=lambda c: _py(c, "news.py", "audit", "--run-dir", _run_dir(c)),
+         applies=lambda channel: _claims_audit(channel)),
     Step("news_prepare", "cmd", "稿 → script.json（五段＝五個場景）", outputs=("script.json", "voice_text.json"),
          inputs=(NEWS_SCRIPT_FILE,),
          command=lambda c: _py(c, "news.py", "prepare", "--run-dir", _run_dir(c))),
+    # Channels with a ``series.news`` block (technews; Leon 2026-10-23) also get the script panel
+    # (stage shorts_script) before any voice is made; chipcat's ``series.hn`` keeps its original flow.
+    Step("gate_script", "gate", "腳本評審（Shorts）", gate=Gate.SCRIPT, artifacts=("script.json",),
+         applies=lambda channel: "news" in channel.series),
     Step("voice", "cmd", "配音＋字幕對齊", outputs=("audio/scene_*.mp3", "subtitles/subtitles.srt"),
          inputs=("voice_text.json",),  # spoken words only: screen edits never re-voice
          command=lambda c: _py(c, "run_stage.py", "--stage", "voice", "--run-dir", _run_dir(c),
                                env=_voice_env(c)),
          paid=_voice_paid, heavy_if=_voice_local, identity=lambda c: voice_choice(c).describe()),
-    Step("news_render", "cmd", "直式頁面＋晶片貓＋字幕燒入",
+    Step("news_render", "cmd", "直式頁面（來源卡／角色）＋字幕燒入",
          outputs=("assembly/final.mp4", "thumbnails/thumbnail.png", "credits.json"),
          inputs=(NEWS_SCRIPT_FILE, "script.json", "audio/scene_*.mp3", "subtitles/subtitles.srt"),
          command=lambda c: _py(c, "news.py", "render", "--run-dir", _run_dir(c)), heavy=True),
@@ -359,6 +390,10 @@ NEWS_SHORT_STEPS: tuple[Step, ...] = (
     Step("package", "internal", "上傳資料（#Shorts、來源、排程）", outputs=("upload/youtube_meta.json",),
          inputs=("script.json", "credits.json", "assembly/*.mp4", "production.schedule.json")),
 )
+
+
+def _claims_audit(channel: Channel) -> bool:
+    return bool((channel.series.get("news") or {}).get("claims_audit"))
 
 
 def news_weekly_steps(channel: Channel) -> tuple[Step, ...]:
@@ -381,7 +416,7 @@ def steps_for(channel: Channel, run_dir: Path | None = None) -> tuple[Step, ...]
 
         return SHORTS_SCRIPTED_STEPS if load_spec(run_dir).scripted else SHORTS_CUT_STEPS
     if run_dir is not None and (run_dir / NEWS_ITEM_FILE).is_file():
-        return NEWS_SHORT_STEPS
+        return tuple(step for step in NEWS_SHORT_STEPS if step.applies(channel))
     if run_dir is not None and (run_dir / NEWS_WEEKLY_FILE).is_file():
         return news_weekly_steps(channel)
     steps = {Pipeline.EXPLAINER: EXPLAINER_STEPS, Pipeline.SHORTS_SKIT: SHORTS_SKIT_STEPS}[channel.pipeline]

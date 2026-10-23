@@ -45,6 +45,23 @@ def gantt(data: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def lanes_table(data: dict[str, Any]) -> str:
+    """Local steps with queue wait and execution time side by side (``steps`` of timing.json)."""
+    rows = data.get("steps") or []
+    if not rows:
+        return f"{data['run']}: no local steps"
+    out = [f"{data['run']}: local steps, waiting for the machine vs. running",
+           f"  {'step':<22}{'runs':>5}{'running':>10}{'queued':>10}{'queued%':>9}"]
+    for row in rows:
+        out.append(f"  {row['step'][:21]:<22}{row['runs']:>5}{fmt(row['execute_s']):>10}{fmt(row['queue_s']):>10}"
+                   f"{row['queue_share']:>9.0%}")
+    total_queue = sum(r["queue_s"] for r in rows)
+    total_run = sum(r["execute_s"] for r in rows)
+    out.append(f"  {'total':<22}{sum(r['runs'] for r in rows):>5}{fmt(total_run):>10}{fmt(total_queue):>10}"
+               f"{(total_queue / (total_queue + total_run) if total_queue + total_run else 0):>9.0%}")
+    return "\n".join(out)
+
+
 def bottlenecks(data: dict[str, Any], top: int = 5) -> str:
     rows = [("machine", c["category"], c["seconds"], c["count"]) for c in data["categories"]]
     waits = [("wait", "queue (waiting for the machine)", data["queue_s"], 0),

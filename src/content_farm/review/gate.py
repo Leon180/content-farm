@@ -16,9 +16,9 @@ from pathlib import Path
 from typing import Any
 
 from content_farm.production.state import fingerprint, now_iso
-from content_farm.review import routing
+from content_farm.review import routing, score_ledger
 from content_farm.review.client import Call, CallResult, model_matches
-from content_farm.review.config import ReviewConfig
+from content_farm.review.config import FACT_STAGES, ReviewConfig
 from content_farm.review.freeze import frozen_steps
 from content_farm.review.narrow import narrow
 from content_farm.review.rounds import VIDEO_STAGES, expected_seats, rounds_of, run_round, stage_dir
@@ -142,8 +142,8 @@ def _rework(run_dir: Path, gate: str, stage_name: str, card: dict[str, Any], def
         issues = [{"ref": {"target": "script"}, "category": "content", "severity": "high",
                    "problem": "；".join(verdict.get("reasons", [])), "fix": "依評分卡改善", "evidence": "",
                    "caused_by": default_step}]
-    if default_step == "skit_script":     # a skit has no deck: the script step owns every script problem
-        issues = [{**i, "caused_by": "skit_script"} if i.get("caused_by") == "deck" else i for i in issues]
+    if default_step in ("skit_script", "news_script"):     # no deck: the script step owns every script problem
+        issues = [{**i, "caused_by": default_step} if i.get("caused_by") == "deck" else i for i in issues]
     texts = _texts(run_dir)
     issues, deferred, narrowing = narrow(issues, texts.sentences) if narrow_enabled() else (issues, [], None)
     plan = routing.plan(issues, texts, stage=stage_name, round_no=card["round"], default_step=default_step,
@@ -208,7 +208,13 @@ def write_decision(run_dir: Path, gate: str, stage_name: str, card_path: Path, c
     path = run_dir / "review" / f"{gate}.decision.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
+    score_ledger.record(run_dir, gate, stage_name, card, waived=not card["verdict"]["pass"])
     return data
+
+
+def auto_fix_enabled(config: ReviewConfig, stage_name: str) -> bool:
+    """Fact / licence stage under ``policy.fact_on_fail = auto_fix_then_pass`` (Leon decision a53960fc4b1d = A)."""
+    return stage_name in FACT_STAGES and config.policy.fact_on_fail == "auto_fix_then_pass"
 
 
 def set_aside(run_dir: Path, stage_name: str, label: str) -> Path:
@@ -284,6 +290,26 @@ def _waivable_topic(card: dict[str, Any], stage_name: str) -> bool:
     return any(not r.get("vetoed") for r in ranking)
 
 
+def _auto_fix(run_dir: Path, gate: str, stage_name: str, card: dict[str, Any], default_step: str, card_path: Path,
+              reasons: str) -> GateResult:
+    """The one automatic fix of a fact / licence stage: a normal fix list (the delete-or-edit-only guard still applies,
+    so nothing new is written), marked ``auto_fact_fix``; the next call passes without a re-check."""
+    plan = _rework(run_dir, gate, stage_name, card, default_step)
+    plan = {**plan, "auto_fact_fix": True}
+    routing.write(run_dir, gate, plan)
+    score_ledger.log_auto_fix(run_dir, gate, stage_name, event="fix_issued", round=card["round"], inputs=card["inputs"],
+                              errors=reasons, fixes=str(run_dir / "review" / f"{gate}.fixes.json"),
+                              restart=plan.get("restart"))
+    return GateResult("rework", f"{stage_name} 第 {card['round']} 輪查到錯誤／授權問題（{reasons}）→ 自動修一次（{plan['restart']}），"
+                      "不重查", card_path, plan, card["verdict"]["scores"])
+
+
+def _log_auto_fix_pass(run_dir: Path, gate: str, stage_name: str, card: dict[str, Any], *, changed: bool = True) -> None:
+    score_ledger.log_auto_fix(run_dir, gate, stage_name, event="passed_without_recheck", round=card["round"],
+                              inputs=card["inputs"], errors=list(card["verdict"].get("reasons", [])),
+                              content_changed=changed, fixes=str(run_dir / "review" / f"{gate}.fixes.json"))
+
+
 def panel_gate(run_dir: Path, *, gate: str, stage_name: str, config: ReviewConfig, channel: str,
                channel_name: str, client: Callable[[Call], CallResult] | None = None,
                competitors: Path | None = None, vertical: bool = False,
@@ -294,9 +320,13 @@ def panel_gate(run_dir: Path, *, gate: str, stage_name: str, config: ReviewConfi
     last = _load(done[-1] / "scorecard.json") if done else None
     if last is None or last.get("inputs") != current:
         number = (last["round"] + 1) if last else 1
-        if number > stage.max_rounds and last is not None and stage.waive_on_last_round:
+        auto = auto_fix_enabled(config, stage_name)
+        if number > stage.max_rounds and last is not None and (stage.waive_on_last_round or auto):
+            why = f"第 {last['round']} 輪後內容又變動，不再開新輪"
             waiver = _waive(run_dir, gate, stage_name, config, last, current, done[-1] / "scorecard.json",
-                            f"第 {last['round']} 輪後內容又變動，不再開新輪")
+                            "事實／授權自動修後放行，不重查" if auto else why)
+            if waiver is not None and auto and not last["verdict"]["pass"]:
+                _log_auto_fix_pass(run_dir, gate, stage_name, last)
             if waiver is not None:
                 return waiver
         if number > stage.max_rounds:
@@ -315,6 +345,14 @@ def panel_gate(run_dir: Path, *, gate: str, stage_name: str, config: ReviewConfi
     card_path = stage_dir(run_dir, stage_name) / last["label"] / "scorecard.json"
     if not last["verdict"]["pass"]:
         reasons = "；".join(last["verdict"]["reasons"])
+        if auto_fix_enabled(config, stage_name):
+            if not score_ledger.auto_fix_issued(run_dir, gate, last["round"], last["inputs"]):
+                return _auto_fix(run_dir, gate, stage_name, last, stage.rework, card_path, reasons)
+            waiver = _waive(run_dir, gate, stage_name, config, last, current, card_path,
+                            "事實／授權自動修後放行，不重查（修改沒有改動內容）")
+            if waiver is not None:
+                _log_auto_fix_pass(run_dir, gate, stage_name, last, changed=False)
+                return waiver
         if last["round"] >= stage.max_rounds and stage.waive_on_last_round:
             waiver = _waive(run_dir, gate, stage_name, config, last, current, card_path, "最後一輪未通過")
             if waiver is not None:

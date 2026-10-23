@@ -1,6 +1,7 @@
 """Step commands for HN 快報 Shorts (called by the production runner, not by hand).
 
     python scripts/news.py lint    --run-dir output/hn-2026-10-16-hn-50117451
+    python scripts/news.py audit   --run-dir …     # ent: sourced-claim audit, one auto-fix (review/fact_audit.json)
     python scripts/news.py prepare --run-dir …     # news_script.json → script.json
     python scripts/news.py render  --run-dir …     # pages + mascot + subtitles → assembly/final.mp4
 
@@ -21,13 +22,41 @@ from content_farm.production.news import script as ns
 from content_farm.production.state import read_channel_code
 
 
+def _channel_words(run_dir: Path):
+    """(branding, chars/second) of the run's channel: chipcat 快報 keeps its defaults."""
+    from content_farm.production.news.series import branding_for, news_series
+
+    channel = load_channel(read_channel_code(run_dir))
+    cps = news_series(channel).chars_per_second if ("news" in channel.series or "hn" in channel.series) \
+        else ns.CHARS_PER_SECOND
+    return branding_for(channel), cps
+
+
+def _series(run_dir: Path):
+    from content_farm.production.news.series import news_series
+
+    channel = load_channel(read_channel_code(run_dir))
+    return news_series(channel) if ("news" in channel.series or "hn" in channel.series) else None
+
+
 def cmd_lint(run_dir: Path) -> int:
+    from content_farm.production.news import audit_step
+
     news = ns.load_script(run_dir)
-    problems = ns.lint(news, ns.load_item(run_dir))
+    _, cps = _channel_words(run_dir)
+    problems = ns.lint(news, ns.load_item(run_dir), cps=cps, series=_series(run_dir),
+                       after_fix=audit_step.was_fixed(run_dir))
     for problem in problems:
         print(f"✗ {problem}")
-    print(f"{'FAIL' if problems else 'OK'}: {len(problems)} problem(s), ≈{ns.estimate_seconds(news)}s narration")
+    print(f"{'FAIL' if problems else 'OK'}: {len(problems)} problem(s), ≈{ns.estimate_seconds(news, cps)}s narration")
     return 1 if problems else 0
+
+
+def cmd_audit(run_dir: Path) -> int:
+    from content_farm.production.news import audit_step
+
+    channel = load_channel(read_channel_code(run_dir))
+    return audit_step.run(run_dir, channel.code, _series(run_dir))
 
 
 def cmd_prepare(run_dir: Path) -> int:
@@ -38,7 +67,8 @@ def cmd_prepare(run_dir: Path) -> int:
 
     path = run_dir / "script.json"
     previous = Script.model_validate_json(path.read_text(encoding="utf-8")) if path.is_file() else None
-    script = ns.keep_measured(ns.to_script(ns.load_script(run_dir)), previous)
+    branding, cps = _channel_words(run_dir)
+    script = ns.keep_measured(ns.to_script(ns.load_script(run_dir), branding=branding, cps=cps), previous)
     path.write_text(json.dumps(script.model_dump(mode="json"), ensure_ascii=False, indent=2), encoding="utf-8")
     voice_text = run_dir / ns.VOICE_TEXT_FILE
     text = ns.voice_text(script)
@@ -70,10 +100,10 @@ def cmd_weekly_check(run_dir: Path) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("command", choices=("lint", "prepare", "render", "weekly-check"))
+    parser.add_argument("command", choices=("lint", "audit", "prepare", "render", "weekly-check"))
     parser.add_argument("--run-dir", type=Path, required=True)
     args = parser.parse_args(argv)
-    handler = {"lint": cmd_lint, "prepare": cmd_prepare, "render": cmd_render,
+    handler = {"lint": cmd_lint, "audit": cmd_audit, "prepare": cmd_prepare, "render": cmd_render,
                "weekly-check": cmd_weekly_check}[args.command]
     try:
         return handler(args.run_dir.resolve())

@@ -218,6 +218,25 @@ def category(span: Span) -> str:
     return f"{span.kind}:{span.name}"
 
 
+def step_split(spans: list[Span]) -> list[dict[str, Any]]:
+    """Per local step: seconds spent queued for the machine vs. seconds actually executing (Leon 2026-10-23,
+    so a slow run shows whether it was slow work or waiting behind another video)."""
+    rows: dict[str, dict[str, float]] = defaultdict(lambda: {"runs": 0, "execute_s": 0.0, "queue_s": 0.0, "queued_runs": 0})
+    for span in spans:
+        if span.kind == "step" and span.lane == "local":
+            rows[span.name]["runs"] += 1
+            rows[span.name]["execute_s"] += span.seconds
+        elif span.kind == "queue":
+            name = span.name.rsplit(":", 1)[-1]
+            rows[name]["queue_s"] += span.seconds
+            rows[name]["queued_runs"] += 1
+    return sorted(({"step": name, "runs": int(v["runs"]), "execute_s": round(v["execute_s"], 1),
+                    "queue_s": round(v["queue_s"], 1), "queued_runs": int(v["queued_runs"]),
+                    "queue_share": round(v["queue_s"] / (v["queue_s"] + v["execute_s"]), 3)
+                    if v["queue_s"] + v["execute_s"] else 0.0}
+                   for name, v in rows.items()), key=lambda r: -(r["execute_s"] + r["queue_s"]))
+
+
 def build(run_dir: Path, *, channel: str = "", queue_history: Path | None = None,
           since: str = "", until: str = "") -> dict[str, Any]:
     """The whole ledger of one run-dir as a JSON-ready dict. ``since``/``until`` (ISO) keep only the spans
@@ -251,6 +270,7 @@ def build(run_dir: Path, *, channel: str = "", queue_history: Path | None = None
                                "share_of_machine": round(v["seconds"] / machine, 3) if machine else 0.0}
                               for k, v in by_cat.items()), key=lambda c: -c["seconds"]),
         "rework": rework_rows(spans),
+        "steps": step_split([s for s in spans if s.seconds >= 1.0 or s.kind == "queue"]),
         "spans": [{**asdict(s), "start": iso(s.start), "end": iso(s.end), "seconds": round(s.seconds, 1)} for s in spans],
     }
 

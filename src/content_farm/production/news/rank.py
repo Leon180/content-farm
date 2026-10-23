@@ -44,6 +44,16 @@ TAIWAN_KEYWORDS: Mapping[str, float] = {
 # Topics the series does not cover (rules: 不給投資建議; no crypto pumping; no US partisan politics).
 EXCLUDE_PATTERNS = (r"\bcrypto|bitcoin|ethereum|\bnft\b|memecoin", r"\btrump\b|\bbiden\b|election")
 
+# Entertainment profile: what a Taiwanese audience follows (Taiwan / Japan / Korea / Chinese-language industry).
+ENT_KEYWORDS: Mapping[str, float] = {
+    r"台灣|臺灣|台北|taiwan": 0.9,
+    r"金曲|金鐘|金馬|金像|葛萊美|奧斯卡|艾美|grammy|oscar|emmy|golden globe|blue dragon|青龍": 0.9,
+    r"演唱會|巡演|巡迴|世界巡|concert|world tour|fan ?meeting|見面會": 0.8,
+    r"專輯|新歌|單曲|回歸|出道|打歌|mv\b|album|comeback|debut|ライブ|アルバム": 0.7,
+    r"票房|上映|首映|電影|影集|戲劇|劇集|連續劇|綜藝|box office|premiere|series|film|drama|season": 0.7,
+    r"k-?pop|j-?pop|偶像|團體|男團|女團|idol|ジャニーズ|アイドル": 0.6,
+    r"netflix|disney|hbo|apple tv|prime video|kkbox|friday|愛奇藝|iqiyi|youtube": 0.5,
+}
 _TRACKING = re.compile(r"^(utm_|ref$|ref_src$|fbclid$|gclid$|mc_)")
 _WORD = re.compile(r"[a-z0-9]+|[一-鿿]")
 
@@ -102,6 +112,17 @@ def dedupe(candidates: Iterable[Candidate]) -> list[Candidate]:
     return merged
 
 
+def relevance_ent(candidate: Candidate) -> tuple[float, tuple[str, ...]]:
+    """Entertainment: weighted keywords over title + feed summary; a bare headline still scores 0.2 (the panel decides)."""
+    text = " ".join((candidate.title, candidate.summary, " ".join(candidate.tags))).lower()
+    hits = [(pattern, w) for pattern, w in ENT_KEYWORDS.items() if re.search(pattern, text)]
+    if not hits:
+        return 0.2, ()
+    weights = sorted((w for _, w in hits), reverse=True)
+    reasons = tuple(re.search(p, text).group(0) for p, _ in hits)  # type: ignore[union-attr]
+    return round(min(1.0, weights[0] + 0.2 * sum(weights[1:])), 3), reasons
+
+
 def relevance(candidate: Candidate) -> tuple[float, tuple[str, ...]]:
     text = " ".join((candidate.title, candidate.domain, " ".join(candidate.tags))).lower()
     if any(re.search(p, text) for p in EXCLUDE_PATTERNS):
@@ -129,16 +150,29 @@ def _rank_score(candidate: Candidate, site: str, list_size: int) -> float:
     return max(0.0, 1.0 - (min(ranks) - 1) / list_size)
 
 
+def _outlet_score(candidate: Candidate, list_size: int) -> float:
+    """Whitelisted-outlet stories: list position (0.6 weight) + 0.25 per extra outlet that carries the same story."""
+    feeds = [d for d in candidate.discussions if d.site == "rss"]
+    if not feeds:
+        return 0.0
+    position = max(0.0, 1.0 - (min(d.rank or list_size for d in feeds) - 1) / max(list_size, 1))
+    return min(1.0, 0.6 * position + 0.25 * (len(feeds) - 1))
+
+
 def popularity(candidates: Sequence[Candidate], weights: Weights) -> dict[str, float]:
     raw = {c.id: _hn_raw(c, weights.comments) for c in candidates}
     best = max(raw.values(), default=0.0) or 1.0
     lob_n = sum(any(d.site == "lobsters" for d in c.discussions) for c in candidates)
     arx_n = sum(any(d.site == "arxiv" for d in c.discussions) for c in candidates)
+    gh_n = sum(any(d.site == "github" for d in c.discussions) for c in candidates)
+    rss_n = sum(any(d.site == "rss" for d in c.discussions) for c in candidates)
     out = {}
     for c in candidates:
         values = [raw[c.id] / best,
                   0.6 * _rank_score(c, "lobsters", lob_n),   # a Lobsters front page < an HN front page
-                  0.3 * _rank_score(c, "arxiv", arx_n)]      # a fresh paper alone is rarely news
+                  0.3 * _rank_score(c, "arxiv", arx_n),      # a fresh paper alone is rarely news
+                  0.55 * _rank_score(c, "github", gh_n),     # a trending repo alone: a tool, rarely a story
+                  _outlet_score(c, rss_n)]                   # whitelisted outlets: how many carry it, and how high
         bonus = 0.1 if len({d.site for d in c.discussions}) > 1 else 0.0  # on two sites
         out[c.id] = round(min(1.0, max(values) + bonus), 3)
     return out
@@ -149,12 +183,12 @@ def age_hours(candidate: Candidate, now: datetime) -> float:
 
 
 def rank(candidates: Iterable[Candidate], now: datetime, weights: Weights = Weights(),
-         max_age_hours: float = MAX_AGE_HOURS) -> list[Ranked]:
+         max_age_hours: float = MAX_AGE_HOURS, profile: str = "tech") -> list[Ranked]:
     unique = [c for c in dedupe(candidates) if -1 <= age_hours(c, now) <= max_age_hours]  # -1: clock skew
     pop = popularity(unique, weights)
     ranked = []
     for c in unique:
-        rel, reasons = relevance(c)
+        rel, reasons = relevance_ent(c) if profile == "ent" else relevance(c)
         if reasons == ("excluded",):
             continue
         age = max(0.0, age_hours(c, now))

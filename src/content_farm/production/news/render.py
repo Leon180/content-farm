@@ -80,16 +80,33 @@ def _env() -> Environment:
     return Environment(loader=FileSystemLoader(TEMPLATES), autoescape=select_autoescape(["html", "j2"]))
 
 
+def source_card(run_dir: Path) -> dict[str, str]:
+    """The self-made 'screenshot' of the source's title area: domain, title, date (no page copy)."""
+    item = ns.load_item(run_dir)
+    read, cand = item.get("read") or {}, item.get("candidate") or {}
+    when = (read.get("published") or cand.get("posted_at") or "")[:10]
+    return {"domain": cand.get("domain", ""), "title": (read.get("page_title") or cand.get("title", ""))[:120],
+            "date": f"發布 {when}" if when else ""}
+
+
 def page_html(mode: str, *, news: ns.NewsScript, channel: Channel, day: str, index: int = 0,
-              duration: float = 0.1, mascot: dict[str, str] | None = None) -> str:
+              duration: float = 0.1, mascot: dict[str, str] | None = None,
+              card: dict[str, str] | None = None) -> str:
+    from content_farm.production.news.series import branding_for, news_series
+
     beat = news.beats[index] if mode != "end" else None
     kind = beat.kind if beat else "end"
+    series = news_series(channel)
     return _env().get_template("news_short.html.j2").render(
         mode=mode, beat=beat, index=index, kinds=ns.BEAT_ORDER, day=day,
-        label=ns.BEAT_LABELS.get(kind, ""), brand_css=brand_css_path(channel.brand).read_text(encoding="utf-8"),
+        series_name=series.name if "news" in channel.series else "晶片貓 HN 快報", end_label=series.end_label,
+        has_mascot=channel.mascot.rig_ready, card=card or {"domain": "", "title": "", "date": ""},
+        label=branding_for(channel).labels().get(kind, ""), brand_css=brand_css_path(channel.brand).read_text(encoding="utf-8"),
         reveal_at=reveal_times(len(beat.screen.points) if beat else 0, duration), duration=f"{duration:.3f}",
         mascot=mascot or {"closed": "", "open": ""}, talking=mode == "beat",
-        bubble=(beat.term if beat and beat.kind == "analogy" and beat.term else BUBBLES.get(kind, "週六見！")),
+        bubble=(beat.term if beat and beat.kind == "analogy" and beat.term else
+                {**BUBBLES, **series.bubbles}.get(kind, "週六見！" if "news" not in channel.series else series.end_label)),
+        end_headline=series.end_headline.split("\n"), end_points=series.end_points,
         source=source_strip(news))
 
 
@@ -151,7 +168,7 @@ def _compose(work: Path, clips: list[Path], audio: Path, total: float, out: Path
 def write_credits(run_dir: Path, news: ns.NewsScript) -> Path:
     """No third-party media: self-made pages, the chipcat rig, our narration. Sources go in the description."""
     payload = {"version": 1, "title": news.title, "entries": [], "pending": [], "description_text": "",
-               "derived_from": {"series": "hn", "item_id": news.item_id,
+               "derived_from": {"series": ns.load_item(run_dir).get("series", "hn"), "item_id": news.item_id,
                                 "sources": [s.model_dump() for s in news.sources]}}
     path = run_dir / "credits.json"
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -184,23 +201,28 @@ def render_news_short(run_dir: Path, channel: Channel) -> RenderResult:
     work = run_dir / WORK
     work.mkdir(parents=True, exist_ok=True)
     cues = _subtitles(run_dir, work)
-    poses = {b.pose or ns.DEFAULT_POSE[b.kind] for b in news.beats} | {"wave"}
-    cats = mascot_stills(work, poses)
+    card = source_card(run_dir)
+    if channel.mascot.rig_ready:
+        poses = {b.pose or ns.DEFAULT_POSE[b.kind] for b in news.beats} | {"wave"}
+        cats = mascot_stills(work, poses)
+    else:      # no character (technews): the lower third is the source card
+        cats = {pose: {"closed": "", "open": ""} for pose in (*ns.DEFAULT_POSE.values(), "wave")}
     clips = []
     with PageCapturer(size=SIZE) as capturer:
         for i, (beat, seconds) in enumerate(zip(news.beats, durations)):
             html = work / f"beat_{i + 1}_{beat.kind}.html"
             html.write_text(page_html("beat", news=news, channel=channel, day=day, index=i, duration=seconds,
-                                      mascot=cats[beat.pose or ns.DEFAULT_POSE[beat.kind]]), encoding="utf-8")
+                                      mascot=cats[beat.pose or ns.DEFAULT_POSE[beat.kind]], card=card), encoding="utf-8")
             clips.append(capturer.animate(html, work / f"beat_{i + 1}.mp4", seconds).clip)
         end = work / "end.html"
         end.write_text(page_html("end", news=news, channel=channel, day=day, duration=ns.END_CARD_SECONDS,
-                                 mascot={"closed": cats["wave"]["closed"], "open": ""}), encoding="utf-8")
+                                 mascot={"closed": cats["wave"]["closed"], "open": ""}, card=card), encoding="utf-8")
         clips.append(capturer.animate(end, work / "end.mp4", ns.END_CARD_SECONDS).clip)
         thumb = work / "thumb.html"
         hook = news.beats[0]
         thumb.write_text(page_html("thumb", news=news, channel=channel, day=day, index=0,
-                                   mascot={"closed": cats[hook.pose or ns.DEFAULT_POSE["hook"]]["closed"], "open": ""}),
+                                   mascot={"closed": cats[hook.pose or ns.DEFAULT_POSE["hook"]]["closed"], "open": ""},
+                                   card=card),
                          encoding="utf-8")
         capturer.still(thumb, run_dir / "thumbnails" / "thumbnail.png")
     audio = _concat_audio(run_dir, len(durations), work / "narration.wav")

@@ -29,12 +29,14 @@ RECEIPT = {"type": "object", "additionalProperties": False, "required": ["files"
 TOOLS = ("Read", "Write", "Edit", "Glob", "Grep", "WebSearch", "WebFetch")   # + Bash scoped to the repo python
 
 SCRIPTS = ("check_article.py", "deck_to_script.py", "apply_deck_patch.py", "make_thumbnail.py", "render_slides.py",
-           "check_skit.py")
-TIMEOUT_S = {"topic": 1500, "article": 2700, "deck": 3600, "thumbnail_spec": 1800, "skit_script": 900}
+           "check_skit.py", "news.py")
+TIMEOUT_S = {"topic": 1500, "article": 2700, "deck": 3600, "thumbnail_spec": 1800, "skit_script": 900,
+             "news_script": 900}
 
 # step → (stage whose producer tier applies, gate whose fixes apply)
 STEP_STAGE = {"topic": ("topic", "topic"), "article": ("article", "article"), "deck": ("script_structure", "deck"),
-              "thumbnail_spec": ("title_thumb", "title"), "skit_script": ("shorts_script", "script")}
+              "thumbnail_spec": ("title_thumb", "title"), "skit_script": ("shorts_script", "script"),
+              "news_script": ("shorts_script", "script")}
 # a short channel's topic step is the shorts_topic stage (sonnet producer, not the long videos' opus plan stage)
 SHORT_TOPIC_STAGE = "shorts_topic"
 
@@ -79,7 +81,35 @@ TASKS = {
 （不要停下來等人審）寫 script.json：鋪陳 → 停 0.6 秒（最後一場鋪陳的 transition 填 pause:0.6）→ 笑點（≤ 40 字）→ 可省的收尾；總長 20–50 秒。
 角色只有頻道設定裡的飲水機金魚（{repo}/channels/{channel}.yaml），不新增角色或設定；笑話必須原創，不搬運他人段子、不用其他頻道的口頭禪。
 寫完跑 `{python} {repo}/scripts/check_skit.py --run-dir {run_dir}`，改到 0 problem(s)。""",
+    "news_script": """任務：科技新聞 Short 稿（news_script.json）。這則的原文已讀過並快取：news_short.json（題目、來源、讀取時間、text_path 指到原文快取）。
+照 {repo}/.claude/skills/news-short/SKILL.md 的五段格式與 lint 規則寫 news_script.json（不要停下來等人審）；頻道是「{channel}」：
+讀 {repo}/channels/{channel}.yaml 的 identity 與 series.news。沒有角色（稿裡不要出現晶片貓或任何主持角色，pose 欄位留空）、
+第五段是頻道自己的原創評論（標籤見 series.news.take_label，要看得出是觀點）、台灣中文口語、新聞感：結論先行、句子短、數字有單位。
+只能用 text_path 裡實際讀到的原文當事實來源（討論串只當線索）；原文沒有台灣資料就照實說，不自己補數字。
+sources 的 read_at 抄 news_short.json 的 read.read_at。寫完跑 `{python} {repo}/scripts/news.py lint --run-dir {run_dir}`，改到通過。""",
 }
+# Entertainment news (channel ent, series.news.claims_audit): the same five-beat Short, but every sentence of fact carries a
+# claim the program checks against the page that was read (production/news/claims.py).
+TASK_NEWS_CLAIMS = """任務：娛樂新聞 Short 稿（news_script.json）。這則的原文已讀過並快取：news_short.json（題目、read.url、read.read_at、read.text_path 指到原文快取）。
+照 {repo}/.claude/skills/news-short/SKILL.md 的五段格式與 lint 規則寫 news_script.json（不要停下來等人審），頻道是「{channel}」，讀
+{repo}/channels/{channel}.yaml 的 identity 與 series.news。本頻道的差異：沒有角色（pose 欄位留空）；第 3 段 why 是「背景脈絡」；
+第 4 段 analogy 是「各方說法」（已證實的 vs 媒體報導的，term 填空字串，不需要比喻）；第 5 段 take 是頻道自己的原創編輯觀點（意見，不是事實）。
+護欄——程式會逐句查，違反的句子會被自動刪掉或改寫，所以一開始就寫對：
+1. 前四段（hook／what／why／analogy）的每一句事實，都要在該段的 claims 陣列有一筆 {{"sentence","source","status","evidence","confirmed_by"}}：
+   sentence 與旁白那一句逐字相同；source＝news_short.json 的 read.url（只能引用這一頁）；evidence＝從 text_path 原文逐字複製的一段（至少 6 個字，
+   原文是日文或英文就貼原文，不要翻譯、不要改字）。
+2. status 只有兩種：confirmed＝當事人本人、經紀公司或官方自己說的（evidence 要是他們說話或發布聲明的那段，confirmed_by 寫是誰，且這個稱呼要出現在句子裡，
+   例如「經紀公司證實…」）；其他一律 reported，句子必須寫成「據{{媒體名}}報導，…」（媒體名用 channels/{channel}.yaml series.news.feeds 的 name，例如「據自由時報報導」）。
+   未經當事人或經紀公司證實的內容絕對不能直接講成事實。
+3. 只能用這一篇原文的內容，不寫原文沒有的事、不加推測、不猜動機；不確定的句子就刪掉。
+4. 不碰：未成年人、性醜聞細節、病情與死因臆測、私人住址與家人。題材碰到這些就停止，在回報裡說明做不下去，不要硬寫。
+5. sources 只放白名單媒體（channels/{channel}.yaml series.news.feeds 的 domains），read_at 抄 read.read_at。
+6. take（編輯觀點）不需要 claims，但不可斷言新的事實、不可指控或評論任何人的私生活。
+台灣中文口語、新聞感：結論先行、句子短。寫完跑 `{python} {repo}/scripts/news.py lint --run-dir {run_dir}`，改到通過（句子的出處由後面的 audit 步驟再查一次）。"""
+TASK_NEWS_CLAIMS_REWORK = """任務：娛樂新聞 Short 稿退回重做。news_script.json 已經存在；依下面的修改清單改被點名的句子
+（句子 id c<場>.<序>，場＝第幾段 beat，從 1 起），其他段與 sources 不動。每一句事實仍要有 claims 裡逐字相同的一筆（source＝read.url、
+evidence 從原文快取逐字複製）；傳聞一律寫成「據{{媒體名}}報導，…」，只有當事人／經紀公司／官方自己說的才標 confirmed 並在句子裡點名是誰。
+改完跑 `{python} {repo}/scripts/news.py lint --run-dir {run_dir}`，改到通過。"""
 # A short joke channel's topic step: jokes need no sources, only premises the single character can act out.
 TASK_SKIT_TOPIC = """任務：冷笑話選題候選。讀 {repo}/channels/{channel}.yaml（topic_categories、角色飲水機金魚、規則）與
 {repo}/channels/backlog/{channel}.yaml（kind: short、status 不是 dropped／published 的題目可沿用或改寫），整理 8–10 個原創冷笑話題目，
@@ -104,6 +134,9 @@ TASKS_REWORK = {
     "skit_script": """任務：冷笑話劇本退回重做。script.json 已經存在；依下面的修改清單改被點名的句子（句子 id c<場>.<序>），不要換題、不要換笑點的梗，
 其他場景不動。結構（鋪陳／笑點／收尾 的 title、最後一場鋪陳的 transition pause:0.6、金魚表情）不能破壞。
 整體問題（例如鋪陳太長、笑點沒翻轉）才可以重寫該場景。改完跑 `{python} {repo}/scripts/check_skit.py --run-dir {run_dir}`，改到 0 problem(s)。""",
+    "news_script": """任務：科技新聞 Short 稿退回重做。news_script.json 已經存在；依下面的修改清單改被點名的句子
+（句子 id c<場>.<序>，場＝第幾段 beat，從 1 起），改 beats[].narration／screen，其他段與 sources 不動，事實只能來自原文快取（news_short.json 的 text_path）。
+改完跑 `{python} {repo}/scripts/news.py lint --run-dir {run_dir}`，改到通過；總長仍要在 lint 的秒數範圍內。""",
 }
 # Article sent back by the script_structure panel (Leon 2026-10-23): a structure-level rewrite, not a fact fix.
 ARTICLE_STRUCTURE_REWORK = """任務：文章結構退回重做。腳本評審指出文章的結構問題（例如名詞表／時間軸堆疊、缺留人點、論點不推進）；article.md 與 sources.json 已經存在。
@@ -192,6 +225,16 @@ def is_skit_channel(channel: str) -> bool:
         return False
 
 
+def is_claims_channel(channel: str) -> bool:
+    """An entertainment-news channel: its Short script carries sourced claims (series.news.claims_audit)."""
+    from content_farm.production.channels import load_channel
+
+    try:
+        return bool((load_channel(channel).series.get("news") or {}).get("claims_audit"))
+    except (FileNotFoundError, ValueError):
+        return False
+
+
 def producer_tier(config: ReviewConfig, step: str, *, skit: bool = False) -> Tier:
     stage, _ = STEP_STAGE[step]
     if skit and step == "topic":
@@ -245,6 +288,8 @@ def produce(step: str, run_dir: Path, *, channel: str, config: ReviewConfig, pyt
     task = TASKS_REWORK[step] if fixes and step in TASKS_REWORK else TASKS[step]     # a rework is a diff, not a redo
     if skit and step == "topic":
         task = TASK_SKIT_TOPIC
+    if step == "news_script" and is_claims_channel(channel):
+        task = TASK_NEWS_CLAIMS_REWORK if fixes else TASK_NEWS_CLAIMS
     if step == "article" and fixes and gate != "article":      # sent back by the script panel: a structure rewrite
         task = ARTICLE_STRUCTURE_REWORK
     guide = (deck_brief(config, channel, python, str(REPO), rework=task is TASKS_REWORK[step])

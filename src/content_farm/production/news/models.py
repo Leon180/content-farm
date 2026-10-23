@@ -12,7 +12,7 @@ class _Frozen(BaseModel):
 class Discussion(_Frozen):
     """Where people talk about the story. Leads only — never quoted as fact."""
 
-    site: str = Field(pattern="^(hn|lobsters|arxiv)$")
+    site: str = Field(pattern="^(hn|lobsters|arxiv|github|rss)$")   # "rss": a whitelisted outlet's own feed (ent)
     url: str
     points: int | None = None        # Lobsters RSS and arXiv carry no score
     comments: int | None = None
@@ -27,7 +27,8 @@ class Candidate(_Frozen):
     posted_at: str                                      # ISO-8601 UTC, earliest sighting
     discussions: tuple[Discussion, ...] = ()
     tags: tuple[str, ...] = ()                          # source tags (Lobsters categories, arXiv cats)
-    summary: str = ""                                   # arXiv abstract only; empty otherwise
+    summary: str = ""                                   # arXiv abstract / RSS description; empty otherwise
+    publisher: str = ""                                 # whitelisted outlet name (ent); empty for tech sources
 
 
 class Read(_Frozen):

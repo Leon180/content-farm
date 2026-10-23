@@ -1,4 +1,2 @@
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-kyubi-tweak/REPORT-kyubi-tweak.md","min_bytes":1500,"why":"預期產物"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-kyubi-tweak/output/yokai-kyubi-v3/assembly/release.mp4","min_bytes":1000000,"why":"成片"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-kyubi-tweak/artifacts/kyubi-tweak/kyubi-tweak-part2.mp4","min_bytes":1000000,"why":"預覽"}
-{"kind":"no_unpushed","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-kyubi-tweak","why":"（預期不符：本分支未 push，依規定不 push）"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-kyubi-tweak/REPORT-kyubi-tweak.md","min_bytes":1500,"why":"merged-in kyubi-tweak claim"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-ent/REPORT-ent.md","min_bytes":2000,"why":"merged-in ent claim"}
