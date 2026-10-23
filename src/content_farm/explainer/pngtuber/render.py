@@ -52,17 +52,16 @@ NOD_SHIFT = 0.018        # ... and vertical, share of the figure height
 SHADOW_ALPHA = 0.30
 
 
-def depth_warp(img: Image.Image, depth: np.ndarray, dx: float, dy: float) -> Image.Image:
-    """Backward bilinear remap: a pixel at depth d samples from (x - dx·(d-½), y - dy·(d-½)), so near
-    parts slide past far ones like a small head turn. Premultiplied alpha keeps edges clean."""
+def remap(img: Image.Image, off_x: np.ndarray, off_y: np.ndarray) -> Image.Image:
+    """Backward bilinear remap: output pixel (x, y) samples from (x - off_x, y - off_y). Premultiplied
+    alpha keeps edges clean."""
     arr = np.asarray(img, dtype=np.float32) / 255.0
     rgb = arr[..., :3] * arr[..., 3:4]
     pre = np.concatenate([rgb, arr[..., 3:4]], axis=-1)
-    h, w = depth.shape
+    h, w = off_x.shape
     yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
-    off = depth - 0.5
-    sx = np.clip(xx - dx * off, 0, w - 1.001)
-    sy = np.clip(yy - dy * off, 0, h - 1.001)
+    sx = np.clip(xx - off_x, 0, w - 1.001)
+    sy = np.clip(yy - off_y, 0, h - 1.001)
     x0, y0 = sx.astype(np.int32), sy.astype(np.int32)
     fx, fy = (sx - x0)[..., None], (sy - y0)[..., None]
     out = (pre[y0, x0] * (1 - fx) * (1 - fy) + pre[y0, x0 + 1] * fx * (1 - fy)
@@ -70,6 +69,25 @@ def depth_warp(img: Image.Image, depth: np.ndarray, dx: float, dy: float) -> Ima
     alpha = out[..., 3:4]
     rgb = np.where(alpha > 1e-4, out[..., :3] / np.maximum(alpha, 1e-4), 0.0)
     return Image.fromarray((np.concatenate([rgb, alpha], axis=-1) * 255).round().astype(np.uint8))
+
+
+def depth_warp(img: Image.Image, depth: np.ndarray, dx: float, dy: float) -> Image.Image:
+    """A pixel at depth d samples from (x - dx·(d-½), y - dy·(d-½)), so near parts slide past far
+    ones like a small head turn."""
+    off = depth - 0.5
+    return remap(img, dx * off, dy * off)
+
+
+HEAD_FALLOFF = 2.0   # head_warp weight = (1 - y/h) ** this: the head moves, the belly barely, the feet never
+
+
+def head_warp(img: Image.Image, dx: float, dy: float) -> Image.Image:
+    """Move the top of a flat figure by (dx, dy) px with the feet pinned: a nod / head drift that
+    needs no depth map and no body split."""
+    h, w = img.height, img.width
+    weight = np.clip(1.0 - np.arange(h, dtype=np.float32) / h, 0.0, 1.0) ** HEAD_FALLOFF
+    col = np.broadcast_to(weight[:, None], (h, w))
+    return remap(img, dx * col, dy * col)
 
 
 def draw_bubbles(img: Image.Image, bubbles: Sequence[tuple[float, float, float, float]], offset: tuple[int, int],
@@ -154,6 +172,8 @@ class Composer:
         if frame.bubbles:
             img = draw_bubbles(img, frame.bubbles, self.bbox[:2], self.scale)
         base_w = img.width
+        if frame.head_dx or frame.head_dy:
+            img = head_warp(img, frame.head_dx, frame.head_dy)
         squash = frame.squash if self.depth is not None else 0.0
         if self.depth is not None:
             img = depth_warp(img, self.depth, YAW_SHIFT * img.width * frame.yaw, NOD_SHIFT * img.height * frame.nod)

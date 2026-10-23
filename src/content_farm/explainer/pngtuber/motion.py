@@ -16,13 +16,17 @@ from content_farm.explainer.mascot import idle
 from content_farm.explainer.mascot.cues import SceneCue
 from content_farm.explainer.mascot.motion import cue_at
 from content_farm.explainer.pngtuber.pack import Pack
+from content_farm.explainer.pngtuber.profiles import LEGACY, MotionProfile
 
-MOUTH_HALF_AT = 0.12     # envelope level where the half-open mouth starts
-MOUTH_OPEN_AT = 0.45     # ... and the wide-open one
-MOUTH_HOLD_FRAMES = 2    # a mouth shape stays at least this long (no 1-frame flicker)
-BREATH_SCALE = 0.018     # vertical stretch at the top of a breath
-SWAY_DEG, SWAY_PERIOD_S = 1.4, 5.3
-BOUNCE_PX = 6.0          # lift while talking, scaled by the envelope
+MOUTH_HALF_AT = LEGACY.mouth_half_at     # envelope level where the half-open mouth starts
+MOUTH_OPEN_AT = LEGACY.mouth_open_at     # ... and the wide-open one
+MOUTH_HOLD_FRAMES = LEGACY.mouth_hold    # a mouth shape stays at least this long (no 1-frame flicker)
+BREATH_SCALE = LEGACY.breath_scale       # vertical stretch at the top of a breath
+SWAY_DEG, SWAY_PERIOD_S = LEGACY.sway_deg, 5.3
+BOUNCE_PX = LEGACY.bounce_px             # lift while talking, scaled by the envelope
+HEAD_DRIFT_PERIOD_S = 6.1
+BEAT_FRAMES, BEAT_LAND_FRAMES, BEAT_GAP_FRAMES = 7, 4, 8   # hop up/down, squash on landing, refractory
+BEAT_RISE, BEAT_MIN_LEVEL = 0.18, 0.35                      # envelope rise over 3 frames that counts as an onset
 NO_BLINK = {"surprised"}  # wide-eyed hold: a neutral blink patch would not cover it
 
 
@@ -38,6 +42,9 @@ class HostFrame:
     yaw: float = 0.0     # -1..1 head turn: near pixels shift sideways more than far ones
     nod: float = 0.0     # -1..1 nod: the same, vertically
     squash: float = 0.0  # 0..1 talk squash: wider and shorter
+    # head-only pose (any pack): px of the head's offset, feet pinned; positive dy = down
+    head_dx: float = 0.0
+    head_dy: float = 0.0
     bubbles: tuple[tuple[float, float, float, float], ...] = ()   # speech_fx: (x, y, radius, alpha), pack px
 
 
@@ -45,16 +52,50 @@ YAW_PERIOD_S, NOD_PERIOD_S = 7.7, 4.6
 TALK_SQUASH = 0.035      # at a fully open mouth
 
 
-def mouth_levels(envelope: np.ndarray, hold: int = MOUTH_HOLD_FRAMES) -> np.ndarray:
-    target = np.where(envelope >= MOUTH_OPEN_AT, 2, np.where(envelope >= MOUTH_HALF_AT, 1, 0))
+def mouth_levels(envelope: np.ndarray, hold: int = MOUTH_HOLD_FRAMES, half_at: float = MOUTH_HALF_AT,
+                 open_at: float = MOUTH_OPEN_AT, open_max: int = 0) -> np.ndarray:
+    """Closed/half/open per frame. ``open_max`` > 0 eases a wide mouth back to half after that many
+    frames, so a sustained loud vowel chatters instead of staring open."""
+    target = np.where(envelope >= open_at, 2, np.where(envelope >= half_at, 1, 0))
     out = np.zeros(len(target), dtype=np.int8)
     current, held = 0, hold
     for i, goal in enumerate(target):
+        if open_max and goal == 2 and current == 2 and held >= open_max:
+            goal = 1
         if goal != current and held >= hold:
             current, held = int(goal), 0
         held += 1
         out[i] = current
     return out
+
+
+def smooth(envelope: np.ndarray, frames: int) -> np.ndarray:
+    """Centered moving average (same length); ``frames`` <= 1 returns the input."""
+    if frames <= 1:
+        return envelope
+    padded = np.pad(envelope, (frames // 2, frames - 1 - frames // 2), mode="edge")
+    return np.convolve(padded, np.ones(frames) / frames, mode="valid")
+
+
+def beat_track(envelope: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """(hop, stretch) per frame from voice onsets: an eased hop of BEAT_FRAMES after each onset, then
+    a short squash on landing. Onset = the envelope rose BEAT_RISE over 3 frames to >= BEAT_MIN_LEVEL;
+    onsets closer than BEAT_GAP_FRAMES are ignored. Both are 0..1 (stretch is negative on landing)."""
+    n = len(envelope)
+    hop, stretch = np.zeros(n), np.zeros(n)
+    last = -BEAT_GAP_FRAMES
+    for i in range(3, n):
+        if i - last >= BEAT_GAP_FRAMES and envelope[i] >= BEAT_MIN_LEVEL and envelope[i] - envelope[i - 3] >= BEAT_RISE:
+            last = i
+            for k in range(BEAT_FRAMES):
+                if i + k < n:
+                    hop[i + k] = max(hop[i + k], math.sin(math.pi * (k + 1) / (BEAT_FRAMES + 1)))
+                    stretch[i + k] = max(stretch[i + k], math.sin(math.pi * (k + 1) / (BEAT_FRAMES + 1)))
+            for k in range(BEAT_LAND_FRAMES):
+                j = i + BEAT_FRAMES + k
+                if j < n and hop[j] == 0:
+                    stretch[j] = -0.5 * math.sin(math.pi * (k + 1) / (BEAT_LAND_FRAMES + 1))
+    return hop, stretch
 
 
 BUBBLE_IDLE_RATE = 0.3       # bubbles per second while silent ("now and then one or two")
@@ -96,27 +137,34 @@ def bubble_track(envelope: np.ndarray, fps: float, n_frames: int, fx: dict,
 
 
 def host_frames(cues: Sequence[SceneCue], envelope: np.ndarray, fps: float, n_frames: int, pack: Pack,
-                seed: int = 7) -> tuple[HostFrame, ...]:
+                seed: int = 7, profile: MotionProfile = LEGACY) -> tuple[HostFrame, ...]:
     if len(envelope) < n_frames:
         envelope = np.pad(envelope, (0, n_frames - len(envelope)))
+    envelope = np.asarray(envelope[:n_frames])
     duration = n_frames / fps
     blinks = idle.blink_schedule(duration, seed)
-    mouths = mouth_levels(np.asarray(envelope[:n_frames]))
+    mouths = mouth_levels(envelope, profile.mouth_hold, profile.mouth_half_at, profile.mouth_open_at,
+                          profile.mouth_open_max)
+    body = smooth(envelope, profile.smooth_frames)
+    hop, hop_stretch = beat_track(envelope) if profile.beat_px else (np.zeros(n_frames), np.zeros(n_frames))
     phase = (seed % 97) / 97 * 2 * math.pi
-    bubbles = (bubble_track(np.asarray(envelope), fps, n_frames, pack.speech_fx, seed)
+    bubbles = (bubble_track(envelope, fps, n_frames, pack.speech_fx, seed)
                if pack.speech_fx else [()] * n_frames)
     frames = []
     for i in range(n_frames):
         t = i / fps
         expression = pack.expression_for(cues[cue_at(cues, t)].pose) if cues else "neutral"
         blink = expression not in NO_BLINK and idle.blink_closure(t, blinks) > 0.5
+        mouth = int(mouths[i]) if profile.mouth_on_expression or expression == "neutral" else 0
         frames.append(HostFrame(
-            expression=expression, mouth=int(mouths[i]), blink=blink,
-            stretch=1.0 + BREATH_SCALE * idle.breath(t),
-            angle=SWAY_DEG * math.sin(2 * math.pi * t / SWAY_PERIOD_S + phase),
-            lift=BOUNCE_PX * float(envelope[i]),
+            expression=expression, mouth=mouth, blink=blink,
+            stretch=1.0 + profile.breath_scale * idle.breath(t) + profile.beat_stretch * float(hop_stretch[i]),
+            angle=profile.sway_deg * math.sin(2 * math.pi * t / SWAY_PERIOD_S + phase),
+            lift=profile.bounce_px * float(body[i]) + profile.beat_px * float(hop[i]),
             yaw=math.sin(2 * math.pi * t / YAW_PERIOD_S + 2 * phase),
             nod=0.6 * math.sin(2 * math.pi * t / NOD_PERIOD_S + 3 * phase),
             squash=TALK_SQUASH * float(envelope[i]),
+            head_dx=profile.head_drift_px * math.sin(2 * math.pi * t / HEAD_DRIFT_PERIOD_S + phase),
+            head_dy=profile.head_nod_px * float(body[i]),
             bubbles=bubbles[i]))
     return tuple(frames)

@@ -19,6 +19,7 @@ from content_farm.explainer.mascot.overlay import overlay
 from content_farm.explainer.mascot.run import VideoInfo, mouth_for_run, probe_video
 from content_farm.explainer.pngtuber.motion import HostFrame, host_frames
 from content_farm.explainer.pngtuber.pack import load_pack
+from content_farm.explainer.pngtuber.profiles import LEGACY, MotionProfile, get_profile
 from content_farm.explainer.pngtuber.render import PLACEMENTS, Composer, Placement, RenderStats, render_alpha_video
 
 
@@ -41,17 +42,21 @@ def placement_for(info: VideoInfo) -> Placement:
 
 
 def frames_for_run(run_dir: Path, info: VideoInfo, pack_ref: str, seed: int,
-                   limit: int | None = None, cues: tuple[SceneCue, ...] | None = None) -> tuple[HostFrame, ...]:
+                   limit: int | None = None, cues: tuple[SceneCue, ...] | None = None,
+                   profile: MotionProfile = LEGACY) -> tuple[HostFrame, ...]:
     cues = cues if cues is not None else cues_from_run(run_dir)
     envelope = mouth_for_run(run_dir, cues, info.fps, info.frames)
-    frames = host_frames(cues, np.asarray(envelope), info.fps, info.frames, load_pack(pack_ref), seed=seed)
+    frames = host_frames(cues, np.asarray(envelope), info.fps, info.frames, load_pack(pack_ref), seed=seed,
+                         profile=profile)
     return frames[:limit] if limit else frames
 
 
 def run_host_overlay(run_dir: Path, pack_ref: str, *, seed: int = 7, seconds: float | None = None,
-                     out: Path | None = None, cues: tuple[SceneCue, ...] | None = None) -> HostResult:
+                     out: Path | None = None, cues: tuple[SceneCue, ...] | None = None,
+                     motion_profile: str | None = None) -> HostResult:
     """Render the PNGtuber for ``assembly/draft.mp4`` and write ``assembly/final.mp4``.
-    ``cues`` overrides the deck/script cues (scripted Shorts pass their beat poses)."""
+    ``cues`` overrides the deck/script cues (scripted Shorts pass their beat poses);
+    ``motion_profile`` names a pngtuber.profiles entry (default: legacy)."""
     draft = run_dir / "assembly" / "draft.mp4"
     if not draft.is_file():
         raise FileNotFoundError(f"missing {draft}")
@@ -60,7 +65,7 @@ def run_host_overlay(run_dir: Path, pack_ref: str, *, seed: int = 7, seconds: fl
     timings: dict[str, float] = {}
     t0 = time.monotonic()
     limit = int(round(seconds * info.fps)) if seconds else None
-    frames = frames_for_run(run_dir, info, pack_ref, seed, limit, cues)
+    frames = frames_for_run(run_dir, info, pack_ref, seed, limit, cues, get_profile(motion_profile))
     timings["params"] = time.monotonic() - t0
     alpha = run_dir / "assembly" / "host.mov"
     stats = render_alpha_video(Composer(load_pack(pack_ref), placement), frames, info.fps, alpha)
