@@ -36,7 +36,7 @@ def test_the_round_scorecard_records_the_threshold_note(run_dir: Path):  # noqa:
     _runner(run_dir, Panel(writer=5)).run(until="gate_deck")
     card = json.loads((run_dir / "review" / "script_structure" / "round-1" / "scorecard.json").read_text(encoding="utf-8"))
     assert card["tier_mode"] == "default"
-    assert card["threshold"]["leave_median_pct"] == 0.4 and card["threshold_note"] == THRESHOLD_NOTE
+    assert card["threshold"]["leave_median_pct"] == 0.35 and card["threshold_note"] == THRESHOLD_NOTE
     assert {s["model"] for s in card["seats"]} == {"sonnet"}
 
 

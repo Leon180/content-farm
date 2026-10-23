@@ -28,7 +28,7 @@ def _channel_code() -> str:
 def test_rubric_lists_the_panel_roles_and_bars() -> None:
     text = rubric_text(CONFIG)
     assert "編劇" in text and "導演" in text
-    assert "過關門檻" in text and "6.5" in text
+    assert "過關門檻" in text and "6.0" in text
 
 
 def test_bash_text_names_both_scripts_and_forbids_wrappers() -> None:

@@ -216,7 +216,7 @@ review:
         - {role: writer_density, count: 1, model: sonnet, effort: low}
         - {role: director, count: 1, model: sonnet, effort: low}
         - {role: fact_checker, count: 1, model: sonnet, effort: medium}   # 只列出、不擋（寫進修改清單供參考）
-      threshold: {leave_median_pct: 0.4, writer_min: 6.5}   # Leon 80bd30689ee7=C: 7 → 6.5
+      threshold: {leave_median_pct: 0.35, writer_min: 6.0}   # Leon 80bd30689ee7=C: 7 → 6.5；2026-10-23 校正成 sonnet 尺度（writer 6.5→6.0、觀眾 0.40→0.35），見 REPORT-story-calibrate.md
     script_facts:
       gate: deck_facts
       reviews: [deck.json]
@@ -255,7 +255,7 @@ review:
         - {role: editor_visual, count: 1, model: sonnet, effort: low}
         - {role: editor_audio, count: 1, model: sonnet, effort: low}
         - {role: director, count: 1, model: sonnet, effort: low}
-      threshold: {leave_median_pct: 0.4, objective_all_green: true, thumbnail_consistent: true}
+      threshold: {leave_median_pct: 0.35, objective_all_green: true, thumbnail_consistent: true}
     shorts_topic:
       gate: topic
       reviews: [topics/candidates.json]
@@ -274,7 +274,7 @@ review:
       seats:
         - {role: viewer, count: 3, model: sonnet, effort: low}
         - {role: writer_story, count: 1, model: sonnet, effort: low}
-      threshold: {leave_median_pct: 0.4, writer_min: 6.5}   # Leon 80bd30689ee7=C: 7 → 6.5
+      threshold: {leave_median_pct: 0.35, writer_min: 6.5}   # Leon 80bd30689ee7=C: 7 → 6.5
     shorts_title:
       gate: title
       reviews: [titles.json, thumbnails/variant_*.jpg]
@@ -290,7 +290,7 @@ review:
       seats:
         - {role: viewer, count: 3, model: sonnet, effort: low}
         - {role: editor_visual, count: 1, model: sonnet, effort: low}
-      threshold: {leave_median_pct: 0.4}
+      threshold: {leave_median_pct: 0.35}
   # 頻道覆寫：<code>: {stages: {<stage>: {...}}}，合併後重新驗證（只能更嚴）
   channels:
     offwork:        # 冷笑話小劇場沒有 deck：劇本退回給 skit_script；劇本審稿由冷笑話編劇（笑點／鋪陳／停頓／時長／頻道調性）代替故事編劇

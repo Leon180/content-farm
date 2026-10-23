@@ -90,6 +90,19 @@ A JSON array. Every entry is valid as a deck `Source` (`id` ≤ 32 chars, `title
 - `note` keys, `;`-separated: `publisher`, `published` (YYYY-MM-DD or YYYY-MM), `accessed` (YYYY-MM-DD), `type` (`primary|press|analyst|paper|video`), optional `snippet only`.
 - `scripts/check_article.py` (below) validates every entry as a deck `Source`.
 
+## Step 3b — Narrative spine (before writing; story_spine.json)
+
+The script panel's viewers leave where the article is a stack of glossaries, timelines and number tables. Decide the retention points while writing the article, not after the deck is rejected:
+
+- **Hook**: the first two or three sentences pose a suspense, an anomaly or a question the article later answers.
+- **Through-line**: one named person / company / event with something at stake, or one opposition (promise vs. actual, official claim vs. numbers). Every section ties back to it; terms, dates and numbers are its evidence, not separate lists. No person or event in the topic → use "who gets to say this number" as the conflict.
+- **A turn or cliffhanger every 60–90 s of narration** (≈ 450 characters of article): reversal, reveal, new question, gossip, unexpected comparison. Two sections in a row of pure listing = missing retention point.
+- **Payoff** calls back the hook.
+- Facts unchanged: people, scenes, quotes, numbers all need sources; an unsourced turn is written as the channel's own judgment. Never invent plot.
+- Quantity words match: "七類：…" lists exactly seven items (re-check after every edit).
+
+Write `<run_dir>/story_spine.json`: `{"hook":…,"through_line":…,"beats":[{"section":"a-timeline","turn":…}],"payoff":…}` — at least body-chars ÷ 450 beats (min 3), every section over 700 chars has one. `scripts/check_article.py --require-spine` enforces the shape.
+
 ## Self-check before showing the user
 
 - Every `[src:id]` in the article exists in `sources.json`; every source is cited at least once.
@@ -100,7 +113,7 @@ A JSON array. Every entry is valid as a deck `Source` (`id` ≤ 32 chars, `title
 Run the checker; it lists every problem (exit 1) and must end with `0 problem(s)`:
 
 ```bash
-python scripts/check_article.py --run-dir <run_dir>
+python scripts/check_article.py --run-dir <run_dir> --require-spine
 ```
 
 It checks: sources are valid deck `Source`s with an http(s) URL and `accessed=`; every `[src:id]` exists and every source is cited; body length 2,500–4,000; required anchors; **every article line containing a digit carries a `[src:…]`** (headings and the `>` header excepted).

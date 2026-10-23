@@ -103,7 +103,7 @@ def test_script_needs_a_holdout_viewer():
 
 
 @pytest.mark.parametrize(("stage", "field", "value"), [
-    ("script_structure", "leave_median_pct", 0.3), ("script_structure", "writer_min", 6),
+    ("script_structure", "leave_median_pct", 0.3), ("script_structure", "writer_min", 5.5),
     ("script_facts", "fact_errors_max", 1),
     ("article", "fact_errors_max", 2), ("title_thumb", "noticed_median_max", 5), ("media", "compliance_issues_max", 1),
 ])
@@ -150,7 +150,7 @@ def test_article_needs_an_arbiter_and_two_checkers():
 def test_leave_median_threshold_is_the_sonnet_scale_040():
     config = ReviewConfig.model_validate(RAW)
     for name in ("script_structure", "final", "shorts_script", "shorts_final"):
-        assert config.stages[name].threshold.leave_median_pct == 0.4, name
+        assert config.stages[name].threshold.leave_median_pct == 0.35, name
 
 
 def test_missing_stage_and_unknown_role():
@@ -180,7 +180,7 @@ def test_channel_override_can_tighten_but_not_loosen(tmp_path):
     tighter = _with(lambda r: r.update(channels={"yokai": {"stages": {"script_structure": {"threshold": {"writer_min": 8}}}}}))
     config = load_review("yokai", path=_write(tmp_path, tighter))
     assert config.stages["script_structure"].threshold.writer_min == 8
-    assert load_review("chipcat", path=_write(tmp_path, tighter)).stages["script_structure"].threshold.writer_min == 6.5
+    assert load_review("chipcat", path=_write(tmp_path, tighter)).stages["script_structure"].threshold.writer_min == 6.0
     looser = _with(lambda r: r.update(channels={"yokai": {"stages": {"script_structure": {"threshold": {"writer_min": 5}}}}}))
     with pytest.raises(ValidationError, match="writer_min=5"):
         load_review("yokai", path=_write(tmp_path, looser))

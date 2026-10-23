@@ -57,10 +57,13 @@ ROLE_ALTERNATES: dict[str, dict[str, tuple[str, ...]]] = {"shorts_script": {"wri
 PLAN_PRODUCER_STAGES = ("topic",)
 DEFAULT_TIER: tuple[Model, Effort] = ("sonnet", "low")
 FACT_TIER: tuple[Model, Effort] = ("sonnet", "medium")
-# Viewer leave-median threshold on the sonnet audience's scale (Leon 2026-10-22: 0.40; the CoWoS check had sonnet
-# viewers leaving at 47% where opus viewers left at 81%, n=1). cf-pipeline-speed recalibrates it later.
-LEAVE_MEDIAN_FLOOR = 0.40
-THRESHOLD_NOTE = "sonnet 觀眾尺度的離開中位門檻 0.40（CoWoS 對照 sonnet 47% vs opus 81%，n=1，待校正）"
+# Viewer leave-median threshold on the sonnet audience's scale. 2026-10-23 calibration (REPORT-story-calibrate.md):
+# 6 reviewed drafts, same personas/order, sonnet vs opus: opus leaves later by 0.22 on average (seat-level 0.23,
+# 90% CI 0.15–0.32), so the opus 0.50 bar is ≤ 0.35 on the sonnet scale; 0.35 is the agreed lower bound. Writers:
+# opus scores 0.59 higher (n=12, CI 0.36–0.82), so the opus 6.5 bar is 6.0 on the sonnet scale.
+LEAVE_MEDIAN_FLOOR = 0.35
+WRITER_MIN_FLOOR = 6.0
+THRESHOLD_NOTE = "sonnet 觀眾尺度的離開中位門檻 0.35（opus 0.50 換算，6 份稿配對校正，見 REPORT-story-calibrate.md）"
 # article 2 → 3: Leon 2026-10-18 decision 59fdefb32bd7 = D (with delete-or-edit-only rewrites and arbitration)
 MAX_ROUNDS = {"topic": 2, "article": 3, "script_structure": 3, "script_facts": 3, "title_thumb": 3, "media": 3,
               "final": 3, "shorts_topic": 2, "shorts_script": 3, "shorts_title": 3, "shorts_final": 3}
@@ -76,7 +79,7 @@ DELETE_ONLY_FROM_ROUND = {"article": 2, "deck_facts": 2}
 # Threshold fields: (direction, floor). "min" = value must be ≥ floor; "max" = value must be ≤ floor.
 THRESHOLD_FLOOR: dict[str, dict[str, tuple[str, float]]] = {
     "article": {"fact_errors_max": ("max", 0)},
-    "script_structure": {"leave_median_pct": ("min", LEAVE_MEDIAN_FLOOR), "writer_min": ("min", 6.5)},  # Leon 80bd30689ee7=C: 7 → 6.5
+    "script_structure": {"leave_median_pct": ("min", LEAVE_MEDIAN_FLOOR), "writer_min": ("min", WRITER_MIN_FLOOR)},  # Leon 80bd30689ee7=C: 7 → 6.5 (opus); 6.0 on the sonnet scale
     "script_facts": {"fact_errors_max": ("max", 0)},
     "title_thumb": {"noticed_median_max": ("max", 3), "pick_factor": ("min", 2.0)},
     "media": {"compliance_issues_max": ("max", 0)},

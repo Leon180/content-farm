@@ -172,7 +172,7 @@ def test_frozen_step_issues_go_to_the_next_unfrozen_step():
 
 def test_gate_replans_when_the_freeze_changes(tmp_path):
     (tmp_path / "deck.json").write_text(json.dumps(_deck("開場第一句。開場第二句。"), ensure_ascii=False), encoding="utf-8")
-    panel = FakePanel(writer=6)
+    panel = FakePanel(writer=5.5)
     original = panel.__call__
 
     def article_blamed(call):
@@ -243,7 +243,7 @@ def _gate(run_dir: Path, panel: FakePanel):
 
 def test_gate_rework_then_pass(tmp_path):
     (tmp_path / "deck.json").write_text(json.dumps(_deck("開場第一句。開場第二句。"), ensure_ascii=False), encoding="utf-8")
-    first = _gate(tmp_path, FakePanel(writer=6))
+    first = _gate(tmp_path, FakePanel(writer=5.5))
     assert first.status == "rework" and first.rework["restart"] == "deck"
     fixes = json.loads((tmp_path / "review" / "deck.fixes.json").read_text(encoding="utf-8"))
     assert fixes["steps"]["deck"]["fixes"][0]["scope"]["sentence_ids"] == ["s1.1"]

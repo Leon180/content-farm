@@ -42,9 +42,11 @@ def test_channel_differences_are_expressed() -> None:
     assert yokai.media.artwork and yokai.media.artwork_license_required
     assert not any(c.media.source_footage for c in channels.values())
     # Leon 2026-10-17: yokai / cel / offwork use AI-generated PNGtuber packs; 晶片貓 keeps the vector rig
+    # Leon 2026-10-23: yokai drops the frog (rig_ready false); its pack and frog motion profile stay on disk
     for code in ("yokai", "cel", "offwork"):
-        assert channels[code].mascot.host == "pngtuber" and channels[code].mascot.rig_ready
-        assert channels[code].mascot.ref.startswith("pngtuber/")
+        assert channels[code].mascot.host == "pngtuber" and channels[code].mascot.ref.startswith("pngtuber/")
+        assert channels[code].mascot.rig_ready == (code != "yokai")
+    assert "mascot" not in step_names(yokai)
     assert "mascot" in step_names(cel) and "mascot" in step_names(channels["chipcat"])
     assert channels["chipcat"].mascot.host == "rig"
 

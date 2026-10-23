@@ -70,7 +70,7 @@ def _card(run_dir: Path, stage: str, n: int) -> dict:
 
 def test_only_the_failed_seat_and_the_checker_run_again(tmp_path: Path) -> None:
     _write(tmp_path, _deck())
-    first = Scripted(scores={"writer_story-1": 6.0})
+    first = Scripted(scores={"writer_story-1": 5.5})
     assert _gate(tmp_path, first).status == "rework"
     assert len(first.calls) == 8                                   # round 1: 4 viewers + 3 pros + 1 checker
     _write(tmp_path, _deck({"s1.1": "第1張第一句改成問句？"}))
@@ -99,7 +99,7 @@ def test_a_viewer_who_left_early_runs_again_and_the_ones_who_stayed_do_not(tmp_p
 
 def test_a_seat_whose_findings_point_at_a_changed_sentence_runs_again(tmp_path: Path) -> None:
     _write(tmp_path, _deck())
-    assert _gate(tmp_path, Scripted(scores={"writer_story-1": 6.0}, refs={"director-1": "s4.1"})).status == "rework"
+    assert _gate(tmp_path, Scripted(scores={"writer_story-1": 5.5}, refs={"director-1": "s4.1"})).status == "rework"
     _write(tmp_path, _deck({"s4.1": "第4張第一句，被修過。"}))
     second = Scripted()
     assert _gate(tmp_path, second).status == "pass"
@@ -109,7 +109,7 @@ def test_a_seat_whose_findings_point_at_a_changed_sentence_runs_again(tmp_path: 
 
 def test_a_big_change_judges_everything_again(tmp_path: Path) -> None:
     _write(tmp_path, _deck())
-    assert _gate(tmp_path, Scripted(scores={"writer_story-1": 6.0})).status == "rework"
+    assert _gate(tmp_path, Scripted(scores={"writer_story-1": 5.5})).status == "rework"
     _write(tmp_path, _deck({f"s{n}.1": f"第{n}張，整段重寫過。" for n in range(1, 5)}))      # 4 of 12 sentences
     second = Scripted()
     assert _gate(tmp_path, second).status == "pass"
@@ -120,7 +120,7 @@ def test_the_switch_turns_reuse_off(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setenv("CF_REVIEW_REUSE", "0")
     monkeypatch.setenv("CF_REVIEW_CACHE", "0")
     _write(tmp_path, _deck())
-    assert _gate(tmp_path, Scripted(scores={"writer_story-1": 6.0})).status == "rework"
+    assert _gate(tmp_path, Scripted(scores={"writer_story-1": 5.5})).status == "rework"
     _write(tmp_path, _deck({"s1.1": "第1張第一句改成問句？"}))
     second = Scripted()
     assert _gate(tmp_path, second).status == "pass"
@@ -131,9 +131,9 @@ def test_the_holdout_is_never_carried(tmp_path: Path) -> None:
     stage = CONFIG.stages["script_structure"]
     assert stage.max_rounds == 3
     _write(tmp_path, _deck())
-    assert _gate(tmp_path, Scripted(scores={"writer_story-1": 6.0})).status == "rework"
+    assert _gate(tmp_path, Scripted(scores={"writer_story-1": 5.5})).status == "rework"
     _write(tmp_path, _deck({"s1.1": "第一次修改過的第一句。"}))
-    assert _gate(tmp_path, Scripted(scores={"writer_story-1": 6.0})).status == "rework"
+    assert _gate(tmp_path, Scripted(scores={"writer_story-1": 5.5})).status == "rework"
     _write(tmp_path, _deck({"s1.1": "第二次修改過的第一句。"}))
     third = Scripted()
     assert _gate(tmp_path, third).status == "pass"

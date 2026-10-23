@@ -7,7 +7,8 @@ Checks: sources.json entries are valid deck ``Source`` objects with an
 ``accessed=`` date and an http(s) URL; every ``[src:id]`` in the article exists;
 every source is cited; article body length; required anchors; every line of
 the article holding a digit cites a source; every outline slide points at an
-existing article anchor and known source ids.
+existing article anchor and known source ids; a "N 類：a、b、c" sentence lists N items;
+story_spine.json (when present, or always with --require-spine) fits the article.
 
 Exit codes: 0 ok, 1 problems found (all listed), 2 missing files.
 No network.
@@ -24,6 +25,7 @@ from pathlib import Path
 from pydantic import ValidationError
 
 from content_farm.explainer.deck import Source
+from content_farm.review.story_spine import SPINE_FILE, check_quantifiers, check_spine
 
 ARTICLE_MIN_CHARS = 2500
 ARTICLE_MAX_CHARS = 4000
@@ -82,6 +84,7 @@ def check_article(article: str, ids: set[str]) -> tuple[list[str], set[str]]:
             continue
         if _DIGIT.search(_STRIP_FOR_DIGITS.sub("", line)) and not _CITE.search(line):
             problems.append(f"article line {number}: has a number but no [src:…]")
+    problems += check_quantifiers(article)
     return problems, anchors
 
 
@@ -104,7 +107,10 @@ def check_outline(outline: dict, anchors: set[str], ids: set[str]) -> list[str]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--run-dir", type=Path, required=True)
-    run_dir = parser.parse_args(argv).run_dir
+    parser.add_argument("--require-spine", action="store_true",
+                        help="story_spine.json (hook, through-line, a beat per ~450 chars) must exist and fit the article")
+    args = parser.parse_args(argv)
+    run_dir = args.run_dir
     article_path, sources_path = run_dir / "article.md", run_dir / "sources.json"
     try:
         article = article_path.read_text(encoding="utf-8")
@@ -116,6 +122,12 @@ def main(argv: list[str] | None = None) -> int:
     problems, ids = check_sources(raw_sources)
     article_problems, anchors = check_article(article, ids)
     problems += article_problems
+    spine_path = run_dir / SPINE_FILE
+    if spine_path.exists() or args.require_spine:
+        try:
+            problems += check_spine(json.loads(spine_path.read_text(encoding="utf-8")), article)
+        except (OSError, json.JSONDecodeError) as exc:
+            problems.append(f"{SPINE_FILE}: {exc}")
     outline_path = run_dir / "deck_outline.json"
     if outline_path.exists():
         try:

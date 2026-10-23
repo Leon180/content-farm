@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from content_farm.review import quick_patch
-from content_farm.review.brief import channel_rules_text, deck_brief
+from content_farm.review.brief import article_brief, channel_rules_text, deck_brief
 from content_farm.review.quick_patch import quick_enabled
 from content_farm.review.client import Call, CallResult, run_call
 from content_farm.review.config import ReviewConfig, Tier
@@ -58,7 +58,7 @@ TASKS = {
 - 打不開或抽不出文字的來源（PDF、付費牆）不要當唯一依據；查不到就刪掉那句。
 - 論點核心的因果（「因為 A 所以 B」）若來源沒有直接說，就寫成頻道自己的判斷（「我們的判斷是」「看起來」），不要寫成事實；
   引述要歸屬給來源裡真的說話的人（報導本身的敘述不是「業界主管說」）。
-- 寫完跑 `{python} {repo}/scripts/check_article.py --run-dir {run_dir}`，有問題改到 0 problem(s)。""",
+- 寫完跑 `{python} {repo}/scripts/check_article.py --run-dir {run_dir} --require-spine`，有問題改到 0 problem(s)。""",
     "deck": """任務：腳本。依 article.md，照 {repo}/.claude/skills/deck-outline/SKILL.md 與 {repo}/.claude/skills/deck/SKILL.md 的規則
 （不要停下來等人審），直接寫 deck.json（可先寫 deck_outline.json），並寫 promise.txt：一句「這支片答應觀眾什麼」。
 若有 review/article.story_notes.json（編劇對文章故事線的建議），在講稿裡處理，但不能新增文章沒有的事實。
@@ -111,7 +111,8 @@ ARTICLE_STRUCTURE_REWORK = """任務：文章結構退回重做。腳本評審�
 - 已通過事實查核的句子（沿用原句或改寫後仍是同一句話的），數字與 [src:…] 來源 id 一個字都不能改、不能漏；
 - 新寫的每一句都會被事實查核逐句查：有數字或八卦就附你實際打開過的來源 id，推論與換算要寫明「換算起來」「我們的判斷是」，不要新增沒查證的說法；
 - 不准為了留人點編造情節、引述或數字。
-改完跑 `{python} {repo}/scripts/check_article.py --run-dir {run_dir}`，有問題改到 0 problem(s)。
+改寫後同步更新 story_spine.json（鉤子、貫穿主線、每個轉折落在哪個章節）。
+改完跑 `{python} {repo}/scripts/check_article.py --run-dir {run_dir} --require-spine`，有問題改到 0 problem(s)。
 交件：receipt 的 rewrite_reason 必須寫明為什麼要大改、改了哪些結構（必填）。"""
 NAMED_LIMIT = 14        # sentences quoted per rework brief
 
@@ -248,6 +249,8 @@ def produce(step: str, run_dir: Path, *, channel: str, config: ReviewConfig, pyt
         task = ARTICLE_STRUCTURE_REWORK
     guide = (deck_brief(config, channel, python, str(REPO), rework=task is TASKS_REWORK[step])
              if step == "deck" else "")          # rubric + channel rules + Bash, from the first call
+    if step == "article" and (task is TASKS["article"] or task is ARTICLE_STRUCTURE_REWORK):
+        guide = article_brief(config)            # narrative spine + the script panel's rubric (not for a fact-fix rework)
     prompt = "\n\n".join(part for part in (COMMON.format(**fmt), task.format(**fmt), guide, fixes,
                                            extra, "完成後用結構化輸出回報寫了哪些檔。") if part)
     tier = producer_tier(config, step, skit=skit)

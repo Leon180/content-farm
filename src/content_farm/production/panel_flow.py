@@ -468,6 +468,7 @@ def _delete_only_guard(run_dir: Path, step_name: str, gate: str | None = None) -
 ARTICLE_APPROVED = "review/article.approved.md"       # article at the last panel approval (the fact lock's baseline)
 ARTICLE_LOCKED = "review/article.locked.md"           # baseline of a structure rewrite still awaiting its fact check
 ARTICLE_REWRITE = "review/article.rewrite.json"       # why that rewrite was needed (rewrite_reason) and how big it was
+STRUCTURE_REWRITE_CYCLE_REASON = "結構改寫（script_structure 退回 article）視為新的一份內容，article 輪數重算"
 
 
 def changed_since_lock(run_dir: Path, current: str) -> set[str]:
@@ -517,6 +518,9 @@ class _StructuralArticle:
         (self.run_dir / ARTICLE_REWRITE).write_text(json.dumps(
             {"at": now_iso(), "rewrite_reason": (receipt or {}).get("rewrite_reason"), "new_sentences": len(self.fresh)},
             ensure_ascii=False, indent=1), encoding="utf-8")
+        # a structure rewrite is a new piece of content: the article panel starts a fresh set of rounds (the spent
+        # ones move to cycle-N/); sentences that kept their fact-checked text are not re-checked (ARTICLE_LOCKED)
+        new_stage_cycle(self.run_dir, ("article",), reason=STRUCTURE_REWRITE_CYCLE_REASON)
 
     def restore(self) -> None:
         self.path.write_text(self.before, encoding="utf-8")
