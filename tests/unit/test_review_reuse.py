@@ -2,11 +2,18 @@
 
 from __future__ import annotations
 
+import pytest
+
 import json
 from pathlib import Path
 
 from content_farm.review.client import Call, CallResult
-from content_farm.review.config import load_review
+from functools import partial as _partial
+from pathlib import Path as _Path
+
+from content_farm.review import config as _config
+
+load_review = _partial(_config.load_review, path=_Path(__file__).parents[1] / "fixtures" / "review_panels_v3.yaml")
 from content_farm.review.gate import panel_gate
 from content_farm.review.schemas import validate
 
@@ -193,3 +200,6 @@ def test_a_deleted_sentence_costs_no_call(tmp_path: Path) -> None:
     second = Scripted()
     assert _facts(tmp_path, second).status == "pass"
     assert second.calls == [], "nothing was written, so nothing needs checking"
+
+
+pytestmark = pytest.mark.usefixtures("v3_panels")   # drives the full v3 panel set; v4 turns most of it off (see test_review_v4.py)

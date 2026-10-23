@@ -133,3 +133,9 @@ def test_offwork_is_disabled_and_technews_replaces_it() -> None:
     assert technews.mascot.rig_ready is False and "mascot" not in step_names(technews)
     assert technews.voice.provider == "voxcpm2" and technews.voice.reference is not None
     assert technews.series["news"]["sources"] == ["hn", "lobsters", "arxiv", "github"]
+
+
+def test_ent_is_disabled_but_loadable() -> None:
+    """Leon 2026-10-24: the entertainment-news channel is retired (config, code and material kept)."""
+    assert "ent" not in {c.code for c in load_all()}
+    assert load_channel("ent").enabled is False

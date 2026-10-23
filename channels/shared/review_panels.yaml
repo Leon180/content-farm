@@ -125,8 +125,13 @@ review:
   # review/score_ledger.json，views／留存／CTR 欄位待上片後填。fact_on_fail（決策 a53960fc4b1d＝A）：article／script_facts／media
   # 查一次，確認錯的句子自動刪或改成有出處的說法（不新增）、授權有問題的素材自動換掉、不重查、往下走，錯誤與修法記進
   # review/auto_fix.jsonl；stop＝照下面各關的輪數與門檻，沒過就停。
-  policy: {score_only: true, fact_on_fail: auto_fix_then_pass}
+  # Leon 2026-10-24（v4）：只留兩種評審——腳本評審（觀眾＋編劇，評一次，照意見自動改稿一次、不重評、不擋：script_revise_once）與
+  # 正確性查核（信心度 ≥ 0.5 才算錯誤，review/confidence.py；< 0.5 只記錄）。其他關各自 `enabled: false`（title_thumb／media／final／
+  # shorts_title／shorts_final，要開回就改成 true）；選題評分保留作排序、不當閘門。授權（media 關）改走程式規則 review/license_rules.py。
+  policy: {score_only: true, script_revise_once: true, fact_on_fail: auto_fix_then_pass}
   defaults: {max_parallel: 8, timeout_s: 1200, schema_retries: 1}   # 2026-10-19 4→8；入場檢查仍依可用記憶體往下調
+  license_rules:       # 授權程式規則（review/license_rules.py）：素材來源白名單；AI 圖另查標示（AI 示意圖）與 model／prompt／seed
+    allowed_kinds: [ai_image, artwork, stock, wikimedia, news_card, title_card, parallax, wan, article, discussion]
   budget: {usd_per_video: 15}                  # 雲端車道（評審＋產出 agent）每支片的名目上限；用完就停下回報，不自動繼續（review/budget.py）
   aggregator: {model: haiku, effort: low}      # 修改清單整理、退回路由、彙整
   roles:
@@ -212,7 +217,6 @@ review:
       max_rounds: 3                          # 59fdefb32bd7=D：2→3；第 2 輪起只准刪改（程式比對，review/article_diff.py）
       seats:
         - {role: fact_checker, count: 2, model: sonnet, effort: medium}
-        - {role: writer_story, count: 1, model: sonnet, effort: low}
       threshold: {fact_errors_max: 0}
     # 腳本拆兩段（Leon 7afa95870a4e＝A）：結構段可大改、事實只列不擋；過了才進事實段（只准刪改、仲裁、0 錯）。
     # 事實段過了＝事實鎖定：之後改講稿只准刪改；新寫句子會讓結構段的核可失效，重新走兩段。
@@ -226,8 +230,6 @@ review:
         - {role: viewer, count: 5, holdout: 1, model: sonnet, effort: low}
         - {role: writer_story, count: 1, model: sonnet, effort: low}
         - {role: writer_density, count: 1, model: sonnet, effort: low}
-        - {role: director, count: 1, model: sonnet, effort: low}
-        - {role: fact_checker, count: 1, model: sonnet, effort: medium}   # 只列出、不擋（寫進修改清單供參考）
       threshold: {leave_median_pct: 0.35, writer_min: 6.0}   # Leon 80bd30689ee7=C: 7 → 6.5；2026-10-23 校正成 sonnet 尺度（writer 6.5→6.0、觀眾 0.40→0.35），見 REPORT-story-calibrate.md
     script_facts:
       gate: deck_facts
@@ -239,6 +241,7 @@ review:
         - {role: fact_checker, count: 2, model: sonnet, effort: medium}
       threshold: {fact_errors_max: 0}
     title_thumb:
+      enabled: false      # Leon 2026-10-24：評審關閉（程式規則取代／不評分）
       gate: title
       reviews: [titles.json, thumbnail.json, thumbnail_variants.json, thumbnails/variant_*.jpg]
       producer: {model: sonnet, effort: low}
@@ -250,6 +253,7 @@ review:
         - {role: producer, count: 1, model: sonnet, effort: low}
       threshold: {noticed_median_max: 3, pick_factor: 2.0, auto_checks: true, producer_honest: true}   # 競品色相差只列出不擋（Leon 31134b307b3e=A；hue_blocks 預設 false）
     media:
+      enabled: false      # Leon 2026-10-24：評審關閉（程式規則取代／不評分）
       gate: media
       reviews: [media/media_report.json, credits.json, media/contact_sheet.png, assets/ai_images/*]
       rework: media
@@ -258,6 +262,7 @@ review:
         - {role: compliance, count: 1, model: sonnet, effort: low}
       threshold: {compliance_issues_max: 0, licenses_confirmed: true}
     final:
+      enabled: false      # Leon 2026-10-24：評審關閉（程式規則取代／不評分）
       gate: final
       reviews: [assembly/release.mp4, assembly/final.mp4, qc/qc_report.json, thumbnails/variant_*.jpg]
       rework: assembly
@@ -287,6 +292,7 @@ review:
         - {role: writer_story, count: 1, model: sonnet, effort: low}
       threshold: {leave_median_pct: 0.35, writer_min: 6.5}   # Leon 80bd30689ee7=C: 7 → 6.5
     shorts_title:
+      enabled: false      # Leon 2026-10-24：評審關閉（程式規則取代／不評分）
       gate: title
       reviews: [titles.json, thumbnails/variant_*.jpg]
       rework: thumbnail_spec
@@ -294,6 +300,7 @@ review:
       seats:
         - {role: viewer, count: 3, model: sonnet, effort: low}
     shorts_final:
+      enabled: false      # Leon 2026-10-24：評審關閉（程式規則取代／不評分）
       gate: final
       reviews: [assembly/final.mp4, qc/qc_report.json]
       rework: assembly

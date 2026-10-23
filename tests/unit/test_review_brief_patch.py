@@ -11,7 +11,12 @@ import pytest
 
 from content_farm.review import deck_patch
 from content_farm.review.brief import bash_text, channel_rules_text, deck_brief, rubric_text
-from content_farm.review.config import load_review
+from functools import partial as _partial
+from pathlib import Path as _Path
+
+from content_farm.review import config as _config
+
+load_review = _partial(_config.load_review, path=_Path(__file__).parents[1] / "fixtures" / "review_panels_v3.yaml")
 from content_farm.review.producers import SCRIPTS, produce
 
 CONFIG = load_review()
@@ -102,3 +107,6 @@ def test_cli_applies_patch_and_refuses_bad_patch(tmp_path: Path, capsys) -> None
     good.write_text(json.dumps({"b1": "換掉了。"}), encoding="utf-8")
     assert module.main(["--run-dir", str(tmp_path), "--patch", str(good), "--no-check"]) == 0
     assert "換掉了。" in (tmp_path / "deck.json").read_text(encoding="utf-8")
+
+
+pytestmark = pytest.mark.usefixtures("v3_panels")   # drives the full v3 panel set; v4 turns most of it off (see test_review_v4.py)

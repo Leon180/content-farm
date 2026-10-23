@@ -9,6 +9,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -18,7 +20,12 @@ from content_farm.production.runner import Outcome, Runner
 from content_farm.production.state import load_state
 from content_farm.production.steps import Context, RunOptions, steps_for
 from content_farm.review.client import Call, CallResult
-from content_farm.review.config import load_review
+from functools import partial as _partial
+from pathlib import Path as _Path
+
+from content_farm.review import config as _config
+
+load_review = _partial(_config.load_review, path=_Path(__file__).parents[1] / "fixtures" / "review_panels_v3.yaml")
 from content_farm.review.gate import stage_for_gate
 from content_farm.review.schemas import validate
 from content_farm.review.sentences import deck_sentences
@@ -203,3 +210,6 @@ def test_after_the_lock_a_new_sentence_reopens_the_structure_stage(run_dir: Path
     assert (structure / "cycle-1" / "round-1" / "scorecard.json").is_file()
     assert (structure / "round-1" / "scorecard.json").is_file()          # the new cycle starts at round 1
     assert (run_dir / "review" / "script_facts" / "cycle-1" / "round-1").is_dir()
+
+
+pytestmark = pytest.mark.usefixtures("v3_panels")   # drives the full v3 panel set; v4 turns most of it off (see test_review_v4.py)

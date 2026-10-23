@@ -3,6 +3,7 @@
 # 畫面不用影視片段／劇照／新聞照片／真人照片、不要角色、聲音與晶片貓／cel／科技新知都聽得出不同。Secrets never go here.
 # 護欄是程式不是提示：series.news.feeds（白名單）→ news/guard.py、news/claims.py、news/audit_step.py（REPORT-ent.md §護欄）。
 code: ent
+enabled: false          # Leon 2026-10-24：娛樂新聞頻道砍掉（設定放 backlog 等級保留）；程式與素材保留，排程／額度不再分給它
 name: 娛樂快報
 line: 每日娛樂新聞（台日韓與華語演藝圈，只講有名媒體報導過、有出處的內容）
 pipeline: explainer

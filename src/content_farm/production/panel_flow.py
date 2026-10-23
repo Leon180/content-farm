@@ -177,6 +177,15 @@ def panel_step(ctx: Context, state: RunState, step: Step, stage: str, current: s
     from content_farm.review.gate import panel_gate
 
     assert step.gate is not None
+    if not review_config(ctx).stages[stage].enabled:    # Leon 2026-10-24: switched off in review_panels.yaml
+        from content_farm.review import license_rules
+        from content_farm.review.gate import GateResult
+
+        problems = license_rules.check(ctx.run_dir) if stage == "media" else []
+        result = (GateResult("blocked", f"{stage}：授權程式規則未過：{'；'.join(problems)}") if problems
+                  else GateResult("pass", f"{stage}：評審已關閉（enabled: false）"
+                                  + ("，授權程式規則通過" if stage == "media" else "，直接放行")))
+        return _apply(ctx, state, step, stage, current, result, log)
     if (stopped := over_budget(ctx)) is not None and _round_due(ctx, step, stage):
         return _budget_stop(ctx, state, step, stopped, log)
     competitors = competitors_for(ctx)

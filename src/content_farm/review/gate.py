@@ -28,6 +28,7 @@ PANEL_BY = "agent-panel:"
 # Stages whose rework only goes to their own producing step (the title / thumbnail spec); fixes the panel
 # pins on earlier steps (script, media) are listed under the plan's ``advisory`` and change nothing
 # (orchestrator decision 2026-10-19: a title round had rewritten the script and broken the channel opening).
+SCRIPT_REVIEW_STAGES = ("script_structure", "shorts_script")
 TITLE_ONLY_STAGES = ("title_thumb", "shorts_title")
 LONG_STAGE_FOR_GATE = {"topic": "topic", "article": "article", "deck": "script_structure",
                        "deck_facts": "script_facts", "title": "title_thumb", "media": "media", "final": "final"}
@@ -212,6 +213,12 @@ def write_decision(run_dir: Path, gate: str, stage_name: str, card_path: Path, c
     return data
 
 
+def revise_once_enabled(config: ReviewConfig, stage_name: str) -> bool:
+    """Script review under ``policy.script_revise_once`` (Leon 2026-10-24): judged once, its fix list applied once to the
+    script, never re-judged, never blocking."""
+    return stage_name in SCRIPT_REVIEW_STAGES and config.policy.script_revise_once
+
+
 def auto_fix_enabled(config: ReviewConfig, stage_name: str) -> bool:
     """Fact / licence stage under ``policy.fact_on_fail = auto_fix_then_pass`` (Leon decision a53960fc4b1d = A)."""
     return stage_name in FACT_STAGES and config.policy.fact_on_fail == "auto_fix_then_pass"
@@ -315,6 +322,8 @@ def panel_gate(run_dir: Path, *, gate: str, stage_name: str, config: ReviewConfi
                competitors: Path | None = None, vertical: bool = False,
                judge_context: Callable[[Path], dict[str, Any]] | None = None) -> GateResult:
     stage = config.stages[stage_name]
+    if not stage.enabled:
+        return GateResult("pass", f"{stage_name}：評審已關閉（review_panels.yaml enabled: false），直接放行")
     current = fingerprint(run_dir, stage.reviews)
     done = [p for p in rounds_of(run_dir, stage_name) if re.fullmatch(r"round-\d+", p.name)]   # no addenda / side rounds
     last = _load(done[-1] / "scorecard.json") if done else None
@@ -343,6 +352,9 @@ def panel_gate(run_dir: Path, *, gate: str, stage_name: str, config: ReviewConfi
             return GateResult("blocked", f"{stage_name} 第 {number} 輪不算：{', '.join(lost)} 沒有回應（網路／程序失敗），"
                               f"已移到 {moved.name}；網路恢復後重跑 run 會重開這一輪", None)
     card_path = stage_dir(run_dir, stage_name) / last["label"] / "scorecard.json"
+    if (revise_once_enabled(config, stage_name) and last["verdict"].get("issues")
+            and not score_ledger.auto_fix_issued(run_dir, gate, last["round"], last["inputs"])):
+        return _auto_fix(run_dir, gate, stage_name, last, stage.rework, card_path, "腳本評審意見")
     if not last["verdict"]["pass"]:
         reasons = "；".join(last["verdict"]["reasons"])
         if auto_fix_enabled(config, stage_name):

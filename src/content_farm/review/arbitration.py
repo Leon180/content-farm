@@ -25,7 +25,8 @@ ARBITER_ROLE = "fact_arbiter"
 RULING = {"type": "object", "additionalProperties": False, "required": ["item", "status", "note"],
           "properties": {"item": {"type": "string"},
                          "status": {"enum": ["wrong", "unsourced", "ok", "analysis", "unverifiable"]},
-                         "note": {"type": "string"}, "source_quote": {"type": ["string", "null"]}}}
+                         "note": {"type": "string"}, "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+                         "source_quote": {"type": ["string", "null"]}}}
 SCHEMA = {"type": "object", "additionalProperties": False, "required": ["rulings"],
           "properties": {"rulings": {"type": "array", "items": RULING}}}
 
@@ -100,7 +101,7 @@ def prompt(disputes: list[dict[str, Any]], *, material: str = "文章（article.
             "逐條回到 sources.json 的原始網址查證（用 WebFetch），不要相信任何一方的轉述，也不要因為有人判錯就傾向判錯。\n"
             "status：ok＝來源原文支持；wrong＝來源說的不一樣；unsourced＝沒附來源或來源沒有這件事；unverifiable＝來源打不開；"
             "analysis＝頻道自己的換算、推論或觀點，而且文中明確寫成換算／推論／判斷、你驗算過（寫成事實的推論算 unsourced）。"
-            "rulings 每條 item 照抄、note 寫理由、source_quote 寫來源原文。\n\n" + "\n".join(lines)
+            "rulings 每條 item 照抄、note 寫理由、source_quote 寫來源原文、confidence 寫你有多確定它是錯誤（0–1，低於 0.5 只記錄不修）。\n\n" + "\n".join(lines)
             + "\n\n只讀目前資料夾的檔案（講稿、article.md、sources.json），不要修改任何檔案。用繁體中文寫。完成後用結構化輸出回傳。")
 
 

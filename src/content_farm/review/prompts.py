@@ -53,7 +53,7 @@ STAGE_TASK = {
                 "status：ok＝來源原文支持；wrong＝來源說的不一樣；unsourced＝沒附來源或來源沒有這件事；"
                 "unverifiable＝來源打不開；analysis＝頻道自己的換算、推論或觀點，而且文中明確寫成換算／推論／判斷"
                 "（例如「換算起來」「我們的判斷是」），你驗算過數學、邏輯也站得住——寫成事實的推論一律算 unsourced，"
-                "算錯算 wrong。source_quote 寫來源原文。錯誤與無來源的也要寫進 issues（caused_by=article）。",
+                "算錯算 wrong。source_quote 寫來源原文。每條都填 confidence（0–1）：你有多確定它是錯誤或無來源，ok／analysis 填你有多確定它沒問題的反面即可（填 0）；低於 0.5 只記錄不修，所以沒把握就誠實填低。錯誤與無來源的也要寫進 issues（caused_by=article）。",
         "pro": "評這篇文章的故事線：論點是否一路推進、開頭是否有鉤子、八卦是否有來源、名詞是否先用比喻。依 rubric 各給 0–10。",
     },
     "script": {
@@ -64,7 +64,7 @@ STAGE_TASK = {
         "fact": "逐條查講稿中的事實說法（數字、單位、日期、引述、因果），對照 article.md 與 sources.json 的原始網址（用 WebFetch），"
                 "確認改稿後沒有走樣：單位、基準、「據報導」等限定詞不能掉。claims 的 sentence_ids 寫句子 id。"
                 "status：ok／wrong／unsourced／unverifiable；analysis＝頻道自己的換算或判斷、文中明確寫成換算／判斷且你驗算過"
-                "（寫成事實的推論算 unsourced，算錯算 wrong）。",
+                "（寫成事實的推論算 unsourced，算錯算 wrong）。每條都填 confidence（0–1）：你有多確定它是錯誤或無來源；低於 0.5 只記錄不修。",
     },
     "title_thumb": {
         "viewer": "先做首頁一眼（做完前不要看 thumbnails/ 和 titles.txt）：依序打開每張首頁截圖，每張只捲過一眼，"

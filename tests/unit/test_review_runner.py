@@ -100,3 +100,6 @@ def test_manual_approve_is_a_logged_back_door(run_dir: Path) -> None:  # noqa: F
     events = [json.loads(line) for line in (run_dir / "production.log.jsonl").read_text(encoding="utf-8").splitlines()]
     assert events[-1]["override"] == "panel down, checked by hand"
     assert "MANUAL OVERRIDE" in load_state(run_dir, "chipcat").decisions["article"].note
+
+
+pytestmark = pytest.mark.usefixtures("v3_panels")   # drives the full v3 panel set; v4 turns most of it off (see test_review_v4.py)

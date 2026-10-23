@@ -66,7 +66,10 @@ TOPIC_PRO = _obj(["role", "scores", "verdict"], role=_STR, verdict=_STR,
                      veto={"type": "boolean", "description": "duplicate, off-channel, unsourced or advice"},
                      duplicate_of={"type": ["string", "null"]})})
 
-CLAIM = _obj(["claim", "status", "evidence", "note"],
+_CONFIDENCE = {"type": "number", "minimum": 0, "maximum": 1,
+               "description": "how sure you are the claim is wrong/unsourced (0–1); < 0.5 is recorded, not fixed"}
+CLAIM = _obj(["claim", "status", "evidence", "note"],   # confidence optional: missing = certain (confidence.py)
+             confidence=_CONFIDENCE,
              claim=_STR, status={"enum": ["ok", "wrong", "unsourced", "unverifiable", "analysis"],
                                  "description": "analysis = the channel's own calculation/judgement, framed as such "
                                                 "in the text, with math/logic you verified; framed as fact → unsourced"},

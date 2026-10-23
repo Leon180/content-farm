@@ -11,7 +11,9 @@ from pydantic import ValidationError
 
 from content_farm.review.config import PANELS_FILE, ReviewConfig, Tier, load_review, sentence_id_field
 
-RAW = yaml.safe_load(PANELS_FILE.read_text(encoding="utf-8"))["review"]
+SHIPPED = yaml.safe_load(PANELS_FILE.read_text(encoding="utf-8"))["review"]
+# The hard rules are checked as if every panel were on: whoever switches one back on (enabled: true) must meet them.
+RAW = {**SHIPPED, "stages": {name: {**stage, "enabled": True} for name, stage in SHIPPED["stages"].items()}}
 
 
 def _with(mutate) -> dict:
@@ -29,7 +31,7 @@ def test_shipped_config_is_valid():
     assert set(config.stages) >= {"topic", "article", "script_structure", "script_facts", "title_thumb", "media", "final"}
 
 
-@pytest.mark.parametrize("stage", ["article", "script_structure", "script_facts"])
+@pytest.mark.parametrize("stage", ["article", "script_facts"])
 def test_fact_checker_effort_floor_is_medium(stage):
     raw = _with(lambda r: _seat(r, stage, "fact_checker").update(effort="low"))
     with pytest.raises(ValidationError, match="fact_checker is sonnet · low, below sonnet · medium"):
@@ -85,8 +87,8 @@ def test_the_plan_producer_may_use_opus_but_not_haiku():
 
 def test_required_roles_cannot_be_removed():
     raw = _with(lambda r: r["stages"]["script_structure"].update(
-        seats=[s for s in r["stages"]["script_structure"]["seats"] if s["role"] != "director"]))
-    with pytest.raises(ValidationError, match="script_structure: needs director ×1"):
+        seats=[s for s in r["stages"]["script_structure"]["seats"] if s["role"] != "writer_density"]))
+    with pytest.raises(ValidationError, match="script_structure: needs writer_density ×1"):
         ReviewConfig.model_validate(raw)
 
 
@@ -197,3 +199,26 @@ def test_raise_tier_lifts_every_seat_and_never_lowers():
 
 def test_sentence_id_field(tmp_path):
     assert sentence_id_field(_write(tmp_path, RAW)) == "sent_id"
+
+
+DISABLED = ("title_thumb", "media", "final", "shorts_title", "shorts_final")
+
+
+def test_v4_only_script_review_and_fact_check_stay_on():
+    """Leon 2026-10-24: scoring panels other than the script review (and topic ranking) are off; facts stay on."""
+    config = ReviewConfig.model_validate(SHIPPED)
+    assert {n for n, s in config.stages.items() if not s.enabled} == set(DISABLED)
+    roles = {n: {config.roles[s.role].kind for s in config.stages[n].seats} for n in ("article", "script_facts")}
+    assert roles == {"article": {"fact"}, "script_facts": {"fact"}}
+    structure = {s.role for s in config.stages["script_structure"].seats}
+    assert structure == {"viewer", "writer_story", "writer_density"}
+    assert config.policy.script_revise_once and config.policy.fact_on_fail == "auto_fix_then_pass"
+
+
+def test_a_disabled_stage_is_not_held_to_the_seat_rules_but_flipping_it_on_is():
+    raw = copy.deepcopy(SHIPPED)
+    raw["stages"]["media"]["seats"] = []
+    ReviewConfig.model_validate(raw)                      # off: nothing to check
+    raw["stages"]["media"]["enabled"] = True
+    with pytest.raises(ValidationError, match="media: needs compliance"):
+        ReviewConfig.model_validate(raw)

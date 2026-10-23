@@ -3,13 +3,20 @@ and a reviewer is shown only the files it needs."""
 
 from __future__ import annotations
 
+import pytest
+
 import dataclasses
 import json
 from pathlib import Path
 
 from content_farm.review import cache
 from content_farm.review.client import Call, CallResult
-from content_farm.review.config import load_review
+from functools import partial as _partial
+from pathlib import Path as _Path
+
+from content_farm.review import config as _config
+
+load_review = _partial(_config.load_review, path=_Path(__file__).parents[1] / "fixtures" / "review_panels_v3.yaml")
 from content_farm.review.rounds import run_round
 from tests.unit.test_production_runner import run_dir as run_dir  # noqa: F401  (fixture)
 from tests.unit.test_review_script_stages import Panel
@@ -126,3 +133,6 @@ def test_derived_files_are_left_out_of_the_content_digest(tmp_path: Path) -> Non
     (tmp_path / "sheet.png").write_bytes(b"2")
     assert cache.content_digest(tmp_path, ["a.txt", "sheet.png"], derived=frozenset({"sheet.png"})) == one
     assert cache.content_digest(tmp_path, ["a.txt", "sheet.png"]) != one
+
+
+pytestmark = pytest.mark.usefixtures("v3_panels")   # drives the full v3 panel set; v4 turns most of it off (see test_review_v4.py)

@@ -10,7 +10,12 @@ import pytest
 from content_farm.review import client as client_mod
 from content_farm.review import routing
 from content_farm.review.client import Call, CallResult, argv_for, child_env, run_call
-from content_farm.review.config import load_review
+from functools import partial as _partial
+from pathlib import Path as _Path
+
+from content_farm.review import config as _config
+
+load_review = _partial(_config.load_review, path=_Path(__file__).parents[1] / "fixtures" / "review_panels_v3.yaml")
 from content_farm.review.gate import enforce, panel_gate
 from content_farm.review.schemas import schema_for, validate
 from content_farm.review.sentences import Sentence
@@ -365,3 +370,6 @@ def test_default_client_is_claude_cli_and_tests_use_a_stub():
     assert client_mod.claude_bin().endswith("claude-stub")
     result = run_call(Call("r", "p", SCHEMA, "haiku", "low", retries=0), sleep=lambda s: None)
     assert not result.ok and "exit 97" in result.errors[-1]
+
+
+pytestmark = pytest.mark.usefixtures("v3_panels")   # drives the full v3 panel set; v4 turns most of it off (see test_review_v4.py)

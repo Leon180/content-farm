@@ -78,3 +78,14 @@ def test_settings(monkeypatch: pytest.MonkeyPatch) -> Settings:
     """Settings with test values."""
     monkeypatch.setenv("CF_ANTHROPIC_API_KEY", "test-key-not-real")
     return Settings()  # type: ignore[call-arg]
+
+
+@pytest.fixture
+def v3_panels(monkeypatch):
+    """The review panels as configured before 2026-10-24 (every gate on, director / fact seats in the script review).
+    The round / gate / reuse machinery is still there for whoever switches a panel back on, and these tests drive it."""
+    from pathlib import Path
+
+    from content_farm.review import config
+
+    monkeypatch.setattr(config, "PANELS_FILE", Path(__file__).parent / "fixtures" / "review_panels_v3.yaml")

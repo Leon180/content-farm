@@ -18,6 +18,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from content_farm.review.confidence import demote_low_confidence
 from content_farm.review.schemas import validate
 
 CLAUDE_BIN = "claude"
@@ -233,7 +234,7 @@ def run_call(call: Call, *, runner: Runner | None = None, log_dir: Path | None =
                 if used and not model_matches(call.model, used):
                     return CallResult(call.rid, False, output, (f"model mismatch: asked {call.model}, got {used}",),
                                       call.model, call.effort, used, seconds, round(cost, 4), tokens, attempt, **extra)
-                return CallResult(call.rid, True, output, (), call.model, call.effort, used, seconds,
+                return CallResult(call.rid, True, demote_low_confidence(output), (), call.model, call.effort, used, seconds,
                                   round(cost, 4), tokens, attempt, **extra)
             problem = "schema: " + "; ".join(problems[:5])
         errors.append(f"attempt {attempt}: {problem}")

@@ -61,7 +61,7 @@ ITEM = {"read": {"ok": True, "url": URL, "final_url": URL}, "candidate": {"title
 
 def test_ent_channel_loads_with_whitelist_and_guardrail_switches(series) -> None:
     channel = load_channel("ent")
-    assert channel.code in {c.code for c in load_all()}
+    assert channel.enabled is False and channel.code in {c.code for c in load_all(include_disabled=True)}   # retired 2026-10-24
     assert series.sources == ("rss",) and series.topic_guard and series.claims_audit and not series.analogy_required
     assert {f.id for f in series.feeds} >= {"cna", "ltn", "udn", "ettoday", "yahoo", "soompi", "variety", "deadline"}
     assert not any(channel.media.model_dump()[k] for k in ("stock", "ai_image", "artwork", "source_footage"))

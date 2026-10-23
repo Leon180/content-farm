@@ -35,8 +35,8 @@ STAGES = LONG_STAGES + SHORT_STAGES
 # Minimum reviewers per stage (design page Q6ug8VB3rWc6fBLtorKi6r). viewer counts include the holdout.
 REQUIRED_ROLES: dict[str, dict[str, int]] = {
     "topic": {"viewer": 3, "writer_story": 1, "producer": 1},
-    "article": {"fact_checker": 2, "writer_story": 1},
-    "script_structure": {"viewer": 5, "writer_story": 1, "writer_density": 1, "director": 1, "fact_checker": 1},
+    "article": {"fact_checker": 2},
+    "script_structure": {"viewer": 5, "writer_story": 1, "writer_density": 1},   # Leon 2026-10-24: audience + writers only
     "script_facts": {"fact_checker": 2},
     "title_thumb": {"viewer": 5, "designer": 1, "producer": 1},
     "media": {"compliance": 1},
@@ -161,6 +161,9 @@ class Stage(_Strict):
     # Leon 2026-10-23: at most 3 rounds per gate; a failed last round is waved through (recorded as a waiver, listed
     # in the scorecard and the production log) instead of stopping the run. ``false`` restores the old stop.
     waive_on_last_round: bool = True
+    # Leon 2026-10-24: only script review + fact check stay (+ topic ranking). A disabled stage is passed without any
+    # reviewer (``review_panels.yaml`` ``enabled: false``); flip it back to true to restore the panel.
+    enabled: bool = True
     seats: tuple[Seat, ...]
     threshold: Threshold = Threshold()
 
@@ -189,6 +192,7 @@ class Policy(_Strict):
     ``review/auto_fix.jsonl`` (decision a53960fc4b1d = A)."""
 
     score_only: bool = True
+    script_revise_once: bool = False    # 2026-10-24: the script review's fix list is applied once, never re-judged
     fact_on_fail: Literal["stop", "auto_fix_then_pass"] = "auto_fix_then_pass"
 
 
@@ -200,6 +204,7 @@ class ReviewConfig(_Strict):
     roles: dict[str, Role]
     stages: dict[str, Stage]
     channels: dict[str, dict] = {}
+    license_rules: dict = {}     # allowed_kinds: source whitelist for the program licence check (review/license_rules.py)
     tier_mode: Literal["default", "lifted"] = "default"   # lifted: a --review-tier comparison run, may use opus
 
     @model_validator(mode="after")
@@ -269,6 +274,8 @@ def rule_violations(config: ReviewConfig) -> list[str]:
         if name not in STAGES:
             errors.append(f"unknown stage {name!r}")
             continue
+        if not stage.enabled:
+            continue
         errors += _seat_errors(name, stage, config.roles, lifted)
         errors += _threshold_errors(name, stage.threshold)
         if stage.max_rounds > MAX_ROUNDS[name]:
@@ -328,11 +335,12 @@ def _apply_policy(raw: dict[str, Any], policy: Policy | None) -> dict[str, Any]:
     return {**raw, "policy": policy.model_dump(), "stages": stages}
 
 
-def load_review(channel: str | None = None, *, path: Path = PANELS_FILE,
+def load_review(channel: str | None = None, *, path: Path | None = None,
                 raise_tier: Tier | None = None, policy: Policy | None = None) -> ReviewConfig:
     """The validated review config, with ``channel``'s overrides merged in and ``review.policy`` applied
     (``policy`` overrides the yaml's). ``raise_tier`` lifts every seat to at least that tier (the all-opus
     comparison run, ``tier_mode='lifted'``); it can never lower one."""
+    path = path or PANELS_FILE     # looked up per call so a test can point it at a fixture file
     raw = _apply_policy(yaml.safe_load(path.read_text(encoding="utf-8"))["review"], policy)
     config = ReviewConfig.model_validate(raw)
     if channel and channel in config.channels:

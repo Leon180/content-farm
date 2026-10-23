@@ -51,7 +51,7 @@ def test_the_channel_decides_whether_the_mix_standard_applies(tmp_path: Path):
     for name in ("a", "b", "c"):
         (tmp_path / name).mkdir()
     assert audio_mix_enabled(_run_dir(tmp_path / "a", "chipcat")) is True
-    assert audio_mix_enabled(_run_dir(tmp_path / "b", "yokai")) is False
+    assert audio_mix_enabled(_run_dir(tmp_path / "b", "ent")) is False
     assert audio_mix_enabled(tmp_path / "c") is True      # unreadable channel: keep the full standard
 
 
@@ -65,7 +65,7 @@ def _card(issues: list[dict]) -> dict:
 
 
 def test_a_mix_fix_on_an_unmixed_channel_is_channel_config_not_a_deck_rework(tmp_path: Path):
-    run_dir = _run_dir(tmp_path, "yokai")
+    run_dir = _run_dir(tmp_path, "ent")
     plan = _rework(run_dir, "final", "final", _card([_mix_issue()]), "assembly")
     assert "mix" not in plan["steps"] and "deck" not in plan["steps"]
     assert [a["caused_by"] for a in plan["advisory"]] == ["channel-config"]
@@ -105,3 +105,6 @@ def test_new_cycle_needs_a_real_reason_and_logs_it(tmp_path: Path):
     line = json.loads((tmp_path / "review" / "new_cycle.jsonl").read_text(encoding="utf-8").splitlines()[0])
     assert line["reason"] == "re-run after the touch guard fix" and line["stages"] == {"media": "cycle-1"}
     assert "new_cycle" in (tmp_path / "production.log.jsonl").read_text(encoding="utf-8")
+
+
+pytestmark = pytest.mark.usefixtures("v3_panels")   # drives the full v3 panel set; v4 turns most of it off (see test_review_v4.py)

@@ -1,0 +1,325 @@
+# 評審團設定（Leon 2026-10-17 工作流：選題 → review → 腳本 → review → 初剪 → review → 調整 → 上片）
+# 角色 × 人數 × 階段都在這裡；src/content_farm/evaluation/panel.py 讀取。
+# 本版只實作 rough_cut / final 兩個階段（cf-cowos-v3）；topic / script 階段由 cf-review-panels 接手，
+# 擴充點：在 stages 下新增階段、在 roles 下新增 rubric，panel.py 的 materials_for(stage) 加素材種類。
+
+version: 1
+
+# 每輪換措辭：同一位觀眾的特質以不同句型與順序描述，避免修正過擬合到固定文字
+framings:
+  - "你是{who}。{traits}"
+  - "請用這個人的眼光看片：{who}。關於他／她：{traits}"
+  - "{who}——{traits}。照這個人真實的耐心與興趣反應，不要比真人更有耐心。"
+
+personas:
+  chipcat:
+    - id: commuter
+      who: 28 歲台北上班族
+      traits: [捷運上用手機看、1.25 倍速、隨時滑走, 對科技新聞有興趣但不是工程師, 討厭開場鋪陳太久、畫面停太久、名詞太多, 前 15 秒沒被抓住就走]
+    - id: engineer
+      who: 35 歲新竹半導體封裝製程工程師
+      traits: [懂 CoWoS／中介層／HBM、用電腦看, 內容講錯、太淺、數字沒出處就不耐煩並留言糾正, 有新產業觀點或數字分析會很投入, 特別檢查技術正確性]
+    - id: student
+      who: 19 歲大一文組學生
+      traits: [常聽說台積電但完全不懂半導體、用平板看, 名詞多又沒比喻就跟不上, 喜歡梗、八卦、好笑畫面, 標出每個聽不懂的詞]
+    - id: investor
+      who: 45 歲有買台股的業務經理
+      traits: [在客廳電視大螢幕看, 想知道跟台積電、輝達、供應鏈誰受惠的關係, 不要技術細節但要結論清楚, 頻道不給投資建議——評估會不會失望、片中有沒有教他自己去哪查]
+    - id: senior
+      who: 63 歲退休公務員
+      traits: [用手機看、字幕要大, 喜歡可愛貓角色, 不喜歡英文縮寫和閃太快的畫面, 評估字幕大小、縮寫]
+    - id: teacher          # holdout：只在最後一輪出現，不參與前幾輪修正依據
+      holdout: true
+      who: 42 歲國中理化老師
+      traits: [想找能放給學生看的課外素材、用教室投影或平板看, 在意比喻是否正確、會不會誤導學生, 喜歡清楚的章節與結論, 不喜歡誇張標題和不必要的商業話題]
+  yokai:
+    - {id: folklore_fan, who: 30 歲民俗愛好者, traits: [讀過山海經白話版, 在意出處是否正確, 喜歡考據與比較]}
+    - {id: casual, who: 24 歲上班族, traits: [睡前手機滑, 想聽故事不想聽論文, 前 15 秒不有趣就走]}
+    - {id: student, who: 17 歲高中生, traits: [只看過動漫裡的妖怪, 喜歡畫面與冷笑話, 古文聽不懂]}
+    - {id: scholar, who: 50 歲中文系講師, traits: [會檢查引文與年代, 討厭把傳說講成史實]}
+    - {id: senior, who: 65 歲退休阿嬤, traits: [手機看、字幕要大, 喜歡台灣在地傳說]}
+    - {id: parent, holdout: true, who: 38 歲家長, traits: [陪小孩一起看, 在意會不會太恐怖, 喜歡有知識點]}
+  offwork:       # 冷笑話小劇場（Shorts，滑著看；笑點成敗取決於前幾秒的鋪陳有沒有留住人）
+    - {id: office_worker, who: 28 歲台北上班族, traits: [下班後在床上滑 Shorts、隨時滑走, 職場梗一聽就懂但看過太多爛梗, 鋪陳超過幾秒還沒進入狀況就走, 笑點如果被預告或被解釋就翻白眼]}
+    - {id: engineer, who: 32 歲後端工程師, traits: [懂部署／會議／需求變更這類工程師日常, 對網路上轉了無數次的梗沒反應, 笑點要有一點巧思才算數, 太刻意的諧音梗會直接滑走]}
+    - {id: student, who: 20 歲大學生, traits: [Shorts 重度使用者、沒上過班, 需要不靠職場經驗也看得懂的鋪陳, 喜歡節奏快、停頓有張力的短片, 字幕沒跟上就走]}
+    - {id: manager, who: 45 歲科技公司主管, traits: [通勤時用手機看, 喜歡自嘲型的職場幽默, 不喜歡拿同事或公司開刀的內容, 鋪陳太趕會漏掉]}
+    - {id: casual, who: 24 歲剛入職的行政助理, traits: [午休滑手機, 愛轉發給同事的才算好笑, 看完要能一句話轉述給別人, 角色可愛有加分]}
+    - {id: comedy_fan, holdout: true, who: 35 歲愛看脫口秀的觀眾, traits: [在意笑話是不是原創、有沒有搬運常見段子, 笑點被講白或重複就扣分, 停頓時機不對會覺得拖, 討厭靠字幕硬撐的笑點]}
+  technews:      # 科技新知：一般觀眾、手機滑、沒有角色；留人靠結論先行、比喻、清楚的畫面卡
+    - {id: commuter, who: 28 歲台北上班族, traits: [捷運上用手機看、隨時滑走, 對科技新聞有興趣但不是工程師, 前 10 秒沒講出「跟我有什麼關係」就走, 討厭名詞堆疊]}
+    - {id: engineer, who: 33 歲軟體工程師, traits: [天天看 Hacker News、已經知道大部分原文, 內容講錯、誇大、把討論串當事實會留言糾正, 想聽到原文沒講的觀點]}
+    - {id: student, who: 19 歲大一文組學生, traits: [對 AI 有興趣但沒學過程式, 名詞沒比喻就跟不上, 喜歡生活化例子]}
+    - {id: manager, who: 45 歲傳產公司主管, traits: [想知道科技新聞會不會影響公司與工作, 不要技術細節要結論, 不喜歡太像廣告或標題殺人]}
+    - {id: senior, who: 63 歲退休公務員, traits: [手機看、字幕要大, 不喜歡英文縮寫和閃太快的畫面, 沒有角色也沒關係但畫面要清楚]}
+    - {id: teacher, holdout: true, who: 42 歲國中資訊老師, traits: [想找能給學生看的科技時事, 在意比喻是否正確、有沒有誤導, 討厭誇大標題]}
+  ent:           # 娛樂快報：手機滑、沒有角色；留人靠「誰說的」講清楚（已證實 vs 報導）、短、不八卦私生活
+    - {id: fan, who: 25 歲追星上班族, traits: [追台日韓藝人與影集, 午休和通勤滑手機、隨時滑走, 想第一時間知道消息但討厭被標題殺人, 傳聞當事實講會直接取消追蹤]}
+    - {id: casual, who: 31 歲不追星的一般觀眾, traits: [偶爾看娛樂新聞聊天用, 前 10 秒沒講出「發生什麼事」就滑走, 不認識的藝人需要一句話交代是誰, 討厭名詞堆疊]}
+    - {id: media_literate, who: 38 歲新聞系畢業的行銷, traits: [在意出處與用字，「據報導」跟「證實」分得很清楚, 看到把傳聞寫成事實會留言糾正, 不喜歡窺探私生活]}
+    - {id: parent, who: 46 歲家長, traits: [不想讓孩子看到八卦細節, 對藝人私生活與未成年相關內容很敏感, 喜歡客觀、點到為止的整理]}
+    - {id: senior, who: 63 歲退休公務員, traits: [手機看、字幕要大, 不熟網路用語和藝人暱稱, 畫面要清楚不閃]}
+    - {id: critic, holdout: true, who: 35 歲影評部落客, traits: [在意是否有出處與論證, 討厭灌水與標題黨, 評論要有自己的觀點而不是複述新聞]}
+  cel:
+    - {id: anime_fan, who: 22 歲動漫迷, traits: [每季追番, 想知道製作內幕, 討厭被說教]}
+    - {id: industry, who: 33 歲動畫業界從業者, traits: [懂製作委員會與外包, 數字講錯會糾正]}
+    - {id: casual, who: 27 歲上班族, traits: [看過幾部熱門作品, 前 15 秒不有趣就走]}
+    - {id: investor, who: 40 歲關心娛樂股的投資人, traits: [想知道誰賺錢, 不要投資建議但要結論清楚]}
+    - {id: student, who: 20 歲設計系學生, traits: [想入行, 在意薪資與工作條件]}
+    - {id: critic, holdout: true, who: 35 歲影評部落客, traits: [在意論證與敘事, 討厭灌水]}
+
+pros:
+  editor:
+    title: 專業剪輯
+    brief: >-
+      你是有十年經驗的 YouTube 知識類長片剪輯師。只看節奏與畫面：換場頻率、靜止畫面、轉場髒不髒、
+      畫面與旁白同步、素材是否貼題、字幕可讀性（不評聲音）。
+    rubric: [節奏與換場, 畫面與旁白同步, 素材貼題, 字幕與版面]
+  director:
+    title: 專業導演
+    brief: >-
+      你是知識類節目導演。看整體敘事：開場鉤子與承諾、章節結構、每段是否推進論點、re-hook、角色（主持角色）使用、
+      語氣一致性、結尾收束與下集預告；指出觀眾會在哪裡失去方向。
+    rubric: [開場與承諾, 結構與推進, 角色與語氣, 收尾]
+  writer:
+    title: 專業編劇
+    brief: >-
+      你是科普節目編劇。看講稿：比喻是否先於定義、每 10 秒是否有讓人想聽下去的東西、名詞密度、
+      笑點與八卦是否自然、有沒有灌水句。
+    rubric: [比喻與定義, 節拍密度, 名詞密度, 幽默與八卦, 精簡度]
+
+stages:
+  rough_cut:          # 初剪：觀眾 ×5 ＋剪輯 ＋導演（編劇可選）
+    viewers: 5
+    holdout: false
+    pros: {editor: 1, director: 1, writer: 0}
+    homepage: true
+  final:              # 成片／最後一輪：加 holdout 觀眾
+    viewers: 5
+    holdout: true
+    pros: {editor: 1, director: 1, writer: 1}
+    homepage: true
+  shorts:             # Shorts：客觀指標 ＋ 2 位觀眾
+    viewers: 2
+    holdout: false
+    pros: {}
+    homepage: false
+
+thresholds:            # Leon 2026-10-17 先用這組（另定再改）
+  leave_median_pct: 0.5        # 合成觀眾離開時間中位數 ≥ 片長 50%
+  click_mean: 7.0              # 平均點擊意願 ≥ 7/10
+  objective_all_green: true    # 死區 0、節拍最大間隔 ≤10 s、最長靜止 ≤8 s、首個鉤子 ≤15 s
+  homepage_noticed_median: 3   # 首頁情境：被注意名次中位 ≤ 3
+  homepage_pick_factor: 2.0    # 被選比例 ≥ 2/N（N＝首頁張數）
+  max_rounds: 3
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 句子 id 欄位：由 feat/incremental-render 定義；未定前，deck 沒有此欄位時用「<slide id>.<序號>」（不穩定，僅供指認）
+sentence_id_field: sentence_ids   # feat/incremental-render ec2c126: slide.sentence_ids, one per split_sentences(narration)
+
+# 每支片的評審流程（Leon 2026-10-17 決策 e0ac3ac36faf；設計稿 claude.ai/artifact/Q6ug8VB3rWc6fBLtorKi6r）
+# 由 src/content_farm/review/config.py 驗證；硬規則（必要角色、事實查核 opus·high、門檻下限、輪數上限）寫在程式裡，
+# 這裡只能「更嚴」不能「更鬆」。每位評審是 pipeline 自己啟動的 `claude -p --model --effort --json-schema` 子程序。
+review:
+  # Leon 2026-10-23。score_only：非事實關評一次、記分數與意見，不擋、不退回、不改稿（選題仍依分數取最高）；分數寫進
+  # review/score_ledger.json，views／留存／CTR 欄位待上片後填。fact_on_fail（決策 a53960fc4b1d＝A）：article／script_facts／media
+  # 查一次，確認錯的句子自動刪或改成有出處的說法（不新增）、授權有問題的素材自動換掉、不重查、往下走，錯誤與修法記進
+  # review/auto_fix.jsonl；stop＝照下面各關的輪數與門檻，沒過就停。
+  policy: {score_only: true, fact_on_fail: auto_fix_then_pass}
+  defaults: {max_parallel: 8, timeout_s: 1200, schema_retries: 1}   # 2026-10-19 4→8；入場檢查仍依可用記憶體往下調
+  budget: {usd_per_video: 15}                  # 雲端車道（評審＋產出 agent）每支片的名目上限；用完就停下回報，不自動繼續（review/budget.py）
+  aggregator: {model: haiku, effort: low}      # 修改清單整理、退回路由、彙整
+  roles:
+    viewer: {title: 合成觀眾, kind: viewer}
+    writer_story:
+      title: 編劇（故事）
+      kind: pro
+      brief: >-
+        你是科普節目編劇，偏重故事：開場 15 秒內有沒有鉤子與承諾、每 5–10 秒有沒有留人的點（問題、反轉、數字揭曉、八卦、冷笑話）、
+        艱深名詞是否先用國高中程度的比喻再給定義、八卦是否有來源、冷笑話節拍是否自然、結尾是否回扣開場。
+      rubric: [十五秒鉤子, 留人點密度, 國高中比喻, 八卦與冷笑話節拍, 收尾回扣]
+    writer_density:
+      title: 編劇（資訊密度）
+      kind: pro
+      brief: >-
+        你是科普節目編劇，偏重資訊密度：內容撐不撐得起片長、有沒有灌水句或重講、一段是否丟太多數字、名詞密度、
+        論點是否一路推進、每個數字是否有單位與基準。
+      rubric: [內容撐得起片長, 無灌水重講, 數字密度與單位, 名詞密度, 論點推進]
+    director:
+      title: 導演
+      kind: pro
+      brief: >-
+        你是知識類節目導演：整體敘事、分鏡畫不畫得出來、畫面會不會停太久、畫面有沒有幫講稿說話、主持角色使用、結尾收束。
+      rubric: [敘事結構, 分鏡可行, 畫面節奏, 角色與語氣]
+    fact_checker:
+      title: 事實查核
+      kind: fact
+      tools: [Read, WebFetch, WebSearch]
+      brief: >-
+        你是事實查核員。逐條找出稿中每個數字、日期、引述、因果說法與八卦，回到 sources.json 的原始網址查證（用 WebFetch），
+        不要相信稿子或文章的轉述。不參考其他查核員。
+    producer:
+      title: 製作人
+      kind: producer
+      brief: >-
+        你是頻道製作人：題目與頻道合不合、跟頻道既有片有沒有重複、來源夠不夠；標題與縮圖有沒有誇大、跟內容一致嗎、
+        有沒有投資建議或聳動用語。
+    designer:
+      title: 縮圖設計師
+      kind: designer
+      brief: >-
+        你是 YouTube 縮圖設計師：縮到手機首頁大小（168 px 寬）後字讀不讀得到、對比、構圖、主體大小、角色表情、三款是否真的不同。
+      rubric: [小尺寸可讀, 對比, 構圖與主體, 三款差異]
+    compliance:
+      title: 合規審查
+      kind: compliance
+      brief: >-
+        你是素材合規審查：每張素材有沒有可讀的公司名或 logo、有沒有像真人或官方角色、授權是否可營利（credits.json）。
+    editor_visual:
+      title: 剪輯（畫面）
+      kind: pro
+      brief: >-
+        你是十年經驗的知識類長片剪輯師，只看畫面：換場頻率、靜止畫面、轉場、畫面與旁白同步、素材貼題、字幕可讀、縮圖與影片一致。
+      rubric: [節奏與換場, 畫面與旁白同步, 素材貼題, 字幕與版面]
+    writer_comedy:
+      title: 編劇（冷笑話）
+      kind: pro
+      brief: >-
+        你是冷笑話與短劇編劇，審的是一支 20–50 秒、由一隻飲水機金魚演出的直式 Short 劇本：鋪陳（1–3 場）→ 停頓約 0.6 秒（記在最後一場
+        鋪陳的 transition）→ 笑點（單句、短）→ 可省的收尾。要判斷：笑點有沒有真的翻轉鋪陳建立的預期、鋪陳有沒有提前洩漏或太長、
+        停頓放的位置對不對（笑點之前，不是之後）、全片長度是否落在 20–50 秒（約 5.5 字／秒加停頓）、有沒有解釋笑點或重複笑點、
+        是否原創（看起來像常見段子或其他頻道的口頭禪就扣分）、是否符合頻道調性（下班族的冷面幽默、口語、不爆粗、不拿真實公司或個人開刀、
+        不用過期流行語如「狂」「絕了」、「欸」不超過一次）、角色只有頻道設定裡的金魚。不要評音效與配樂（後期才加）。
+      rubric: [笑點, 鋪陳, 停頓, 時長, 頻道調性]
+  stages:
+    topic:
+      gate: topic
+      reviews: [topics/candidates.json]
+      producer: {model: opus, effort: medium}
+      rework: topic
+      max_rounds: 2
+      seats:
+        - {role: viewer, count: 3, model: sonnet, effort: low}
+        - {role: writer_story, count: 1, model: sonnet, effort: low}
+        - {role: producer, count: 1, model: sonnet, effort: low}
+      threshold: {top_n_long: 1, top_n_short: 3, topic_min_score: 6.0}
+    article:
+      gate: article
+      reviews: [article.md, sources.json]
+      producer: {model: sonnet, effort: low}
+      arbiter: {model: sonnet, effort: medium}   # Leon 59fdefb32bd7=D：兩位查核不一致交第 3 位仲裁
+      rework: article
+      max_rounds: 3                          # 59fdefb32bd7=D：2→3；第 2 輪起只准刪改（程式比對，review/article_diff.py）
+      seats:
+        - {role: fact_checker, count: 2, model: sonnet, effort: medium}
+        - {role: writer_story, count: 1, model: sonnet, effort: low}
+      threshold: {fact_errors_max: 0}
+    # 腳本拆兩段（Leon 7afa95870a4e＝A）：結構段可大改、事實只列不擋；過了才進事實段（只准刪改、仲裁、0 錯）。
+    # 事實段過了＝事實鎖定：之後改講稿只准刪改；新寫句子會讓結構段的核可失效，重新走兩段。
+    script_structure:
+      gate: deck
+      reviews: [deck.json, slides/contact_sheet.png]
+      producer: {model: sonnet, effort: low}
+      rework: deck
+      max_rounds: 3
+      seats:
+        - {role: viewer, count: 5, holdout: 1, model: sonnet, effort: low}
+        - {role: writer_story, count: 1, model: sonnet, effort: low}
+        - {role: writer_density, count: 1, model: sonnet, effort: low}
+        - {role: director, count: 1, model: sonnet, effort: low}
+        - {role: fact_checker, count: 1, model: sonnet, effort: medium}   # 只列出、不擋（寫進修改清單供參考）
+      threshold: {leave_median_pct: 0.35, writer_min: 6.0}   # Leon 80bd30689ee7=C: 7 → 6.5；2026-10-23 校正成 sonnet 尺度（writer 6.5→6.0、觀眾 0.40→0.35），見 REPORT-story-calibrate.md
+    script_facts:
+      gate: deck_facts
+      reviews: [deck.json]
+      arbiter: {model: sonnet, effort: medium}
+      rework: deck
+      max_rounds: 3
+      seats:
+        - {role: fact_checker, count: 2, model: sonnet, effort: medium}
+      threshold: {fact_errors_max: 0}
+    title_thumb:
+      gate: title
+      reviews: [titles.json, thumbnail.json, thumbnail_variants.json, thumbnails/variant_*.jpg]
+      producer: {model: sonnet, effort: low}
+      rework: thumbnail_spec
+      max_rounds: 3
+      seats:
+        - {role: viewer, count: 5, model: sonnet, effort: low}
+        - {role: designer, count: 1, model: sonnet, effort: low}
+        - {role: producer, count: 1, model: sonnet, effort: low}
+      threshold: {noticed_median_max: 3, pick_factor: 2.0, auto_checks: true, producer_honest: true}   # 競品色相差只列出不擋（Leon 31134b307b3e=A；hue_blocks 預設 false）
+    media:
+      gate: media
+      reviews: [media/media_report.json, credits.json, media/contact_sheet.png, assets/ai_images/*]
+      rework: media
+      max_rounds: 3
+      seats:
+        - {role: compliance, count: 1, model: sonnet, effort: low}
+      threshold: {compliance_issues_max: 0, licenses_confirmed: true}
+    final:
+      gate: final
+      reviews: [assembly/release.mp4, assembly/final.mp4, qc/qc_report.json, thumbnails/variant_*.jpg]
+      rework: assembly
+      max_rounds: 3
+      seats:
+        - {role: viewer, count: 5, holdout: 1, model: sonnet, effort: low}
+        - {role: editor_visual, count: 1, model: sonnet, effort: low}
+        - {role: director, count: 1, model: sonnet, effort: low}
+      threshold: {leave_median_pct: 0.35, objective_all_green: true, thumbnail_consistent: true}
+    shorts_topic:
+      gate: topic
+      reviews: [topics/candidates.json]
+      producer: {model: sonnet, effort: low}
+      rework: topic
+      max_rounds: 1
+      seats:
+        - {role: viewer, count: 3, model: sonnet, effort: low}
+      threshold: {top_n_long: 0, top_n_short: 3}
+    shorts_script:
+      gate: script
+      reviews: [script.json]
+      producer: {model: sonnet, effort: low}
+      rework: deck
+      max_rounds: 3
+      seats:
+        - {role: viewer, count: 3, model: sonnet, effort: low}
+        - {role: writer_story, count: 1, model: sonnet, effort: low}
+      threshold: {leave_median_pct: 0.35, writer_min: 6.5}   # Leon 80bd30689ee7=C: 7 → 6.5
+    shorts_title:
+      gate: title
+      reviews: [titles.json, thumbnails/variant_*.jpg]
+      rework: thumbnail_spec
+      max_rounds: 3
+      seats:
+        - {role: viewer, count: 3, model: sonnet, effort: low}
+    shorts_final:
+      gate: final
+      reviews: [assembly/final.mp4, qc/qc_report.json]
+      rework: assembly
+      max_rounds: 3
+      seats:
+        - {role: viewer, count: 3, model: sonnet, effort: low}
+        - {role: editor_visual, count: 1, model: sonnet, effort: low}
+      threshold: {leave_median_pct: 0.35}
+  # 頻道覆寫：<code>: {stages: {<stage>: {...}}}，合併後重新驗證（只能更嚴）
+  channels:
+    offwork:        # 冷笑話小劇場沒有 deck：劇本退回給 skit_script；劇本審稿由冷笑話編劇（笑點／鋪陳／停頓／時長／頻道調性）代替故事編劇
+      stages:
+        shorts_script:
+          rework: skit_script
+          seats:
+            - {role: viewer, count: 3, model: sonnet, effort: low}
+            - {role: writer_comedy, count: 1, model: sonnet, effort: low}
+    technews:       # Leon 2026-10-23：事實與授權不放行——article／script_facts／media 第 3 輪沒過仍硬停；其餘關照 story-calibrate 的放行規則
+      stages:
+        article: {waive_on_last_round: false}
+        script_facts: {waive_on_last_round: false}
+        media: {waive_on_last_round: false}
+        shorts_script: {rework: news_script}   # 科技新聞 Short：退回給 news_script 步驟（稿是 news_script.json，script.json 由它產生）
+    ent:            # 娛樂快報：同科技新知——事實與授權不放行（policy 為 auto_fix_then_pass 時走自動修一次）；Short 稿退回給 news_script
+      stages:
+        article: {waive_on_last_round: false}
+        script_facts: {waive_on_last_round: false}
+        media: {waive_on_last_round: false}
+        shorts_script: {rework: news_script}
