@@ -142,8 +142,8 @@ def _rework(run_dir: Path, gate: str, stage_name: str, card: dict[str, Any], def
         issues = [{"ref": {"target": "script"}, "category": "content", "severity": "high",
                    "problem": "；".join(verdict.get("reasons", [])), "fix": "依評分卡改善", "evidence": "",
                    "caused_by": default_step}]
-    if default_step == "skit_script":     # a skit has no deck: the script step owns every script problem
-        issues = [{**i, "caused_by": "skit_script"} if i.get("caused_by") == "deck" else i for i in issues]
+    if default_step in ("skit_script", "news_script"):     # no deck: the script step owns every script problem
+        issues = [{**i, "caused_by": default_step} if i.get("caused_by") == "deck" else i for i in issues]
     texts = _texts(run_dir)
     issues, deferred, narrowing = narrow(issues, texts.sentences) if narrow_enabled() else (issues, [], None)
     plan = routing.plan(issues, texts, stage=stage_name, round_no=card["round"], default_step=default_step,

@@ -364,12 +364,16 @@ NEWS_SHORT_STEPS: tuple[Step, ...] = (
     Step("news_prepare", "cmd", "稿 → script.json（五段＝五個場景）", outputs=("script.json", "voice_text.json"),
          inputs=(NEWS_SCRIPT_FILE,),
          command=lambda c: _py(c, "news.py", "prepare", "--run-dir", _run_dir(c))),
+    # Channels with a ``series.news`` block (technews; Leon 2026-10-23) also get the script panel
+    # (stage shorts_script) before any voice is made; chipcat's ``series.hn`` keeps its original flow.
+    Step("gate_script", "gate", "腳本評審（Shorts）", gate=Gate.SCRIPT, artifacts=("script.json",),
+         applies=lambda channel: "news" in channel.series),
     Step("voice", "cmd", "配音＋字幕對齊", outputs=("audio/scene_*.mp3", "subtitles/subtitles.srt"),
          inputs=("voice_text.json",),  # spoken words only: screen edits never re-voice
          command=lambda c: _py(c, "run_stage.py", "--stage", "voice", "--run-dir", _run_dir(c),
                                env=_voice_env(c)),
          paid=_voice_paid, heavy_if=_voice_local, identity=lambda c: voice_choice(c).describe()),
-    Step("news_render", "cmd", "直式頁面＋晶片貓＋字幕燒入",
+    Step("news_render", "cmd", "直式頁面（來源卡／角色）＋字幕燒入",
          outputs=("assembly/final.mp4", "thumbnails/thumbnail.png", "credits.json"),
          inputs=(NEWS_SCRIPT_FILE, "script.json", "audio/scene_*.mp3", "subtitles/subtitles.srt"),
          command=lambda c: _py(c, "news.py", "render", "--run-dir", _run_dir(c)), heavy=True),
@@ -402,7 +406,7 @@ def steps_for(channel: Channel, run_dir: Path | None = None) -> tuple[Step, ...]
 
         return SHORTS_SCRIPTED_STEPS if load_spec(run_dir).scripted else SHORTS_CUT_STEPS
     if run_dir is not None and (run_dir / NEWS_ITEM_FILE).is_file():
-        return NEWS_SHORT_STEPS
+        return tuple(step for step in NEWS_SHORT_STEPS if step.applies(channel))
     if run_dir is not None and (run_dir / NEWS_WEEKLY_FILE).is_file():
         return news_weekly_steps(channel)
     steps = {Pipeline.EXPLAINER: EXPLAINER_STEPS, Pipeline.SHORTS_SKIT: SHORTS_SKIT_STEPS}[channel.pipeline]

@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Literal
 
 import yaml
+from dataclasses import dataclass
 from pydantic import BaseModel, ConfigDict, Field
 
 from content_farm.explainer.deck import visible_len
@@ -46,6 +47,19 @@ OPINION_MARKERS = ("我覺得", "我認為", "我們認為", "我的看法", "�
 BANNED = {r"狂|絕了|炸裂|太神": "流行語（時間久了尷尬）",
           r"買進|賣出|目標價|飆股|進場|抄底|投資建議": "投資建議（頻道規則：不報明牌）"}
 FILLER = "欸"
+
+
+@dataclass(frozen=True)
+class Branding:
+    """The channel-specific words of a news Short (chipcat's 快報 is the default; technews overrides)."""
+
+    take_label: str = BEAT_LABELS["take"]
+    byline: str = "本片是晶片貓對原文的摘要與評論，不是翻譯；細節與數字以原文為準。"
+    series_line: str = "晶片貓 HN 快報：每天 1–2 則國外科技圈熱門話題，每週六整理成長片。"
+    tags: tuple[str, ...] = ("Shorts", "晶片貓", "HN快報", "科技新聞")
+
+    def labels(self) -> dict[str, str]:
+        return {**BEAT_LABELS, "take": self.take_label}
 Pose = Literal["idle", "point", "think", "shocked", "smug", "deadpan", "wave"]
 
 
@@ -110,8 +124,8 @@ def load_glossary(path: Path = GLOSSARY_PATH) -> dict[str, dict[str, str]]:
     return terms
 
 
-def estimate_seconds(script: NewsScript) -> float:
-    return round(sum(visible_len(b.narration) for b in script.beats) / CHARS_PER_SECOND, 1)
+def estimate_seconds(script: NewsScript, cps: float = CHARS_PER_SECOND) -> float:
+    return round(sum(visible_len(b.narration) for b in script.beats) / cps, 1)
 
 
 def _beat_problems(script: NewsScript, glossary: dict[str, dict[str, str]]) -> list[str]:
@@ -152,22 +166,22 @@ def _source_problems(script: NewsScript, item: dict | None) -> list[str]:
     return problems
 
 
-def _text_problems(script: NewsScript) -> list[str]:
+def _text_problems(script: NewsScript, cps: float = CHARS_PER_SECOND) -> list[str]:
     text = "".join(b.narration for b in script.beats) + script.title
     problems = [f"{why}: {m.group(0)!r}" for pattern, why in BANNED.items() if (m := re.search(pattern, text))]
     if text.count(FILLER) > 1:
         problems.append(f"語氣詞「{FILLER}」出現 {text.count(FILLER)} 次（最多 1）")
-    seconds = estimate_seconds(script)
+    seconds = estimate_seconds(script, cps)
     if not MIN_SECONDS <= seconds <= MAX_SECONDS:
-        problems.append(f"narration ≈ {seconds}s at {CHARS_PER_SECOND} chars/s; want {MIN_SECONDS:.0f}–{MAX_SECONDS:.0f}s")
+        problems.append(f"narration ≈ {seconds}s at {cps} chars/s; want {MIN_SECONDS:.0f}–{MAX_SECONDS:.0f}s")
     return problems
 
 
 def lint(script: NewsScript, item: dict | None = None,
-         glossary: dict[str, dict[str, str]] | None = None) -> list[str]:
-    """Every rule the Short must pass before voice; empty list = OK."""
+         glossary: dict[str, dict[str, str]] | None = None, cps: float = CHARS_PER_SECOND) -> list[str]:
+    """Every rule the Short must pass before voice; empty list = OK. ``cps``: the channel voice's measured speed."""
     glossary = load_glossary() if glossary is None else glossary
-    return _beat_problems(script, glossary) + _source_problems(script, item) + _text_problems(script)
+    return _beat_problems(script, glossary) + _source_problems(script, item) + _text_problems(script, cps)
 
 
 def _source_line(source: SourceRef) -> str:
@@ -178,12 +192,12 @@ def _source_line(source: SourceRef) -> str:
     return f"{who}{source.title} {source.url}{when}"
 
 
-def description(script: NewsScript) -> str:
+def description(script: NewsScript, branding: Branding = Branding()) -> str:
     return "\n".join([
         script.summary,
         "",
-        "本片是晶片貓對原文的摘要與評論，不是翻譯；細節與數字以原文為準。",
-        "晶片貓 HN 快報：每天 1–2 則國外科技圈熱門話題，每週六整理成長片。",
+        branding.byline,
+        branding.series_line,
         "",
         "#Shorts",
     ])
@@ -212,12 +226,14 @@ def keep_measured(script: Script, previous: Script | None) -> Script:
                                      "total_duration_seconds": previous.total_duration_seconds})
 
 
-def to_script(script: NewsScript, glossary: dict[str, dict[str, str]] | None = None) -> Script:
+def to_script(script: NewsScript, glossary: dict[str, dict[str, str]] | None = None,
+              branding: Branding = Branding(), cps: float = CHARS_PER_SECOND) -> Script:
     glossary = load_glossary() if glossary is None else glossary
+    labels = branding.labels()
     scenes = tuple(
-        Scene(scene_number=i, title=BEAT_LABELS[b.kind], narration=b.narration,
+        Scene(scene_number=i, title=labels[b.kind], narration=b.narration,
               visual_hint=VisualHint(description=b.screen.headline, style="news_page"),
-              duration_seconds=round(visible_len(b.narration) / CHARS_PER_SECOND, 2))
+              duration_seconds=round(visible_len(b.narration) / cps, 2))
         for i, b in enumerate(script.beats, start=1))
     # Deterministic id/time: re-running prepare on the same news_script.json must not
     # change script.json, or the voice step (paid) would re-run.
@@ -226,10 +242,10 @@ def to_script(script: NewsScript, glossary: dict[str, dict[str, str]] | None = N
     return Script(
         artifact_id=digest,
         created_at=datetime.fromisoformat(stamps[-1]) if stamps else datetime(2026, 1, 1, tzinfo=timezone.utc),
-        video_title=shorts_title(script.title), description=description(script), scenes=scenes,
+        video_title=shorts_title(script.title), description=description(script, branding), scenes=scenes,
         target_length=VideoLength.SHORT, orientation=Orientation.PORTRAIT,
         total_duration_seconds=round(sum(s.duration_seconds for s in scenes) + END_CARD_SECONDS, 2),
-        tags=tuple(dict.fromkeys(("Shorts", "晶片貓", "HN快報", "科技新聞", *script.tags))),
+        tags=tuple(dict.fromkeys((*branding.tags, *script.tags))),
         sources=tuple(_source_line(s) for s in script.sources),
         pronunciation_map=pronunciation(script, glossary),
     )

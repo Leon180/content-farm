@@ -206,3 +206,48 @@ def test_arxiv_link_is_read_through_the_api_abstract(tmp_path: Path) -> None:
     read = verify.read_original(cand, get, _robots_ok, tmp_path)
     assert read.ok and read.kind == "abstract"
     assert urls == ["https://export.arxiv.org/api/query?id_list=2610.01234"]   # no PDF request
+
+
+# ── GitHub Trending + response cache (technews, 2026-10-23) ─────────────────
+
+_TRENDING = """<div><article class="Box-row">
+<h2 class="h3 lh-condensed"><a href="/acme/rocket"><span class="text-normal">acme /</span> rocket</a></h2>
+<p class="col-9 color-fg-muted my-1">A tiny <b>fast</b> inference engine</p>
+<div class="f6"><span itemprop="programmingLanguage">Rust</span>
+<a href="/acme/rocket/stargazers"><svg></svg> 12,345</a>
+<span>1,234 stars today</span></div></article>
+<article class="Box-row"><h2><a href="/x/y">x / y</a></h2><div><a href="/x/y/stargazers"><svg></svg> 9</a> 5 stars today</div></article></div>"""
+
+
+def test_github_trending_rows_become_candidates() -> None:
+    from datetime import datetime, timezone
+
+    from content_farm.production.news.fetch import parse_github_trending
+
+    got = parse_github_trending(_TRENDING, datetime(2026, 10, 23, 4, 0, tzinfo=timezone.utc))
+    assert [c.id for c in got] == ["gh-acme-rocket", "gh-x-y"]
+    first = got[0]
+    assert first.url == "https://github.com/acme/rocket" and first.domain == "github.com"
+    assert first.title == "acme/rocket: A tiny fast inference engine" and first.tags == ("Rust",)
+    assert first.discussions[0].site == "github" and first.discussions[0].points == 1234
+    assert first.discussions[0].rank == 1 and got[1].discussions[0].rank == 2
+
+
+def test_response_cache_answers_a_rerun_without_a_request(tmp_path) -> None:
+    from content_farm.production.news.fetch import PoliteHttp, Response
+
+    calls = []
+
+    class Stub(PoliteHttp):
+        pass
+
+    http = PoliteHttp(cache_dir=tmp_path, cache_ttl=60, wall=lambda: 1000.0, sleep=lambda _: None)
+    http._cache_put("https://lobste.rs/rss", Response("https://lobste.rs/rss", 200, "text/xml", b"<rss/>"))
+    got = http.get("https://lobste.rs/rss")
+    assert got.body == b"<rss/>" and http.hits == 1 and not calls
+    stale = PoliteHttp(cache_dir=tmp_path, cache_ttl=60, wall=lambda: 1100.0)
+    assert stale._cache_get("https://lobste.rs/rss") is None           # older than the TTL
+    forced = PoliteHttp(cache_dir=tmp_path, cache_ttl=0, wall=lambda: 1000.0)
+    assert forced._cache_get("https://lobste.rs/rss") is None          # --refetch ignores the cache
+    http._cache_put("https://lobste.rs/x", Response("https://lobste.rs/x", 404, "", b"no"))
+    assert http._cache_get("https://lobste.rs/x") is None              # only 200s are cached

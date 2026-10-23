@@ -1,0 +1,100 @@
+# 科技新知（暫名）— 每日科技新知，台灣中文講給一般觀眾；取代已停用的 offwork（金魚）
+# Leon 2026-10-23：多來源免費抓取（HN／Lobsters／arXiv／GitHub Trending）、格式看內容（Shorts 或長片）、
+# 不要角色（46a2ff71e087）、新聞感女聲（本機 VoxCPM2 複製）。Secrets never go here.
+code: technews
+name: 科技新知
+line: 每日科技新知（全球科技新聞，台灣中文講解）
+pipeline: explainer
+brand: technews
+deck_category: tech
+mascot:                   # 不要角色：rig_ready false → mascot 步驟、縮圖角色規則、deck 吉祥物占比全部不適用（比照 yokai 拿掉青蛙）
+  name: （無角色）
+  ref: chipcat            # 佔位；rig_ready false 時沒有任何步驟會讀
+  rig_ready: false
+voice:                    # Leon 2026-10-23：新聞感女聲。Qwen3-TTS VoiceDesign 設計 → 固定參考聲 → VoxCPM2 複製
+  provider: voxcpm2
+  tempo: 1.1
+  reference:
+    audio: ~/.local/share/content-farm-voices/technews-ref.wav
+    text: 各位觀眾好，歡迎收看科技新知。今天要為你整理的，是這一週科技圈最值得注意的消息。先講結論：一項看似不起眼的技術更新，可能正在改變我們每天使用手機和網路的方式。接下來，我們用最簡單的比喻，把重點一次講清楚。
+    note: Qwen3-TTS VoiceDesign 設計的新聞感女聲（REPORT-technews §聲音）；原文同上
+topic_categories: [AI 與大型模型, 半導體與硬體, 資訊安全, 開源與開發者工具, 網路與平台, 科學與研究]
+format:                   # 預設長片規格；實際格式每則由評審團判定（news/format.py → format_decision.json），Shorts 走 series.news
+  length: long
+  aspect: "16:9"
+  target_seconds: [360, 600]   # Leon 2026-10-23：長片 6–10 分鐘（可多則彙整）
+  goal_seconds: 420
+cadence:
+  long_per_week: 1
+  shorts_per_week: 10
+  publish_days: [sat]
+  shorts_days: []          # 每天
+  lead_days: 2
+  publish_time: "10:00"
+  timezone: Asia/Taipei
+shorts_strategy: 每則新聞由評審團看內容撐不撐得起：撐不起長片的做 ≤60 秒 Shorts；撐得起的做 6–10 分鐘長片或多則彙整
+media:
+  stock: true
+  ai_image: true
+  artwork: false
+  source_footage: false
+ai_illustration:
+  provider: local_mflux
+  model: flux2-klein-4b
+  style_prefix: >-
+    Clean flat editorial illustration of technology news, simple shapes, teal and amber accents,
+    illustration, not a photograph, no text, no logos.
+  seed: 42
+  width: 1280
+  height: 720
+gates: [topic, article, deck, title, media, final]   # 全部由評審團核可；article／script_facts／media 第 3 輪沒過仍硬停（review_panels.yaml channels.technews）
+youtube:
+  client_id_env: CF_YOUTUBE_CLIENT_ID
+  client_secret_env: CF_YOUTUBE_CLIENT_SECRET
+  refresh_token_env: CF_YT_TECHNEWS_REFRESH_TOKEN
+  channel_id_env: CF_YT_TECHNEWS_CHANNEL_ID
+  ai_disclosure: true
+  default_privacy: private
+identity:
+  opening:
+    format: 結論先行式開場：第一句直接講這則消息的結論或最反直覺的一點，再用一句話說明它為什麼跟一般人有關；不自我介紹角色，不報投影片張數，不在鉤子裡放免責聲明
+    signature: 這裡是科技新知
+  take_label: 編輯觀點
+  outro:
+    signature: 我們下則新聞見
+    endcard: 下一則，科技新知接著整理
+  description:
+    header: "【科技新知】{title}"
+    sources_label: 這集讀過的原文與資料：
+    footer: 科技新知是對原文的摘要與評論，不是翻譯；不報明牌、不給投資建議；數字有疑問，歡迎留言附上來源。
+notes:
+  - 不給投資建議；八卦必須有來源
+  - 只用公開免費端點、遵守各站 rate limit 與 robots；X／Twitter 一律不抓
+  - 畫面：自製來源卡（標題區）、圖表、字幕；不整頁搬運截圖、不用別人影片原片
+  - 頻道名稱為暫名，候選見 REPORT-technews.md
+publish:
+  timezone: Asia/Taipei
+  long: {days: [sat], window: "10:00-11:00"}
+  shorts: {windows: ["12:00-13:00", "20:00-21:00"], per_day: 3, min_gap_hours: 3}
+  urgent_news_asap: true
+  source: research/upload-timing-2026-10.md
+series:
+  news:                   # production/news；produce.py news daily --channel technews [--auto]
+    name: 科技新知
+    dir_prefix: technews     # output/technews-<day>…（不和晶片貓的 hn-<day> 混）
+    min_per_source: 2        # 候選頁每個非 HN 來源（Lobsters／arXiv／GitHub）至少露出 2 則
+    chars_per_second: 4.6    # 本機 VoxCPM2 女聲 tempo 1.1 的暫估，聲音定案後實測校正
+    playlist: 科技新知｜每日快報
+    take_label: 編輯觀點
+    end_label: 每週六・長片整理
+    sources: [hn, lobsters, arxiv, github]
+    max_age_hours: 48
+    review_candidates: 20
+    daily_shorts: [2, 5]
+    shorts_time: "12:30"
+    weekly:
+      items: [3, 5]
+      target_seconds: [360, 600]
+      publish_day: sat
+      publish_time: "10:00"
+    rank_weights: {popularity: 0.7, relevance: 0.3, comments: 0.6}

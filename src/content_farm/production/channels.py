@@ -256,6 +256,9 @@ class YouTube(_Strict):
 
 class Channel(_Strict):
     code: str = Field(pattern="^[a-z][a-z0-9_]{1,31}$")
+    # False = retired (Leon 2026-10-23: offwork). The yaml, assets and code stay; load_all() skips it,
+    # so no schedule, quota or new run goes to it. Existing run-dirs can still be opened by code.
+    enabled: bool = True
     name: str
     line: str
     pipeline: Pipeline
@@ -334,11 +337,12 @@ def load_channel(code_or_path: str | Path, channels_dir: Path = CHANNELS_DIR) ->
     return channel
 
 
-def load_all(channels_dir: Path = CHANNELS_DIR) -> tuple[Channel, ...]:
-    return tuple(load_channel(path, channels_dir) for path in sorted(channels_dir.glob("*.yaml")))
+def load_all(channels_dir: Path = CHANNELS_DIR, *, include_disabled: bool = False) -> tuple[Channel, ...]:
+    channels = tuple(load_channel(path, channels_dir) for path in sorted(channels_dir.glob("*.yaml")))
+    return channels if include_disabled else tuple(c for c in channels if c.enabled)
 
 
 def other_identities(channel: Channel, channels_dir: Path = CHANNELS_DIR) -> tuple[Identity, ...]:
     """Identities of every other channel in ``channels_dir`` (for cross-channel checks)."""
-    return tuple(other.identity for other in load_all(channels_dir)
+    return tuple(other.identity for other in load_all(channels_dir, include_disabled=True)
                  if other.code != channel.code and other.identity is not None)

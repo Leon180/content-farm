@@ -21,12 +21,23 @@ from content_farm.production.news import script as ns
 from content_farm.production.state import read_channel_code
 
 
+def _channel_words(run_dir: Path):
+    """(branding, chars/second) of the run's channel: chipcat 快報 keeps its defaults."""
+    from content_farm.production.news.series import branding_for, news_series
+
+    channel = load_channel(read_channel_code(run_dir))
+    cps = news_series(channel).chars_per_second if ("news" in channel.series or "hn" in channel.series) \
+        else ns.CHARS_PER_SECOND
+    return branding_for(channel), cps
+
+
 def cmd_lint(run_dir: Path) -> int:
     news = ns.load_script(run_dir)
-    problems = ns.lint(news, ns.load_item(run_dir))
+    _, cps = _channel_words(run_dir)
+    problems = ns.lint(news, ns.load_item(run_dir), cps=cps)
     for problem in problems:
         print(f"✗ {problem}")
-    print(f"{'FAIL' if problems else 'OK'}: {len(problems)} problem(s), ≈{ns.estimate_seconds(news)}s narration")
+    print(f"{'FAIL' if problems else 'OK'}: {len(problems)} problem(s), ≈{ns.estimate_seconds(news, cps)}s narration")
     return 1 if problems else 0
 
 
@@ -38,7 +49,8 @@ def cmd_prepare(run_dir: Path) -> int:
 
     path = run_dir / "script.json"
     previous = Script.model_validate_json(path.read_text(encoding="utf-8")) if path.is_file() else None
-    script = ns.keep_measured(ns.to_script(ns.load_script(run_dir)), previous)
+    branding, cps = _channel_words(run_dir)
+    script = ns.keep_measured(ns.to_script(ns.load_script(run_dir), branding=branding, cps=cps), previous)
     path.write_text(json.dumps(script.model_dump(mode="json"), ensure_ascii=False, indent=2), encoding="utf-8")
     voice_text = run_dir / ns.VOICE_TEXT_FILE
     text = ns.voice_text(script)

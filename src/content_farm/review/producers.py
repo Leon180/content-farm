@@ -29,12 +29,14 @@ RECEIPT = {"type": "object", "additionalProperties": False, "required": ["files"
 TOOLS = ("Read", "Write", "Edit", "Glob", "Grep", "WebSearch", "WebFetch")   # + Bash scoped to the repo python
 
 SCRIPTS = ("check_article.py", "deck_to_script.py", "apply_deck_patch.py", "make_thumbnail.py", "render_slides.py",
-           "check_skit.py")
-TIMEOUT_S = {"topic": 1500, "article": 2700, "deck": 3600, "thumbnail_spec": 1800, "skit_script": 900}
+           "check_skit.py", "news.py")
+TIMEOUT_S = {"topic": 1500, "article": 2700, "deck": 3600, "thumbnail_spec": 1800, "skit_script": 900,
+             "news_script": 900}
 
 # step → (stage whose producer tier applies, gate whose fixes apply)
 STEP_STAGE = {"topic": ("topic", "topic"), "article": ("article", "article"), "deck": ("script_structure", "deck"),
-              "thumbnail_spec": ("title_thumb", "title"), "skit_script": ("shorts_script", "script")}
+              "thumbnail_spec": ("title_thumb", "title"), "skit_script": ("shorts_script", "script"),
+              "news_script": ("shorts_script", "script")}
 # a short channel's topic step is the shorts_topic stage (sonnet producer, not the long videos' opus plan stage)
 SHORT_TOPIC_STAGE = "shorts_topic"
 
@@ -79,6 +81,12 @@ TASKS = {
 （不要停下來等人審）寫 script.json：鋪陳 → 停 0.6 秒（最後一場鋪陳的 transition 填 pause:0.6）→ 笑點（≤ 40 字）→ 可省的收尾；總長 20–50 秒。
 角色只有頻道設定裡的飲水機金魚（{repo}/channels/{channel}.yaml），不新增角色或設定；笑話必須原創，不搬運他人段子、不用其他頻道的口頭禪。
 寫完跑 `{python} {repo}/scripts/check_skit.py --run-dir {run_dir}`，改到 0 problem(s)。""",
+    "news_script": """任務：科技新聞 Short 稿（news_script.json）。這則的原文已讀過並快取：news_short.json（題目、來源、讀取時間、text_path 指到原文快取）。
+照 {repo}/.claude/skills/news-short/SKILL.md 的五段格式與 lint 規則寫 news_script.json（不要停下來等人審）；頻道是「{channel}」：
+讀 {repo}/channels/{channel}.yaml 的 identity 與 series.news。沒有角色（稿裡不要出現晶片貓或任何主持角色，pose 欄位留空）、
+第五段是頻道自己的原創評論（標籤見 series.news.take_label，要看得出是觀點）、台灣中文口語、新聞感：結論先行、句子短、數字有單位。
+只能用 text_path 裡實際讀到的原文當事實來源（討論串只當線索）；原文沒有台灣資料就照實說，不自己補數字。
+sources 的 read_at 抄 news_short.json 的 read.read_at。寫完跑 `{python} {repo}/scripts/news.py lint --run-dir {run_dir}`，改到通過。""",
 }
 # A short joke channel's topic step: jokes need no sources, only premises the single character can act out.
 TASK_SKIT_TOPIC = """任務：冷笑話選題候選。讀 {repo}/channels/{channel}.yaml（topic_categories、角色飲水機金魚、規則）與
@@ -104,6 +112,9 @@ TASKS_REWORK = {
     "skit_script": """任務：冷笑話劇本退回重做。script.json 已經存在；依下面的修改清單改被點名的句子（句子 id c<場>.<序>），不要換題、不要換笑點的梗，
 其他場景不動。結構（鋪陳／笑點／收尾 的 title、最後一場鋪陳的 transition pause:0.6、金魚表情）不能破壞。
 整體問題（例如鋪陳太長、笑點沒翻轉）才可以重寫該場景。改完跑 `{python} {repo}/scripts/check_skit.py --run-dir {run_dir}`，改到 0 problem(s)。""",
+    "news_script": """任務：科技新聞 Short 稿退回重做。news_script.json 已經存在；依下面的修改清單改被點名的句子
+（句子 id c<場>.<序>，場＝第幾段 beat，從 1 起），改 beats[].narration／screen，其他段與 sources 不動，事實只能來自原文快取（news_short.json 的 text_path）。
+改完跑 `{python} {repo}/scripts/news.py lint --run-dir {run_dir}`，改到通過；總長仍要在 lint 的秒數範圍內。""",
 }
 # Article sent back by the script_structure panel (Leon 2026-10-23): a structure-level rewrite, not a fact fix.
 ARTICLE_STRUCTURE_REWORK = """任務：文章結構退回重做。腳本評審指出文章的結構問題（例如名詞表／時間軸堆疊、缺留人點、論點不推進）；article.md 與 sources.json 已經存在。

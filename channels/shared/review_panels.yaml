@@ -46,6 +46,13 @@ personas:
     - {id: manager, who: 45 歲科技公司主管, traits: [通勤時用手機看, 喜歡自嘲型的職場幽默, 不喜歡拿同事或公司開刀的內容, 鋪陳太趕會漏掉]}
     - {id: casual, who: 24 歲剛入職的行政助理, traits: [午休滑手機, 愛轉發給同事的才算好笑, 看完要能一句話轉述給別人, 角色可愛有加分]}
     - {id: comedy_fan, holdout: true, who: 35 歲愛看脫口秀的觀眾, traits: [在意笑話是不是原創、有沒有搬運常見段子, 笑點被講白或重複就扣分, 停頓時機不對會覺得拖, 討厭靠字幕硬撐的笑點]}
+  technews:      # 科技新知：一般觀眾、手機滑、沒有角色；留人靠結論先行、比喻、清楚的畫面卡
+    - {id: commuter, who: 28 歲台北上班族, traits: [捷運上用手機看、隨時滑走, 對科技新聞有興趣但不是工程師, 前 10 秒沒講出「跟我有什麼關係」就走, 討厭名詞堆疊]}
+    - {id: engineer, who: 33 歲軟體工程師, traits: [天天看 Hacker News、已經知道大部分原文, 內容講錯、誇大、把討論串當事實會留言糾正, 想聽到原文沒講的觀點]}
+    - {id: student, who: 19 歲大一文組學生, traits: [對 AI 有興趣但沒學過程式, 名詞沒比喻就跟不上, 喜歡生活化例子]}
+    - {id: manager, who: 45 歲傳產公司主管, traits: [想知道科技新聞會不會影響公司與工作, 不要技術細節要結論, 不喜歡太像廣告或標題殺人]}
+    - {id: senior, who: 63 歲退休公務員, traits: [手機看、字幕要大, 不喜歡英文縮寫和閃太快的畫面, 沒有角色也沒關係但畫面要清楚]}
+    - {id: teacher, holdout: true, who: 42 歲國中資訊老師, traits: [想找能給學生看的科技時事, 在意比喻是否正確、有沒有誤導, 討厭誇大標題]}
   cel:
     - {id: anime_fan, who: 22 歲動漫迷, traits: [每季追番, 想知道製作內幕, 討厭被說教]}
     - {id: industry, who: 33 歲動畫業界從業者, traits: [懂製作委員會與外包, 數字講錯會糾正]}
@@ -297,3 +304,9 @@ review:
           seats:
             - {role: viewer, count: 3, model: sonnet, effort: low}
             - {role: writer_comedy, count: 1, model: sonnet, effort: low}
+    technews:       # Leon 2026-10-23：事實與授權不放行——article／script_facts／media 第 3 輪沒過仍硬停；其餘關照 story-calibrate 的放行規則
+      stages:
+        article: {waive_on_last_round: false}
+        script_facts: {waive_on_last_round: false}
+        media: {waive_on_last_round: false}
+        shorts_script: {rework: news_script}   # 科技新聞 Short：退回給 news_script 步驟（稿是 news_script.json，script.json 由它產生）

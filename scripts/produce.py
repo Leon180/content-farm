@@ -164,7 +164,10 @@ def _channel_for(run_dir: Path, code: str | None):
         code = existing
     if not code:
         raise ValueError("new run-dir: pass --channel")
-    return load_channel(code)
+    channel = load_channel(code)
+    if not channel.enabled and not (run_dir / STATE_FILE).is_file():
+        raise ValueError(f"channel {code!r} is disabled (channels/{code}.yaml: enabled: false); no new runs")
+    return channel
 
 
 def _write_schedule(run_dir: Path, publish_at: str) -> None:
