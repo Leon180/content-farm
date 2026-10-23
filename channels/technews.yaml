@@ -48,6 +48,13 @@ ai_illustration:
   width: 1280
   height: 720
 gates: [topic, article, deck, title, media, final]   # 全部由評審團核可；article／script_facts／media 第 3 輪沒過仍硬停（review_panels.yaml channels.technews）
+audio:                  # Leon 2026-10-24（visual v4）：科技新知：低調的 A 小調節拍點，本機程式合成、可用 enabled 開關、不評審
+  enabled: true
+  synth_bgm: pulse
+  sfx: true
+  voice_lufs: -23.4         # 人聲維持原響度，不加增益（比照九尾狐）
+  master_lufs: -23.4
+  bgm_under_voice_db: 16.0
 youtube:
   client_id_env: CF_YOUTUBE_CLIENT_ID
   client_secret_env: CF_YOUTUBE_CLIENT_SECRET

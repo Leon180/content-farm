@@ -5,6 +5,11 @@ Presets (``audio.synth_bgm`` in a channel yaml):
   koto-like plucks, a little wind, all through a long reverb. Deterministic and seamless: every
   sustained part is periodic in the loop length and the reverb is circular, so ``-stream_loop``
   in the mix has no seam.
+- ``studio`` (cel): a warm, light C-major-pentatonic bed — soft pad, marimba-like plucks, a slow bass root.
+- ``pulse`` (technews / chipcat without recorded tracks): a clean A-minor-pentatonic bed — airy pad and a very
+  quiet, regular sine blip grid (75 bpm), nothing that competes with a voice reading figures.
+Visual v4 (Leon 2026-10-24): each long channel has one local synthesized style, switched on or off with
+``audio.enabled`` in its yaml; real ``audio.bgm`` files, when listed, win over the preset.
 """
 
 from __future__ import annotations
@@ -125,8 +130,74 @@ def wafu(seconds: float = LOOP_SECONDS, seed: int = SEED) -> np.ndarray:
     return _normalised(0.55 * drone + 0.45 * body + 0.55 * wet + 0.12 * air)
 
 
-PRESETS = {"wafu": wafu}
-_SOURCE = {"wafu": "本機以 numpy 程式合成（audio_mix/synth_bgm.py 的 wafu 預設，和風音階 D 都節旋法）"}
+def _soft_pad(n: int, rng: np.random.Generator, scale: tuple[float, ...], step: float = 8.0) -> np.ndarray:
+    """Slow overlapping two-note swells on the given scale (same shape as the wafu pad)."""
+    out = np.zeros(n)
+    length = int(1.15 * step * RATE)
+    t = _time(length)
+    envelope = np.sin(np.pi * np.clip(t / (1.15 * step), 0, 1)) ** 2
+    for start in np.arange(0.0, LOOP_SECONDS, step):
+        for hz in rng.choice(scale, size=2, replace=False):
+            tone = np.sin(2 * np.pi * hz * t) + np.sin(2 * np.pi * hz * 1.003 * t + 0.9)
+            _wrapped_add(out, int(start * RATE), tone * envelope * 0.35)
+    return out
+
+
+def _marimba(freq: float, seconds: float = 1.6) -> np.ndarray:
+    n = int(seconds * RATE)
+    t = _time(n)
+    body = np.sin(2 * np.pi * freq * t) * np.exp(-t * 4.0) + 0.35 * np.sin(2 * np.pi * freq * 4.0 * t) * np.exp(-t * 14.0)
+    return body * np.clip(t / 0.003, 0, 1)
+
+
+def _sparse(n: int, rng: np.random.Generator, scale: tuple[float, ...], note, gap: tuple[float, float]) -> np.ndarray:
+    out = np.zeros(n)
+    t, degree = 1.5, len(scale) // 2
+    while t < LOOP_SECONDS - 1:
+        degree = int(np.clip(degree + rng.integers(-2, 3), 0, len(scale) - 1))
+        _wrapped_add(out, int(t * RATE), note(scale[degree]) * rng.uniform(0.5, 1.0))
+        t += rng.uniform(*gap)
+    return out
+
+
+_C_PENTA = tuple(261.63 * 2 ** (semi / 12) for semi in (0, 2, 4, 7, 9, 12, 14, 16))
+_A_PENTA = tuple(220.0 * 2 ** (semi / 12) for semi in (0, 3, 5, 7, 10, 12, 15, 17))
+
+
+def studio(seconds: float = LOOP_SECONDS, seed: int = SEED) -> np.ndarray:
+    """Warm and light: C-major pentatonic marimba over a soft pad and a slow C/G bass."""
+    n = int(round(seconds * RATE))
+    rng = np.random.default_rng(seed + 1)
+    t = _time(n)
+    bass = sum(np.sin(2 * np.pi * _periodic(hz) * t) * (0.7 + 0.3 * np.sin(2 * np.pi * (4 + k) / LOOP_SECONDS * t))
+               for k, hz in enumerate((65.41, 98.0)))
+    pad = _soft_pad(n, rng, _C_PENTA[:6])
+    plucks = _sparse(n, rng, _C_PENTA, _marimba, (1.2, 2.8))
+    wet = _reverb(_normalised(pad) * 0.5 + _normalised(plucks), rng, seconds=1.8)
+    return _normalised(0.35 * _normalised(bass) + 0.4 * _normalised(pad) + 0.55 * _normalised(plucks) + 0.45 * wet)
+
+
+def pulse(seconds: float = LOOP_SECONDS, seed: int = SEED) -> np.ndarray:
+    """Clean and unobtrusive: A-minor-pentatonic pad plus a quiet sine blip on a 75 bpm grid."""
+    n = int(round(seconds * RATE))
+    rng = np.random.default_rng(seed + 2)
+    pad = _soft_pad(n, rng, _A_PENTA[:6], step=12.0)
+    blips = np.zeros(n)
+    beat = 60.0 / 75.0                           # 96 s = exactly 120 beats, so the grid wraps cleanly
+    for k in range(int(LOOP_SECONDS / beat)):
+        if rng.random() < 0.35:
+            hz = _A_PENTA[int(rng.integers(0, len(_A_PENTA)))] * 2
+            m = int(0.35 * RATE)
+            tt = _time(m)
+            _wrapped_add(blips, int(k * beat * RATE), np.sin(2 * np.pi * hz * tt) * np.exp(-tt * 9.0) * rng.uniform(0.4, 0.9))
+    wet = _reverb(_normalised(blips), rng, seconds=1.2)
+    return _normalised(0.7 * _normalised(pad) + 0.3 * _normalised(blips) + 0.3 * wet)
+
+
+PRESETS = {"wafu": wafu, "studio": studio, "pulse": pulse}
+_SOURCE = {"wafu": "本機以 numpy 程式合成（audio_mix/synth_bgm.py 的 wafu 預設，和風音階 D 都節旋法）",
+           "studio": "本機以 numpy 程式合成（audio_mix/synth_bgm.py 的 studio 預設，C 大調五聲音階、木琴與柔和和聲）",
+           "pulse": "本機以 numpy 程式合成（audio_mix/synth_bgm.py 的 pulse 預設，A 小調五聲音階、低調節拍點）"}
 
 
 def with_synth_bgm(config: AudioMix, directory: Path) -> AudioMix:

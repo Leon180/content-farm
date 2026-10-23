@@ -67,3 +67,21 @@ def test_yokai_mixes_a_synth_bed_and_keeps_the_voice_level() -> None:
     assert audio.enabled and audio.synth_bgm == "wafu" and not audio.bgm
     assert audio.voice_lufs == audio.master_lufs        # no loudness lift: the voice keeps its level
     assert not load_channel("yokai").mascot.rig_ready
+
+
+@pytest.mark.parametrize("style", ["studio", "pulse"])
+def test_v4_styles_are_deterministic_seamless_and_wired_in(style, tmp_path) -> None:
+    from content_farm.audio_mix import synth_bgm
+
+    bed = synth_bgm.PRESETS[style]()
+    assert len(bed) == int(LOOP_SECONDS * RATE) and np.array_equal(bed, synth_bgm.PRESETS[style]())
+    step = float(np.max(np.abs(np.diff(bed[: RATE]))))
+    assert abs(float(bed[-1] - bed[0])) < 4 * step and float(np.sqrt(np.mean(bed[: int(0.05 * RATE)] ** 2))) > 0.003
+    config = with_synth_bgm(AudioMix(enabled=True, synth_bgm=style), tmp_path)
+    assert [t.title for t in config.bgm] == [f"合成配樂（{style}）"]
+
+
+def test_long_channels_each_have_one_local_style_that_can_be_switched_off() -> None:
+    assert {c: load_channel(c).audio.synth_bgm for c in ("yokai", "cel", "technews")} == {
+        "yokai": "wafu", "cel": "studio", "technews": "pulse"}
+    assert all(load_channel(c).audio.enabled for c in ("yokai", "cel", "technews"))

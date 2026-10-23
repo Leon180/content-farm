@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from content_farm.production import auto_fix_fallback
 from content_farm.production.channels import Gate
 from content_farm.production.state import Decision, RunState, StepRecord, fingerprint, now_iso
 
@@ -341,6 +342,27 @@ def _prompt_only_violations(ctx: Context, step_name: str, gate: str | None, befo
 
 
 def run_producer(ctx: Context, step_name: str, log: Callable[[str], None], *, gate: str | None = None) -> str | None:
+    """``_run_producer``, except that the one automatic fix (``fact_on_fail: auto_fix_then_pass`` / the script review's
+    ``script_revise_once``) can never stop the run: when its rewrite fails or is refused, the flagged sentences are
+    deleted instead, or, failing that, the failure is recorded and the run goes on (Leon 2026-10-24).
+    Only the cost cap still stops."""
+    gate_name = gate or step_name
+    auto = auto_fix_fallback.is_auto_fix(ctx.run_dir, gate_name)
+    guard = _delete_only_guard(ctx.run_dir, step_name, gate_name) if auto else None   # taken before the rewrite
+    failure = _run_producer(ctx, step_name, log, gate=gate)
+    if failure is None or not auto:
+        return failure
+    if (stopped := over_budget(ctx)) is not None and failure == stopped:
+        return failure
+    from content_farm.review.gate import LONG_STAGE_FOR_GATE
+
+    stage = LONG_STAGE_FOR_GATE.get(gate_name, gate_name)
+    auto_fix_fallback.apply(ctx.run_dir, gate=gate_name, stage=stage, step_name=step_name, failure=failure,
+                            guard=guard, log=log)
+    return None
+
+
+def _run_producer(ctx: Context, step_name: str, log: Callable[[str], None], *, gate: str | None = None) -> str | None:
     """Run the producer agent for ``step_name``; None on success, else why it failed. ``gate``: the
     gate whose fix list sent this rework (default: the step's own gate).
 

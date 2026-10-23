@@ -47,6 +47,13 @@ ai_illustration:          # Leon 2026-10-16 cc801e14fbc2：預設 FLUX.2 klein 4
   width: 1280
   height: 720
 gates: [topic, article, deck, title, media, final]   # 全部由評審團核可（review_panels.yaml），不可關
+audio:                  # Leon 2026-10-24（visual v4）：賽璐璐研究室：溫暖輕快的木琴（C 大調五聲），本機程式合成、可用 enabled 開關、不評審
+  enabled: true
+  synth_bgm: studio
+  sfx: true
+  voice_lufs: -23.4         # 人聲維持原響度，不加增益（比照九尾狐）
+  master_lufs: -23.4
+  bgm_under_voice_db: 16.0
 youtube:
   refresh_token_env: CF_YT_CEL_REFRESH_TOKEN
   channel_id_env: CF_YT_CEL_CHANNEL_ID

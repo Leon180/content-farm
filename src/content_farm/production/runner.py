@@ -21,7 +21,7 @@ from content_farm import paths
 from content_farm.explainer.deck import load_deck
 from content_farm.lanes.queue import Ticket, heavy_slot
 from content_farm.lanes.resources import Need, load_config, need_for
-from content_farm.production import panel_flow, publish, qc, timing
+from content_farm.production import auto_fix_fallback, panel_flow, publish, qc, timing
 from content_farm.production.channels import Channel, Gate
 from content_farm.production.review import write_review
 from content_farm.production.state import (
@@ -206,7 +206,8 @@ class Runner:
                     failure = panel_flow.run_producer(self.ctx, step.name, self.log, gate=gate)
                 if failure is None and not _outputs_present(self.run_dir, step):
                     failure = f"{step.title}：產出 agent 結束但缺 {', '.join(step.outputs)}"
-                if failure is None and pending_rework and fingerprint(self.run_dir, step.outputs) == before:
+                if (failure is None and pending_rework and fingerprint(self.run_dir, step.outputs) == before
+                        and not auto_fix_fallback.is_auto_fix(self.run_dir, gate or step.name)):   # the one auto fix may change nothing
                     failure = f"{step.title}：退回重做後檔案沒有改變"
                 if failure is not None:
                     return state, RunResult(Outcome.FAILED, step.name, failure)
