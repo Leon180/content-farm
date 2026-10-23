@@ -74,6 +74,9 @@ class NewsSeries(_Strict):
     claims_audit: bool = False                    # every factual sentence needs a sourced claim (news/claims.py)
     analogy_required: bool = True                 # tech Shorts explain a glossary term; ent has no analogy beat
     beat_labels: dict[str, str] = {}              # on-screen name per beat kind (overrides news.script.BEAT_LABELS)
+    bubbles: dict[str, str] = {}                  # the small callout per beat kind (overrides news.render.BUBBLES)
+    end_headline: str = "這週最重要的幾則\n週六講深一點"       # end card
+    end_points: tuple[str, ...] = ("原文連結都在說明欄", "摘要＋評論，非翻譯")
     panel_brief: str = ""                         # one sentence on the channel for the selection panel
     series_line: str = ""                         # description footer line (replaces the tech default)
     tags: tuple[str, ...] = ()                    # extra tags; replaces the tech default tags when set

@@ -90,6 +90,9 @@ series:
     claims_audit: true       # news/claims.py：每句事實要有出處與原文佐證；無出處＝錯誤，自動修一次（fact_audit 步驟）
     analogy_required: false  # 娛樂新聞沒有「國高中比喻」段；第四段改成「各方說法」（已證實 vs 媒體報導）
     beat_labels: {hook: 先講重點, what: 媒體報導了什麼, why: 背景脈絡, analogy: 各方說法}
+    bubbles: {hook: 先講重點！, what: 媒體報導, why: 背景是…, analogy: 各方說法, take: 我們的看法}
+    end_headline: "今天的消息\n出處都在說明欄"
+    end_points: ["已證實與傳聞分開講", "只整理有名媒體的報導"]
     series_line: 娛樂快報：每天整理台日韓與華語演藝圈有名媒體報導過的消息，標明出處，分清楚哪些已證實、哪些只是報導。
     tags: [娛樂新聞, 演藝圈]
     panel_brief: 台灣中文的每日娛樂新聞頻道，只講有名媒體已報導、有出處的內容，沒有主持角色，畫面是自製來源卡與文字卡
@@ -101,6 +104,7 @@ series:
     feeds:                   # 來源白名單（只有這些媒體進得來；off-list 連結在抓取時就丟掉）。全部是公開 RSS，每站每次一個請求
       - {id: cna, name: 中央社, aliases: [中央社記者, CNA], domains: [cna.com.tw], lang: zh, url: "https://feeds.feedburner.com/rsscna/culture"}
       - {id: ltn, name: 自由時報, aliases: [自由娛樂, 自由時報娛樂], domains: [ltn.com.tw], lang: zh, url: "https://news.ltn.com.tw/rss/entertainment.xml"}
+      # 2026-10-23 實測：聯合報 RSS 目前回傳 20 筆空白佔位項（無標題／連結、pubDate 1970），解析時全部丟掉＝0 則；等對方修好自動恢復
       - {id: udn, name: 聯合報, aliases: [聯合新聞網, 聯合娛樂, 聯合報系], domains: [udn.com], lang: zh, url: "https://udn.com/rssfeed/news/2/6644?ch=news"}
       - {id: ettoday, name: ETtoday, aliases: [ETtoday星光雲, 星光雲], domains: [ettoday.net], lang: zh, url: "https://feeds.feedburner.com/ettoday/star"}
       - {id: yahoo, name: Yahoo奇摩娛樂, aliases: [Yahoo奇摩新聞, Yahoo新聞, 奇摩娛樂], domains: [yahoo.com], lang: zh, url: "https://tw.news.yahoo.com/rss/entertainment"}

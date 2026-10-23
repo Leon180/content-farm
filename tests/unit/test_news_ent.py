@@ -334,3 +334,45 @@ def test_after_fix_relaxes_length_but_not_the_ceiling(series) -> None:
     short = _script(why=_beat("why", "據自由時報報導，小明宣布開唱。", _claim("據自由時報報導，小明宣布開唱。", "年底將在台北小巨蛋舉辦兩場演唱會")))
     assert any("why: narration" in p for p in ns.lint(short, ITEM, series=series, glossary={}))
     assert not any("why: narration" in p for p in ns.lint(short, ITEM, series=series, glossary={}, after_fix=True))
+
+
+# ── visuals: text cards only ─────────────────────────────────────────────────
+
+def test_ent_pages_are_text_cards_with_the_ent_wording() -> None:
+    from content_farm.production.news.render import page_html
+
+    channel = load_channel("ent")
+    card = {"domain": "ent.ltn.com.tw", "title": "小明宣布年底開唱", "date": "發布 2026-10-23"}
+    for mode, index in (("beat", 4), ("end", 0), ("thumb", 0)):
+        html = page_html(mode, news=_script(), channel=channel, day="2026-10-23", index=index, duration=4.0, card=card)
+        assert "<img" not in html and "<video" not in html and "科技" not in html and "晶片貓" not in html
+        assert "娛樂快報" in html
+    end = page_html("end", news=_script(), channel=channel, day="2026-10-23", duration=2.0, card=card)
+    assert "今天的消息" in end and "已證實與傳聞分開講" in end and "週六" not in end
+    beat = page_html("beat", news=_script(), channel=channel, day="2026-10-23", index=3, duration=4.0, card=card)
+    assert "各方說法" in beat and "srccard" in beat
+
+
+def test_qc_refuses_photo_markup_and_third_party_media_on_a_text_card_channel(tmp_path: Path) -> None:
+    from content_farm.production import qc
+
+    channel = load_channel("ent")
+    (tmp_path / "short").mkdir()
+    (tmp_path / "short" / "beat_1_hook.html").write_text("<body><div class='card'>字卡</div></body>", encoding="utf-8")
+    ok = qc.visual_policy_findings(tmp_path, channel, {"entries": []})
+    assert [f.level for f in ok] == ["ok"]
+    (tmp_path / "short" / "beat_2_what.html").write_text("<body><img src='star.jpg'></body>", encoding="utf-8")
+    bad = qc.visual_policy_findings(tmp_path, channel, {"entries": [{"slide_id": "s1", "kind": "stock", "license": "x"}]})
+    assert [f.level for f in bad] == ["error", "error"] and "beat_2_what.html" in bad[0].message
+    wiki = {"entries": [{"slide_id": "s2", "kind": "wikimedia", "author": "某人", "license": "CC BY-SA 4.0"}]}
+    (tmp_path / "short" / "beat_2_what.html").unlink()
+    assert [f.level for f in qc.visual_policy_findings(tmp_path, channel, wiki)] == ["ok"]
+
+
+def test_other_channels_are_not_subject_to_the_text_card_rule(tmp_path: Path) -> None:
+    from content_farm.production import qc
+
+    (tmp_path / "short").mkdir()
+    (tmp_path / "short" / "p.html").write_text("<img src='cat.png'>", encoding="utf-8")
+    for code in ("chipcat", "technews"):
+        assert qc.visual_policy_findings(tmp_path, load_channel(code), None) == []

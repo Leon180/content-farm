@@ -70,8 +70,8 @@ body { background-color:var(--bg); color:var(--fg); font-family:var(--font-headi
   </div>
 {% elif mode == "end" %}
   <div class="label">{{ end_label }}</div>
-  <div class="card"><div class="headline">這週最重要的幾則<br>週六講深一點</div>
-    <ul class="points"><li>原文連結都在說明欄</li><li>摘要＋評論，非翻譯</li></ul></div>
+  <div class="card"><div class="headline">{% for line in end_headline %}{{ line }}{% if not loop.last %}<br>{% endif %}{% endfor %}</div>
+    <ul class="points">{% for p in end_points %}<li>{{ p }}</li>{% endfor %}</ul></div>
 {% else %}
   <div class="label">{{ label }}</div>
   <div class="card"><div class="headline">{{ beat.screen.headline }}</div>

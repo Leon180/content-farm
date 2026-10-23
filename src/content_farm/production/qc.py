@@ -106,6 +106,30 @@ def credits_findings(channel: Channel, credits: dict | None) -> list[Finding]:
     return findings
 
 
+_PHOTO_MARKUP = re.compile(r"<img\b|<video\b|<source\b|<picture\b|url\(", re.I)
+
+
+def visual_policy_findings(run_dir: Path, channel: Channel, credits: dict | None) -> list[Finding]:
+    """Channels that allow no stock, AI image, artwork or source footage and have no character (entertainment news:
+    no film clips, stills, news photos or portraits of real people) may only show pages made of text, cards and charts:
+    the rendered pages carry no image / video markup, and credits.json lists no third-party media."""
+    media = channel.media
+    if media.stock or media.ai_image or media.artwork or media.source_footage or channel.mascot.rig_ready:
+        return []
+    findings: list[Finding] = []
+    pages = sorted((run_dir / "short").glob("*.html")) if (run_dir / "short").is_dir() else []
+    bad = [page.name for page in pages if _PHOTO_MARKUP.search(page.read_text(encoding="utf-8"))]
+    if bad:
+        findings.append(Finding("visual_policy", "error", f"image / video markup in {', '.join(bad)}: this channel shows text cards only"))
+    entries = (credits or {}).get("entries") or []
+    outside = [e.get("slide_id", "?") for e in entries if not (e.get("kind") == "wikimedia" and e.get("author") and e.get("license"))]
+    if outside:
+        findings.append(Finding("visual_policy", "error", f"third-party media in credits.json ({', '.join(map(str, outside))}); only Wikimedia CC with author + licence is allowed"))
+    if not findings:
+        findings.append(Finding("visual_policy", "ok", f"{len(pages)} pages, text cards only; no third-party media"))
+    return findings
+
+
 AI_PARAMS = ("model", "prompt", "seed")
 
 
@@ -383,6 +407,7 @@ def run_qc(run_dir: Path, channel: Channel, deck: Deck | None) -> dict:
     credits = json.loads(credits_path.read_text(encoding="utf-8")) if credits_path.is_file() else None
     if channel.media.stock or channel.media.ai_image or channel.media.artwork:
         findings += credits_findings(channel, credits)
+    findings += visual_policy_findings(run_dir, channel, credits)
     findings += subtitle_findings(run_dir, channel)
     findings += short_motion_findings(run_dir)
     findings += speech_check_findings(run_dir)

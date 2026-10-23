@@ -104,7 +104,9 @@ def page_html(mode: str, *, news: ns.NewsScript, channel: Channel, day: str, ind
         label=branding_for(channel).labels().get(kind, ""), brand_css=brand_css_path(channel.brand).read_text(encoding="utf-8"),
         reveal_at=reveal_times(len(beat.screen.points) if beat else 0, duration), duration=f"{duration:.3f}",
         mascot=mascot or {"closed": "", "open": ""}, talking=mode == "beat",
-        bubble=(beat.term if beat and beat.kind == "analogy" and beat.term else BUBBLES.get(kind, "週六見！")),
+        bubble=(beat.term if beat and beat.kind == "analogy" and beat.term else
+                {**BUBBLES, **series.bubbles}.get(kind, "週六見！" if "news" not in channel.series else series.end_label)),
+        end_headline=series.end_headline.split("\n"), end_points=series.end_points,
         source=source_strip(news))
 
 
