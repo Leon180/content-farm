@@ -1,6 +1,17 @@
 # REPORT — 青蛙書記講話動作診斷與三個替代版本
 
-## TL;DR
+## 第二輪（Leon 看過對照後：「青蛙只需要像真青蛙那樣嘴巴張開合起就好」）— 新增 `frog` profile，已設為妖怪頻道預設
+- `channels/yokai.yaml` 加 `mascot.motion_profile: frog`；其他頻道不變（仍 legacy）。
+- `frog`（`profiles.FROG`）：固定 neutral 表情（忽略 deck 的 mascot pose，不疊任何表情貼片、也不疊 mouth_half／mouth_open）；身體不擺不彈（angle 0、lift 0），只留 0.8% 呼吸；眨眼保留（blink 貼片是眼皮，不是表情）。
+- **嘴改成程式做的下顎張合**（`jaw.py`，不生圖）：以 manifest 的 `jaw`（嘴角 x 254–523、嘴線 y 285–330、深度 68px、衰減 150px）為幾何；嘴線以下的像素往下滑（嘴中間最多、嘴角為 0、往肚子方向淡出），縫隙補深色口腔＋舌頭，原嘴線重描成上唇，原嘴線像素下移成下唇。逐步開口圖：[jaw_steps 在 cmp_frog_vs_legacy.png 下排](artifacts/frog-motion/diagnosis/cmp_frog_vs_legacy.png)（上排 legacy、下排 frog，同一時段）。**所以不需要重生任何貼片**（診斷 3、5 的貼片問題在 frog 下完全不出現）。
+- 張合節奏 🟢（全片包絡）：閉／開兩段，gate 閾值 0.7、至少停 4 格；講話中閉嘴 30%、每講話秒開 2.1 次、**沒有 ≤2 格的閃爍**；開口幅度 0.3–0.85（中位 0.63）隨音量，不會一直全開。
+- 新程式：`jaw.py`、`warp.py`（`remap` 搬出 render.py 避免循環 import）、`motion.jaw_track`、`Pack.jaw`、`Composer` 的 jaw 快取（8 段）；pack 沒有 `jaw` 卻用 frog 會報錯。
+- 測試：新增 `tests/unit/test_pngtuber_jaw.py` 2 條；`-k "pngtuber or step or mascot or shorts or channel or host"` 197 passed。
+- 對照片：`artifacts/frog-motion/frog-think-to-point-frog.mp4`、`frog-smug-frog.mp4`（209／284 KB），對照同目錄的 `*-legacy.mp4`。
+- 🟡 仍是只看逐格、沒播放；下顎動畫的實際觀感要 Leon 看。若覺得嘴太寬，調 manifest `jaw.depth`／`jaw_max`；想更慢的開合調 `jaw_gate_at`。
+- 前面的 calm／nod／beat 保留未刪，Leon 若不再要可整批刪。
+
+## TL;DR（第一輪）
 - 「怪」的主因有三個，都是數字能證明的：**講話時嘴有 90% 的時間是張到最大的大 O 嘴**（half 只佔 9%）；**嘴部貼片是矩形，會蓋掉 smug／speechless／surprised 表情**（60% 的畫格是這三種表情，嘴型與表情互相打架，smug 的腮紅被切一半）；**身體以腳為軸整隻剛體搖擺＋每格跟包絡跳**。
 - 做了 3 個可切換的 motion profile：`calm`、`nod`、`beat`，預設仍是 `legacy`（現行），其他頻道不受影響。
 - 推薦 **`nod`**（只動頭、身體不晃，最像「講解員」）；`beat` 是較活潑的備案。我只看了逐格與數字，沒有親眼看影片播放，最後請 Leon 看對照片定。

@@ -45,6 +45,7 @@ class HostFrame:
     # head-only pose (any pack): px of the head's offset, feet pinned; positive dy = down
     head_dx: float = 0.0
     head_dy: float = 0.0
+    jaw: float = 0.0     # 0..1 procedural jaw opening (profiles with ``jaw``); mouth stays 0 then
     bubbles: tuple[tuple[float, float, float, float], ...] = ()   # speech_fx: (x, y, radius, alpha), pack px
 
 
@@ -75,6 +76,20 @@ def smooth(envelope: np.ndarray, frames: int) -> np.ndarray:
         return envelope
     padded = np.pad(envelope, (frames // 2, frames - 1 - frames // 2), mode="edge")
     return np.convolve(padded, np.ones(frames) / frames, mode="valid")
+
+
+def jaw_track(envelope: np.ndarray, profile: MotionProfile) -> np.ndarray:
+    """Jaw opening per frame: a gate (min hold, no 1-2 frame flicker) times an amplitude that follows
+    the smoothed voice level between jaw_min and jaw_max, eased in/out so it never pops."""
+    gate = mouth_levels(envelope, profile.mouth_hold, profile.jaw_gate_at, 2.0)
+    level = np.clip((smooth(envelope, 3) - 0.5) / 0.5, 0.0, 1.0)    # the envelope is loud: 0.5..1 spans the openings
+    target = np.where(gate > 0, profile.jaw_min + (profile.jaw_max - profile.jaw_min) * level, 0.0)
+    out = np.zeros(len(target))
+    value = 0.0
+    for i, goal in enumerate(target):
+        value += (goal - value) * 0.7
+        out[i] = 0.0 if value < 0.07 else value
+    return out
 
 
 def beat_track(envelope: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
@@ -145,6 +160,7 @@ def host_frames(cues: Sequence[SceneCue], envelope: np.ndarray, fps: float, n_fr
     blinks = idle.blink_schedule(duration, seed)
     mouths = mouth_levels(envelope, profile.mouth_hold, profile.mouth_half_at, profile.mouth_open_at,
                           profile.mouth_open_max)
+    jaws = jaw_track(envelope, profile) if profile.jaw else np.zeros(n_frames)
     body = smooth(envelope, profile.smooth_frames)
     hop, hop_stretch = beat_track(envelope) if profile.beat_px else (np.zeros(n_frames), np.zeros(n_frames))
     phase = (seed % 97) / 97 * 2 * math.pi
@@ -153,9 +169,10 @@ def host_frames(cues: Sequence[SceneCue], envelope: np.ndarray, fps: float, n_fr
     frames = []
     for i in range(n_frames):
         t = i / fps
-        expression = pack.expression_for(cues[cue_at(cues, t)].pose) if cues else "neutral"
+        expression = (profile.fixed_expression
+                      or (pack.expression_for(cues[cue_at(cues, t)].pose) if cues else "neutral"))
         blink = expression not in NO_BLINK and idle.blink_closure(t, blinks) > 0.5
-        mouth = int(mouths[i]) if profile.mouth_on_expression or expression == "neutral" else 0
+        mouth = int(mouths[i]) if not profile.jaw and (profile.mouth_on_expression or expression == "neutral") else 0
         frames.append(HostFrame(
             expression=expression, mouth=mouth, blink=blink,
             stretch=1.0 + profile.breath_scale * idle.breath(t) + profile.beat_stretch * float(hop_stretch[i]),
@@ -165,6 +182,6 @@ def host_frames(cues: Sequence[SceneCue], envelope: np.ndarray, fps: float, n_fr
             nod=0.6 * math.sin(2 * math.pi * t / NOD_PERIOD_S + 3 * phase),
             squash=TALK_SQUASH * float(envelope[i]),
             head_dx=profile.head_drift_px * math.sin(2 * math.pi * t / HEAD_DRIFT_PERIOD_S + phase),
-            head_dy=profile.head_nod_px * float(body[i]),
+            head_dy=profile.head_nod_px * float(body[i]), jaw=float(jaws[i]),
             bubbles=bubbles[i]))
     return tuple(frames)

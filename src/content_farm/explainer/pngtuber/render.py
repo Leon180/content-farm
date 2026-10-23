@@ -20,8 +20,10 @@ from PIL import Image, ImageDraw, ImageFilter
 
 from content_farm.explainer.mascot.overlay import ORIGIN, Rect
 from content_farm.explainer.mascot.render import ALPHA_CODEC_ARGS, CANVAS_H, CANVAS_W
+from content_farm.explainer.pngtuber.jaw import JAW_STEPS, JawRig
 from content_farm.explainer.pngtuber.motion import HostFrame
 from content_farm.explainer.pngtuber.pack import MOUTH_LAYERS, Pack
+from content_farm.explainer.pngtuber.warp import remap
 
 
 @dataclass(frozen=True)
@@ -50,25 +52,6 @@ PLACEMENTS = {p.frame: p for p in (LANDSCAPE, VERTICAL)}
 YAW_SHIFT = 0.032        # 2.5D: max sideways shift of the nearest pixels, share of the figure width
 NOD_SHIFT = 0.018        # ... and vertical, share of the figure height
 SHADOW_ALPHA = 0.30
-
-
-def remap(img: Image.Image, off_x: np.ndarray, off_y: np.ndarray) -> Image.Image:
-    """Backward bilinear remap: output pixel (x, y) samples from (x - off_x, y - off_y). Premultiplied
-    alpha keeps edges clean."""
-    arr = np.asarray(img, dtype=np.float32) / 255.0
-    rgb = arr[..., :3] * arr[..., 3:4]
-    pre = np.concatenate([rgb, arr[..., 3:4]], axis=-1)
-    h, w = off_x.shape
-    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
-    sx = np.clip(xx - off_x, 0, w - 1.001)
-    sy = np.clip(yy - off_y, 0, h - 1.001)
-    x0, y0 = sx.astype(np.int32), sy.astype(np.int32)
-    fx, fy = (sx - x0)[..., None], (sy - y0)[..., None]
-    out = (pre[y0, x0] * (1 - fx) * (1 - fy) + pre[y0, x0 + 1] * fx * (1 - fy)
-           + pre[y0 + 1, x0] * (1 - fx) * fy + pre[y0 + 1, x0 + 1] * fx * fy)
-    alpha = out[..., 3:4]
-    rgb = np.where(alpha > 1e-4, out[..., :3] / np.maximum(alpha, 1e-4), 0.0)
-    return Image.fromarray((np.concatenate([rgb, alpha], axis=-1) * 255).round().astype(np.uint8))
 
 
 def depth_warp(img: Image.Image, depth: np.ndarray, dx: float, dy: float) -> Image.Image:
@@ -145,14 +128,17 @@ class Composer:
             size = (round(w * self.scale), round(h * self.scale))
             crop = Image.fromarray(np.ascontiguousarray(pack.depth[bbox[1]:bbox[3], bbox[0]:bbox[2]], dtype=np.float32))
             self.depth = np.asarray(crop.resize(size, Image.BILINEAR), dtype=np.float32)
-        self._faces: dict[tuple[str, int, bool], Image.Image] = {}
+        self._faces: dict[tuple[str, int, bool, int], Image.Image] = {}
+        self._jaw = JawRig(pack.base, pack.jaw) if pack.jaw else None
 
-    def face(self, expression: str, mouth: int, blink: bool) -> Image.Image:
+    def face(self, expression: str, mouth: int, blink: bool, jaw_step: int = 0) -> Image.Image:
         if self.pack.mouth_mode == "none":
             mouth = 0
         elif self.pack.mouth_mode == "small_o" and expression != "neutral":
             mouth = 0   # the 'o' only replaces the neutral mouth; an expression keeps its own (no ghost smile)
-        key = (expression, mouth, blink)
+        if jaw_step and self._jaw is None:
+            raise ValueError(f"pack {self.pack.id} has no jaw geometry in its manifest")
+        key = (expression, mouth, blink, jaw_step)
         if key not in self._faces:
             img = self.pack.base.copy()
             if expression != "neutral":
@@ -161,6 +147,8 @@ class Composer:
                 img.alpha_composite(self.pack.layers["blink"])
             if mouth:
                 img.alpha_composite(self.pack.layers[MOUTH_LAYERS[mouth - 1]])
+            if jaw_step:
+                img = self._jaw.open_face(img, jaw_step / JAW_STEPS)
             img = img.crop(self.bbox)
             size = (round(img.width * self.scale), round(img.height * self.scale))
             self._faces[key] = img.resize(size, Image.LANCZOS)
@@ -168,7 +156,7 @@ class Composer:
 
     def canvas(self, frame: HostFrame) -> Image.Image:
         p = self.placement
-        img = self.face(frame.expression, frame.mouth, frame.blink)
+        img = self.face(frame.expression, frame.mouth, frame.blink, round(frame.jaw * JAW_STEPS))
         if frame.bubbles:
             img = draw_bubbles(img, frame.bubbles, self.bbox[:2], self.scale)
         base_w = img.width

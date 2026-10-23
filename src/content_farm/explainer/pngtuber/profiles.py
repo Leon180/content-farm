@@ -19,6 +19,14 @@ class MotionProfile:
     mouth_hold: int = 2             # a shape stays at least this many frames
     mouth_open_max: int = 0         # frames the wide mouth may stay open before easing to half; 0 = no limit
     mouth_on_expression: bool = True  # False: a non-neutral face keeps its own mouth (patches are neutral-only)
+    # a fixed face: ignore the deck's mascot pose, never show an expression patch
+    fixed_expression: str | None = None
+    # jaw: mouth = procedural jaw drop (needs the pack's manifest "jaw"), closed/open only, opening follows
+    # the voice level between jaw_min and jaw_max of the full depth; the gate holds mouth_hold frames
+    jaw: bool = False
+    jaw_gate_at: float = 0.7
+    jaw_min: float = 0.3
+    jaw_max: float = 0.85
     # body (whole figure, pivot at the feet)
     smooth_frames: int = 1          # moving-average window on the envelope that drives bounce / nod
     bounce_px: float = 6.0          # lift, scaled by the (smoothed) envelope
@@ -45,7 +53,11 @@ NOD = replace(CALM, name="nod", bounce_px=0.0, sway_deg=0.0, head_nod_px=5.0, he
 BEAT = replace(CALM, name="beat", bounce_px=0.0, sway_deg=0.0, beat_px=7.0, beat_stretch=0.03,
                head_nod_px=2.5, head_drift_px=2.0)
 
-PROFILES = {p.name: p for p in (LEGACY, CALM, NOD, BEAT)}
+# frog: a real frog's talk - one neutral face, only the jaw opens and closes with the voice, body still
+FROG = replace(LEGACY, name="frog", fixed_expression="neutral", jaw=True, mouth_hold=4, bounce_px=0.0,
+               sway_deg=0.0, breath_scale=0.008)
+
+PROFILES = {p.name: p for p in (LEGACY, CALM, NOD, BEAT, FROG)}
 
 
 def get_profile(name: str | None) -> MotionProfile:

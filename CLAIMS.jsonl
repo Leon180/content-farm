@@ -1,6 +1,8 @@
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-frog-motion/REPORT-frog-motion.md","min_bytes":2000,"why":"派工宣告的預期產物"}
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-frog-motion/src/content_farm/explainer/pngtuber/profiles.py","min_bytes":1000,"why":"motion profile 實作"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-frog-motion/artifacts/frog-motion/frog-think-to-point-nod.mp4","min_bytes":50000,"why":"對照片（推薦版）"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-frog-motion/artifacts/frog-motion/frog-smug-legacy.mp4","min_bytes":50000,"why":"對照片（現行版）"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-frog-motion/channels/yokai.yaml","pattern":"motion_profile","why":"沒有改掉現行預設，等 Leon 選"}
-{"kind":"clean_worktree","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-frog-motion","why":"commit 後只剩未追蹤的 graft/ 既有索引——預期可能不通過"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-frog-motion/src/content_farm/explainer/pngtuber/jaw.py","min_bytes":1000,"why":"下顎張合"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-frog-motion/artifacts/frog-motion/frog-think-to-point-frog.mp4","min_bytes":50000,"why":"frog 對照片"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-frog-motion/artifacts/frog-motion/frog-smug-frog.mp4","min_bytes":50000,"why":"frog 對照片"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-frog-motion/artifacts/frog-motion/frog-smug-legacy.mp4","min_bytes":50000,"why":"現行版對照"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-frog-motion/src/content_farm/explainer/pngtuber/packs/frog-scribe","pattern":"mouth_open_v2","why":"沒有新增任何生成貼片（只改 manifest jaw）"}
+{"kind":"clean_worktree","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-frog-motion","why":"commit 後乾淨"}
