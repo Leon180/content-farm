@@ -1,20 +1,4 @@
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-cel-run1/REPORT-cel-run1.md","min_bytes":2000,"why":"預期產物"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-cel-run1/src","pattern":"TODO-cel-run1","why":"沒有留暫時碼"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-frog-motion/REPORT-frog-motion.md","min_bytes":2000,"why":"派工宣告的預期產物"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-frog-motion/src/content_farm/explainer/pngtuber/profiles.py","min_bytes":1000,"why":"motion profile 實作"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-frog-motion/src/content_farm/explainer/pngtuber/jaw.py","min_bytes":1000,"why":"下顎張合"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-frog-motion/artifacts/frog-motion/frog-think-to-point-frog.mp4","min_bytes":50000,"why":"frog 對照片"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-frog-motion/artifacts/frog-motion/frog-smug-frog.mp4","min_bytes":50000,"why":"frog 對照片"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-frog-motion/artifacts/frog-motion/frog-smug-legacy.mp4","min_bytes":50000,"why":"現行版對照"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-frog-motion/src/content_farm/explainer/pngtuber/packs/frog-scribe","pattern":"mouth_open_v2","why":"沒有新增任何生成貼片（只改 manifest jaw）"}
-{"kind":"clean_worktree","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-frog-motion","why":"commit 後乾淨"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-offwork-skit-build/REPORT-offwork-skit-build.md","min_bytes":2000,"why":"派工宣告的預期產物"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-offwork-skit-build/output/offwork-run2/audio/scene_001.mp3","why":"驗收：voice 產出音檔"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-offwork-skit-build/src/content_farm/production/skit.py","why":"(a) 劇本格式與檢查"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-offwork-skit-build/.claude/skills/skit-script/SKILL.md","why":"(a) skill"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-offwork-skit-build/src","pattern":"TODO-skit-temp","why":"沒留暫時碼"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-story-calibrate/REPORT-story-calibrate.md","min_bytes":2000,"why":"派工宣告的預期產物"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-story-calibrate/docs/story-calibrate/data/summary.json","why":"校正原始數據"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-story-calibrate/src","pattern":"editor_audio","why":"評審拿掉聲音席次"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-pipeline-speed2/REPORT-pipeline-speed2.md","min_bytes":2000,"why":"派工預期產物"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-pipeline-speed2/src","pattern":"TODO-pipeline-speed2","why":"沒有留暫時碼"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-pipeline-speed3/REPORT-pipeline-speed3.md","min_bytes":2000,"why":"派工宣告的預期產物"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-pipeline-speed3/tests/unit/test_lanes_overlap.py","min_bytes":500,"why":"拆鎖的兩片重疊測試"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-pipeline-speed3/tests/unit/test_review_policy.py","min_bytes":500,"why":"只記分數與事實自動修的測試"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-pipeline-speed3/channels/shared/heavy_work.json","pattern":"\"(illustrate|assembly|mix|media|mascot|cut|bgm|ai_motion)\": \\{[^}]*\"render\"","why":"GPU 與 CPU 渲染步驟不再拿 render 鎖"}
