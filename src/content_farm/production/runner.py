@@ -320,10 +320,24 @@ class Runner:
         identity = hashlib.sha256(step.identity(self.ctx).encode("utf-8")).hexdigest()[:16]
         return f"{files}+{identity}"
 
+    def _idle(self, step: Step) -> bool:
+        """The step's own cheap check says every output is already there; any error means "has work"."""
+        if step.has_work is None:
+            return False
+        try:
+            return not step.has_work(self.ctx)
+        except Exception as exc:  # noqa: BLE001 - a broken check must never skip work
+            self.log(f"{step.name}: has_work check failed ({type(exc).__name__}: {exc}); running the step")
+            return False
+
     def _cmd(self, state: RunState, step: Step, forced: bool) -> tuple[RunState, RunResult | None]:
         assert step.command is not None
         if self._fresh(state, step, self._cmd_inputs(step), forced):
             return state, None
+        if not forced and self._idle(step):
+            self.log(f"✓ {step.name}: nothing to do, no machine slot taken")
+            _event(self.run_dir, step=step.name, exit_code=0, seconds=0.0, lane="local", skipped="no work")
+            return state.with_step(step.name, StepRecord("done", now_iso(), 0.0, 0, self._cmd_inputs(step))), None
         if step.paid(self.ctx) and not self.ctx.options.allow_paid:
             message = f"{step.title} 會呼叫付費 API；加 --allow-paid 或 --mock-voice"
             return state, RunResult(Outcome.PAID, step.name, message)

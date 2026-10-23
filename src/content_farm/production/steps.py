@@ -84,10 +84,31 @@ class Step:
     # Settings that change the output without touching any input file (e.g. the TTS
     # voice); folded into the fingerprint and logged when the step runs.
     identity: Callable[[Context], str] | None = None
+    # Cheap check before queueing for the machine: False = nothing to do (every output is already there), so the step
+    # is marked done without taking a slot. A step that waited 17 minutes behind another video's GPU job to print
+    # "nothing to generate" is what this prevents (yokai-kyubi-v3 2026-10-23). An error counts as "has work".
+    has_work: Callable[[Context], bool] | None = None
 
 
 def _py(ctx: Context, script: str, *args: str, env: dict[str, str] | None = None) -> Command:
     return Command((ctx.options.python, str(REPO_ROOT / "scripts" / script), *args), env or {})
+
+
+def _illustrate_pending(ctx: Context) -> bool:
+    """Is any ai_image slide still missing its image (the same test ``scripts/illustrate.py`` makes)?"""
+    from content_farm.explainer.deck import load_deck
+    from content_farm.explainer.illustrate import Settings, missing_images
+
+    deck_path = ctx.run_dir / "deck.json"
+    if not deck_path.is_file():
+        return True
+    config = ctx.channel.ai_illustration
+    try:
+        deck = load_deck(deck_path)
+        return bool(missing_images(deck, ctx.run_dir, Settings(config.model, config.style_prefix, config.seed,
+                                                              config.width, config.height)))
+    except (OSError, ValueError, KeyError):
+        return True
 
 
 def _run_dir(ctx: Context) -> str:
@@ -226,7 +247,7 @@ EXPLAINER_STEPS: tuple[Step, ...] = (
     Step("illustrate", "cmd", "AI 插圖（本機模型，一次一張）", inputs=("deck.json",),
          command=lambda c: _py(c, "illustrate.py", "--run-dir", _run_dir(c), "--channel", c.channel.code,
                                "--env-file", str(c.options.env_file)),
-         heavy=True, applies=lambda channel: channel.media.ai_image,
+         heavy=True, applies=lambda channel: channel.media.ai_image, has_work=lambda c: _illustrate_pending(c),
          identity=lambda c: c.channel.ai_illustration.model_dump_json()),
     Step("media", "cmd", "B-roll／動態投影片／AI 圖", outputs=("credits.json", "media/contact_sheet.png"),
          # assets/ai_motion/*: a Wan clip baked overnight (scripts/ai_motion.py bake) re-runs media.
