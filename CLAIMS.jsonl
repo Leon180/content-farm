@@ -1,5 +1,1 @@
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-chipcat-run2/REPORT-chipcat-run2.md","min_bytes":2000,"why":"預期產物"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-chipcat-run2/tests/unit/test_review_structural_article.py","min_bytes":2000,"why":"A1 測試"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-chipcat-run2/tests/unit/test_review_topic_source_risk.py","min_bytes":500,"why":"A2 測試"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-chipcat-run2/artifacts/chipcat-run2/preview_1.mp4","min_bytes":1000,"why":"成片預覽——預期不通過：B 停在 gate_deck，沒有成片"}
-{"kind":"clean_worktree","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-chipcat-run2"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-offwork-run1/REPORT-offwork-run1.md","min_bytes":1500,"why":"派工宣告的預期產物"}
