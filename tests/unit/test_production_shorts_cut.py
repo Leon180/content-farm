@@ -40,6 +40,23 @@ def test_scene_window_is_back_to_back() -> None:
         cut.scene_window([10.0], 2)
 
 
+def test_scene_durations_prefer_the_measured_audio_over_stale_script_values(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from content_farm.script_gen.schemas import Script
+
+    class _Scene:
+        def __init__(self, seconds: float) -> None:
+            self.duration_seconds = seconds
+
+    monkeypatch.setattr(Script, "model_validate_json", classmethod(lambda cls, text: type("S", (), {"scenes": [_Scene(23.0), _Scene(17.0)]})()))
+    (tmp_path / "script.json").write_text("{}", encoding="utf-8")
+    assert cut.scene_durations(tmp_path) == [23.0, 17.0]                  # no audio files: the script's values
+    (tmp_path / "audio").mkdir()
+    for number in (1, 2):
+        (tmp_path / "audio" / f"scene_{number:03d}.mp3").write_bytes(b"x")
+    monkeypatch.setattr(cut, "_audio_seconds", lambda path: {"scene_001.mp3": 29.0, "scene_002.mp3": 21.5}[path.name])
+    assert cut.scene_durations(tmp_path) == [29.0, 21.5]                  # measured wins when every scene has audio
+
+
 def test_plan_timing_overlaps_intro_with_narration_and_caps_length() -> None:
     timing = cut.plan_timing(22.15, 1.5, 2.5)
     assert (timing.intro, round(timing.body, 2), timing.outro) == (1.5, 20.65, 2.5)

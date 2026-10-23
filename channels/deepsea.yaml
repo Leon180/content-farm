@@ -85,4 +85,5 @@ notes:
 publish:
   timezone: Asia/Taipei
   long: {days: [sat], window: "20:00-21:00"}
+  shorts: {windows: ["12:00-13:00"], per_day: 1, min_gap_hours: 3}
   source: research/upload-timing-2026-10.md

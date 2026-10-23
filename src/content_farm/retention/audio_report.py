@@ -98,6 +98,8 @@ def audio_windows(run_dir: Path, video: Path, sentences: list[Sentence]) -> dict
         if voice_m is not None and bgm_m is not None:
             v = _window_values(voice_m, 10, start, end)
             b = _window_values(bgm_m, 10, start, end)
+            common = min(len(v), len(b))     # the bed stem can end a little before the voice stem
+            v, b = v[:common], b[:common]
             speaking = v > SPEECH_GATE
             if speaking.any():
                 row["bgm_under_voice_db"] = round(ap.energy_mean_lufs(v[speaking]) - ap.energy_mean_lufs(b[speaking]), 1)
