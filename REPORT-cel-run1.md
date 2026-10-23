@@ -59,4 +59,14 @@
 ## 進度紀錄（append）
 - 06:27 UTC 啟動（76% free、無重程序）；06:33 topic 過；06:35 article R1 未過；06:36 rework 2 次被守門拒收，runner 停（修正 1）。
 - 06:38 續跑；06:41 R2 未過；06:44 R3 exhausted，停（$3.64）。隨後找到修正 2，重跑一次只重放既有結果。
-- 建議（給 orchestrator）：修正 2 已 commit；若要驗證，需 Leon／orchestrator 決定是否允許對此 run 重算 round 3（會動到「最多 3 輪」規則的邊界，我不自行決定）。
+- （06:44 當時建議）修正 2 已 commit；是否允許重算 round 3 由 orchestrator 決定。
+- 06:58 orchestrator 指示 new-cycle（reason 如上）續跑；06:59 啟動，`memory_pressure` 75% free。
+- 07:01 cycle-2 article R1 未過→改稿；07:03 R2 過；07:06 deck-1 初稿完（deck 兩次排隊 3m20s／4m00s，lanes.queue）；
+  07:08 script_structure R1 未過（離開中位 20%、writer_density 5.5）；07:10 R2 未過（26%、writer_story 6、writer_density 6）→ 退回 article。
+- 07:12 結構改寫第 1 次被事實鎖定拒收、第 2 次通過；07:14 article R3 未過（「七類」數量說法 1 項，仲裁維持），**停**（$7.03、45m55s）。依 orchestrator「再 3 輪不過就停」，不再開 cycle。
+- 07:2x 監督 session（d6f8dc96）診斷同意：不繞評審、不手改 scorecard／credits，停在這裡交 orchestrator／Leon 決定。
+
+## 根因與建議（流程缺口，交 orchestrator／Leon 決定）
+1. **下游退回不重置 article 輪數（根因）**：cycle-2 的 article R2 已 pass，但 script_structure 退回 article 做結構改寫時，rewrite 後的 article 輪沿用 cycle 輪數，直接落在最後一輪（R3/3），沒有重試空間。結構改寫會引入大量新句，本來就最需要第二次機會。建議：結構改寫後的 article 輪另算（新的 3 輪預算，或至少 +1 輪緩衝）；`new-cycle` 規則的「同一份內容不得多跑輪次」不該套在「內容已被結構改寫」之後。（我沒有改程式——這是改輪次政策，不是程式錯。）
+2. **規則缺口：結構改寫 prompt 沒要求「清單數量詞與實際條目數一致」**：失敗的那一項是改寫把章節重排／增列後，文中「七類」（第 20、56 行）對不上實際 8–10 個小標。建議在 `ARTICLE_STRUCTURE_REWORK` brief 加一條：改寫後自查所有「N 類／N 項／N 個」等數量詞，須等於實際列出的條目數，或改寫成不含數字的說法；並可加一個 `check_article.py` 的簡單檢查（數量詞後接的粗體小標計數）。🟡 未實作。
+3. 其他：script_structure 兩輪離開中位 20%→26% 仍遠低於 40%，題材（法規指針）本質缺人物故事；若要此頻道穩定過關，應在 topic／outline 階段要求至少一條人物或事件主線。🟡
