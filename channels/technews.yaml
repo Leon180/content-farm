@@ -40,7 +40,7 @@ media:
   source_footage: false
 ai_illustration:
   provider: local_mflux
-  model: flux2-klein-4b
+  model: z-image-turbo    # 2026-10-24：klein 權重不在離線快取，同 cel 改用已快取的 Z-Image-Turbo
   style_prefix: >-
     Clean flat editorial illustration of technology news, simple shapes, teal and amber accents,
     illustration, not a photograph, no text, no logos.

@@ -62,6 +62,30 @@ def test_a_long_deck_needs_two_or_three_wan_key_shots():
     assert "wan-shots" not in _codes([{"title": "甲", "slides": slides}])
 
 
+def test_a_wan_shot_must_not_show_a_person_or_face():
+    def codes(prompt: str, motion: str = "wan") -> list[str]:
+        sections = [{"title": "甲", "slides": [_ai("a1", "quote", prompt=prompt, motion=motion, motion_prompt="mist drifts")]}]
+        return _codes(sections)
+
+    assert "wan-face" in codes("A tired animator asleep at a desk, original generic character")
+    assert "wan-face" in codes("close-up portrait with a smiling expression")
+    assert "wan-face" not in codes("A cluttered desk with two newspapers and a lamp, original generic scene")
+    assert "wan-face" not in codes("An empty desk with a lamp, no people, original generic scene")
+    assert "wan-face" not in codes("A tired animator asleep at a desk", motion="parallax")   # parallax is fine
+
+
+def test_wan_prompt_keeps_figures_still_and_adds_a_face_negative():
+    from pathlib import Path
+
+    from content_farm.explainer import wan
+
+    request = wan.request_for("s1", Path("x.png"), {"prompt": "a desk"}, "lamp flickers")
+    assert "stays perfectly still" in request.prompt and "lamp flickers" in request.prompt
+    command = wan.argv(wan.MotionPaths(Path("py"), Path("d"), Path("w")), request, Path("o.mp4"))
+    assert command[command.index("--negative-prompt") + 1] == wan.NEGATIVE_PROMPT
+    assert "morphing face" in wan.NEGATIVE_PROMPT
+
+
 def test_frame_only_applies_to_ai_images():
     with pytest.raises(ValidationError, match="frame only applies"):
         Deck.model_validate(deck_dict(sections=[

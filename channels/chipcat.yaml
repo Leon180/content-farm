@@ -40,7 +40,7 @@ media:
   source_footage: false
 ai_illustration:          # Leon 2026-10-16 cc801e14fbc2：預設 FLUX.2 klein 4B
   provider: local_mflux
-  model: flux2-klein-4b
+  model: z-image-turbo    # 2026-10-24：flux2-klein-4b 權重不在離線快取（HF_HUB_OFFLINE），同 cel 改用已快取的 Z-Image-Turbo（Apache-2.0）
   style_prefix: >-
     Clean flat editorial illustration of technology and industry, simple shapes, navy and gold accents,
     illustration, not a photograph, no text, no logos.

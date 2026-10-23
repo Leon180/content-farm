@@ -180,9 +180,9 @@ def test_wan_params_stay_within_three_seconds_and_model_limits() -> None:
 def test_wan_request_keeps_the_still_prompt_and_refuses_photo_real(tmp_path: Path) -> None:
     image = _image(tmp_path, "s1", seed=7)
     request = wan.request_for("s1", image, {"prompt": f"{STYLE} a fox", "seed": 7}, "tails sway")
-    assert request.prompt == f"{STYLE} a fox Motion: tails sway" and request.params.seed == 7
+    assert request.prompt == f"{STYLE} a fox Motion: tails sway {wan.FACE_CLAUSE}" and request.params.seed == 7
     default = wan.request_for("s1", image, None, "", "a fox")
-    assert default.prompt.endswith(wan.DEFAULT_MOTION) and default.params.seed == 42
+    assert wan.DEFAULT_MOTION in default.prompt and default.prompt.endswith(wan.FACE_CLAUSE) and default.params.seed == 42
     with pytest.raises(ValueError, match="photoreal"):
         wan.request_for("s1", image, None, "photorealistic tails", "a fox")
     argv = wan.argv(_paths(tmp_path), request, tmp_path / "o.mp4")

@@ -44,6 +44,10 @@ WAN_MODEL = {
     "license_url": "https://github.com/Wan-Video/Wan2.2/blob/main/LICENSE.txt",
 }
 DEFAULT_MOTION = "the scene comes to life with gentle, subtle natural motion, mist drifting, static camera"
+# Wan morphs faces (Leon 2026-10-24): key shots are scenes / objects; any figure stays still.
+FACE_CLAUSE = "Any figure stays perfectly still, facial expression unchanged."
+NEGATIVE_PROMPT = ("face distortion, expression change, morphing face, deformed face, changing identity, "
+                   "blurry, low quality, jitter, flicker, extra limbs, text, watermark")
 # Executables / scripts that mean someone else is rendering or running a local model.
 RENDER_EXECUTABLES = ("ffmpeg", "remotion")
 MODEL_MARKERS = ("mflux", "mlx_video")
@@ -80,7 +84,7 @@ class WanRequest:
 
 def build_prompt(image_prompt: str, motion_prompt: str) -> str:
     """The still's own prompt (keeps the style) plus what should move."""
-    return f"{image_prompt.strip()} Motion: {(motion_prompt or DEFAULT_MOTION).strip()}".strip()
+    return f"{image_prompt.strip()} Motion: {(motion_prompt or DEFAULT_MOTION).strip()} {FACE_CLAUSE}".strip()
 
 
 def request_for(slide_id: str, image: Path, image_record: dict | None, motion_prompt: str,
@@ -111,6 +115,7 @@ def argv(paths: MotionPaths, request: WanRequest, out: Path) -> list[str]:
             "--prompt", request.prompt, "--image", str(request.image), "--width", str(p.width),
             "--height", str(p.height), "--num-frames", str(p.num_frames), "--steps", str(p.steps),
             "--guide-scale", str(p.guide_scale), "--tiling", p.tiling, "--seed", str(p.seed),
+            "--negative-prompt", NEGATIVE_PROMPT,
             "--output-path", str(out)]
 
 

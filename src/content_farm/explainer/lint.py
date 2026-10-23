@@ -28,6 +28,16 @@ MAX_WAN_SHOTS = 3
 WAN_MIN_DECK_SLIDES = 10     # a short sample deck is not asked for key shots
 TEXT_ONLY_KINDS = (MediaKind.SLIDE, MediaKind.ANIMATED)
 
+# Wan2.2 morphs faces: words that put a person / character face in the frame.
+_WAN_FACE = re.compile(
+    r"\b(?:faces?|portraits?|persons?|people|humans?|men|man|women|woman|boys?|girls?|child(?:ren)?|"
+    r"characters?|animators?|workers?|engineers?|staff|chef|cat|mascot|shoppers?|runners?|archaeologists?|"
+    r"expressions?|smil\w+|eyes?|heads?|crowd|customers?|audience|figures?)\b|角色|人物|表情|臉|人像|眼睛",
+    re.IGNORECASE,
+)
+
+_WAN_NO_PEOPLE = re.compile(r"\b(?:no|without)\s+(?:people|persons?|humans?|characters?|faces?|figures?)\b", re.IGNORECASE)
+
 # Wording that reads as buy/sell advice — the channel never gives it.
 _ADVICE = re.compile(r"(買進|賣出|加碼|減碼|目標價|進場|出場|抄底|停損|值得買|推薦買)")
 _DIGIT = re.compile(r"\d")
@@ -204,4 +214,23 @@ def _check_visuals_v4(deck: Deck) -> list[LintIssue]:
         issues.append(LintIssue(
             "wan-shots", f"{len(wan)} Wan key shots ({', '.join(wan) or 'none'}); target {MIN_WAN_SHOTS}-{MAX_WAN_SHOTS}",
         ))
+    issues.extend(_check_wan_faces(slides))
+    return issues
+
+
+def _check_wan_faces(slides) -> list[LintIssue]:
+    """Wan distorts faces (Leon 2026-10-24): a Wan shot may only be a scene / object / environment / camera move."""
+    issues: list[LintIssue] = []
+    for slide in slides:
+        media = slide.media
+        if slide.media_kind != MediaKind.AI_IMAGE or media is None or media.motion_kind != Motion.WAN:
+            continue
+        text = _WAN_NO_PEOPLE.sub(" ", f"{media.prompt} {media.motion_prompt}")
+        found = sorted({m.group(0).lower() for m in _WAN_FACE.finditer(text)})
+        if found:
+            issues.append(LintIssue(
+                "wan-face",
+                f"slide {slide.id!r}: Wan shot shows people / a face ({', '.join(found)}); "
+                "use parallax, or a scene / object shot without characters",
+            ))
     return issues
