@@ -128,7 +128,7 @@ def _lock_plan(need: res.Need, queue_dir: Path) -> list[tuple[Path, int]]:
     plan: list[tuple[Path, int]] = []
     if need.gpu != "none":
         plan.append((queue_dir / "heavy.lock", fcntl.LOCK_EX if need.gpu == "exclusive" else fcntl.LOCK_SH))
-    if "render" in need.locks or need.gpu == "exclusive":
+    if "render" in need.locks:      # only steps that name it (GPU-exclusive no longer implies it)
         plan.append((render, fcntl.LOCK_EX))
     if "local_tts" in need.locks:
         plan.append((local_tts, fcntl.LOCK_EX))

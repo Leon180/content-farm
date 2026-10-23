@@ -12,7 +12,8 @@ Rules (all from the 2026-10-18 prompt):
   swap < max, load1 < factor × cores, memory pressure not critical;
 - a higher-priority waiter that would also fit goes first; one that does not fit lets smaller
   jobs backfill — until it has waited ``starve_after_s``: then no new local job starts before it;
-- locks (gpu/render/local_tts) are taken all-or-nothing in a fixed order (queue.py).
+- CPU renders are budgeted by cores + memory, not a global render lock; cloud steps look at free
+  memory only (2026-10-23); locks (gpu/render/local_tts) are all-or-nothing in a fixed order (queue.py).
 """
 
 from __future__ import annotations
@@ -27,6 +28,7 @@ from pathlib import Path
 CONFIG = Path(__file__).resolve().parents[3] / "channels" / "shared" / "heavy_work.json"
 GPU_MODES = ("none", "shared", "exclusive")
 LOCK_ORDER = ("gpu", "render", "local_tts")
+CPU_HEAVY_CORES = 2.0       # >= this many cores and no GPU/lock: a CPU render (assembly, mix, cut, slides)
 
 
 @dataclass(frozen=True)
@@ -38,8 +40,13 @@ class Need:
 
     @property
     def local(self) -> bool:
-        """Local heavy lane (anything that uses the GPU or a render lock)."""
-        return self.gpu != "none" or bool(self.locks)
+        """Local heavy lane: uses the GPU, holds a lock, or is a CPU render (>= ``CPU_HEAVY_CORES``)."""
+        return self.gpu != "none" or bool(self.locks) or self.cpu_cores >= CPU_HEAVY_CORES
+
+    @property
+    def light(self) -> bool:
+        """Cloud-lane step (reviewer, producer agent): only free memory decides, never swap or load."""
+        return not self.local
 
 
 @dataclass(frozen=True)
@@ -121,6 +128,8 @@ def _machine(need: Need, probe: Probe, promised_gb: float, config: Config) -> li
     if free < need.mem_gb + config.margin_gb:
         reasons.append(f"memory: {free:.1f} GB free (after {promised_gb:.1f} GB promised to just-started jobs) "
                        f"< {need.mem_gb:g} + {config.margin_gb:g} GB")
+    if need.light:          # cloud lane: actual free memory (margin_gb) only (Leon 2026-10-23)
+        return reasons
     if probe.swap_pct >= config.swap_max_pct:
         reasons.append(f"swap {probe.swap_pct:.0f}% ≥ {config.swap_max_pct:g}%")
     if probe.load1 >= config.load_factor * probe.cores and need.cpu_cores >= 1:
@@ -130,11 +139,23 @@ def _machine(need: Need, probe: Probe, promised_gb: float, config: Config) -> li
     return reasons
 
 
+def _cpu_budget(need: Need, running: list[Job], probe: Probe) -> list[str]:
+    """Core budget for CPU renders: running jobs' cores + mine must fit the machine; an idle
+    machine always admits one (``impossible`` already rejects a need above the core count)."""
+    if need.cpu_cores < 1:
+        return []
+    busy = sum(j.need.cpu_cores for j in running if j.need.cpu_cores >= 1)
+    if busy > 0 and busy + need.cpu_cores > probe.cores:
+        return [f"cpu: {busy:g} of {probe.cores} cores in use, needs {need.cpu_cores:g}"]
+    return []
+
+
 def decide(me: Job, others: list[Job], probe: Probe, config: Config, now: float) -> list[str]:
     """Why ``me`` must wait now ([] = start). ``others``: every other live job."""
     promised = sum(j.need.mem_gb for j in others if j.state == "running" and now - j.since < config.recent_start_s)
     reasons = _machine(me.need, probe, promised, config)
     running = [j for j in others if j.state == "running"]
+    reasons += _cpu_budget(me.need, running, probe)
     if me.need.gpu == "exclusive" and any(j.need.gpu != "none" for j in running):
         reasons.append("gpu: another job is using the GPU")
     if me.need.gpu == "shared" and any(j.need.gpu == "exclusive" for j in running):

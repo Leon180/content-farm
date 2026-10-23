@@ -110,7 +110,8 @@ def test_legacy_lock_holder_blocks_and_slot_holds_legacy_locks(tmp_path):
             pass
     fcntl.flock(old_code, fcntl.LOCK_UN)
     old_code.close()
-    with q.slot(q.Ticket("new"), VOICE, lambda _: None, env=env(), queue_dir=tmp_path / "queue"):
+    holder = res.Need(18, "exclusive", 2, ("render", "local_tts"))       # GPU-exclusive no longer implies render
+    with q.slot(q.Ticket("new"), holder, lambda _: None, env=env(), queue_dir=tmp_path / "queue"):
         for path in (render, local_tts):             # old code now sees the machine as busy
             probe = path.open("a")
             with pytest.raises(BlockingIOError):
