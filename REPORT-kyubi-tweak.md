@@ -1,6 +1,14 @@
 # REPORT — 九尾狐成片微調（拿掉青蛙＋加配樂）
 
-## TL;DR
+## 更新（第二、三階段，orch 要求）
+- **青蛙沒拿掉的原因 🟢**：v3 是 v2 的複製，`assembly/final.mp4`（含青蛙）還在；`mix` 的 `source_video()` 永遠先選 final.mp4，所以配樂疊在舊的青蛙版上。draft.mp4 本來就無青蛙。修法：`rig_ready:false` 的頻道在有 draft.mp4 時不用 final.mp4（`audio_mix/run.py`）。測試：`test_a_channel_without_a_mascot_never_mixes_under_a_leftover_final`。commit `fix(audio): mix never uses a leftover final.mp4…`。
+- **Leon 決策 a9885f35f604＝A**：改 deck 2:50–5:00（`deck.before-tweak.json` 為改前）：s11／s11a／s13／s24a／s14 刪除重複的「我們的看法／照我們的解讀」（s13 保留一處，因事實查核要求標為解讀）；s11、s12 結尾補問句鉤子；s24b 由純文字引文卡改為滿版玉藻前版畫（既有授權的 artwork，字卡只留標題）；s12 動畫改 reveal_list（不留空框）；s14 時間軸文字縮短；s11a 副標註明尾數不易辨認。事實內容未動。
+- **final 評審**（新 cycle）：第 1 輪未過、第 2 輪未過（deck 改後）、**第 3 輪放行**。未達標項：visual／content 欄關鍵項（兩輪都是同類：純文字時間軸頁停 25–30 秒、3:15–6:30 缺鉤子、第一二站書名人名過多、對照表過度概括、丁家閘壁畫看不出九尾、開場轉場標題殘影、小圖＋模糊背景、字幕壓來源小字）。這些多為版型／模板與前半段內容問題，超出 2:50–5:00 授權範圍，未動。另有 fact med：「狐死首丘」是否出自白虎通有質疑（🔴 未查證）。
+- **青蛙驗證**：release.mp4 與兩段 540p 預覽在 0:20、2:00 及 12 個均勻取樣的右下角均無青蛙。預覽 12.48／12.44 MB。成片 683.5 s，人聲 -23.44 LUFS（原 -23.44），true peak -3.61。已跑到 package（`upload/youtube_meta.json`），未上傳。
+- **費用**：累計名目 $14.13（`review_cost_report`），扣掉 v2 的 $6.27 → 本任務新增約 **$7.9**，未達 $20。
+- 先前「final 第 1 輪未過、停住」的敘述已被上面取代。
+
+## TL;DR（舊，第一階段）
 🟢 青蛙已拿掉、配樂已加、成片已渲染（`output/yokai-kyubi-v3/assembly/release.mp4`，682 s）。人聲響度 -23.44 → -23.43 LUFS（不變）。
 🔴 final 評審只跑完第 1 輪就停：未過（visual／content 欄），退回點是 **deck（內容改寫）**，超出「只微調、不重寫」範圍，我沒做；第 2、3 輪（會放行）未跑。留給 Leon／orchestrator 決定是否直接放行。
 預覽：`artifacts/kyubi-tweak/kyubi-tweak-part1.mp4`、`part2.mp4`（540p 2-pass，12.5／12.4 MB，未 commit）。停在 gate_final 前，沒 push、沒上傳。
