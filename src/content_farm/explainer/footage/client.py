@@ -22,7 +22,6 @@ from content_farm.explainer.footage import nasa, noaa, wikimedia
 from content_farm.explainer.footage.models import FootageCandidate, screen, sidecar
 from content_farm.explainer.stock import (
     MAX_DOWNLOAD_BYTES,
-    USER_AGENT,
     RateLimiter,
     StockCandidate,
     StockClient,
@@ -33,6 +32,7 @@ from content_farm.explainer.stock import _words  # noqa: PLC2701  (shared tokeni
 
 logger = logging.getLogger(__name__)
 
+FOOTAGE_UA = "content-farm-footage/1 (https://github.com/Leon180/content-farm; cached, one request at a time)"
 DEFAULT_ORDER = ("nasa", "wikimedia", "pexels", "pixabay")   # noaa is page-pinned (no search endpoint)
 CACHE_VERSION = 1
 _PREFERENCE = {"pd": 0, "cc0": 0, "pexels": 1, "pixabay": 1, "cc-by": 2, "cc-by-sa": 3}
@@ -65,7 +65,7 @@ class FootageClient:
         self._cache = cache_dir
         self._stock = stock
         self._order = order
-        self._http = http or httpx.Client(timeout=45.0, follow_redirects=True, headers={"User-Agent": USER_AGENT})
+        self._http = http or httpx.Client(timeout=45.0, follow_redirects=True, headers={"User-Agent": FOOTAGE_UA})
         self._limiter = limiter or RateLimiter()
         self._avoid_faces = avoid_faces
         self.refusals: list[str] = []
@@ -134,10 +134,11 @@ class FootageClient:
         return response.json()
 
     # ---- screening and ranking -------------------------------------------------------------------------------
-    def _screened(self, found: list[FootageCandidate]) -> list[FootageCandidate]:
+    def _screened(self, found: list[FootageCandidate], *, avoid_faces: bool | None = None) -> list[FootageCandidate]:
+        faces = self._avoid_faces if avoid_faces is None else avoid_faces
         out = []
         for c in found:
-            result = screen(c, avoid_faces=self._avoid_faces)
+            result = screen(c, avoid_faces=faces)
             if result.ok and c.download_url:
                 out.append(c)
             else:
@@ -176,7 +177,9 @@ class FootageClient:
                 raise StockUnavailable(f"NOAA 頁面拒收：{exc}") from exc
         else:
             raise StockUnavailable(f"pinned footage url must be Commons / images.nasa.gov / noaa.gov: {url}")
-        good = self._screened(found)
+        # A pinned clip was picked by a person who looked at it: the licence screen still applies, the title-word
+        # people screen (which also trips on "scientists" in a caption of an empty seafloor) does not.
+        good = self._screened(found, avoid_faces=False)
         if not good:
             raise StockUnavailable(f"pinned footage refused ({'; '.join(self.refusals)})")
         return self._store(query or good[0].title, good[0])

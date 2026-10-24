@@ -237,3 +237,24 @@ def test_client_pinned_url_must_be_known_host(tmp_path):
     client = FootageClient(cache_dir=tmp_path, http=httpx.Client(transport=_transport({})))
     with pytest.raises(StockUnavailable, match="pinned footage url"):
         client.fetch("squid", 5, url="https://www.youtube.com/watch?v=abc")
+
+
+def test_segment_window_and_label_notes():
+    inside = segments.plan(100, 12, None, start=20, end=50)
+    assert len(inside) == 2 and all(20 <= s.start and s.start + s.length <= 50 for s in inside)
+    assert segments.plan(100, 5, None, start=10, end=12)[0].start == 10      # tiny window: use it whole
+    with pytest.raises(ValueError):
+        segments.plan(100, 5, None, start=60, end=50)
+    with pytest.raises(ValidationError):
+        Media(kind=MediaKind.STOCK_VIDEO, query="q", start=10, end=5)
+    with pytest.raises(ValidationError):
+        Media(kind=MediaKind.AI_IMAGE, prompt="p", footage_note="x")
+
+
+def test_screen_labels():
+    pd = _cand(author="NOAA Office of Ocean Exploration and Research")
+    assert pd.screen_label == "影像：NOAA Ocean Exploration / Wikimedia Commons"
+    by = _cand(author="Jozée Sarrazin", license_name="CC BY 4.0")
+    assert by.screen_label == "影像：Jozée Sarrazin / Wikimedia Commons（CC BY）"
+    assert _cand(provider="nasa", author="NASA JPL").screen_label == "影像：NASA"
+    assert _cand(provider="pexels", author="Ann", license_name="Pexels License").screen_label == "影像：Ann / Pexels"

@@ -1,0 +1,49 @@
+【深潛日誌】大王烏賊：為什麼人類這麼晚，才拍到牠活著的樣子？
+
+章節：
+0:00 往下一千公尺：史上第一次
+0:53 三個名詞：房客、長手、深度
+1:25 前人全落空，轉折在鉤子上
+1:56 接力賽：鯨魚、誘餌、DNA
+4:07 第四棒：從追著跑，換成等
+4:59 為什麼是這片海？誰才算第一？
+6:26 浮出水面：牠不是躲，是我們不會看
+
+2004 年，一台掛在 900 公尺深處的相機，第一次在野外拍到活的大王烏賊。這支片拆解那條接力：抹香鯨帶路、誘餌與定時相機、DNA 比對，以及後來從「追」換成「等」的方法。事實出處見來源列表。本頻道不提供投資建議。
+
+這集讀過的論文與機構說明：
+• Kubodera & Mori 2005, First-ever observations of a live giant squid in the wild, Proc. R. Soc. B 272(1581):2583-2586 — https://pmc.ncbi.nlm.nih.gov/articles/PMC1559985
+• Live Giant Squid Photographed for First Time (Scientific American, Tracy Staedter) — https://www.scientificamerican.com/article/live-giant-squid-photogra/
+• Giant squid filmed in Pacific depths, Japan scientists report (AFP via phys.org) — https://phys.org/news276754904.html
+• Luring the Giant Squid (Tufts Now, Edith Widder profile) — https://now.tufts.edu/2013/08/22/luring-giant-squid
+• Schmidt Ocean Institute: First footage of a live juvenile colossal squid — https://schmidtocean.org/first-colossal-squid-footage/
+
+引用報導 / Cited reports（引用標題，非轉載全文）:
+- Schmidt Ocean Institute, 2025-04-15〈First footage of a live juvenile colossal squid〉: https://schmidtocean.org/first-colossal-squid-footage/
+
+AI 示意圖 / AI illustrations（非史料，僅示意）:
+- Z-Image-Turbo (4-bit)（Tongyi-MAI/Z-Image-Turbo, https://github.com/Tongyi-MAI/Z-Image/blob/main/LICENSE）
+- 動態 / motion: Wan2.2-TI2V-5B (MLX q8)（Wan-AI/Wan2.2-TI2V-5B, https://github.com/Wan-Video/Wan2.2/blob/main/LICENSE.txt）
+- 景深視差 / 2.5D parallax: Depth Anything V2 Small（工具）（depth-anything/Depth-Anything-V2-Small-hf, https://github.com/DepthAnything/Depth-Anything-V2#license）
+
+外部影像素材 / Footage（免費或公有領域，畫面左上角標示來源）:
+- National Oceanic and Atmospheric Administration〈Okeanos Explorer PR and USVI Dive 8- Psychedelic Medusa-NOAA-1280x720〉, wikimedia: https://commons.wikimedia.org/wiki/File:Okeanos_Explorer_PR_and_USVI_Dive_8-_Psychedelic_Medusa-NOAA-1280x720.webm (Public domain)
+- NOAA Okeanos Explorer〈Ex1402-dive11 fish〉, wikimedia: https://commons.wikimedia.org/wiki/File:Ex1402-dive11_fish.webm (CC0)
+- NOAA Office of Ocean Exploration and Research〈Bathynomus giganteus as seen by remotely operated vehicle (ROV) Deep Discoverer at a depth of 816 meters at South Reed, Gulf of Mexico, 2017-11-30〉, wikimedia: https://commons.wikimedia.org/wiki/File:Bathynomus_giganteus_as_seen_by_remotely_operated_vehicle_(ROV)_Deep_Discoverer_at_a_depth_of_816_meters_at_South_Reed,_Gulf_of_Mexico,_2017-11-30.webm (Public domain)
+- NOAA Okeanos Explorer〈Ex1402-dive06 red animal〉, wikimedia: https://commons.wikimedia.org/wiki/File:Ex1402-dive06_red_animal.webm (CC0)
+- NOAA〈0501-hydrothermal-vents-640x360〉, wikimedia: https://commons.wikimedia.org/wiki/File:0501-hydrothermal-vents-640x360.webm (Public domain)
+- NOAA Office of Ocean Exploration and Research〈First footage of Duobrachium Sparksae〉, wikimedia: https://commons.wikimedia.org/wiki/File:First_footage_of_Duobrachium_Sparksae.webm (Public domain)
+
+延伸觀看 / Original footage（版權屬原作者，本片畫面未使用，請至原處觀看）:
+- Discovery／NHK 新聞稿：2012 年首次在棲地拍到活體大王烏賊: https://press.discovery.com/us/dsc/press-releases/2013/giant-squid-captured-video-its-natural-habita-2236
+  久保寺恒己團隊 2012 年 7 月在小笠原外海拍到的影像由 NHK 與 Discovery 持有版權，本片畫面未使用。
+- Smithsonian Magazine：Elusive giant squid captured on film for the first time: https://www.smithsonianmag.com/smart-news/elusive-giant-squid-captured-on-film-for-the-first-time-540930/
+  2013 年報導，附 2012 年影像的來龍去脈。
+- NOAA Ocean Exploration：2019 年墨西哥灣拍到大王烏賊（Here Be Monsters）: https://oceanexplorer.noaa.gov/expedition-feature/19biolum-logs-jun20/
+  Medusa 相機在 759 公尺拍到的影片，頁面標示影像由 Edie Widder 與 Nathan Robinson 提供（第三方版權），本片畫面未使用。
+- NOAA Ocean Exploration：Giant Squid 影片頁（2019）: https://oceanexplorer.noaa.gov/multimedia/edu-themes-bioluminescence-media-multimedia-giant-squid/
+  同一段 2019 年影片的原始下載頁。
+
+深潛日誌的畫面全為 AI 繪製的示意插圖，不是實際拍攝；事實出處以學術機構、論文、博物館與官方說明為主，數字有疑問歡迎留言附上來源。
+本影片由 AI 輔助製作（配音為合成語音；部分插圖為 AI 生成）。
+— 深潛日誌

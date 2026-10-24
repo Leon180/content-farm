@@ -4,3 +4,5 @@
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-deepsea/artifacts/deepsea/deepsea-short.mp4","min_bytes":100000,"why":"Shorts 成片（33.4 s）"}
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-deepsea/channels/deepsea.yaml","min_bytes":1500,"why":"頻道設定"}
 {"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-deepsea/channels","pattern":"CF_YT_DEEPSEA_REFRESH_TOKEN=","why":"頻道設定只放環境變數名、不放值"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-stock-footage/REPORT-stock-footage.md","min_bytes":2000,"why":"預期產物"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-stock-footage/artifacts/deepsea-stock/description.txt","min_bytes":1000,"why":"說明欄草稿"}

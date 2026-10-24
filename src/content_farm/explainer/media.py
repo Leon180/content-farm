@@ -194,8 +194,8 @@ def _stock_video(ctx: MediaContext, job: SlideJob) -> ClipResult:
         c = asset.candidate
         source_seconds = ffmpeg_ops.probe(asset.path)["duration"]
         plan = segments.plan(source_seconds, job.seconds, segments.motion_profile(str(asset.path)),
-                             media.start if media else None)
-        label = c.screen_label
+                             media.start if media else None, media.end if media else None)
+        label = c.screen_label + (f"｜{media.footage_note}" if media and media.footage_note else "")
         clip, mode = ffmpeg_ops.footage_to_clip(
             asset.path, [(s.start, s.length) for s in plan],
             _overlay_png(ctx, job, footage_label=label), ctx.clip_path(job, ".mp4"), job.seconds)

@@ -26,10 +26,19 @@ def segment_count(slot_seconds: float) -> int:
 
 
 def plan(source_seconds: float, slot_seconds: float, motion: list[float] | None = None,
-         start: float | None = None) -> list[Segment]:
-    """Segments that together last ``slot_seconds`` (or all the source has, when it is shorter)."""
+         start: float | None = None, end: float | None = None) -> list[Segment]:
+    """Segments that together last ``slot_seconds`` (or all the source has, when it is shorter).
+
+    ``start`` alone pins a single cut at that second; with ``end`` it is the window the cuts are taken from.
+    """
     if source_seconds <= 0 or slot_seconds <= 0:
         raise ValueError("source and slot must have a length")
+    if end is not None:
+        lo, hi = start or 0.0, min(end, source_seconds)
+        if hi <= lo:
+            raise ValueError("footage window is empty")
+        inner = plan(hi - lo, slot_seconds, motion[int(lo):] if motion else None)
+        return [Segment(round(seg.start + lo, 2), seg.length) for seg in inner]
     count = segment_count(slot_seconds)
     length = slot_seconds / count
     if source_seconds <= length + 2 * SKIP_EDGE:

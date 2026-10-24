@@ -225,6 +225,8 @@ class Media(_Frozen):
     # an optional start second inside it. The query is still required (it names what the clip must show).
     url: str = Field(default="", max_length=500)
     start: float | None = Field(default=None, ge=0)
+    end: float | None = Field(default=None, gt=0)    # stock_video: stop cutting here (skips an end title card)
+    footage_note: str = Field(default="", max_length=24)  # stock_video: shown after the credit, e.g. 「深海生物示意」
     # diagram: which built-in diagram, and its params ("values"/"labels", | separated; stage times
     # come from the narration — each label is matched to the sentence that says it)
     diagram: str = Field(default="", max_length=32)
@@ -248,8 +250,11 @@ class Media(_Frozen):
             raise ValueError("ai_note only applies to media kind 'ai_image'")
         if self.frame is not None and self.kind not in (MediaKind.AI_IMAGE, MediaKind.STOCK_VIDEO):
             raise ValueError("frame only applies to media kinds 'ai_image' and 'stock_video'")
-        if (self.url or self.start is not None) and self.kind != MediaKind.STOCK_VIDEO:
-            raise ValueError("url / start only apply to media kind 'stock_video'")
+        if (self.url or self.start is not None or self.end is not None or self.footage_note) \
+                and self.kind != MediaKind.STOCK_VIDEO:
+            raise ValueError("url / start / end / footage_note only apply to media kind 'stock_video'")
+        if self.end is not None and self.start is not None and self.end <= self.start:
+            raise ValueError("media.end must be after media.start")
         return self
 
     @property

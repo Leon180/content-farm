@@ -57,17 +57,27 @@ class FootageCandidate:
         return asdict(self)
 
 
+def short_author(author: str) -> str:
+    """Credit name for the frame: NOAA's long institutional strings shrink to the programme name."""
+    if re.search(r"ocean exploration|okeanos|\bOER\b", author, re.I):
+        return "NOAA Ocean Exploration"
+    if re.search(r"NOAA|National Oceanic", author, re.I):
+        return "NOAA"
+    return author if len(author) <= 40 else author[:38].rstrip() + "…"
+
+
 def source_label(c: FootageCandidate) -> str:
-    """Short, human-readable credit for the corner of the picture (provider name; author when the licence asks for it)."""
+    """Short, human-readable credit for the corner of the picture (who made it, where it came from, CC licence if any)."""
     names = {"nasa": "NASA", "noaa": "NOAA Ocean Exploration", "wikimedia": "Wikimedia Commons",
              "pexels": "Pexels", "pixabay": "Pixabay"}
     base = names.get(c.provider, c.provider)
+    author = short_author(c.author)
     verdict = classify_license(c.license_name, c.license_url)
-    if verdict.attribution_required and c.author:
-        return f"影像：{c.author} / {base}（{short_licence(c)}）"
-    if c.provider in {"pexels", "pixabay"} and c.author:
-        return f"影像：{c.author} / {base}"
-    return f"影像：{base}"
+    if verdict.attribution_required:
+        return f"影像：{author} / {base}（{short_licence(c)}）"
+    if c.provider in {"nasa", "noaa"} or author == base:
+        return f"影像：{base}"
+    return f"影像：{author} / {base}"
 
 
 def short_licence(c: FootageCandidate) -> str:
