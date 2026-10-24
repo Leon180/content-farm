@@ -81,6 +81,19 @@ def forbidden_prompt_terms(prompt: str) -> list[str]:
     return sorted({m.group(0).lower() for m in _FORBIDDEN_PROMPT.finditer(prompt)})
 
 
+# Animal characters stay animals (Leon 2026-10-24: the owl grew human hands in 3 of 9 pictures).
+# The turbo model may ignore a negative prompt, so the rule is also said positively in the prompt.
+ANIMAL_BODY_RULE = ("Animals keep animal bodies: wings folded or at the sides, paws on the ground or on a branch; "
+                    "props rest beside the animal on a branch, the ground or a table.")
+ANIMAL_NEGATIVE = ("human hands, hands, arms, fingers, holding, gripping, anthropomorphic hands, "
+                   "humanoid body, standing like a person, writing with a pen")
+
+
+def with_animal_rules(prompt: str) -> tuple[str, str]:
+    """``(prompt + the animal-body rule, the default negative prompt)`` for a channel with animal characters."""
+    return f"{prompt.strip()} {ANIMAL_BODY_RULE}", ANIMAL_NEGATIVE
+
+
 @dataclass(frozen=True)
 class IllustrationRequest:
     slide_id: str
@@ -88,6 +101,7 @@ class IllustrationRequest:
     seed: int
     width: int
     height: int
+    negative_prompt: str = ""
 
 
 class IllustrationProvider(Protocol):
@@ -162,9 +176,10 @@ class LocalMflux:
 
     def argv(self, request: IllustrationRequest, out: Path) -> list[str]:
         spec = self.model
-        return [str(self.bin_dir / spec.command), "--model", spec.repo, "--base-model", spec.base_model,
+        argv = [str(self.bin_dir / spec.command), "--model", spec.repo, "--base-model", spec.base_model,
                 "--prompt", request.prompt, "--seed", str(request.seed), "--steps", str(spec.steps),
                 "--width", str(request.width), "--height", str(request.height), "--output", str(out)]
+        return argv + (["--negative-prompt", request.negative_prompt] if request.negative_prompt else [])
 
     def generate(self, request: IllustrationRequest, out: Path) -> dict:
         waited = wait_for_memory()

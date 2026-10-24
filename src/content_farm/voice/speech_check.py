@@ -108,11 +108,14 @@ def cer(reference: str, hypothesis: str, aliases: Aliases = ()) -> float:
 
 def missing_terms(reference: str, hypothesis: str, terms: tuple[KeyTerm, ...],
                   aliases: Aliases | None = None) -> tuple[str, ...]:
-    """Key terms in the narration that the transcript does not contain (in any accepted form)."""
+    """Key terms in the narration that the transcript does not contain as often (in any accepted form).
+
+    Counted, not just present: a scene that says 鷹 three times and is heard saying it once has two
+    misreadings (2026-10-24: one right 貓頭鷹 hid the wrong ones in the same scene)."""
     ref = normalize(reference)
     hyp = canonical(hypothesis, build_aliases(terms) if aliases is None else aliases)
     return tuple(term.display for term in terms
-                 if normalize(term.display) in ref and normalize(term.display) not in hyp)
+                 if normalize(term.display) in ref and ref.count(normalize(term.display)) > hyp.count(normalize(term.display)))
 
 
 @dataclass(frozen=True)

@@ -192,6 +192,8 @@ class AiIllustration(_Strict):
     seed: int = Field(default=42, ge=0)
     width: int = Field(default=1280, ge=256, le=2048, multiple_of=16)
     height: int = Field(default=720, ge=256, le=2048, multiple_of=16)
+    # animal characters stay animals: no human hands (adds the body rule to every prompt and a default negative prompt)
+    animal_characters: bool = False
 
     @field_validator("model")
     @classmethod

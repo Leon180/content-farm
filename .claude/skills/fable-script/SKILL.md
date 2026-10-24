@@ -30,7 +30,7 @@ description: Write fable.json for one 寓言學堂 video — an original fable t
 - 每個 beat 的 `shots` 是它的畫面：旁白每 8 秒左右換一張圖（`ceil(秒數/8)` 張，最多 3 張）。揭曉與解釋 beat 可以用 `reuse` 指到更早的 shot（如 `"b3.1"`），畫面會顯示那張圖＋概念對照卡。
 
 ## 圖片提示詞（image_prompt）
-英文、只寫內容（頻道的繪本風格前綴由系統加上）：角色（動物／器物）、場景、構圖、光線、情緒，一張圖一個清楚的主體。不要人物、人臉、人群（市集、街道、村莊不要寫 crowd／customers／street 這類會畫出路人的字，改寫成空的攤位、遠處的小動物剪影）、文字、招牌、標誌；角色用具體外形描述（例如 slim red-brown fox-like animal with a ringed tail），不要寫 tanuki／raccoon dog／round／chubby（模型會畫成既有的電影角色）；不要寫畫家名字或「照片」。直式 9:16（short）與橫式 16:9（mid）由系統決定，不用寫。
+英文、只寫內容（頻道的繪本風格前綴由系統加上）：角色（動物／器物）、場景、構圖、光線、情緒，一張圖一個清楚的主體。不要人物、人臉、人群（市集、街道、村莊不要寫 crowd／customers／street 這類會畫出路人的字，改寫成空的攤位、遠處的小動物剪影）、文字、招牌、標誌；角色用具體外形描述（例如 slim red-brown fox-like animal with a ringed tail），不要寫 tanuki／raccoon dog／round／chubby（模型會畫成既有的電影角色）；不要寫畫家名字或「照片」。**動物保持動物身體，不畫人手**（Leon 2026-10-24：貓頭鷹長出人手很怪）：不要寫 holding／writing／hands／arms／fingers／carrying／reading 這類讓動物用手的動詞；道具（書、本子、燈）寫成放在旁邊的樹枝／地上／桌上，動物翅膀收起或前爪著地；要「寫字」「翻書」的劇情改成書本特寫（翻開、寫滿字）加動物在背景。系統會自動加身體規則與預設 negative prompt，`scripts/fable.py lint` 會擋上述動詞。直式 9:16（short）與橫式 16:9（mid）由系統決定，不用寫。
 
 ## 語氣
 台灣中文口語、說書的溫暖感，不說教。句子短，逗號處要能自然換氣（字幕只在標點斷行）。少用「欸」等語氣詞（整支最多 1 次）；不用「狂」「絕了」這類過期流行語；可以用耐久的口語（嘴砲、帶風向、潛水）。數字少用，出現就帶單位；專有名詞第一次出現給一句白話。
@@ -52,7 +52,7 @@ description: Write fable.json for one 寓言學堂 video — an original fable t
   "beats": [
     {"id": "b1", "act": "hook", "narration": "這個故事在講一個行為經濟學的概念，你猜得到嗎？",
      "must_keep": ["不透露概念名"], "must_avoid": ["沉沒成本", "任何同義詞"],
-     "shots": [{"image_prompt": "a small squirrel under a bare tree at dusk, watering can in paw, warm lantern light"}]},
+     "shots": [{"image_prompt": "a small squirrel under a bare tree at dusk, a watering can on the ground beside it, warm lantern light"}]},
     {"id": "b2", "act": "story", "narration": "…（情節，埋下 h1）…", "plants": ["h1"],
      "must_keep": ["松鼠的選擇：繼續澆水"], "must_avoid": ["說教", "概念名"],
      "shots": [{"image_prompt": "..."}, {"image_prompt": "..."}]},

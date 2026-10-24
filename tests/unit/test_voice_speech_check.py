@@ -55,6 +55,13 @@ def test_key_term_heard_as_homophone_passes_but_misread_fails() -> None:
     assert missing_terms("沒有這個詞", "沒有這個詞", (COWOS,)) == ()  # only terms the scene says
 
 
+def test_a_key_term_said_twice_but_heard_once_is_missing() -> None:
+    eagle = KeyTerm("鷹", ())
+    assert missing_terms("貓頭鷹說鷹最聰明", "貓頭鷹說鷹最聰明", (eagle,)) == ()
+    assert missing_terms("貓頭鷹說鷹最聰明", "貓頭旗說鷹最聰明", (eagle,)) == ("鷹",)  # one of two heard
+    assert missing_terms("貓頭鷹先認定了答案", "貓頭起先認定了答案", (eagle,)) == ("鷹",)
+
+
 def _write_table(path: Path) -> Path:
     path.write_text(
         "shared: {TSMC: T S M C}\n"
