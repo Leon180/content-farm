@@ -1,9 +1,5 @@
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-fable/REPORT-fable.md","min_bytes":2000,"why":"派工時宣告的預期產物"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-fable/artifacts/fable/fable-asymmetry-short.mp4","min_bytes":5000000,"why":"Short 1 成片"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-fable/artifacts/fable/fable-gradient-short.mp4","min_bytes":5000000,"why":"Short 2 成片"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-fable/artifacts/fable/fable-confirmation-short.mp4","min_bytes":5000000,"why":"Short 3 成片"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-fable/artifacts/fable/fable-ess-mid-part1.mp4","min_bytes":3000000,"why":"中片 540p 第 1 段"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-fable/artifacts/fable/fable-ess-mid-part2.mp4","min_bytes":3000000,"why":"中片 540p 第 2 段"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-fable/channels/fable.yaml","min_bytes":1500,"why":"頻道設定"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-fable/channels/fable.yaml","pattern":"CF_YT_FABLE_REFRESH_TOKEN=","why":"頻道設定只放環境變數名、不放值"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-fable/src","pattern":"TODO-fable","why":"沒留暫時碼"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-yt-uploader/REPORT-yt-uploader.md","min_bytes":2000,"why":"派工宣告的預期產物"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-yt-uploader/scripts/upload_pack.py","min_bytes":1000,"why":"上傳腳本"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-yt-uploader/scripts/get_youtube_token.py","min_bytes":1000,"why":"授權腳本"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-yt-uploader/tests/test_youtube_pack_upload.py","min_bytes":1000,"why":"mock 測試"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-yt-uploader/src/content_farm/youtube","pattern":"videos\\(\\)\\.insert\\(.*\\.execute","why":"未新增任何會直接送出 videos.insert 的呼叫（沿用既有 provider）"}

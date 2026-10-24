@@ -57,6 +57,15 @@ class GoogleProvider:
             self._service = build("youtube", "v3", credentials=creds)
         return self._service
 
+    def get_authorized_channel(self) -> dict[str, str]:
+        """Return ``{"id", "title"}`` of the channel this token acts for (channels.list mine)."""
+        service = self._ensure_service()
+        response = service.channels().list(part="snippet", mine=True).execute()  # type: ignore[union-attr]
+        items = response.get("items", [])
+        if not items:
+            raise RuntimeError("Token is authorized but owns no YouTube channel")
+        return {"id": items[0]["id"], "title": items[0]["snippet"]["title"]}
+
     async def upload_video(
         self,
         *,
