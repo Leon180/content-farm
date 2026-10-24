@@ -34,7 +34,8 @@ cadence:
   timezone: Asia/Taipei
 shorts_strategy: 一分鐘深海：從長片切一個最反直覺的事實（一句話鉤子＋一張圖），導流長片
 media:
-  stock: false            # 不用 stock；畫面全靠 AI 插圖（MBARI／NOAA 的影片與照片不可用，只當出處引用）
+  stock: false            # 舊的 stock 種類不用
+  stock_video: true       # 免費／公有領域影片（NOAA／NASA／Commons／Pexels／Pixabay），畫面標來源；MBARI 等版權影片只放說明欄連結（Leon 2026-10-24 bdce0ad57f09＝A）
   ai_image: true
   artwork: false
   source_footage: false

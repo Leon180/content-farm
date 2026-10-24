@@ -122,7 +122,7 @@ def _render(
 def overlay_html(
     deck: Deck, section: Section, slide: Slide, index: int, style: str | None = None,
     brand: str | None = None, artwork_caption: str = "", ai_label: str = "", lower_third: bool = True,
-    frame: str = "lower",
+    frame: str = "lower", footage_label: str = "",
 ) -> str:
     """Transparent page: top bar, lower-third (heading + key line), meta row.
 
@@ -136,7 +136,8 @@ def overlay_html(
     panel_big, panel_lines = panel_content(slide) if frame != "lower" else ("", ())
     return _render(deck, section, slide, index, "overlay", style=style, brand=brand,
                    key_line="" if line == slide.heading else line, artwork_caption=artwork_caption,
-                   ai_label=ai_label, lower_third=lower_third, frame=frame, panel_big=panel_big,
+                   ai_label=ai_label, footage_label=footage_label, lower_third=lower_third, frame=frame,
+                   panel_big=panel_big,
                    panel_lines=panel_lines)
 
 

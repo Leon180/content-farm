@@ -138,7 +138,7 @@ review:
   policy: {score_only: true, script_revise_once: true, fact_on_fail: auto_fix_then_pass}
   defaults: {max_parallel: 8, timeout_s: 1200, schema_retries: 1}   # 2026-10-19 4→8；入場檢查仍依可用記憶體往下調
   license_rules:       # 授權程式規則（review/license_rules.py）：素材來源白名單；AI 圖另查標示（AI 示意圖）與 model／prompt／seed
-    allowed_kinds: [ai_image, artwork, stock, wikimedia, news_card, title_card, parallax, wan, article, discussion]
+    allowed_kinds: [ai_image, artwork, stock, stock_video, wikimedia, news_card, title_card, parallax, wan, article, discussion]
   budget: {usd_per_video: 15}                  # 雲端車道（評審＋產出 agent）每支片的名目上限；用完就停下回報，不自動繼續（review/budget.py）
   aggregator: {model: haiku, effort: low}      # 修改清單整理、退回路由、彙整
   roles:

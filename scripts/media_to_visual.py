@@ -42,6 +42,7 @@ from content_farm.explainer.deck import load_deck
 from content_farm.explainer.ffmpeg_ops import FFmpegError
 from content_farm.explainer.media_run import TRANSITION_CHOICES, MediaOptions, media_to_visual
 from content_farm.explainer.motion_cache import MotionPaths, motion_env
+from content_farm.explainer.footage.client import FootageClient
 from content_farm.explainer.stock import StockClient
 from content_farm.explainer.timeline import (
     DURATION_SOURCES,
@@ -74,6 +75,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--no-cache", action="store_true",
                         help="rebuild every slot (default: reuse slots whose scene identity is unchanged)")
     parser.add_argument("--stock-cache", type=Path, default=Path(".cache/explainer_stock"))
+    parser.add_argument("--footage-cache", type=Path, default=Path(".cache/footage"))
     parser.add_argument("--env-file", type=Path, default=Path(".env"))
     parser.add_argument("--brand", choices=brand_codes(),
                         help="channel brand for overlays/cards (default: deck category theme)")
@@ -98,12 +100,13 @@ def main(argv: list[str] | None = None) -> int:
             print("Error: only estimated durations found; run voice first", file=sys.stderr)
             return 3
         clips = plan_slide_timeline(durations)
-        stock = None
+        stock = footage = None
         if not args.no_stock:
             keys = _stock_keys(args.env_file)
             stock = StockClient(pexels_key=keys["CF_PEXELS_API_KEY"],
                                 pixabay_key=keys["CF_PIXABAY_API_KEY"], cache_dir=args.stock_cache)
-        run = media_to_visual(deck, run_dir, clips, stock=stock, options=options)
+            footage = FootageClient(cache_dir=args.footage_cache, stock=stock)
+        run = media_to_visual(deck, run_dir, clips, stock=stock, options=options, footage=footage)
     except (OSError, ValueError, ValidationError, FFmpegError, json.JSONDecodeError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1

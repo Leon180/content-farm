@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+import shutil
 import time
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -21,6 +22,8 @@ from content_farm.explainer.ai_images import AI_IMAGE_DIR, find_image
 from content_farm.explainer.artwork import ARTWORK_DIR, ARTWORK_MANIFEST, ArtworkEntry, credit_for, load_manifest
 from content_farm.explainer.capture import PageCapturer
 from content_farm.explainer.cards import overlay_html, placeholder_html, title_card_html
+from content_farm.explainer.footage import segments
+from content_farm.explainer.footage.client import FootageClient
 from content_farm.explainer.deck import Deck, MediaKind, Section, Slide
 from content_farm.explainer.illustrate import AI_LABEL, load_record
 from content_farm.explainer.motion import plan_motion
@@ -32,6 +35,7 @@ from content_farm.explainer.stock import StockClient, StockUnavailable, candidat
 logger = logging.getLogger(__name__)
 
 USED_PLACEHOLDER = "ai_placeholder"
+FOOTAGE_DIR = Path("assets/footage")   # per-clip sidecars (source, author, licence, URL, retrieval date)
 
 
 @dataclass(frozen=True)
@@ -80,6 +84,7 @@ class MediaContext:
     motion_paths: MotionPaths | None = None  # local video tools (None = ai_image falls back to Ken Burns)
     ai_image_dir: Path = field(init=False)
     artwork: dict[str, ArtworkEntry] = field(init=False)
+    footage: FootageClient | None = None   # free / public-domain footage (media kind stock_video)
 
     def __post_init__(self) -> None:
         self.ai_image_dir = self.run_dir / AI_IMAGE_DIR
@@ -102,6 +107,7 @@ def build_clip(ctx: MediaContext, job: SlideJob) -> ClipResult:
         MediaKind.SLIDE: _plain_slide,
         MediaKind.ANIMATED: _animated,
         MediaKind.STOCK: _stock,
+        MediaKind.STOCK_VIDEO: _stock_video,
         MediaKind.AI_IMAGE: _ai_image,
         MediaKind.TITLE_CARD: _title_card,
         MediaKind.ARTWORK: _artwork,
@@ -142,12 +148,15 @@ def _animated(ctx: MediaContext, job: SlideJob, note: str = "") -> ClipResult:
                    problems=capture.problems)
 
 
-def _overlay_png(ctx: MediaContext, job: SlideJob, ai_label: str = "", lower_third: bool = True) -> Path:
+def _overlay_png(ctx: MediaContext, job: SlideJob, ai_label: str = "", lower_third: bool = True,
+                 footage_label: str = "") -> Path:
     media = job.slide.media
-    frame = media.frame_kind.value if media is not None and media.kind == MediaKind.AI_IMAGE else "lower"
+    framed = media is not None and media.kind in (MediaKind.AI_IMAGE, MediaKind.STOCK_VIDEO)
+    frame = media.frame_kind.value if framed else "lower"
     html = ctx.html(f"overlay_{job.index:03d}.html",
                     overlay_html(ctx.deck, job.section, job.slide, job.index, brand=ctx.brand,
-                                 ai_label=ai_label, lower_third=lower_third, frame=frame))
+                                 ai_label=ai_label, lower_third=lower_third, frame=frame,
+                                 footage_label=footage_label))
     return ctx.capturer.still(html, ctx.work_dir / "overlays" / f"overlay_{job.index:03d}.png",
                               transparent=True)
 
@@ -172,6 +181,43 @@ def _stock(ctx: MediaContext, job: SlideJob) -> ClipResult:
     # Keyword match is evidence, not proof: a human still watches every stock clip.
     return _result(job, "stock", clip, note=note, credit=credit_entry(asset, job.slide.id, job.index),
                    review=True)
+
+
+def _stock_video(ctx: MediaContext, job: SlideJob) -> ClipResult:
+    """Free / public-domain footage: 3–8 s cuts, silent, cover-fit, source label burned into the top-left corner."""
+    media = job.slide.media
+    query, keywords, url = (media.query, media.keywords, media.url) if media else ("", (), "")
+    try:
+        if ctx.footage is None:
+            raise StockUnavailable("footage disabled (--no-stock)")
+        asset = ctx.footage.fetch(query, job.seconds, keywords, url)
+        c = asset.candidate
+        source_seconds = ffmpeg_ops.probe(asset.path)["duration"]
+        plan = segments.plan(source_seconds, job.seconds, segments.motion_profile(str(asset.path)),
+                             media.start if media else None)
+        label = c.screen_label
+        clip, mode = ffmpeg_ops.footage_to_clip(
+            asset.path, [(s.start, s.length) for s in plan],
+            _overlay_png(ctx, job, footage_label=label), ctx.clip_path(job, ".mp4"), job.seconds)
+    except (StockUnavailable, ffmpeg_ops.FFmpegError) as exc:
+        refused = "; ".join(getattr(ctx.footage, "refusals", [])[-4:])
+        logger.warning("slide %s: footage fallback → animated: %s", job.slide.id, exc)
+        return _animated(ctx, job, note=f"FALLBACK stock_video→animated: {exc} {refused} | ")
+    record = ctx.run_dir / FOOTAGE_DIR / f"{job.slide.id}.sidecar.json"
+    record.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(asset.sidecar_path, record)
+    cache = "cache" if asset.from_cache else "download"
+    note = (f"{c.provider}:{c.provider_id} {mode} ({cache}) {len(plan)} cut(s) "
+            f"{[(round(s.start, 1), round(s.length, 1)) for s in plan]} [{c.title[:60]}]")
+    entry = {"slide_id": job.slide.id, "slide_index": job.index, "kind": "stock_video", "query": asset.query,
+             "provider": c.provider, "provider_id": c.provider_id, "title": c.title, "source_url": c.page_url,
+             "download_url": c.download_url, "author": c.author, "author_url": c.author_url,
+             "license": c.license_name, "license_url": c.license_url, "label": label, "label_burned": True,
+             "sidecar": (FOOTAGE_DIR / record.name).as_posix(),
+             "segments": [{"start": round(s.start, 2), "length": round(s.length, 2)} for s in plan],
+             **{k: v for k, v in json.loads(asset.sidecar_path.read_text("utf-8")).items()
+                if k in {"license_code", "attribution_required", "share_alike", "retrieved_at"}}}
+    return _result(job, "stock_video", clip, note=note, credit=entry, review=True)  # a human still checks the faces
 
 
 def _ai_image(ctx: MediaContext, job: SlideJob) -> ClipResult:

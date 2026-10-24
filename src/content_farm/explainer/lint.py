@@ -145,7 +145,7 @@ def _check_media(deck: Deck) -> list[LintIssue]:
             ))
     kinds = [s.media_kind for s in deck.slides]
     # a channel-drawn animated diagram is moving picture too (v3: replaces off-topic stock)
-    footage = sum(k in (MediaKind.STOCK, MediaKind.AI_IMAGE, MediaKind.ARTWORK, MediaKind.DIAGRAM) for k in kinds)
+    footage = sum(k in (MediaKind.STOCK, MediaKind.STOCK_VIDEO, MediaKind.AI_IMAGE, MediaKind.ARTWORK, MediaKind.DIAGRAM) for k in kinds)
     if kinds and footage / len(kinds) < MIN_FOOTAGE_SHARE:
         issues.append(LintIssue(
             "footage-share",

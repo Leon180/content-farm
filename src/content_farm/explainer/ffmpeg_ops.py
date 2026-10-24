@@ -115,6 +115,42 @@ def stock_to_clip(
     return out, mode
 
 
+def footage_to_clip(
+    video: Path, segments: list[tuple[float, float]], overlay: Path | None, out: Path, duration: float,
+) -> tuple[Path, str]:
+    """Silent clip of ``duration`` made of ``(start, length)`` pieces of ``video`` (cover-cropped to 1920x1080, hard cuts).
+
+    Pieces shorter than the slot in total are slowed down (<=1.5x) or cycled; the soundtrack is dropped (narration leads).
+    """
+    total = sum(length for _, length in segments)
+    if total <= 0:
+        raise ValueError("footage segments have no length")
+    stretch = duration / total if total < duration else 1.0
+    mode = "trim" if stretch == 1.0 else ("slow" if stretch <= MAX_SLOWDOWN else "loop")
+    pieces = list(segments)
+    if mode == "loop":
+        while sum(length for _, length in pieces) < duration:
+            pieces += segments
+        stretch = 1.0
+    split = "".join(f"[s{i}]" for i in range(len(pieces)))
+    chains = ";".join(
+        f"[s{i}]trim=start={start:.3f}:duration={length:.3f},setpts=PTS-STARTPTS,{_COVER},fps={FPS}[p{i}]"
+        for i, (start, length) in enumerate(pieces))
+    joined = "".join(f"[p{i}]" for i in range(len(pieces)))
+    slow = f",setpts={stretch:.6f}*PTS" if stretch != 1.0 else ""
+    graph = f"[0:v]split={len(pieces)}{split};{chains};{joined}concat=n={len(pieces)}:v=1:a=0{slow}[bg]"
+    if len(pieces) == 1:
+        graph = (f"[0:v]trim=start={pieces[0][0]:.3f}:duration={pieces[0][1]:.3f},setpts=PTS-STARTPTS,{_COVER},"
+                 f"fps={FPS}{slow}[bg]")
+    args = ["ffmpeg", "-y", "-i", str(video)]
+    if overlay is not None:
+        args += ["-i", str(overlay), "-filter_complex", f"{graph};[bg][1:v]overlay=0:0[v]", "-map", "[v]"]
+    else:
+        args += ["-filter_complex", graph, "-map", "[bg]"]
+    run([*args, *_out(out, frame_count(duration))])
+    return out, mode
+
+
 def ken_burns(
     image: Path, overlay: Path | None, out: Path, duration: float, *, zoom: float = 0.10,
 ) -> Path:

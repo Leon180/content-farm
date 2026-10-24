@@ -57,7 +57,7 @@ def deck_to_script(deck: Deck) -> Script:
     )
 
 
-_SOURCE_PREFERENCE = {MediaKind.STOCK: "stock", MediaKind.AI_IMAGE: "ai"}
+_SOURCE_PREFERENCE = {MediaKind.STOCK: "stock", MediaKind.STOCK_VIDEO: "stock", MediaKind.AI_IMAGE: "ai"}
 
 
 def _visual_hint(slide: Slide) -> VisualHint:
@@ -71,7 +71,7 @@ def _visual_hint(slide: Slide) -> VisualHint:
     detail = ""
     keywords: tuple[str, ...] = ()
     if media is not None:
-        if kind == MediaKind.STOCK:
+        if kind in (MediaKind.STOCK, MediaKind.STOCK_VIDEO):
             keywords = (media.query,)
         elif kind == MediaKind.ANIMATED:
             detail = slide.animation.value

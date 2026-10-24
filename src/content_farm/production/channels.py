@@ -160,6 +160,9 @@ class Cadence(_Strict):
 
 class MediaPolicy(_Strict):
     stock: bool = True
+    # Free / public-domain outside footage (Commons, NASA, NOAA, Pexels, Pixabay) with a source label on screen and
+    # sidecar + licence rules (review/license_rules.py). Opt-in; copyrighted video stays description-link only.
+    stock_video: bool = False
     ai_image: bool = True
     artwork: bool = False               # museum / public-domain artwork
     artwork_license_required: bool = True
