@@ -33,6 +33,8 @@ def record(run_dir: Path, gate: str, stage_name: str, card: dict[str, Any], *, w
     entry = {"gate": gate, "stage": stage_name, "round": card.get("round"), "recorded_at": now_iso(),
              "scores": verdict.get("scores"), "passed_thresholds": bool(verdict.get("pass")), "waived": waived,
              "unmet": list(verdict.get("reasons", [])),
+             # concrete observations (what the reviewers saw, quoted) kept apart from the scores above
+             "observations": list(card.get("observations") or []),
              "comments": [{k: i.get(k) for k in ("ref", "category", "severity", "problem", "fix", "who")}
                           for i in verdict.get("issues", [])]}
     ledger["stages"] = {**ledger["stages"], gate: entry}

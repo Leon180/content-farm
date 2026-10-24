@@ -97,6 +97,8 @@ Mix: about a third `slide`, ≥ 1 `title_card`, no more than 3 `stock` in a row.
 5. On a key moment the subject fills a third of the frame height: use `close` or `medium`, not `wide`.
 6. Common failures: subject too small or at the edge, too dark, picture and text fighting for the same area (set `frame` so the card sits on the empty side), a joke that goes by too fast to read.
 
+**Hooks and chapter rules.** Open `hooks_ledger.json` (from the article) and replace each hook's `planted` / `payoff` with the slide ids in this deck; set `status: "paid"` only when a slide really answers it, `dropped` + `note` when you cut it. A hook that is still `open`, or paid before it is planted, shows up in QC and in the script panel. Copy each outline section's `must_keep` / `must_avoid` into the deck's sections. **Continuity**: a number said twice keeps its value ("全長約 8 公尺" never becomes 13 later); a promised count ("三個方法") lists exactly that many — the script panel gets a machine-made `coherence.txt` of suspected clashes.
+
 **Slideshow risk.** After you write the deck the runner scores every page 0–100 for "reads like a slide being read" (repeated form, too much page text, one picture held too long, a bare text page, a decoration-only prompt, the same flat camera twice). If > 25 % of the pages score ≥ 40 you get ONE request list (`review/slideshow_risk.json`) naming the pages: change the form or `frame`, add an `ai_image`, split the page, or cut the page text. Fix only those pages; nothing blocks the run.
 
 #### AI image rules (Leon 2026-10-16)

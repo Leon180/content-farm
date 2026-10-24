@@ -94,6 +94,16 @@ def slideshow_findings(channel: Channel, deck: Deck, durations: dict[str, float]
                     + (f" ({detail})" if detail else ""))]
 
 
+def script_quality_findings(run_dir: Path, channel: Channel, deck: Deck) -> list[Finding]:
+    """Hooks ledger (open threads) and continuity (the same quantity told two ways); warn-only, off per channel."""
+    if not channel.quality.hooks_ledger:
+        return []
+    from content_farm.review import script_checks
+
+    rows = script_checks.findings(run_dir, json.loads(deck.model_dump_json()))
+    return [Finding(check, level, message) for level, check, message in rows]
+
+
 def credits_findings(channel: Channel, credits: dict | None, run_dir: Path | None = None) -> list[Finding]:
     if credits is None:
         return [Finding("credits", "error", "credits.json missing (run media first)")]
@@ -458,6 +468,7 @@ def run_qc(run_dir: Path, channel: Channel, deck: Deck | None) -> dict:
     if deck is not None:
         findings += deck_findings(channel, deck)
         findings += slideshow_findings(channel, deck)
+        findings += script_quality_findings(run_dir, channel, deck)
     credits_path = run_dir / "credits.json"
     credits = json.loads(credits_path.read_text(encoding="utf-8")) if credits_path.is_file() else None
     if channel.media.stock or channel.media.stock_video or channel.media.ai_image or channel.media.artwork:

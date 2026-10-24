@@ -62,6 +62,7 @@ def lint_deck(deck: Deck) -> tuple[LintIssue, ...]:
         *_check_media(deck),
         *_check_visuals_v4(deck),
         *_check_shot_language(deck),
+        *_check_section_rules(deck),
     )
 
 
@@ -273,4 +274,16 @@ def _check_shot_language(deck: Deck) -> list[LintIssue]:
             issues.append(LintIssue("text-hold", f"slide {slide.id!r}: {screen_text_chars(slide)} characters on screen "
                                                   f"need ~{need:.1f}s to read, narration lasts {slide.estimated_seconds:.1f}s",
                                     severity="warn"))
+    return issues
+
+
+def _check_section_rules(deck: Deck) -> list[LintIssue]:
+    """Chapter rules (quality v5): wording a chapter must keep, and wording it must never contain."""
+    issues: list[LintIssue] = []
+    for section in deck.sections:
+        text = "".join(f"{slide.heading}{slide.narration}" for slide in section.slides)
+        issues += [LintIssue("must-keep-missing", f"section {section.title!r}: must keep {phrase!r}, it is gone")
+                   for phrase in section.must_keep if phrase not in text]
+        issues += [LintIssue("must-avoid-present", f"section {section.title!r}: must not contain {phrase!r}")
+                   for phrase in section.must_avoid if phrase in text]
     return issues

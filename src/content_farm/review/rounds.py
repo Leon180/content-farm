@@ -275,6 +275,10 @@ def run_round(run_dir: Path, *, stage_name: str, config: ReviewConfig, channel: 
     context["items"] = list(context.get("candidate_ids", [])) + list(context.get("title_ids", [])) \
         + list(context.get("variants", []))
     verdict = verdicts.JUDGES[stage_name](stage, seats, **context)
+    # what each professional said they saw, kept apart from the scores (quality v5): the ledger stores it as ``observations``
+    observations = [{"role": m.role, **{k: v for k, v in o.items() if k in ("quote", "observed", "sentence_ids")}}
+                    for m, r in zip(members, results) if r.ok and isinstance(r.output, dict)
+                    for o in (r.output.get("observations") or []) if isinstance(o, dict)]
     card = {
         "stage": stage_name, "round": round_no, "label": name, "holdout_only": holdout_only,
         "at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "started_at": started_at,
@@ -286,6 +290,7 @@ def run_round(run_dir: Path, *, stage_name: str, config: ReviewConfig, channel: 
         **({"threshold_note": THRESHOLD_NOTE} if stage.threshold.leave_median_pct is not None else {}),
         **({"only_sentences": sorted(only_sentences)} if only_sentences is not None else {}),
         **({"carry": carry.to_json()} if carry is not None else {}),
+        **({"observations": observations} if observations else {}),
         "seats": [{**{"role": m.role, "kind": m.kind, "holdout": m.holdout}, **r.to_json()}
                   for m, r in zip(members, results)],
         "verdict": verdict.to_json(), "seconds": round(time.monotonic() - started, 1),

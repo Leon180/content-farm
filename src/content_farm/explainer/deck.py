@@ -394,6 +394,10 @@ class Section(_Frozen):
 
     title: str = Field(min_length=1, max_length=40)
     slides: tuple[Slide, ...] = Field(min_length=1)
+    # quality v5 (InkOS-style chapter rules): wording / facts this chapter must still contain after any rewrite, and
+    # claims or phrases it must never contain. Plain substrings of the narration (lint: must-keep-missing / must-avoid-present).
+    must_keep: tuple[str, ...] = Field(default=(), max_length=8)
+    must_avoid: tuple[str, ...] = Field(default=(), max_length=8)
 
 
 class Deck(_Frozen):

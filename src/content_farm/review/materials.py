@@ -155,6 +155,15 @@ def script(run_dir: Path, out: Path, *, id_field: str = "sentence_ids", only: fr
             files.append(_copy(run_dir / name, out, Path(name).name))
             notes[files[-1]] = note
             audience[files[-1]] = kinds
+    from content_farm.review import script_checks
+
+    for name, note, text, kinds in (("hooks.txt", "伏筆帳本：每條埋下的線、誰收、現在狀態", script_checks.hooks_text(run_dir, deck), (PROS,)),
+                                    ("coherence.txt", "程式找到的疑似前後矛盾（數量詞、清單項數）",
+                                     script_checks.coherence_text(deck), (PROS, FACTS))):
+        if text:
+            files.append(_put(out, name, text))
+            notes[files[-1]] = note
+            audience[files[-1]] = kinds
     corpus = full + "\n".join(visual) + ((run_dir / "article.md").read_text(encoding="utf-8")
                                          if (run_dir / "article.md").is_file() else "")
     return Materials(files, notes, corpus=corpus, sentences=sentences,

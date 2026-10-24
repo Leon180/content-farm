@@ -52,7 +52,15 @@ def _obj(required: list[str], **props: Any) -> dict[str, Any]:
     return {"type": "object", "additionalProperties": False, "required": required, "properties": props}
 
 
-PRO = _obj(["role", "score", "rubric", "issues", "verdict"],
+# Quality v5: what the reviewer saw (a verbatim quote and a plain description, no judgement and no number) is kept apart
+# from the scores and the fix list, so a score can later be compared with the observations that were supposed to justify it.
+OBSERVATIONS = {"type": "array", "items": {
+    "type": "object", "additionalProperties": False, "required": ["quote", "observed"],
+    "properties": {"quote": {"type": "string", "description": "verbatim quote of the material"},
+                   "observed": {"type": "string", "description": "what is there, said plainly: no 'good/bad', no score"},
+                   "sentence_ids": {"type": "array", "items": _STR}}}}
+
+PRO = _obj(["role", "score", "rubric", "issues", "verdict"], observations=OBSERVATIONS,
            role=_STR, score=_SCORE,
            rubric={"type": "object", "additionalProperties": _SCORE}, issues=_ISSUES, verdict=_STR)
 

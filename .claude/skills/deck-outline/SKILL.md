@@ -45,6 +45,8 @@ Write `<run_dir>/deck_outline.json`:
   "sections": [
     {
       "title": "章節標題（= YouTube 章節）",
+      "must_keep": ["改稿後這章一定還要有的數字／說法（原樣字串，≤ 8 條）"],
+      "must_avoid": ["這章絕對不能出現的說法（沒有來源的主張、與別章矛盾的寫法，≤ 8 條）"],
       "slides": [
         {
           "id": "s01",
@@ -65,6 +67,10 @@ Write `<run_dir>/deck_outline.json`:
   ]
 }
 ```
+
+### Chapter rules: `must_keep` / `must_avoid` (quality v5)
+
+Per section, plain strings that a rewrite must not lose and must not introduce: `must_keep` = the key numbers and claims the chapter exists to say (copy the wording from the article), `must_avoid` = claims the article marks unsourced or that contradict another chapter. They go into `deck.json` unchanged; deck lint raises `must-keep-missing` / `must-avoid-present`, and the script panel reads them. Also copy the article's `hooks_ledger.json` plant / payoff points onto slide ids when you write the deck (see the deck skill).
 
 ### Outline rules (checked by you before showing the user)
 
