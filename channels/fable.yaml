@@ -13,7 +13,7 @@ mascot:                     # 不要角色主持人（rig_ready false：沒有�
   rig_ready: false
 voice:                      # 新設計的聲音：Qwen3-TTS VoiceDesign（說書感、溫暖）→ 固定參考聲 → VoxCPM2 複製（見 REPORT-fable §聲音）
   provider: voxcpm2
-  tempo: 1.0
+  tempo: 1.55               # 參考聲約 3.4 字／秒，原速的 Short 142 s；加速不變調，約 5.3 字／秒（說書的正常語速）
   reference:
     audio: ~/.local/share/content-farm-voices/fable-ref.wav
     text: 很久很久以前，在一座霧很多的山谷裡，住著一位愛說故事的老奶奶。每到傍晚，小動物們就圍著暖暖的爐火，安安靜靜地等她開口。她總是笑著說，故事聽完以後，道理自己會慢慢長出來。
@@ -42,9 +42,9 @@ ai_illustration:            # 頻道統一一種風格：溫暖繪本（水粉�
   provider: local_mflux
   model: z-image-turbo
   style_prefix: >-
-    Warm children's picture-book illustration, soft gouache and watercolor textures, gentle hand-drawn pencil outlines,
-    muted earthy palette of ochre, terracotta, sage green and cream, cozy lantern light, storybook scene,
-    illustration, not a photograph, no text, no letters, no logos.
+    Warm picture-book illustration, soft gouache and watercolor, gentle pencil outlines, muted ochre, terracotta,
+    sage green and cream palette, storybook scene, illustration, not a photograph, no text, no logos.
+    Only original animal characters: no humans, no children, no people, no existing cartoon characters.
   seed: 42
   width: 1280
   height: 720

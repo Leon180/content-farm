@@ -22,7 +22,8 @@ def to_script(fable: Fable) -> Script:
     """The run's script: scenes in beat order, portrait for a Short, landscape for the mid-length video."""
     scenes = tuple(
         Scene(scene_number=i, title=f"{i:02d} {beat.act}", narration=beat.narration,
-              visual_hint=VisualHint(description="; ".join(s.image_prompt or f"reuse {s.reuse}" for s in beat.shots)[:300],
+              # not the picture prompts: redrawing a picture must not change what the script panels reviewed
+              visual_hint=VisualHint(description=f"{beat.act} beat {beat.id}: {len(beat.shots)} picture(s)",
                                      keywords=(beat.act,), style="ai_illustration", source_preference="ai"),
               duration_seconds=estimate_seconds(beat.narration))
         for i, beat in enumerate(fable.beats, start=1))

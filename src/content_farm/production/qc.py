@@ -284,6 +284,10 @@ def subtitle_findings(run_dir: Path, channel: Channel) -> list[Finding]:
         return portrait_subtitle_findings(srt)
     if channel.format.aspect != "16:9":
         return [Finding("subtitle_safe_zone", "warn", f"no safe-zone measurement for {channel.format.aspect}")]
+    from content_farm.production.channels import Pipeline
+
+    if channel.pipeline is Pipeline.FABLE:      # no mascot column: the fable render wraps its own subtitles (22 chars, 52 px)
+        return [Finding("subtitle_safe_zone", "ok", "fable render: no mascot column, subtitles wrapped at 22 chars")]
     from content_farm.assembly.drawtext import find_cjk_font
     from content_farm.explainer.mascot.clearance import wide_lines
 
@@ -412,7 +416,10 @@ def qc_channel(run_dir: Path, channel: Channel) -> Channel:
     if fable_format == "mid":     # 寓言學堂 mid-length video: 16:9, 4–6 minutes whatever the channel's default (Shorts) says
         return channel.model_copy(update={"format": channel.format.model_copy(update={
             "length": "long", "aspect": "16:9", "target_seconds": (230, 380), "goal_seconds": None})})
-    if not (fable_format == "short" or shorts_cut.is_short_cut(run_dir)
+    if fable_format == "short":   # 寓言學堂 Short: 60–90 s by the channel's plan (the generic Shorts cap is 60 s)
+        return channel.model_copy(update={"format": channel.format.model_copy(update={
+            "length": "short", "aspect": "9:16", "target_seconds": (55, 95), "goal_seconds": None})})
+    if not (shorts_cut.is_short_cut(run_dir)
             or (run_dir / NEWS_ITEM_FILE).is_file()):  # HN 快報 Short
         return channel
     short_format = channel.format.model_copy(update={

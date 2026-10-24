@@ -18,7 +18,10 @@ from content_farm.production.fable.model import Beat, Fable
 TRENDY_WORDS = ("狂", "絕了")
 FILLER_LIMIT = 1                     # 「欸」 at most once per video (Leon's script-tone preference)
 HUMAN_WORDS = re.compile(r"\b(man|men|woman|women|boy|girl|child|children|kid|people|person|human|king|queen|"
-                         r"farmer|merchant|villager|soldier|face|portrait|selfie)\b", re.IGNORECASE)
+                         r"farmer|merchant|villager|villagers|soldier|face|portrait|selfie|crowd|customers?|shoppers?|"
+                         r"passers-?by|pedestrians?|vendors?|townsfolk|market street|busy street|lanternmaker)\b", re.IGNORECASE)
+# The picture model turns a "round grey forest creature" into an existing film character (seen on the first test pictures)
+LOOKALIKE_WORDS = re.compile(r"\b(tanuki|raccoon[- ]dog|big round|fat round|round grey|round gray|chubby)\b", re.IGNORECASE)
 # seconds the narration should fill (estimated at deck.CHARS_PER_SECOND); the measured total is checked by QC
 LIMITS = {"short": {"total": (55.0, 88.0), "before": (36.0, 62.0), "after": (16.0, 38.0), "beat": 15.0,
                     "story": (3, 6), "explain": (2, 4), "beats": 12},
@@ -183,6 +186,8 @@ def _shot_problems(prompt: str, reuse: str, where: str, drawn: dict[str, str]) -
         return [f"{where} 缺 image_prompt（或用 reuse）"]
     problems = [f"{where} 圖片提示詞出現人物或人臉字眼「{m.group(0)}」（原創動物／器物／村落角色，不用真人）"
                 for m in [HUMAN_WORDS.search(prompt)] if m]
+    problems += [f"{where} 提示詞「{m.group(0)}」會被畫成既有電影角色（圓胖灰色森林生物）；改寫具體外形，例如 slim red-brown fox-like animal with a ringed tail"
+                 for m in [LOOKALIKE_WORDS.search(prompt)] if m]
     bad = forbidden_prompt_terms(prompt)
     return problems + ([f"{where} 提示詞要求 {bad}（非擬真、不模仿畫家）"] if bad else [])
 

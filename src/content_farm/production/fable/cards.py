@@ -36,10 +36,10 @@ class Geometry:
 GEOMETRY = {
     "short": Geometry((1080, 1920), (0, 0, 1080, 880), "left:0;top:880px;width:1080px;height:1040px;",
                       "left:0;top:0;width:100%;height:10px;", 60, 28,
-                      {"label": 40, "head": 56, "row": 44, "row4": 38, "apply": 56, "name6": 150, "name8": 126, "name9": 100}),
+                      {"label": 44, "head": 64, "row": 58, "row4": 50, "apply": 60, "name6": 150, "name8": 126, "name9": 100}),
     "mid": Geometry((1920, 1080), (0, 0, 1080, 1080), "left:1080px;top:0;width:840px;height:1080px;",
                     "left:0;top:0;width:10px;height:100%;", 56, 24,
-                    {"label": 34, "head": 48, "row": 38, "row4": 34, "apply": 46, "name6": 130, "name8": 108, "name9": 88}),
+                    {"label": 36, "head": 52, "row": 44, "row4": 38, "apply": 50, "name6": 130, "name8": 108, "name9": 88}),
 }
 
 
