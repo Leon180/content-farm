@@ -20,6 +20,15 @@ _SKIP_MARK = "不建議上傳"
 _INDEX_FILE_RE = re.compile(r"([^/\s]+)/video\.mp4")
 
 
+_ANGLE_TABLE = str.maketrans({"<": "＜", ">": "＞"})
+
+
+def sanitize_angle_brackets(text: str) -> tuple[str, int]:
+    """YouTube rejects ``<``/``>`` in title, description and tags; use full-width forms."""
+    count = text.count("<") + text.count(">")
+    return text.translate(_ANGLE_TABLE), count
+
+
 @dataclass(frozen=True)
 class PackItem:
     """One video ready to be planned or uploaded."""
@@ -36,6 +45,7 @@ class PackItem:
     pinned_comment_path: Path | None
     listed_in_index: bool
     index_note: str = ""
+    notes: tuple[str, ...] = ()
 
     @property
     def description_bytes(self) -> int:
@@ -139,12 +149,23 @@ def parse_metadata(folder: Path, *, listed_in_index: bool, note: str = "") -> Pa
     text = (folder / "metadata.md").read_text(encoding="utf-8")
     thumb = folder / "thumbnail.jpg"
     pinned = folder / "pinned-comment.txt"
+    title, title_n = sanitize_angle_brackets(_parse_title(text))
+    description, desc_n = sanitize_angle_brackets(_parse_description(text))
+    tags_raw = _parse_tags(text)
+    tags_clean = tuple(sanitize_angle_brackets(t)[0] for t in tags_raw)
+    notes = tuple(
+        f"replaced < > with full-width in {name} ({n} char(s))"
+        for name, n in (("title", title_n), ("description", desc_n),
+                        ("tags", sum(a != b for a, b in zip(tags_raw, tags_clean))))
+        if n
+    )
     return PackItem(
         folder=folder,
         channel=_parse_channel(text, folder.name),
-        title=_parse_title(text),
-        description=_parse_description(text),
-        tags=_parse_tags(text),
+        title=title,
+        description=description,
+        tags=tags_clean,
+        notes=notes,
         category_id=_CATEGORY_IDS.get(
             re.split(r"[（(]", _table_value(text, "類別"))[0].strip(), "22"
         ),

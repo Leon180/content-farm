@@ -359,3 +359,30 @@ def test_dry_run_script_env_file_and_repeated_only(
     assert code == 0 and "(2 videos)" in out
     assert "token: CF_YOUTUBE_REFRESH_TOKEN_CEL" in out
     assert "abc" not in out
+
+
+def test_angle_brackets_replaced_and_flagged(pack: Path) -> None:
+    (pack / "tech-1" / "metadata.md").write_text(
+        _metadata("晶片貓（chipcat）", synthetic="**否**", thumb="x", desc="V<C 且 A>B"),
+        encoding="utf-8",
+    )
+    item = load_pack(pack, only="tech-1")[0]
+    assert "<" not in item.description and ">" not in item.description
+    assert item.description == "V＜C 且 A＞B"
+    assert any("description" in n for n in item.notes)
+    assert "SANITIZED" in describe_item(item, {})
+    assert not any("<" in p for p in item.problems())
+
+
+class FailingProvider(FakeProvider):
+    async def upload_video(self, **kwargs) -> str:
+        raise RuntimeError("invalidDescription")
+
+
+def test_failed_insert_books_one_unit_only(pack: Path, tmp_path: Path) -> None:
+    qfile = tmp_path / "q.json"
+    outcomes, _ = _run(load_pack(pack, only="tech-1"), QuotaLedger.load(qfile), FailingProvider())
+    assert outcomes[0].status == "failed"
+    used = sum(QuotaLedger.load(qfile).days.values())
+    assert used == 2  # channels.list (1) + failed call (1), not 1601
+    assert not (pack / "tech-1" / RESULT_FILENAME).exists()

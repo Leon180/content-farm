@@ -17,6 +17,7 @@ from zoneinfo import ZoneInfo
 VIDEOS_INSERT_COST = 1600
 THUMBNAILS_SET_COST = 50
 CHANNELS_LIST_COST = 1
+FAILED_CALL_COST = 1  # booked for a rejected call (policy requested by orchestrator; real cost may differ)
 DEFAULT_DAILY_LIMIT = 10_000
 
 _PACIFIC = ZoneInfo("America/Los_Angeles")

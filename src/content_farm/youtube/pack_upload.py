@@ -13,6 +13,7 @@ from content_farm.youtube.channel_tokens import resolve_refresh_token, resolve_t
 from content_farm.youtube.pack import PackItem
 from content_farm.youtube.quota import (
     CHANNELS_LIST_COST,
+    FAILED_CALL_COST,
     THUMBNAILS_SET_COST,
     VIDEOS_INSERT_COST,
     QuotaLedger,
@@ -48,6 +49,7 @@ def describe_item(item: PackItem, environ: Mapping[str, str]) -> str:
     ]
     if item.pinned_comment_path:
         lines.append(f"  reminder   : 公開後手動貼置頂留言 ← {item.pinned_comment_path.name}")
+    lines.extend(f"  SANITIZED  : {n}" for n in item.notes)
     lines.extend(f"  PROBLEM    : {p}" for p in item.problems())
     return "\n".join(lines)
 
@@ -153,8 +155,11 @@ async def run_upload(
             log(f"{item.folder.name}: uploading as channel '{info['title']}' ...")
             try:
                 record = await upload_one(item, provider, channel_info=info, now=clock())
-            finally:
-                ledger = ledger.spend(day, cost - CHANNELS_LIST_COST)
+            except Exception:
+                # Count only what actually succeeded; a rejected call is booked as 1 unit.
+                ledger = ledger.spend(day, FAILED_CALL_COST)
+                raise
+            ledger = ledger.spend(day, cost - CHANNELS_LIST_COST)
             result_path.write_text(
                 json.dumps(record, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
             )
