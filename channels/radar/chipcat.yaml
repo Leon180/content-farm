@@ -1,0 +1,35 @@
+# 晶片貓 — 選題雷達種子（topic_radar）。wiki 標題寫常見名稱即可，程式會解析轉址與繁簡。
+# 改這個檔就能增減題目；沒有 wiki 的題目只用 YouTube 需求。
+channel: chipcat
+title_template: "{subject}拆解：台灣在這條產業鏈的位置"
+shorts_supported: true
+topics:
+  - subject: 台積電
+    wiki: [{lang: zh, title: 台積電}, {lang: en, title: TSMC}]
+    youtube_query: 台積電 護國神山
+  - subject: CoWoS 先進封裝
+    wiki: [{lang: en, title: Chip on wafer on substrate}, {lang: zh, title: 先進封裝}]
+    youtube_query: CoWoS 先進封裝
+  - subject: 極紫外光微影
+    wiki: [{lang: zh, title: 極紫外線光刻}, {lang: en, title: Extreme ultraviolet lithography}]
+    youtube_query: EUV 極紫外光 艾司摩爾
+  - subject: 高頻寬記憶體 HBM
+    wiki: [{lang: en, title: High Bandwidth Memory}, {lang: zh, title: 高頻寬記憶體}]
+    youtube_query: HBM 高頻寬記憶體
+  - subject: 輝達
+    wiki: [{lang: zh, title: 輝達}, {lang: en, title: Nvidia}]
+    youtube_query: 輝達 黃仁勳 台灣供應鏈
+  - subject: 聯發科
+    wiki: [{lang: zh, title: 聯發科技}, {lang: en, title: MediaTek}]
+    youtube_query: 聯發科 手機晶片
+  - subject: 摩爾定律
+    wiki: [{lang: zh, title: 摩爾定律}, {lang: en, title: Moore's law}]
+    youtube_query: 摩爾定律 還有效嗎
+  - subject: 半導體製造流程
+    wiki: [{lang: en, title: Semiconductor device fabrication}, {lang: zh, title: 半導體器件製造}]
+    youtube_query: 晶片是怎麼做出來的
+watch:
+  hackernews_queries: [TSMC, semiconductor, chip fab, HBM, ASML]
+  subreddits: [{name: hardware, sort: top}, {name: semiconductors, sort: top}]
+  bilibili_rids: [188]
+  keywords: [tsmc, semiconductor, chip, fab, nvidia, hbm, asml, wafer, 芯片, 半导体, 台积电, 光刻]

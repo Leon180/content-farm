@@ -19,6 +19,11 @@ SOURCE_RISK = ("來源風險（扣分項）：題目的主要數字或主張若�
                "官方統計、論文），分數壓到 4 以下（score ≤ 4）；三項全中或整題靠單一傳聞就 veto。"
                "候選題的 sources 全是轉述報導、沒有一手來源，也算沒有一手來源。")
 
+# Topic radar (topic_radar/): candidates may carry evidence, competitors and viewer_questions. A ranking aid, never a gate.
+RADAR_EVIDENCE = ("候選題若附 evidence（需求數字＋來源網址）、competitors（同類影片前 5 名觀看數）、viewer_questions（留言裡觀眾在問的），"
+                  "把它們當排序依據：需求數字高、近一年的同類影片少、觀眾有明確提問的題目加分。沒有 evidence 的題目不扣分、不設門檻；"
+                  "evidence 的數字與網址不可信時（對不上題目、看不出出處）才扣分。")
+
 RULES = f"""共同規則：
 - 這是上線前的品質評審，目的是找出觀眾會流失或被誤導的地方；不要客氣，不要比真人更有耐心。
 - 只讀下面列出的檔案（都在目前資料夾），不要讀其他地方，不要修改任何檔案。
@@ -44,9 +49,9 @@ STAGE_TASK = {
     "topic": {
         "viewer": "你在 YouTube 首頁看到這些題目當標題。每一題給點擊意願 0–10（picks 要涵蓋每個候選 id）與一句理由。",
         "pro": "評每個候選題（scores 涵蓋每個 id）：這題撐不撐得起一支 8–10 分鐘、有起承轉合的故事？0–10。"
-               "veto＝撐不起或只是新聞稿。" + SOURCE_RISK,
+               "veto＝撐不起或只是新聞稿。" + SOURCE_RISK + RADAR_EVIDENCE,
         "producer": "評每個候選題（scores 涵蓋每個 id）：跟頻道合不合、有沒有和已做過的題目重複（duplicate_of）、"
-                    "來源夠不夠可查、會不會變成投資建議。0–10；不合格就 veto。" + SOURCE_RISK,
+                    "來源夠不夠可查、會不會變成投資建議。0–10；不合格就 veto。" + SOURCE_RISK + RADAR_EVIDENCE,
     },
     "article": {
         "fact": "逐條列出文章中所有可查證的說法（數字、日期、引述、因果、八卦），每條回到來源網址查證，填 claims。"

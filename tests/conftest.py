@@ -38,6 +38,7 @@ def _shared_paths_to_tmp(monkeypatch: pytest.MonkeyPatch, tmp_path_factory: pyte
     monkeypatch.setenv("CF_LOCAL_TTS_LOCK_PATH", str(shared / "cache" / "local_tts.lock"))
     monkeypatch.setenv("CF_ORCH_MAIL", str(shared / "orchestrator" / "orch_mail.py"))   # absent: no mail
     monkeypatch.setenv("CF_ORCH_MAIL_DIR", str(shared / "orch-mail"))
+    monkeypatch.setenv("CF_RADAR_DIR", str(shared / "radar"))      # the topic stage reads output/radar; tests see none
     monkeypatch.setenv("ORCH_MAIL_DIR", str(shared / "orch-mail"))
     before = len(SHARED_PATH_GUARD.violations)
     yield

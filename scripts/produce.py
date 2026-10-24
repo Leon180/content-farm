@@ -39,6 +39,7 @@ from pydantic import ValidationError
 from content_farm.production.channels import Gate, load_all, load_channel
 from content_farm.production.manual_kit import KitOptions, write_kit
 from content_farm.production.news import cli as news_cli
+from content_farm.topic_radar import cli as radar_cli
 from content_farm.production.runner import SCHEDULE_FILE, Outcome, Runner, decide
 from content_farm.production.schedule import load_backlog, plan_week
 from content_farm.production.shorts_cut import short_spec_from_long, write_spec
@@ -153,6 +154,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
                             "(NOT more rounds on the same content: article stays at 3 rounds, 0 errors)")
     sub.add_parser("queue", help="machine-wide heavy-work queue (renders, local TTS, image/video models)")
     news_cli.add_parser(sub)
+    radar_cli.add_parser(sub)
     return parser.parse_args(argv)
 
 
@@ -405,7 +407,7 @@ def main(argv: list[str] | None = None) -> int:
     handlers = {"run": cmd_run, "status": cmd_status, "inbox": cmd_inbox, "plan": cmd_plan,
                 "channels": cmd_channels, "short-from-long": cmd_short_from_long,
                 "manual-kit": cmd_manual_kit, "eval-loop": cmd_eval_loop, "queue": cmd_queue, "review": cmd_review,
-                "news": news_cli.run, "usage": cmd_usage, "timing": cmd_timing, "new-cycle": cmd_new_cycle,
+                "news": news_cli.run, "radar": radar_cli.run, "usage": cmd_usage, "timing": cmd_timing, "new-cycle": cmd_new_cycle,
                 "approve": lambda a: cmd_decide(a, "approved"),
                 "reject": lambda a: cmd_decide(a, "rejected")}
     try:

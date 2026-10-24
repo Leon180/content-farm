@@ -1,0 +1,34 @@
+# 寓言學堂 — 選題雷達種子（頻道設定尚未進任何分支；此檔依頻道名「寓言學堂」假設為寓言／成語典故，開頻道時請校正）
+channel: fable
+title_template: "{subject}：故事背後真正的意思"
+shorts_supported: true
+topics:
+  - subject: 龜兔賽跑
+    wiki: [{lang: zh, title: 龜兔賽跑}, {lang: en, title: The Tortoise and the Hare}]
+    youtube_query: 龜兔賽跑 寓言 真正的意思
+  - subject: 狼來了
+    wiki: [{lang: zh, title: 狼來了}, {lang: en, title: The Boy Who Cried Wolf}]
+    youtube_query: 狼來了 寓言
+  - subject: 伊索寓言
+    wiki: [{lang: zh, title: 伊索寓言}, {lang: en, title: Aesop's Fables}]
+    youtube_query: 伊索寓言 解析
+  - subject: 莊周夢蝶
+    wiki: [{lang: zh, title: 莊周夢蝶}]
+    youtube_query: 莊周夢蝶 莊子 寓言
+  - subject: 守株待兔
+    wiki: [{lang: zh, title: 守株待兔}]
+    youtube_query: 守株待兔 成語故事
+  - subject: 愚公移山
+    wiki: [{lang: zh, title: 愚公移山}]
+    youtube_query: 愚公移山 故事
+  - subject: 拉封丹寓言
+    wiki: [{lang: zh, title: 讓·德·拉封丹}, {lang: en, title: Jean de La Fontaine}]
+    youtube_query: 拉封丹寓言
+  - subject: 鷸蚌相爭
+    wiki: [{lang: zh, title: 鷸蚌相爭}]
+    youtube_query: 鷸蚌相爭 成語故事
+watch:
+  hackernews_queries: [fable, parable]
+  subreddits: [{name: AskHistorians, sort: top}]
+  bilibili_rids: [36]
+  keywords: [fable, parable, aesop, folk tale, 寓言, 成语, 故事, 典故, 伊索]
