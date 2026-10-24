@@ -160,6 +160,9 @@ class Cadence(_Strict):
 
 class MediaPolicy(_Strict):
     stock: bool = True
+    # Free / public-domain outside footage (Commons, NASA, NOAA, Pexels, Pixabay) with a source label on screen and
+    # sidecar + licence rules (review/license_rules.py). Opt-in; copyrighted video stays description-link only.
+    stock_video: bool = False
     ai_image: bool = True
     artwork: bool = False               # museum / public-domain artwork
     artwork_license_required: bool = True
@@ -225,7 +228,7 @@ class AudioMix(_Strict):
 
     enabled: bool = False
     bgm: tuple[AudioTrack, ...] = ()
-    synth_bgm: Literal["wafu", "studio", "pulse"] | None = None   # no `bgm` files: synthesize this bed locally (audio_mix/synth_bgm.py)
+    synth_bgm: Literal["wafu", "studio", "pulse", "abyss"] | None = None   # no `bgm` files: synthesize this bed locally (audio_mix/synth_bgm.py)
     stinger: AudioTrack | None = None   # None = the built-in synthesized stinger
     sfx: bool = True                    # synthesized SFX on some narration hooks
     voice_lufs: float = Field(default=-16.0, ge=-30, le=-10)
@@ -255,6 +258,12 @@ class YouTube(_Strict):
         return _check_env_name(value)
 
 
+class WanPolicy(_Strict):
+    """Per-channel rules for Wan image-to-video shots (Leon 2026-10-24: Wan warps faces)."""
+    negative_prompt: str = Field(default="", max_length=200)   # sent as --negative-prompt; empty = model default
+    motion_only: bool = False   # prompt = the slide's motion_prompt only (environment + camera), not the still's prompt
+
+
 class Channel(_Strict):
     code: str = Field(pattern="^[a-z][a-z0-9_]{1,31}$")
     # False = retired (Leon 2026-10-23: offwork). The yaml, assets and code stay; load_all() skips it,
@@ -277,6 +286,7 @@ class Channel(_Strict):
     youtube: YouTube
     identity: Identity | None = None   # opening / sign-off / description per channel
     audio: AudioMix = AudioMix()       # BGM / SFX / mastering (long videos)
+    wan: WanPolicy = WanPolicy()       # Wan shot prompt rules
     publish: dict = {}                 # release windows; validated by production.publish_slot.PublishPlan
     notes: tuple[str, ...] = ()
     # Recurring series run by their own modules (e.g. ``hn`` → production/news), validated there.

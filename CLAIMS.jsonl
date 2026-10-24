@@ -5,3 +5,11 @@
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-revisual/artifacts/technews-v4/short-verification-hn-50202217-v4.mp4","min_bytes":2000000,"why":"科技新知 Short 2"}
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-visual-v4/artifacts/cel-run2-v4/cel-run2-v4-part1.mp4","min_bytes":5000000,"why":"cel v4 540p（重組裝後覆蓋）"}
 {"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-revisual/src","pattern":"TODO-revisual","why":"沒留暫時碼"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-deepsea/REPORT-deepsea.md","min_bytes":2000,"why":"派工時宣告的預期產物"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-deepsea/artifacts/deepsea/deepsea-part1.mp4","min_bytes":1000000,"why":"長片 540p 第 1 段（12.6 MB）"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-deepsea/artifacts/deepsea/deepsea-part2.mp4","min_bytes":1000000,"why":"長片 540p 第 2 段（12.6 MB）"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-deepsea/artifacts/deepsea/deepsea-short.mp4","min_bytes":100000,"why":"Shorts 成片（33.4 s）"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-deepsea/channels/deepsea.yaml","min_bytes":1500,"why":"頻道設定"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-deepsea/channels","pattern":"CF_YT_DEEPSEA_REFRESH_TOKEN=","why":"頻道設定只放環境變數名、不放值"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-stock-footage/REPORT-stock-footage.md","min_bytes":2000,"why":"預期產物"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-stock-footage/artifacts/deepsea-stock/description.txt","min_bytes":1000,"why":"說明欄草稿"}

@@ -69,7 +69,7 @@ def _baked_wan(run_dir: Path, slide: Slide, image: Path, image_record: dict | No
     media = slide.media
     try:
         request = wan.request_for(slide.id, image, image_record, media.motion_prompt if media else "",
-                                  media.prompt if media else "")
+                                  media.prompt if media else "", wan.policy_for(run_dir))
         found = wan.cached(run_dir, request)
     except (ValueError, OSError) as exc:
         reasons.append(f"wan: {exc}")

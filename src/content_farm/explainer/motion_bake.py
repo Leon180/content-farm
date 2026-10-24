@@ -34,13 +34,14 @@ def wan_shots(deck: Deck, run_dir: Path) -> list[WanShot]:
         raise ValueError(f"{run_dir.name}: {len(slides)} slides ask for motion: wan "
                          f"(max {wan.MAX_WAN_PER_VIDEO}): {', '.join(s.id for s in slides)}")
     shots = []
+    policy = wan.policy_for(run_dir) if slides else None
     for slide in slides:
         image = find_image(run_dir / AI_IMAGE_DIR, slide.id)
         if image is None:
             shots.append(WanShot(run_dir, slide.id, None, False))
             continue
         request = wan.request_for(slide.id, image, load_record(image), slide.media.motion_prompt,
-                                  slide.media.prompt)
+                                  slide.media.prompt, policy)
         shots.append(WanShot(run_dir, slide.id, request, wan.cached(run_dir, request) is not None))
     return shots
 

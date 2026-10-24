@@ -1,0 +1,90 @@
+# 深潛日誌（暫名）— 深海生物科普，台灣中文講給一般觀眾，長青題材
+# Leon 2026-10-24 決策 2ddd9d8908a5＝A：比照九尾狐——好故事＋大量 AI 插圖；不要角色；新設計的男聲（本機 VoiceDesign → VoxCPM2）。
+# 名稱候選：深潛日誌（暫用）／深海圖鑑／往下一千公尺。Secrets never go here.
+code: deepsea
+name: 深潛日誌
+line: 深海生物科普
+pipeline: explainer
+brand: deepsea
+deck_category: knowledge
+mascot:                   # 不要角色：rig_ready false → mascot 步驟、縮圖角色規則、deck 吉祥物占比全部不適用（比照 technews）
+  name: （無角色）
+  ref: chipcat            # 佔位；rig_ready false 時沒有任何步驟會讀
+  rig_ready: false
+voice:                    # 新設計的男聲：Qwen3-TTS VoiceDesign（seed 見 REPORT-deepsea）→ 固定參考聲 → VoxCPM2 複製
+  provider: voxcpm2
+  tempo: 1.0
+  reference:
+    audio: ~/.local/share/content-farm-voices/deepsea-ref.wav
+    text: 海面往下一千公尺，陽光已經完全消失。在這片永遠的黑暗裡，沒有季節，也沒有白天和黑夜。可是，如果你關掉所有的燈，仔細地看，會發現遠處有一點微弱的藍光，正在慢慢地亮起來。那是牠們在對彼此說話。
+    note: Qwen3-TTS VoiceDesign 設計的低沉紀錄片男聲（REPORT-deepsea §聲音）；原文同上
+topic_categories: [生物發光, 極端環境, 傳說與發現, 深海生態系, 深海採集與研究史]
+format:
+  length: long
+  aspect: "16:9"
+  target_seconds: [420, 600]   # 長片 7–10 分鐘
+  goal_seconds: 480            # 內容撐得起就做到 8:00 以上（mid-roll 門檻），不灌水
+cadence:
+  long_per_week: 0.5      # 隔週一支：事實出處（論文、機構說明）最花查核
+  shorts_per_week: 1      # 從長片同稿切出的一分鐘深海
+  publish_days: [sat]
+  shorts_days: [wed]
+  lead_days: 10
+  publish_time: "20:00"
+  timezone: Asia/Taipei
+shorts_strategy: 一分鐘深海：從長片切一個最反直覺的事實（一句話鉤子＋一張圖），導流長片
+media:
+  stock: false            # 舊的 stock 種類不用
+  stock_video: true       # 免費／公有領域影片（NOAA／NASA／Commons／Pexels／Pixabay），畫面標來源；MBARI 等版權影片只放說明欄連結（Leon 2026-10-24 bdce0ad57f09＝A）
+  ai_image: true
+  artwork: false
+  source_footage: false
+ai_illustration:          # 深海科學圖鑑風；禁擬真照片、禁指定畫家
+  provider: local_mflux
+  model: z-image-turbo
+  style_prefix: >-
+    Deep sea natural-history illustration, dark navy water, glowing bioluminescent teal and blue light,
+    detailed scientific field-guide plate feel, illustration, not a photograph, no text, no logos.
+  seed: 42
+  width: 1280
+  height: 720
+wan:                      # Leon 2026-10-24：Wan 會讓臉變形——只對無臉部的環境／鏡頭（發光水母群、深海雪、熱泉、潛水器燈光推進）用，
+  motion_only: true       # prompt 只寫環境與鏡頭運動；有臉或眼睛特寫的圖一律視差
+  negative_prompt: "face distortion, morphing"
+gates: [topic, article, deck, title, media, final]   # 全部由評審團核可；article／script_facts／media 第 3 輪沒過仍硬停（review_panels.yaml channels.deepsea）
+audio:                  # 深海氛圍：本機程式合成（abyss）、可用 enabled 開關、不評審
+  enabled: true
+  synth_bgm: abyss
+  sfx: true
+  voice_lufs: -23.4         # 人聲維持原響度，不加增益（比照九尾狐）
+  master_lufs: -23.4
+  bgm_under_voice_db: 16.0
+youtube:
+  client_id_env: CF_YOUTUBE_CLIENT_ID
+  client_secret_env: CF_YOUTUBE_CLIENT_SECRET
+  refresh_token_env: CF_YT_DEEPSEA_REFRESH_TOKEN
+  channel_id_env: CF_YT_DEEPSEA_CHANNEL_ID
+  ai_disclosure: true
+  default_privacy: private
+identity:
+  opening:
+    format: 「下潛」式開場：先把觀眾放進某個深度的黑暗裡，用一個感官細節（光、壓力、溫度）開頭，再丟出這集要解開的一個問題；不自我介紹、不報章節數
+    signature: 往下一千公尺
+  take_label: 潛航員的筆記
+  outro:
+    signature: 浮出水面
+    endcard: 下一次，繼續往下潛
+  description:
+    header: "【深潛日誌】{title}"
+    sources_label: 這集讀過的論文與機構說明：
+    footer: 深潛日誌的畫面全為 AI 繪製的示意插圖，不是實際拍攝；事實出處以學術機構、論文、博物館與官方說明為主，數字有疑問歡迎留言附上來源。
+notes:
+  - 事實出處以學術機構、論文、博物館、NOAA／MBARI 官方說明為主；機構影片與照片不可使用，只當出處引用
+  - 物種與深度、年份的說法留意「目前所知」與爭議，不把假說講成定論
+  - 畫面動態：生物有明顯臉或眼睛特寫的圖用視差；Wan（≤3 段）只挑無臉部的環境／鏡頭（發光水母群、深海雪、熱泉噴口、潛水器燈光推進），motion_prompt 只寫環境與鏡頭運動
+  - 畫面標示「AI 示意圖」，不做擬真照片風
+publish:
+  timezone: Asia/Taipei
+  long: {days: [sat], window: "20:00-21:00"}
+  shorts: {windows: ["12:00-13:00"], per_day: 1, min_gap_hours: 3}
+  source: research/upload-timing-2026-10.md

@@ -193,7 +193,7 @@ def _voice_env(ctx: Context) -> dict[str, str]:
 def _media_args(ctx: Context) -> tuple[str, ...]:
     args = ["--run-dir", _run_dir(ctx), "--brand", ctx.channel.brand, "--replace",
             "--require-measured", "--env-file", str(ctx.options.env_file)]
-    if ctx.options.no_stock or not ctx.channel.media.stock:
+    if ctx.options.no_stock or not (ctx.channel.media.stock or ctx.channel.media.stock_video):
         args.append("--no-stock")
     return tuple(args)
 

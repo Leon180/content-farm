@@ -47,6 +47,8 @@ def policy_findings(channel: Channel, deck: Deck) -> list[Finding]:
     allowed = {MediaKind.SLIDE, MediaKind.ANIMATED, MediaKind.TITLE_CARD, MediaKind.DIAGRAM}
     if channel.media.stock:
         allowed.add(MediaKind.STOCK)
+    if channel.media.stock_video:
+        allowed.add(MediaKind.STOCK_VIDEO)
     if channel.media.ai_image:
         allowed.add(MediaKind.AI_IMAGE)
     if channel.media.artwork:
@@ -78,7 +80,7 @@ def deck_findings(channel: Channel, deck: Deck) -> list[Finding]:
     return policy_findings(channel, deck) + deck_rule_findings(channel, deck, other_identities(channel))
 
 
-def credits_findings(channel: Channel, credits: dict | None) -> list[Finding]:
+def credits_findings(channel: Channel, credits: dict | None, run_dir: Path | None = None) -> list[Finding]:
     if credits is None:
         return [Finding("credits", "error", "credits.json missing (run media first)")]
     findings: list[Finding] = []
@@ -100,6 +102,7 @@ def credits_findings(channel: Channel, credits: dict | None) -> list[Finding]:
                                         f"{entry.get('slide_id')}: licence {licence!r} not usable "
                                         "for a monetised channel (need CC0/PD + licence URL)"))
     findings += ai_image_findings(credits.get("entries", []))
+    findings += footage_findings(credits, run_dir)
     if not any(f.level == "error" for f in findings):
         findings.append(Finding("credits", "ok",
                                 f"{len(credits.get('entries', []))} credited assets, none pending"))
@@ -114,7 +117,7 @@ def visual_policy_findings(run_dir: Path, channel: Channel, credits: dict | None
     no film clips, stills, news photos or portraits of real people) may only show pages made of text, cards and charts:
     the rendered pages carry no image / video markup, and credits.json lists no third-party media."""
     media = channel.media
-    if media.stock or media.ai_image or media.artwork or media.source_footage or channel.mascot.rig_ready:
+    if media.stock or media.stock_video or media.ai_image or media.artwork or media.source_footage or channel.mascot.rig_ready:
         return []
     findings: list[Finding] = []
     pages = sorted((run_dir / "short").glob("*.html")) if (run_dir / "short").is_dir() else []
@@ -174,6 +177,20 @@ def ai_motion_findings(ai: list[dict]) -> list[Finding]:
         findings.append(Finding("ai_motion", "ok",
                                 f"motion recorded for {len(ai)} AI image(s): {', '.join(kinds)}"))
     return findings
+
+
+def footage_findings(credits: dict, run_dir: Path | None = None) -> list[Finding]:
+    """Outside footage: licence whitelist, sidecar on disk, source label on screen, CC BY / BY-SA listed in the description."""
+    from content_farm.review.license_rules import FOOTAGE_KIND, footage_problems
+
+    entries = [e for e in credits.get("entries", []) if e.get("kind") == FOOTAGE_KIND]
+    if not entries:
+        return []
+    description = str(credits.get("description_text") or "")
+    problems = [p for e in entries for p in footage_problems(e, description, run_dir)]
+    if problems:
+        return [Finding("footage_license", "error", p) for p in problems]
+    return [Finding("footage_license", "ok", f"{len(entries)} footage clip(s): licence, sidecar and on-screen label present")]
 
 
 def ai_image_findings(entries: list[dict]) -> list[Finding]:
@@ -405,8 +422,8 @@ def run_qc(run_dir: Path, channel: Channel, deck: Deck | None) -> dict:
         findings += deck_findings(channel, deck)
     credits_path = run_dir / "credits.json"
     credits = json.loads(credits_path.read_text(encoding="utf-8")) if credits_path.is_file() else None
-    if channel.media.stock or channel.media.ai_image or channel.media.artwork:
-        findings += credits_findings(channel, credits)
+    if channel.media.stock or channel.media.stock_video or channel.media.ai_image or channel.media.artwork:
+        findings += credits_findings(channel, credits, run_dir)
     findings += visual_policy_findings(run_dir, channel, credits)
     findings += subtitle_findings(run_dir, channel)
     findings += short_motion_findings(run_dir)
