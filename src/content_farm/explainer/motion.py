@@ -69,7 +69,8 @@ def _baked_wan(run_dir: Path, slide: Slide, image: Path, image_record: dict | No
     media = slide.media
     try:
         request = wan.request_for(slide.id, image, image_record, media.motion_prompt if media else "",
-                                  media.prompt if media else "", wan.policy_for(run_dir))
+                                  media.prompt if media else "", wan.policy_for(run_dir),
+                                  chain=media.wan_chain if media else (), t2v=media.wan_t2v if media else False)
         found = wan.cached(run_dir, request)
     except (ValueError, OSError) as exc:
         reasons.append(f"wan: {exc}")
@@ -78,8 +79,11 @@ def _baked_wan(run_dir: Path, slide: Slide, image: Path, image_record: dict | No
         reasons.append("wan clip not baked yet (run scripts/ai_motion.py bake)")
         return None
     clip, record = found
+    frames = record.get("frames", request.params.num_frames)
+    shape = f"{request.segments} segments, " if request.segments > 1 else ""
+    shape += "t2v, " if request.t2v else ""
     return MotionPlan(Motion.WAN, clip, retime_fps=request.params.fps,
-                      note=f"wan {request.params.num_frames}f@{request.params.fps} ping-pong (baked)",
+                      note=f"wan {shape}{frames}f@{request.params.fps} ping-pong (baked)",
                       credit=wan.credit(record))
 
 

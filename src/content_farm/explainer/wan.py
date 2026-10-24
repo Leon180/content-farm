@@ -12,6 +12,7 @@ tiling (the trial's settings); upscaled to 1920×1080 when placed on the timelin
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import subprocess
@@ -32,7 +33,7 @@ from content_farm.explainer.motion_cache import (
 )
 
 KIND = "wan"
-MAX_WAN_PER_VIDEO = 3      # visual v4 (Leon 2026-10-24): 2–3 key shots per long video
+MAX_WAN_PER_VIDEO = 3      # visual v4 (Leon 2026-10-24): 2–3 key shots per long video (Deck.wan_budget raises it)
 GENERATE_TIMEOUT_SECONDS = 1800
 ESTIMATED_MINUTES_PER_CLIP = 15  # trial: 12.6–17.7 min per 69-frame clip
 WAN_MODEL = {
@@ -77,11 +78,31 @@ class WanRequest:
     image: Path
     prompt: str
     params: WanParams
+    chain: tuple[str, ...] = ()   # prompts of the extra segments (each starts from the previous last frame)
+    t2v: bool = False             # first segment from the prompt alone; ``image`` is only the fallback still
+
+    @property
+    def segments(self) -> int:
+        return 1 + len(self.chain)
+
+
+def max_shots(deck) -> int:
+    """How many Wan key shots a deck may ask for (3 unless it sets ``wan_budget``)."""
+    return getattr(deck, "wan_budget", None) or MAX_WAN_PER_VIDEO
 
 
 def build_prompt(image_prompt: str, motion_prompt: str) -> str:
     """The still's own prompt (keeps the style) plus what should move."""
     return f"{image_prompt.strip()} Motion: {(motion_prompt or DEFAULT_MOTION).strip()}".strip()
+
+
+def run_limit(run_dir: Path | None) -> int:
+    """The run's Wan shot limit, read straight from its deck.json (3 when absent / unreadable)."""
+    try:
+        value = json.loads((run_dir / "deck.json").read_text(encoding="utf-8")).get("wan_budget") if run_dir else None
+    except (OSError, ValueError, AttributeError):
+        value = None
+    return value if isinstance(value, int) and 1 <= value <= 10 else MAX_WAN_PER_VIDEO
 
 
 def policy_for(run_dir: Path):
@@ -96,26 +117,36 @@ def policy_for(run_dir: Path):
 
 
 def request_for(slide_id: str, image: Path, image_record: dict | None, motion_prompt: str,
-                fallback_prompt: str = "", policy=None) -> WanRequest:
+                fallback_prompt: str = "", policy=None, *, chain: tuple[str, ...] = (),
+                t2v: bool = False) -> WanRequest:
     record = image_record or {}
     if policy is not None and policy.motion_only:
         prompt = (motion_prompt or DEFAULT_MOTION).strip()
     else:
         prompt = build_prompt(str(record.get("prompt") or fallback_prompt), motion_prompt)
-    bad = forbidden_prompt_terms(prompt)
-    if bad:
-        raise ValueError(f"slide {slide_id}: Wan prompt asks for {bad} (rule: 非擬真、不模仿畫家)")
+    for text in (prompt, *chain):
+        bad = forbidden_prompt_terms(text)
+        if bad:
+            raise ValueError(f"slide {slide_id}: Wan prompt asks for {bad} (rule: 非擬真、不模仿畫家)")
     seed = record.get("seed")
     negative = policy.negative_prompt if policy is not None else ""
     return WanRequest(slide_id, image, prompt,
-                      WanParams(seed=seed if isinstance(seed, int) else 42, negative_prompt=negative))
+                      WanParams(seed=seed if isinstance(seed, int) else 42, negative_prompt=negative),
+                      tuple(c.strip() for c in chain), t2v)
 
 
 def key_for(request: WanRequest, image_sha: str) -> str:
     params = asdict(request.params)
     if not params["negative_prompt"]:
         params.pop("negative_prompt")        # keep the keys of clips baked before the field existed
-    return cache_key(kind=KIND, image=image_sha, model=WAN_MODEL["id"], prompt=request.prompt, params=params)
+    extra = {}                               # likewise: single image-to-video clips keep their old keys
+    if request.chain:
+        extra["chain"] = list(request.chain)
+    if request.t2v:
+        extra["t2v"] = True
+        image_sha = "t2v"
+    return cache_key(kind=KIND, image=image_sha, model=WAN_MODEL["id"], prompt=request.prompt, params=params,
+                     **extra)
 
 
 def cached(run_dir: Path, request: WanRequest) -> tuple[Path, dict] | None:
@@ -124,10 +155,14 @@ def cached(run_dir: Path, request: WanRequest) -> tuple[Path, dict] | None:
     return read_cached(run_dir, request.slide_id, KIND, key_for(request, file_sha256(request.image)))
 
 
-def argv(paths: MotionPaths, request: WanRequest, out: Path) -> list[str]:
+def argv(paths: MotionPaths, request: WanRequest, out: Path, *, image: Path | None = None,
+         prompt: str | None = None) -> list[str]:
+    """``image``/``prompt`` override the request's for a chained segment (its start frame, its prompt)."""
     p = request.params
+    start = image or (None if request.t2v else request.image)
     return [str(paths.python), "-m", "mlx_video.models.wan_2.generate", "--model-dir", str(paths.wan_model),
-            "--prompt", request.prompt, "--image", str(request.image), "--width", str(p.width),
+            "--prompt", prompt or request.prompt, *(["--image", str(start)] if start else []),
+            "--width", str(p.width),
             "--height", str(p.height), "--num-frames", str(p.num_frames), "--steps", str(p.steps),
             "--guide-scale", str(p.guide_scale), "--tiling", p.tiling, "--seed", str(p.seed),
             "--output-path", str(out), *(["--negative-prompt", p.negative_prompt] if p.negative_prompt else [])]
@@ -166,37 +201,51 @@ def credit(record: dict) -> dict:
             "origin_repo": WAN_MODEL["origin_repo"], "license": WAN_MODEL["license"],
             "license_url": WAN_MODEL["license_url"], "prompt": record.get("prompt", ""),
             "seed": record.get("params", {}).get("seed"), "params": record.get("params", {}),
-            "upscaled_to": [1920, 1080]}
+            "upscaled_to": [1920, 1080], "segments": record.get("segments", 1),
+            "chain_prompts": record.get("chain_prompts", []), "t2v": record.get("t2v", False)}
 
 
 Gate = Callable[[], float]
 
 
-def generate(paths: MotionPaths, run_dir: Path, request: WanRequest, gate: Gate,
-             run: Callable[..., subprocess.CompletedProcess] = subprocess.run) -> dict:
-    """Make one clip (blocking, ~15 min). ``gate`` waits until the machine is free and returns
-    the seconds waited; it must be called inside the render lock."""
-    missing = paths.problems(wan=True)
-    if missing:
-        raise FileNotFoundError("; ".join(missing))
-    image_sha = file_sha256(request.image)
-    out, _ = clip_paths(run_dir, request.slide_id, KIND)
+def run_segment(paths: MotionPaths, request: WanRequest, out: Path, *, image: Path | None = None,
+                prompt: str | None = None, run: Callable[..., subprocess.CompletedProcess] = subprocess.run,
+                ) -> dict:
+    """One Wan process (blocking, ~15 min): the clip at ``out`` plus its timing / memory numbers."""
     out.parent.mkdir(parents=True, exist_ok=True)
-    waited = gate()
     swap_before, started = _swap_used_mb(), time.monotonic()
-    proc = run(argv(paths, request, out), capture_output=True, text=True, timeout=GENERATE_TIMEOUT_SECONDS,
-               env={**os.environ, "HF_HUB_OFFLINE": "1"})
+    proc = run(argv(paths, request, out, image=image, prompt=prompt), capture_output=True, text=True,
+               timeout=GENERATE_TIMEOUT_SECONDS, env={**os.environ, "HF_HUB_OFFLINE": "1"})
     seconds = round(time.monotonic() - started, 1)
     log = (proc.stdout or "") + (proc.stderr or "")
-    out.parent.joinpath(f"{request.slide_id}.{KIND}.log").write_text(log, encoding="utf-8")
+    out.with_suffix(".log").write_text(log, encoding="utf-8")
     if proc.returncode != 0 or not out.is_file():
         raise RuntimeError(f"Wan failed for {request.slide_id} (rc={proc.returncode}): {log[-600:]}")
     peak = _PEAK.findall(log)
+    return {"seconds": seconds, "reported_peak_gb": float(peak[-1]) if peak else None,
+            "swap_before_mb": swap_before, "swap_after_mb": _swap_used_mb()}
+
+
+def generate(paths: MotionPaths, run_dir: Path, request: WanRequest, gate: Gate,
+             run: Callable[..., subprocess.CompletedProcess] = subprocess.run) -> dict:
+    """Make one clip (blocking, ~15 min per segment). ``gate`` waits until the machine is free and
+    returns the seconds waited; it must be called inside the render lock. A request with chained
+    segments or text-to-video goes through :mod:`wan_chain`."""
+    missing = paths.problems(wan=True)
+    if missing:
+        raise FileNotFoundError("; ".join(missing))
+    if request.segments > 1 or request.t2v:
+        from content_farm.explainer import wan_chain
+
+        return wan_chain.generate_chain(paths, run_dir, request, gate, run)
+    image_sha = file_sha256(request.image)
+    out, _ = clip_paths(run_dir, request.slide_id, KIND)
+    waited = gate()
+    measured = run_segment(paths, request, out, run=run)
     record = {"key": key_for(request, image_sha), "kind": KIND, "slide_id": request.slide_id,
               "image": request.image.name, "image_sha256": image_sha, "model": WAN_MODEL,
-              "prompt": request.prompt, "params": asdict(request.params), "seconds": seconds,
-              "gate_wait_seconds": waited, "reported_peak_gb": float(peak[-1]) if peak else None,
-              "swap_before_mb": swap_before, "swap_after_mb": _swap_used_mb()}
+              "prompt": request.prompt, "params": asdict(request.params), "seconds": measured["seconds"],
+              "gate_wait_seconds": waited, "reported_peak_gb": measured["reported_peak_gb"],
+              "swap_before_mb": measured["swap_before_mb"], "swap_after_mb": measured["swap_after_mb"]}
     write_record(run_dir, request.slide_id, KIND, record)
     return record
-

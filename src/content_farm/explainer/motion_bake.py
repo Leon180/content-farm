@@ -2,7 +2,7 @@
 
 For every ``ai_image`` slide with ``motion: wan`` whose still exists: skip it when the cache
 already holds a clip for the same image + prompt + parameters, else generate it — one clip at a
-time, each after ``gate`` says the machine is free. More than :data:`wan.MAX_WAN_PER_VIDEO`
+time, each after ``gate`` says the machine is free. More than :func:`wan.max_shots`
 in a deck is refused before anything loads.
 """
 
@@ -30,9 +30,9 @@ class WanShot:
 def wan_shots(deck: Deck, run_dir: Path) -> list[WanShot]:
     slides = [slide for slide in deck.slides if slide.media_kind == MediaKind.AI_IMAGE
               and slide.media is not None and slide.media.motion_kind == Motion.WAN]
-    if len(slides) > wan.MAX_WAN_PER_VIDEO:
+    if len(slides) > wan.max_shots(deck):
         raise ValueError(f"{run_dir.name}: {len(slides)} slides ask for motion: wan "
-                         f"(max {wan.MAX_WAN_PER_VIDEO}): {', '.join(s.id for s in slides)}")
+                         f"(max {wan.max_shots(deck)}): {', '.join(s.id for s in slides)}")
     shots = []
     policy = wan.policy_for(run_dir) if slides else None
     for slide in slides:
@@ -41,7 +41,8 @@ def wan_shots(deck: Deck, run_dir: Path) -> list[WanShot]:
             shots.append(WanShot(run_dir, slide.id, None, False))
             continue
         request = wan.request_for(slide.id, image, load_record(image), slide.media.motion_prompt,
-                                  slide.media.prompt, policy)
+                                  slide.media.prompt, policy, chain=slide.media.wan_chain,
+                                  t2v=slide.media.wan_t2v)
         shots.append(WanShot(run_dir, slide.id, request, wan.cached(run_dir, request) is not None))
     return shots
 
@@ -60,7 +61,8 @@ def bake(shots: list[WanShot], paths: MotionPaths, gate: Callable[[], float],
         elif shot.cached:
             log(f"- {label}: cached")
         else:
-            log(f"- {label}: generating (~{wan.ESTIMATED_MINUTES_PER_CLIP} min)")
+            log(f"- {label}: generating (~{wan.ESTIMATED_MINUTES_PER_CLIP * shot.request.segments} min, "
+                f"{shot.request.segments} segment(s))")
             record = generate(paths, shot.run_dir, shot.request, gate)
             log(f"  {label}: {record['seconds']}s, waited {record['gate_wait_seconds']}s, "
                 f"peak {record['reported_peak_gb']} GB")

@@ -101,7 +101,9 @@ def credits_findings(channel: Channel, credits: dict | None, run_dir: Path | Non
                 findings.append(Finding("artwork_license", "error",
                                         f"{entry.get('slide_id')}: licence {licence!r} not usable "
                                         "for a monetised channel (need CC0/PD + licence URL)"))
-    findings += ai_image_findings(credits.get("entries", []))
+    from content_farm.explainer.wan import run_limit
+
+    findings += ai_image_findings(credits.get("entries", []), run_limit(run_dir))
     findings += footage_findings(credits, run_dir)
     if not any(f.level == "error" for f in findings):
         findings.append(Finding("credits", "ok",
@@ -138,30 +140,31 @@ AI_PARAMS = ("model", "prompt", "seed")
 
 def wan_count_findings(deck: Deck) -> list[Finding]:
     """Wan key shots cost ~15 min and ~26 GB each: at most two per video (2bacb8a2b8b0)."""
-    from content_farm.explainer.wan import MAX_WAN_PER_VIDEO
+    from content_farm.explainer.wan import max_shots
 
+    limit = max_shots(deck)
     wan_slides = [slide.id for slide in deck.slides
                   if slide.media_kind == MediaKind.AI_IMAGE and slide.media is not None
                   and slide.media.motion_kind == Motion.WAN]
-    if len(wan_slides) > MAX_WAN_PER_VIDEO:
+    if len(wan_slides) > limit:
         return [Finding("ai_motion", "error", f"{len(wan_slides)} slides ask for motion: wan "
-                                              f"(max {MAX_WAN_PER_VIDEO}): {', '.join(wan_slides)}")]
+                                              f"(max {limit}): {', '.join(wan_slides)}")]
     return []
 
 
-def ai_motion_findings(ai: list[dict]) -> list[Finding]:
+def ai_motion_findings(ai: list[dict], limit: int | None = None) -> list[Finding]:
     """Every AI frame's motion is recorded: Wan with model/prompt/seed, parallax with its depth
     tool; a fallback (e.g. Wan not baked) is a warning, not an error."""
     from content_farm.explainer.wan import MAX_WAN_PER_VIDEO
 
+    limit = limit or MAX_WAN_PER_VIDEO
     if not any("motion" in e for e in ai):
         return []  # credits written before motion existed (2026-10-16 ai-illustration runs)
     findings: list[Finding] = []
     moves = [(e.get("slide_id", "?"), e.get("motion") or {}) for e in ai]
     wan = [(slide, move) for slide, move in moves if move.get("kind") == Motion.WAN.value]
-    if len(wan) > MAX_WAN_PER_VIDEO:
-        findings.append(Finding("ai_motion", "error",
-                                f"{len(wan)} Wan clips in the video (max {MAX_WAN_PER_VIDEO})"))
+    if len(wan) > limit:
+        findings.append(Finding("ai_motion", "error", f"{len(wan)} Wan clips in the video (max {limit})"))
     unrecorded = [slide for slide, move in wan if any(move.get(k) in (None, "") for k in AI_PARAMS)]
     unrecorded += [slide for slide, move in moves
                    if move.get("kind") == Motion.PARALLAX.value and not move.get("tool_repo")]
@@ -193,7 +196,7 @@ def footage_findings(credits: dict, run_dir: Path | None = None) -> list[Finding
     return [Finding("footage_license", "ok", f"{len(entries)} footage clip(s): licence, sidecar and on-screen label present")]
 
 
-def ai_image_findings(entries: list[dict]) -> list[Finding]:
+def ai_image_findings(entries: list[dict], limit: int | None = None) -> list[Finding]:
     """Leon 2026-10-16 rules: every AI frame carries 「AI 示意圖」; generation parameters are
     recorded; prompts never ask for photo-realism or an artist's style."""
     from content_farm.explainer.illustrate import AI_LABEL, forbidden_prompt_terms
@@ -215,7 +218,7 @@ def ai_image_findings(entries: list[dict]) -> list[Finding]:
               if (bad := forbidden_prompt_terms(str(e.get("prompt", ""))))]
     if styled:
         findings.append(Finding("ai_style", "error", f"photo-real / artist-style prompt: {'; '.join(styled)}"))
-    findings += ai_motion_findings(ai)
+    findings += ai_motion_findings(ai, limit)
     if not any(f.level == "error" for f in findings):
         findings.append(Finding("ai_image", "ok", f"{len(ai)} AI image(s) labelled 「{AI_LABEL}」 "
                                                   "with model/prompt/seed recorded"))
