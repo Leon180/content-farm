@@ -290,6 +290,29 @@ def black_findings(segments: list[tuple[float, float]]) -> list[Finding]:
     return [Finding("black_frames", "error", f"{len(segments)} black segment(s): {spans}")]
 
 
+def static_scan_findings(run_dir: Path, channel: Channel, video: Path) -> list[Finding]:
+    """Per-shot static / pan / motion; a static shot longer than 10 s is a dead zone (warn). Written to
+    ``qc/static_scan.json`` and to the score ledger. A scan that could not run is a warn, never silence."""
+    if not channel.quality.static_scan:
+        return []
+    from content_farm.production import static_scan
+    from content_farm.review import score_ledger
+
+    try:
+        shots = static_scan.scan(video)
+    except (RuntimeError, OSError, subprocess.SubprocessError, ValueError) as exc:
+        return [Finding("static_scan", "warn", f"could not scan {video.name}: {exc}")]
+    data = static_scan.write_report(run_dir, video, shots)
+    score_ledger.record_qc(run_dir, "static_scan", {k: v for k, v in data.items() if k != "all_shots"})
+    zones = data["dead_zones"]
+    if not zones:
+        return [Finding("static_scan", "ok", f"no static shot over {static_scan.DEAD_ZONE_SECONDS:.0f}s "
+                                             f"(static {data['static_share']:.0%} of the cut)")]
+    spans = ", ".join(f"{z['start']:.0f}-{z['end']:.0f}s" for z in zones[:8])
+    return [Finding("static_scan", "warn", f"{len(zones)} dead zone(s), {data['dead_zone_seconds']:.0f}s in all "
+                                           f"(static shot > {static_scan.DEAD_ZONE_SECONDS:.0f}s): {spans}")]
+
+
 def subtitle_findings(run_dir: Path, channel: Channel) -> list[Finding]:
     srt = run_dir / "subtitles" / "subtitles.srt"
     if not srt.is_file():
@@ -458,6 +481,7 @@ def run_qc(run_dir: Path, channel: Channel, deck: Deck | None) -> dict:
         try:
             findings += format_findings(channel, probe_streams(video))
             findings += black_findings(black_segments(video))
+            findings += static_scan_findings(run_dir, channel, video)
         except (subprocess.SubprocessError, RuntimeError, KeyError, ValueError) as exc:
             findings.append(Finding("probe", "error", f"could not inspect {video.name}: {exc}"))
         findings += retention_qc(run_dir, channel)

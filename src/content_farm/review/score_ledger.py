@@ -42,6 +42,17 @@ def record(run_dir: Path, gate: str, stage_name: str, card: dict[str, Any], *, w
     return path
 
 
+def record_qc(run_dir: Path, name: str, data: dict[str, Any]) -> Path:
+    """Keep an automatic QC measurement (e.g. ``static_scan`` dead zones) in the ledger next to the judged scores, so it can
+    be compared with what the audience did. Replaces the entry of the same name; everything else is kept."""
+    ledger = load(run_dir)
+    ledger["qc"] = {**ledger.get("qc", {}), name: {"recorded_at": now_iso(), **data}}
+    path = _ledger_path(run_dir)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(ledger, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
+    return path
+
+
 def log_auto_fix(run_dir: Path, gate: str, stage_name: str, **fields: Any) -> None:
     path = run_dir / "review" / AUTO_FIX_LOG
     path.parent.mkdir(parents=True, exist_ok=True)
