@@ -353,6 +353,13 @@ def _arbitrate(run_dir: Path, out: Path, stage_name: str, stage: Stage, seats: l
     if stage_name == "article":
         article = (run_dir / "article.md").read_text(encoding="utf-8") if (run_dir / "article.md").is_file() else ""
         sentences, material = split_article(article), "文章（article.md，來源在 sources.json）"
+    elif not (run_dir / "deck.json").is_file() and (run_dir / "fable.json").is_file():    # 寓言學堂: no deck
+        from content_farm.review.article_diff import ArticleSentence
+        from content_farm.review.sentences import script_sentences
+
+        sentences = [ArticleSentence(s.id, s.text)
+                     for s in script_sentences(json.loads((run_dir / "script.json").read_text(encoding="utf-8")))]
+        material = "寓言腳本（part2_reveal_and_after.txt 的句子 id，依據在 references.txt）"
     else:
         sentences = deck_narration(json.loads((run_dir / "deck.json").read_text(encoding="utf-8")))
         material = "講稿（script.txt 的句子 id，事實依據 article.md，來源在 sources.json）"

@@ -33,7 +33,7 @@ def _deck(**overrides: object) -> Deck:
 class TestRegistry:
     def test_seven_brands_each_with_stylesheet_assets_and_silhouette(self) -> None:
         codes = brand_codes()
-        assert len(codes) == 7 and len(set(codes)) == 7
+        assert len(codes) == 8 and len(set(codes)) == 8
         assert sorted(p.stem for p in BRAND_CSS_DIR.glob("*.css")) == sorted(codes)
         for code in codes:
             assert brand_css_path(code).is_file()
@@ -59,8 +59,8 @@ class TestPalettes:
 
     def test_brands_do_not_share_a_background_or_accent(self) -> None:
         palettes = [brand_palette(code) for code in brand_codes()]
-        assert len({p["bg"] for p in palettes}) == 7
-        assert len({p["accent"] for p in palettes}) == 7
+        assert len({p["bg"] for p in palettes}) == 8
+        assert len({p["accent"] for p in palettes}) == 8
 
     def test_palette_from_css_reports_missing_roles(self) -> None:
         with pytest.raises(ValueError, match="missing palette roles"):

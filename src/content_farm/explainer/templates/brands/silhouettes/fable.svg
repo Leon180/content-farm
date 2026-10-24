@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 344" fill="currentColor">
+  <!-- 說書貓：晶片貓 rig 換裝——斗笠、長斗篷、左手提燈籠（燈籠是光源，用輔色畫） -->
+  <path d="M10 92 Q120 30 230 92 L206 100 Q120 76 34 100 Z"/>
+  <path d="M70 70 L82 22 L112 52 Z M170 70 L158 22 L128 52 Z"/>
+  <circle cx="120" cy="134" r="66"/>
+  <path d="M52 186 Q120 168 188 186 L222 340 L18 340 Z"/>
+  <path d="M50 222 L24 246" stroke="currentColor" stroke-width="14" stroke-linecap="round"/>
+  <path d="M24 246 v16" stroke="currentColor" stroke-width="4"/>
+  <ellipse cx="24" cy="290" rx="22" ry="28" fill="var(--sil-glow, #c9a45c)"/>
+  <rect x="12" y="258" width="24" height="6" fill="currentColor"/>
+  <rect x="12" y="316" width="24" height="6" fill="currentColor"/>
+</svg>

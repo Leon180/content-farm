@@ -46,6 +46,8 @@ BRANDS: tuple[BrandSpec, ...] = (
               "（無角色：新聞截圖、卡片、圖表）", ("datajournal", "newspaper")),
     BrandSpec("ent", "娛樂快報", "每日娛樂新聞（台日韓與華語演藝圈）", "knowledge",
               "（無角色：來源卡、時間軸、文字卡）", ("collage", "newspaper")),
+    BrandSpec("fable", "寓言學堂", "用寓言講研究生級概念", "knowledge",
+              "（無角色：繪本插圖＋概念圖解）", ("editorial",)),
     BrandSpec("deepsea", "深潛日誌", "深海生物科普（生物發光、深海生態）", "knowledge",
               "（無角色：滿版 AI 插畫、深度標尺、學名卡）", ("neon", "cleanroom")),
 )

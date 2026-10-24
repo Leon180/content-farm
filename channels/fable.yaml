@@ -5,7 +5,7 @@ code: fable
 name: 寓言學堂
 line: 用寓言講研究生級概念（結尾才揭曉）
 pipeline: fable
-brand: yokai                # 只借 brand 欄位通過驗證（fable 不渲染投影片）；畫面由 production/fable 自己的繪本＋概念圖解版型負責
+brand: fable                # 品牌登記用（fable 不渲染投影片）；畫面由 production/fable 自己的繪本＋概念圖解版型負責
 deck_category: knowledge
 mascot:                     # 不要角色主持人（rig_ready false：沒有任何步驟讀它）
   name: （無角色）
