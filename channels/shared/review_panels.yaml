@@ -74,6 +74,13 @@ personas:
     - {id: investor, who: 40 歲關心娛樂股的投資人, traits: [想知道誰賺錢, 不要投資建議但要結論清楚]}
     - {id: student, who: 20 歲設計系學生, traits: [想入行, 在意薪資與工作條件]}
     - {id: critic, holdout: true, who: 35 歲影評部落客, traits: [在意論證與敘事, 討厭灌水]}
+  fable:         # 寓言學堂：故事結束才揭曉概念。觀眾要誠實回報「在哪一句猜到」與「揭曉有沒有驚喜」；猜得太早＝故事洩漏、猜不到又無法回頭＝伏筆不夠
+    - {id: commuter, who: 28 歲台北上班族, traits: [睡前或通勤滑手機、隨時滑走, 喜歡有懸念的小故事, 討厭說教和被預告答案, 前 10 秒沒被抓住就走, 沒學過這些專業概念]}
+    - {id: grad_student, who: 26 歲碩士班學生, traits: [讀過不少跨領域教科書, 很容易提早猜到概念, 如實回報自己在哪一句猜到而不是假裝不知道, 故事太明顯會覺得無聊、解釋太淺或有誤會指出來]}
+    - {id: student, who: 19 歲大一文組學生, traits: [沒學過這些概念, 喜歡童話式的故事, 專有名詞沒比喻就跟不上, 揭曉要讓人「啊原來如此」才算好]}
+    - {id: parent, who: 38 歲家長, traits: [陪孩子一起看, 在意故事溫暖好懂、不嚇人, 喜歡看完能跟孩子講出一個道理]}
+    - {id: senior, who: 63 歲退休公務員, traits: [手機看、字幕要大, 不喜歡英文縮寫和太多專有名詞, 喜歡說書般的節奏]}
+    - {id: teacher, holdout: true, who: 42 歲高中老師, traits: [想找能放給學生看的課外素材, 在意概念解釋是否正確、比喻有沒有誤導, 討厭把比喻當定理]}
 
 pros:
   editor:
@@ -336,6 +343,17 @@ review:
         article: {waive_on_last_round: false}
         script_facts: {waive_on_last_round: false}
         media: {waive_on_last_round: false}
+    fable:          # 寓言學堂（Leon 2026-10-24 bc217c0643ef＝A）：只有腳本評審（評一次、照意見自動改一次）與概念正確性查核（信心度 ≥ 0.5 才算錯誤，自動修一次）
+      stages:
+        shorts_script:
+          producer: {model: sonnet, effort: medium}
+          rework: fable_script                  # 稿是 fable.json；script.json 由 fable_prepare 產生
+          seats:
+            - {role: viewer, count: 3, model: sonnet, effort: low}
+            - {role: writer_story, count: 1, model: sonnet, effort: low}
+        script_facts:
+          reviews: [script.json]                # 沒有 deck：查核看稿（揭曉與解釋段）
+          rework: fable_script
     ent:            # 娛樂快報：同科技新知——事實與授權不放行（policy 為 auto_fix_then_pass 時走自動修一次）；Short 稿退回給 news_script
       stages:
         article: {waive_on_last_round: false}

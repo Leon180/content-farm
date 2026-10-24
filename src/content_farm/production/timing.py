@@ -30,7 +30,7 @@ TIMING_FILE = "timing.json"
 LOG_FILE = "production.log.jsonl"
 PRODUCERS_FILE = "review/producers/producers.jsonl"
 
-CLOUD_STEPS = frozenset({"topic", "article", "deck", "thumbnail_spec", "skit_script", "news_script"})
+CLOUD_STEPS = frozenset({"topic", "article", "deck", "thumbnail_spec", "skit_script", "news_script", "fable_script"})
 MIN_GAP_S = 30.0          # shorter gaps between spans are bookkeeping, not waiting
 AWAY_S = 3 * 3600.0       # a gap this long is night or sleep: reported, never counted as waiting for a decision
 MAX_QUEUE_LOOKBACK = 6 * 3600.0

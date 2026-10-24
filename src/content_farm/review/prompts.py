@@ -11,7 +11,7 @@ from content_farm.review.materials import Materials
 
 CAUSED_BY = ("caused_by：問題是哪一步造成的——topic（選題）、article（研究文章）、deck（講稿與分鏡）、"
              "thumbnail_spec（標題縮圖）、voice（配音／念錯）、illustrate（AI 插圖）、media（素材／B-roll）、"
-             "assembly（剪接／字幕）、mascot（角色疊加）、mix（配樂混音）；冷笑話小劇場的劇本問題（鋪陳、笑點、停頓、用字）填 skit_script，不要填 deck。")
+             "assembly（剪接／字幕）、mascot（角色疊加）、mix（配樂混音）；冷笑話小劇場的劇本問題（鋪陳、笑點、停頓、用字）填 skit_script，不要填 deck；寓言學堂（fable）的腳本問題（鋪陳、洩漏、伏筆、解釋對應、用字）填 fable_script，不要填 deck。")
 
 # Topic rubric (cf-chipcat-run2, from run1: a 3 nm wafer-price topic lived on rumour and conflicting quotes, and its
 # fact items kept coming back). Applies to the pro and producer topic seats.
@@ -92,6 +92,26 @@ STAGE_TASK["shorts_script"] = STAGE_TASK["script"]
 STAGE_TASK["shorts_title"] = STAGE_TASK["title_thumb"]
 STAGE_TASK["shorts_final"] = STAGE_TASK["final"]
 
+# 寓言學堂 (fable channel): the script is a story whose concept is named only at the reveal; materials carry extra["fable"].
+FABLE_INTRO = "你在審「{channel}」頻道的一支寓言影片腳本（還沒配音）：故事結束才揭曉它在講哪個研究生程度的概念，然後逐一對應解釋。"
+FABLE_TASKS = {
+    "viewer": ("素材分兩份：part1_before_reveal.txt（揭曉之前）與 part2_reveal_and_after.txt（揭曉與解釋）。照順序做：\n"
+               "1. 先只讀 part1（讀完之前不要打開 part2）。寫下你猜它在講什麼概念（guess.concept，猜不到就寫「猜不到」），"
+               "與你『第一次猜到』的那一句的句子 id（guess.at_sentence，整份 part1 都沒猜到就填 null），guess.confidence 0–1。"
+               "照你的人設誠實猜，不要因為知道有答案就硬猜。\n"
+               "2. 再讀 part2。reveal_surprise 0–10：揭曉當下你有多驚喜／恍然大悟（猜到越早越明顯分數越低：0＝早就知道，10＝完全沒想到卻覺得合理）。\n"
+               "3. 然後像一般觀眾評整支：每個 beat 給投入 0–10 與 stay/leave（segments 的 slide_id 填 c1、c2…，c<n>＝第 n 個 beat），"
+               "left_at_sentence 填你會離開的那句（看完就 null），top_fixes 最多 3 條。故事無聊、太早洩漏、伏筆沒收、"
+               "解釋跟故事對不上都算問題。"),
+    "pro": ("依 rubric 評這支寓言腳本，各項 0–10，總分 score 0–10。特別看：故事有沒有一個選擇與它的代價、伏筆有沒有收、"
+            "揭曉前有沒有洩漏概念名或同義詞、解釋是否把故事情節逐一對應到概念要素、最後一句現實應用是否具體。問題用句子 id 指認。"),
+    "fact": ("只查『概念解釋』：part2（揭曉之後）的說法與 reveal 那一句。寓言本體是虛構，不查。逐條列出解釋段的可查證說法"
+             "（定義、要素、因果、現實應用、數字），用 WebSearch／WebFetch 對照教科書、論文或權威辭典，填 claims，sentence_ids 寫句子 id。"
+             "status：ok＝標準說法支持；wrong＝與標準說法不同（含把比喻說成定理、概念要素講錯）；unsourced＝查不到支持；"
+             "unverifiable＝來源打不開；analysis＝頻道自己的類比或判斷、文中明確寫成類比且你確認邏輯站得住。"
+             "每條填 confidence（0–1）：你有多確定它是錯誤或無來源；低於 0.5 只記錄不修，沒把握就誠實填低。錯誤的也要寫進 issues（caused_by=fable_script）。"),
+}
+
 STAGE_INTRO = {
     "topic": "你在幫「{channel}」頻道挑下一支片的題目。",
     "article": "你在審「{channel}」頻道一支片的研究文章（之後會改寫成影片講稿）。",
@@ -115,15 +135,16 @@ def build(stage: str, role: Role, materials: Materials, *, channel: str, persona
           feeds: list[str] | None = None) -> str:
     base = BASE_STAGE.get(stage, stage)
     materials = materials.visible_to(role.kind)     # a reviewer is listed only the files it needs
-    intro = STAGE_INTRO.get(base, STAGE_INTRO["final"]).format(channel=channel)
-    if stage.startswith("shorts_"):
+    fable = bool(materials.extra.get("fable"))
+    intro = (FABLE_INTRO if fable else STAGE_INTRO.get(base, STAGE_INTRO["final"])).format(channel=channel)
+    if stage.startswith("shorts_") and not fable:
         intro += "這是一支 20–60 秒的直式 Short。"
     who = persona if role.kind == "viewer" else f"{role.brief}\n評分項目：{'、'.join(role.rubric)}" if role.rubric \
         else role.brief
     duration = materials.extra.get("duration_text")
     return "\n\n".join(part for part in (
         who, intro, _files(materials, feeds), f"片長 {duration}。" if duration else "",
-        "要做的事：" + _task(base, role.kind), RULES,
+        "要做的事：" + ((FABLE_TASKS.get(role.kind) if fable else None) or _task(base, role.kind)), RULES,
         "完成後用結構化輸出回傳結果（格式由系統強制）。") if part)
 
 

@@ -28,6 +28,7 @@ _WEEKDAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
 class Pipeline(str, Enum):
     EXPLAINER = "explainer"      # article → deck → voice → media → assembly → mascot
     SHORTS_SKIT = "shorts_skit"  # script → voice → mascot skit (no article, no deck)
+    FABLE = "fable"              # fable.json → voice → AI picture book render; Shorts and mid-length on one channel
 
 
 class Gate(str, Enum):
@@ -46,6 +47,7 @@ class Gate(str, Enum):
 PIPELINE_GATES: dict[Pipeline, tuple[Gate, ...]] = {
     Pipeline.EXPLAINER: (Gate.TOPIC, Gate.ARTICLE, Gate.DECK, Gate.TITLE, Gate.MEDIA, Gate.FINAL),
     Pipeline.SHORTS_SKIT: (Gate.TOPIC, Gate.SCRIPT, Gate.FINAL),
+    Pipeline.FABLE: (Gate.SCRIPT, Gate.DECK_FACTS, Gate.FINAL),   # topics are picked by hand; two reviews: script, concept facts
 }
 REQUIRED_GATES: dict[Pipeline, frozenset[Gate]] = {p: frozenset(g) for p, g in PIPELINE_GATES.items()}
 
@@ -228,7 +230,7 @@ class AudioMix(_Strict):
 
     enabled: bool = False
     bgm: tuple[AudioTrack, ...] = ()
-    synth_bgm: Literal["wafu", "studio", "pulse", "abyss"] | None = None   # no `bgm` files: synthesize this bed locally (audio_mix/synth_bgm.py)
+    synth_bgm: Literal["wafu", "studio", "pulse", "abyss", "hearth"] | None = None   # no `bgm` files: synthesize this bed locally (audio_mix/synth_bgm.py)
     stinger: AudioTrack | None = None   # None = the built-in synthesized stinger
     sfx: bool = True                    # synthesized SFX on some narration hooks
     voice_lufs: float = Field(default=-16.0, ge=-30, le=-10)

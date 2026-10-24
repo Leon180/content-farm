@@ -168,7 +168,7 @@ def build_meta(
         "privacy_status": "private" if publish_at else channel.youtube.default_privacy,
         "publish_at": publish_at.isoformat() if publish_at else None,
         "contains_synthetic_media": channel.youtube.altered_content_label and content.any,
-        "category_id": "27" if channel.pipeline.value == "explainer" else "23",  # Education / Comedy
+        "category_id": "27" if channel.pipeline.value in ("explainer", "fable") else "23",  # Education / Comedy
         "made_for_kids": False,
         "default_language": script.language,
         "video_path": video.relative_to(run_dir).as_posix(),

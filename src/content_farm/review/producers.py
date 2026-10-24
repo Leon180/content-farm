@@ -29,14 +29,14 @@ RECEIPT = {"type": "object", "additionalProperties": False, "required": ["files"
 TOOLS = ("Read", "Write", "Edit", "Glob", "Grep", "WebSearch", "WebFetch")   # + Bash scoped to the repo python
 
 SCRIPTS = ("check_article.py", "deck_to_script.py", "apply_deck_patch.py", "make_thumbnail.py", "render_slides.py",
-           "check_skit.py", "news.py")
+           "check_skit.py", "news.py", "fable.py")
 TIMEOUT_S = {"topic": 1500, "article": 2700, "deck": 3600, "thumbnail_spec": 1800, "skit_script": 900,
-             "news_script": 900}
+             "news_script": 900, "fable_script": 1800}
 
 # step → (stage whose producer tier applies, gate whose fixes apply)
 STEP_STAGE = {"topic": ("topic", "topic"), "article": ("article", "article"), "deck": ("script_structure", "deck"),
               "thumbnail_spec": ("title_thumb", "title"), "skit_script": ("shorts_script", "script"),
-              "news_script": ("shorts_script", "script")}
+              "news_script": ("shorts_script", "script"), "fable_script": ("shorts_script", "script")}
 # a short channel's topic step is the shorts_topic stage (sonnet producer, not the long videos' opus plan stage)
 SHORT_TOPIC_STAGE = "shorts_topic"
 
@@ -81,6 +81,12 @@ TASKS = {
 （不要停下來等人審）寫 script.json：鋪陳 → 停 0.6 秒（最後一場鋪陳的 transition 填 pause:0.6）→ 笑點（≤ 40 字）→ 可省的收尾；總長 20–50 秒。
 角色只有頻道設定裡的飲水機金魚（{repo}/channels/{channel}.yaml），不新增角色或設定；笑話必須原創，不搬運他人段子、不用其他頻道的口頭禪。
 寫完跑 `{python} {repo}/scripts/check_skit.py --run-dir {run_dir}`，改到 0 problem(s)。""",
+    "fable_script": """任務：寓言學堂腳本（fable.json）。題目在 topic.json 的 chosen[0]（concept 概念、domain 領域、format＝short／mid、premise 寓言構想提示）。
+照 {repo}/.claude/skills/fable-script/SKILL.md 的結構與規則寫 fable.json（不要停下來等人審）：hook → story（原創動物／器物角色，一個選擇與代價，伏筆）→ reveal →
+explain（故事情節逐一對應概念要素）→ apply（一句現實應用）；每個 beat 先寫 must_keep／must_avoid。概念名與同義詞（concept.aliases、concept.english 要列全）
+在揭曉前不得出現在標題、旁白、圖片提示詞、card。解釋段要精確：先用 WebSearch／WebFetch 查這個概念的標準定義與教科書／論文說法，concept.references 寫你依據的來源，
+解釋只寫查證過的內容，比喻的極限用一句話說明，不把比喻當定理。台灣中文口語、說書的溫暖感，不用真人角色。
+寫完跑 `{python} {repo}/scripts/fable.py lint --run-dir {run_dir}`，改到 0 problem(s)。""",
     "news_script": """任務：科技新聞 Short 稿（news_script.json）。這則的原文已讀過並快取：news_short.json（題目、來源、讀取時間、text_path 指到原文快取）。
 照 {repo}/.claude/skills/news-short/SKILL.md 的五段格式與 lint 規則寫 news_script.json（不要停下來等人審）；頻道是「{channel}」：
 讀 {repo}/channels/{channel}.yaml 的 identity 與 series.news。沒有角色（稿裡不要出現晶片貓或任何主持角色，pose 欄位留空）、
@@ -134,6 +140,10 @@ TASKS_REWORK = {
     "skit_script": """任務：冷笑話劇本退回重做。script.json 已經存在；依下面的修改清單改被點名的句子（句子 id c<場>.<序>），不要換題、不要換笑點的梗，
 其他場景不動。結構（鋪陳／笑點／收尾 的 title、最後一場鋪陳的 transition pause:0.6、金魚表情）不能破壞。
 整體問題（例如鋪陳太長、笑點沒翻轉）才可以重寫該場景。改完跑 `{python} {repo}/scripts/check_skit.py --run-dir {run_dir}`，改到 0 problem(s)。""",
+    "fable_script": """任務：寓言腳本退回重做。fable.json 已經存在；依下面的修改清單改被點名的句子（句子 id c<n>.<k>＝第 n 個 beat 旁白的第 k 句，
+beat 順序同 fable.json 的 beats），其他 beat 一字不動；結構（act 順序、揭曉規則、伏筆 plants／resolves、elements 的 maps、must_keep／must_avoid）
+不能破壞，改了旁白要同步檢查 card.rows 與圖片提示詞仍一致。概念解釋的事實問題（查核員點名）：只准刪除或加限定詞、改正說法，不新增句子，
+需要時用 WebSearch／WebFetch 對照教科書；改完更新 concept.references。改完跑 `{python} {repo}/scripts/fable.py lint --run-dir {run_dir}`，改到 0 problem(s)。""",
     "news_script": """任務：科技新聞 Short 稿退回重做。news_script.json 已經存在；依下面的修改清單改被點名的句子
 （句子 id c<場>.<序>，場＝第幾段 beat，從 1 起），改 beats[].narration／screen，其他段與 sources 不動，事實只能來自原文快取（news_short.json 的 text_path）。
 改完跑 `{python} {repo}/scripts/news.py lint --run-dir {run_dir}`，改到通過；總長仍要在 lint 的秒數範圍內。""",
@@ -152,8 +162,8 @@ NAMED_LIMIT = 14        # sentences quoted per rework brief
 
 def _named_sentences(run_dir: Path, plan: dict, step: str) -> str:
     """The sentences the fix list names, with their current wording: the agent edits these and nothing else."""
-    deck_path = run_dir / ("script.json" if step == "skit_script" else "deck.json")
-    if step not in ("deck", "skit_script") or not deck_path.is_file():
+    deck_path = run_dir / ("script.json" if step in ("skit_script", "fable_script") else "deck.json")
+    if step not in ("deck", "skit_script", "fable_script") or not deck_path.is_file():
         return ""
     from content_farm.review.sentences import deck_sentences, script_sentences
     from content_farm.review.touch_guard import named_in
@@ -161,7 +171,7 @@ def _named_sentences(run_dir: Path, plan: dict, step: str) -> str:
     named = named_in(plan, step)
     if not named.sentence_ids:
         return ""
-    read = script_sentences if step == "skit_script" else deck_sentences
+    read = script_sentences if step in ("skit_script", "fable_script") else deck_sentences
     by_id = {s.id: s for s in read(json.loads(deck_path.read_text(encoding="utf-8")))}
     rows = [f"- {i}（{by_id[i].slide_id}）｜{by_id[i].text}" for i in sorted(named.sentence_ids) if i in by_id]
     more = f"\n（另有 {len(rows) - NAMED_LIMIT} 句見修改清單的連動範圍）" if len(rows) > NAMED_LIMIT else ""

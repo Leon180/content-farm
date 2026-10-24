@@ -84,6 +84,10 @@ SCRIPT_VIEWER = _obj(
     ["persona", "segments", "left_at_sentence", "finish", "top_fixes", "overall"],
     persona=_STR, overall=_STR, finish={"type": "boolean"},
     left_at_sentence={"type": ["string", "null"], "description": "sentence id where you would leave, or null"},
+    # 寓言學堂 only (optional elsewhere): the viewer's guess of the hidden concept and how much the reveal surprised them
+    guess=_obj(["concept", "at_sentence"], concept=_STR, confidence={"type": "number", "minimum": 0, "maximum": 1},
+               at_sentence={"type": ["string", "null"], "description": "sentence id where the concept was first guessed, or null"}),
+    reveal_surprise=_SCORE,
     segments={"type": "array", "items": _obj(["slide_id", "engagement", "decision", "why"],
                                              slide_id=_STR, engagement=_SCORE, decision={"enum": ["stay", "leave"]},
                                              why=_STR, confusing={"type": "array", "items": _STR})},

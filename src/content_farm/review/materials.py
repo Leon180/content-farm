@@ -128,6 +128,8 @@ def _delta_listing(sentences: list[Sentence], only: frozenset[str]) -> str:
 
 def script(run_dir: Path, out: Path, *, id_field: str = "sentence_ids", only: frozenset[str] | None = None,
            **_: Any) -> Materials:
+    if not (run_dir / "deck.json").is_file() and (run_dir / "fable.json").is_file():
+        return fable_script(run_dir, out)       # the fable channel has no deck: its concept check reads the same script
     deck = _read_json(run_dir / "deck.json")
     sentences = deck_sentences(deck, id_field)
     full = f"# {deck.get('title', '')}\n\n" + listing(sentences)
@@ -162,7 +164,32 @@ def script(run_dir: Path, out: Path, *, id_field: str = "sentence_ids", only: fr
                      audience=audience, derived=frozenset({"contact_sheet.png"}))
 
 
+def fable_script(run_dir: Path, out: Path, **_: Any) -> Materials:
+    """寓言學堂: the script in two parts — before the reveal, and the reveal with the explanation — so a viewer can
+    commit to a guess of the hidden concept before reading on; fact-checkers get the explanation and the references."""
+    from content_farm.production.fable.model import load
+
+    fable, data = load(run_dir), _read_json(run_dir / "script.json")
+    sentences = script_sentences(data)
+    split = fable.reveal_index() or 0                  # scenes 1..split come before the reveal beat
+    before = [s for s in sentences if int(s.slide_id[1:]) <= split]
+    after = [s for s in sentences if int(s.slide_id[1:]) > split]
+    refs = "\n".join([f"概念：{fable.concept.name}（{fable.concept.domain}）", *(f"依據：{r}" for r in fable.concept.references),
+                      *(f"要素 {e.id}：{e.concept_part}（故事：{e.story_ref}）" for e in fable.elements)]) + "\n"
+    full = f"# {fable.title}\n\n" + listing(sentences)
+    files = [_put(out, "part1_before_reveal.txt", f"# {fable.title}\n\n" + listing(before)),
+             _put(out, "part2_reveal_and_after.txt", listing(after)), _put(out, "references.txt", refs)]
+    notes = {files[0]: "第一份：揭曉之前（hook 與寓言）。先只讀這份，寫下你的猜測，再打開第二份",
+             files[1]: "第二份：揭曉與概念解釋（逐句，[句子 id] ~預估時間 句子）；時間從這份開頭算起",
+             files[2]: "頻道寫稿時依據的概念與參考來源（查核解釋用）"}
+    audience = {files[0]: (VIEWERS, PROS), files[1]: (VIEWERS, PROS, FACTS), files[2]: (FACTS, PROS)}
+    return Materials(files, notes, corpus=full + refs, sentences=sentences, audience=audience,
+                     extra={"fable": True, "duration_text": f"約 {sum(len(s.text) for s in sentences) / 5.5:.0f} 秒（字數估計）"})
+
+
 def short_script(run_dir: Path, out: Path, **_: Any) -> Materials:
+    if (run_dir / "fable.json").is_file():
+        return fable_script(run_dir, out)
     data = _read_json(run_dir / "script.json")
     sentences = script_sentences(data)
     text = f"# {data.get('video_title', '')}\n\n" + listing(sentences)

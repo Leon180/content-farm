@@ -33,7 +33,7 @@ TITLE_ONLY_STAGES = ("title_thumb", "shorts_title")
 LONG_STAGE_FOR_GATE = {"topic": "topic", "article": "article", "deck": "script_structure",
                        "deck_facts": "script_facts", "title": "title_thumb", "media": "media", "final": "final"}
 SHORT_STAGE_FOR_GATE = {"topic": "shorts_topic", "script": "shorts_script", "title": "shorts_title",
-                        "final": "shorts_final"}
+                        "final": "shorts_final", "deck_facts": "script_facts"}   # deck_facts: the fable channel's concept check
 
 
 @dataclass(frozen=True)
@@ -143,7 +143,7 @@ def _rework(run_dir: Path, gate: str, stage_name: str, card: dict[str, Any], def
         issues = [{"ref": {"target": "script"}, "category": "content", "severity": "high",
                    "problem": "；".join(verdict.get("reasons", [])), "fix": "依評分卡改善", "evidence": "",
                    "caused_by": default_step}]
-    if default_step in ("skit_script", "news_script"):     # no deck: the script step owns every script problem
+    if default_step in ("skit_script", "news_script", "fable_script"):     # no deck: the script step owns every script problem
         issues = [{**i, "caused_by": default_step} if i.get("caused_by") == "deck" else i for i in issues]
     texts = _texts(run_dir)
     issues, deferred, narrowing = narrow(issues, texts.sentences) if narrow_enabled() else (issues, [], None)

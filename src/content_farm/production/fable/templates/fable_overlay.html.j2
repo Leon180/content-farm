@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8">
+<style>
+  :root { --paper:#f3e9d2; --ink:#3b2a1a; --terracotta:#b5532f; --sage:#5f7550; --rule:#d8c6a0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html, body { width:{{ w }}px; height:{{ h }}px; background:transparent; overflow:hidden; }
+  body { font-family:"Songti TC","Noto Serif TC","PingFang TC","Hiragino Sans GB",serif; color:var(--ink); }
+  .panel { position:absolute; background:var(--paper); {{ panel_css }} padding:{{ pad }}px; display:flex; flex-direction:column;
+           justify-content:{{ 'center' if mode != 'explain' else 'flex-start' }}; gap:{{ gap }}px; }
+  .panel::before { content:""; position:absolute; {{ rule_css }} background:var(--terracotta); }
+  .label { font-size:{{ label_px }}px; letter-spacing:.35em; color:var(--sage); font-weight:700; }
+  .concept { font-size:{{ name_px }}px; font-weight:900; line-height:1.12; color:var(--terracotta); }
+  .english { font-size:{{ label_px }}px; color:#7a6850; letter-spacing:.08em; }
+  .heading { font-size:{{ head_px }}px; font-weight:800; color:var(--ink); border-bottom:3px solid var(--rule); padding-bottom:12px; }
+  .row { display:flex; flex-direction:column; gap:6px; padding:12px 18px; background:#fbf5e6; border-left:8px solid var(--sage); border-radius:6px; }
+  .row .story { font-size:{{ row_px }}px; color:var(--ink); }
+  .row .story::before { content:"故事　"; color:var(--sage); font-size:.62em; font-weight:700; }
+  .row .concept-line { font-size:{{ row_px }}px; font-weight:800; color:var(--terracotta); }
+  .row .concept-line::before { content:"概念　"; color:#7a6850; font-size:.62em; font-weight:700; }
+  .row .arrow { font-size:{{ row_px * 0.7 }}px; color:var(--rule); line-height:1; padding-left:2.6em; }
+  .apply { font-size:{{ apply_px }}px; font-weight:700; line-height:1.4; }
+</style></head>
+<body>
+<div class="panel">
+{% if mode == 'reveal' %}
+  <div class="label">{{ domain }}</div>
+  <div class="concept">{{ concept }}</div>
+  {% if english %}<div class="english">{{ english }}</div>{% endif %}
+{% elif mode == 'explain' %}
+  <div class="heading">{{ heading }}</div>
+  {% for r in rows %}
+  <div class="row"><div class="story">{{ r.story }}</div><div class="arrow">↓</div><div class="concept-line">{{ r.concept }}</div></div>
+  {% endfor %}
+{% else %}
+  <div class="label">{{ heading }}</div>
+  <div class="concept" style="font-size:{{ name_px * 0.6 }}px">{{ concept }}</div>
+  <div class="english">{{ domain }}</div>
+{% endif %}
+</div>
+</body></html>

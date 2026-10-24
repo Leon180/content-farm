@@ -18,11 +18,13 @@ def test_policy_sets_the_negative_prompt_and_drops_the_still_prompt(tmp_path) ->
     assert argv[argv.index("--negative-prompt") + 1] == "face distortion, morphing"
 
 
-def test_no_policy_keeps_the_old_command_and_cache_key(tmp_path) -> None:
+def test_no_policy_sends_the_default_face_negative_and_keeps_the_cache_key(tmp_path) -> None:
     image = tmp_path / "a.png"
     image.write_bytes(b"x")
     plain = wan.request_for("s1", image, {"prompt": "a fox", "seed": 7}, "tails sway")
-    assert "--negative-prompt" not in wan.argv(_paths(tmp_path), plain, tmp_path / "o.mp4")
+    argv = wan.argv(_paths(tmp_path), plain, tmp_path / "o.mp4")
+    assert argv[argv.index("--negative-prompt") + 1] == wan.NEGATIVE_PROMPT   # revisual's always-on face guard
+    assert plain.params.negative_prompt == ""   # empty keeps the cache key of clips baked before the field existed
     with_policy = wan.request_for("s1", image, {"prompt": "a fox", "seed": 7}, "tails sway", "",
                                   WanPolicy(negative_prompt="face distortion, morphing"))
     assert wan.key_for(plain, "h") != wan.key_for(with_policy, "h")

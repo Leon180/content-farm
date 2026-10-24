@@ -29,6 +29,7 @@ EXPLAINER_SUBTITLE_MAX = "14"  # 64 px subtitles (v3): ≤ 18 chars ≈ 1170 px 
 NEWS_ITEM_FILE = "news_short.json"
 NEWS_SCRIPT_FILE = "news_script.json"
 NEWS_WEEKLY_FILE = "news_weekly.json"
+FABLE_FILE = "fable.json"      # production/fable/model.py (same literal; model imports nothing from here)
 
 
 @dataclass(frozen=True)
@@ -392,6 +393,47 @@ NEWS_SHORT_STEPS: tuple[Step, ...] = (
 )
 
 
+# 寓言學堂 (channel ``fable``, Leon 2026-10-24 bc217c0643ef = A): Shorts (9:16) and mid-length (16:9) videos from
+# one ``fable.json``. Topics are picked by hand (topic.json); two reviews only — the script panel (judged once, fixes
+# applied once) and the concept-facts check (confidence >= 0.5 counts; one automatic fix).
+FABLE_STEPS: tuple[Step, ...] = (
+    Step("fable_topic", "agent", "題目（概念、領域、長度）", outputs=("topic.json",),
+         hint="寫 topic.json：{\"chosen\":[{\"concept\":…,\"domain\":…,\"format\":\"short|mid\",\"premise\":…}]}"),
+    Step("fable_script", "agent", "寓言腳本（hook → 寓言 → 揭曉 → 解釋 → 應用）", outputs=(FABLE_FILE,),
+         verify=lambda c: _py(c, "fable.py", "lint", "--run-dir", _run_dir(c)),
+         hint="跑 /fable-script（讀 topic.json 的 chosen[0] → 寫 fable.json；produce.py run --auto-agents 會自動呼叫）"),
+    Step("fable_prepare", "cmd", "fable.json → script.json（一個 beat＝一個場景）", outputs=("script.json", "voice_text.json"),
+         inputs=(FABLE_FILE,), command=lambda c: _py(c, "fable.py", "prepare", "--run-dir", _run_dir(c))),
+    Step("gate_script", "gate", "腳本評審（猜到時間點、揭曉驚喜）", gate=Gate.SCRIPT, artifacts=("script.json",),
+         applies=_gate_enabled(Gate.SCRIPT)),
+    Step("gate_facts", "gate", "概念正確性查核", gate=Gate.DECK_FACTS, artifacts=("script.json",),
+         applies=_gate_enabled(Gate.DECK_FACTS)),
+    Step("voice", "cmd", "配音＋字幕對齊", outputs=("audio/scene_*.mp3", "subtitles/subtitles.srt"),
+         inputs=("voice_text.json",),
+         command=lambda c: _py(c, "run_stage.py", "--stage", "voice", "--run-dir", _run_dir(c),
+                               env=_voice_env(c) | {"CF_SUBTITLE_MAX_CHARS_PER_LINE_LANDSCAPE": "22"}),
+         paid=_voice_paid, heavy_if=_voice_local, identity=voice_spoken_key),
+    Step("fable_images", "cmd", "繪本插圖（本機模型，一次一張）＋視差動態", outputs=("assets/fable/clips.json",),
+         inputs=(FABLE_FILE,), heavy=True,
+         command=lambda c: _py(c, "fable.py", "images", "--run-dir", _run_dir(c), "--env-file", str(c.options.env_file)),
+         identity=lambda c: c.channel.ai_illustration.model_dump_json()),
+    Step("fable_render", "cmd", "合成（繪本→概念圖解轉場、字幕燒入）",
+         outputs=("assembly/final.mp4", "thumbnails/thumbnail.png", "credits.json"),
+         inputs=(FABLE_FILE, "script.json", "audio/scene_*.mp3", "subtitles/subtitles.srt", "assets/fable/clips.json"),
+         command=lambda c: _py(c, "fable.py", "render", "--run-dir", _run_dir(c)), heavy=True),
+    Step("mix", "cmd", "配樂、轉場音、母帶", outputs=("assembly/release.mp4",),
+         inputs=("assembly/final.mp4", "script.json"),
+         command=lambda c: _py(c, "audio_mix.py", "--run-dir", _run_dir(c), "--channel", c.channel.code),
+         identity=lambda c: c.channel.audio.model_dump_json(), heavy=True, applies=lambda channel: channel.audio.enabled),
+    Step("qc", "internal", "自動品質檢查", outputs=("qc/qc_report.json",),
+         inputs=("assembly/*.mp4", "credits.json", "subtitles/subtitles.srt", "audio/speech_check.json")),
+    Step("gate_final", "gate", "成片審看", gate=Gate.FINAL,
+         artifacts=("assembly/release.mp4", "assembly/final.mp4", "qc/qc_report.json"), applies=_gate_enabled(Gate.FINAL)),
+    Step("package", "internal", "上傳資料（標題、說明、授權、AI 揭露、排程）", outputs=("upload/youtube_meta.json",),
+         inputs=("script.json", "credits.json", "assembly/*.mp4", "production.schedule.json")),
+)
+
+
 def _claims_audit(channel: Channel) -> bool:
     return bool((channel.series.get("news") or {}).get("claims_audit"))
 
@@ -419,7 +461,8 @@ def steps_for(channel: Channel, run_dir: Path | None = None) -> tuple[Step, ...]
         return tuple(step for step in NEWS_SHORT_STEPS if step.applies(channel))
     if run_dir is not None and (run_dir / NEWS_WEEKLY_FILE).is_file():
         return news_weekly_steps(channel)
-    steps = {Pipeline.EXPLAINER: EXPLAINER_STEPS, Pipeline.SHORTS_SKIT: SHORTS_SKIT_STEPS}[channel.pipeline]
+    steps = {Pipeline.EXPLAINER: EXPLAINER_STEPS, Pipeline.SHORTS_SKIT: SHORTS_SKIT_STEPS,
+             Pipeline.FABLE: FABLE_STEPS}[channel.pipeline]
     legacy = _topic_chosen_elsewhere(run_dir)
     return tuple(step for step in steps if step.applies(channel) and not (legacy and step.name in TOPIC_STEPS))
 

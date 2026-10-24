@@ -1,0 +1,75 @@
+# 寓言學堂（暫名）— 用寓言講研究生級概念，結尾才揭曉；Shorts（9:16）＋中片（16:9）同一頻道
+# Leon 2026-10-24 決策 bc217c0643ef＝A。來源提示詞：選一個研究生水平的概念 → 寫寓言間接講清楚 → 快結束才讓人意識到是哪個概念 → 故事後再解釋。
+# 重點是給觀眾「理解的過程」，不是直接給答案。名稱候選：寓言學堂（暫用）／原來如此／先聽個故事。Secrets never go here.
+code: fable
+name: 寓言學堂
+line: 用寓言講研究生級概念（結尾才揭曉）
+pipeline: fable
+brand: yokai                # 只借 brand 欄位通過驗證（fable 不渲染投影片）；畫面由 production/fable 自己的繪本＋概念圖解版型負責
+deck_category: knowledge
+mascot:                     # 不要角色主持人（rig_ready false：沒有任何步驟讀它）
+  name: （無角色）
+  ref: chipcat
+  rig_ready: false
+voice:                      # 新設計的聲音：Qwen3-TTS VoiceDesign（說書感、溫暖）→ 固定參考聲 → VoxCPM2 複製（見 REPORT-fable §聲音）
+  provider: voxcpm2
+  tempo: 1.0
+  reference:
+    audio: ~/.local/share/content-farm-voices/fable-ref.wav
+    text: 很久很久以前，在一座霧很多的山谷裡，住著一位愛說故事的老奶奶。每到傍晚，小動物們就圍著暖暖的爐火，安安靜靜地等她開口。她總是笑著說，故事聽完以後，道理自己會慢慢長出來。
+    note: Qwen3-TTS VoiceDesign 設計的溫暖說書人女聲（REPORT-fable §聲音）；原文同上
+topic_categories: [經濟學, 資訊科學, 心理學, 生物與演化, 物理學, 數學, 哲學, 社會科學]
+format:                     # 頻道預設是 Shorts；中片由 fable.json 的 format: mid 覆寫（qc.qc_channel 改查 16:9、230–380 秒）
+  length: short
+  aspect: "9:16"
+  target_seconds: [55, 90]
+cadence:
+  long_per_week: 0.5        # 中片：隔週一支
+  shorts_per_week: 3
+  publish_days: [sat]
+  shorts_days: [mon, wed, fri]
+  lead_days: 5
+  publish_time: "20:00"
+  timezone: Asia/Taipei
+shorts_strategy: 60–90 秒寓言：前 50 秒說故事、不透露概念，後 20–30 秒揭曉並逐一對應；結尾導向中片
+media:
+  stock: false
+  stock_video: false
+  ai_image: true            # 全部是 AI 繪本插圖（原創動物／器物角色，沒有真人）＋深度視差
+  artwork: false
+  source_footage: false
+ai_illustration:            # 頻道統一一種風格：溫暖繪本（水粉＋鉛筆線）；禁擬真照片、禁指定畫家、不生成文字
+  provider: local_mflux
+  model: z-image-turbo
+  style_prefix: >-
+    Warm children's picture-book illustration, soft gouache and watercolor textures, gentle hand-drawn pencil outlines,
+    muted earthy palette of ochre, terracotta, sage green and cream, cozy lantern light, storybook scene,
+    illustration, not a photograph, no text, no letters, no logos.
+  seed: 42
+  width: 1280
+  height: 720
+gates: [script, deck_facts, final]   # script＝腳本評審（評一次、照意見自動改一次）；deck_facts＝概念正確性查核（信心度 ≥ 0.5 才算錯，自動修一次）
+audio:                      # 配樂（後期步驟，可關）：溫暖、說故事感；本機程式合成（hearth），不評審
+  enabled: true
+  synth_bgm: hearth
+  sfx: true
+  voice_lufs: -23.4         # 人聲維持原響度，不加增益（比照九尾狐）
+  master_lufs: -23.4
+  bgm_under_voice_db: 16.0
+youtube:
+  client_id_env: CF_YOUTUBE_CLIENT_ID
+  client_secret_env: CF_YOUTUBE_CLIENT_SECRET
+  refresh_token_env: CF_YT_FABLE_REFRESH_TOKEN
+  channel_id_env: CF_YT_FABLE_CHANNEL_ID
+  ai_disclosure: true
+  default_privacy: private
+notes:
+  - 揭曉規則（程式檢查，scripts/fable.py lint）：概念名、同義詞、英文名在揭曉前不得出現在標題、hook、寓言旁白、圖片提示詞、card
+  - 角色全為原創動物／器物，不用真人；圖片提示詞有人物字眼即退回
+  - 概念解釋依教科書／論文說法（concept.references），比喻的極限要說；不把比喻當定理
+  - 畫面標示「AI 示意圖」；Wan 只用於無臉的場景鏡頭（本批試做全部視差）
+publish:
+  timezone: Asia/Taipei
+  long: {days: [sat], window: "20:00-21:00"}
+  shorts: {windows: ["12:00-13:00"], per_day: 1, min_gap_hours: 3}
+  source: research/upload-timing-2026-10.md

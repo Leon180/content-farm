@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from content_farm.production.runner import RunResult
     from content_farm.production.steps import Context, Step
 
-PRODUCER_STEPS = ("topic", "article", "deck", "thumbnail_spec", "skit_script", "news_script")
+PRODUCER_STEPS = ("topic", "article", "deck", "thumbnail_spec", "skit_script", "news_script", "fable_script")
 APPROVED_DECK = "review/deck.approved.json"   # same path as feat/incremental-render's runner.APPROVED_DECK
 LOCKED_DECK = "review/deck.locked.json"       # deck at the last structure / facts approval (the fact lock's baseline)
 FACTS_LOCKED_DECK = "review/deck_facts.locked.json"   # deck at the last fact-stage approval (delta fact-check baseline)
@@ -33,10 +33,23 @@ def _event(run_dir: Path, **fields: object) -> None:
 
 
 def _short(ctx: Context) -> bool:
+    """Do this run's panels use the ``shorts_*`` stages? (Every fable video does, Short or mid-length: no deck.)"""
+    from content_farm.production.channels import Pipeline
     from content_farm.production.shorts_cut import is_short_cut
 
     return (ctx.channel.format.length == "short" or is_short_cut(ctx.run_dir)
+            or ctx.channel.pipeline is Pipeline.FABLE
             or (ctx.run_dir / "news_short.json").is_file())      # an HN-style news Short on a long-video channel
+
+
+def publish_kind(ctx: Context) -> str:
+    """``short`` or ``long``: which release window of the channel's ``publish:`` plan this run takes."""
+    from content_farm.production.fable.model import format_of
+
+    fable_format = format_of(ctx.run_dir)
+    if fable_format is not None:
+        return "short" if fable_format == "short" else "long"
+    return "short" if _short(ctx) else "long"
 
 
 def stage_of(ctx: Context, gate: Gate) -> str | None:
@@ -291,7 +304,7 @@ def rework_gate(note: str) -> str | None:
 
 
 RULE_OUTPUTS = {"deck": ("deck.json",), "thumbnail_spec": ("titles.json", "thumbnail.json", "thumbnail_variants.json"),
-               "skit_script": ("script.json",)}
+               "skit_script": ("script.json",), "fable_script": ("fable.json",)}
 
 
 def channel_rule_violations(ctx: Context, step_name: str) -> list[str]:
@@ -316,6 +329,15 @@ def channel_rule_violations(ctx: Context, step_name: str) -> list[str]:
             return skit_problems(json.loads((ctx.run_dir / "script.json").read_text(encoding="utf-8")))
         except json.JSONDecodeError as exc:
             return [f"script.json 不是合法 JSON：{exc}"]
+    if step_name == "fable_script" and (ctx.run_dir / "fable.json").is_file():
+        from pydantic import ValidationError
+
+        from content_farm.production.fable import check, model
+
+        try:
+            return check.fable_problems(model.load(ctx.run_dir))
+        except ValidationError as exc:
+            return [f"fable.json 不符格式：{str(exc)[:300]}"]
     if step_name == "thumbnail_spec":
         from content_farm.production.thumbnail import OUT_FILE, thumbnail_findings
 

@@ -132,8 +132,8 @@ def _internal(ctx: Context, step: Step) -> tuple[bool, str]:
         if publish_at is None:   # suggested slot from channels/<code>.yaml publish: (kept if someone set one)
             from content_farm.production.publish_slot import ensure_schedule
 
-            kind = "short" if panel_flow._short(ctx) else "long"  # noqa: SLF001
-            publish_at = ensure_schedule(run_dir, channel.code, kind, now=datetime.now().astimezone())
+            publish_at = ensure_schedule(run_dir, channel.code, panel_flow.publish_kind(ctx),
+                                         now=datetime.now().astimezone())
         meta = publish.build_meta(channel, run_dir, publish_at=publish_at)
         path = publish.write_meta(run_dir, meta)
         return True, f"{path.relative_to(run_dir)} (publish_at={meta['publish_at']})"
