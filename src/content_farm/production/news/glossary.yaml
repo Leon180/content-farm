@@ -60,3 +60,10 @@ terms:
     say: H B M
     analogy: 把記憶體疊成高樓直接蓋在晶片旁邊，搬資料不用跑遠路。
     definition: High Bandwidth Memory，垂直堆疊的 DRAM，透過中介層與處理器高頻寬連接，AI 加速器的關鍵元件。
+  形式化驗證:
+    analogy: 像數學證明題：不是多考幾次試，而是寫出一份推導，證明任何輸入都不會答錯。
+    definition: formal verification，把程式與規則寫成數學模型，再用證明檢查器確認程式在指定條件下一定符合規則；結論只在模型假設成立時有效。
+  DNS:
+    say: D N S
+    analogy: 像網路世界的電話簿：你只記得店名，它幫你查出真正要撥的號碼。
+    definition: Domain Name System，把網域名稱（如 example.com）解析成 IP 位址的分散式查詢系統；DNS 解析器負責代使用者查詢。
