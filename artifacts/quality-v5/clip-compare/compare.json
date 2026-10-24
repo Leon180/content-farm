@@ -1,0 +1,110 @@
+[
+ {
+  "slide_id": "s06",
+  "narration": "第三個是深度。想像爬一座不矮的山，只是方向倒過來，往海裡走，而且越走越暗。論文記載，相機系統放在 900 公尺深。",
+  "query": "psychedelic medusa jellyfish",
+  "keywords": [
+   "medusa"
+  ],
+  "keyword_pick": {
+   "provider": "wikimedia",
+   "provider_id": "112718548",
+   "title": "Okeanos Explorer PR and USVI Dive 8- Psychedelic Medusa-NOAA-1280x720",
+   "page": "https://commons.wikimedia.org/wiki/File:Okeanos_Explorer_PR_and_USVI_Dive_8-_Psychedelic_Medusa-NOAA-1280x720.webm",
+   "licence": "Public domain",
+   "cut_start": 6.5,
+   "file": "s06-keyword-pick.mp4"
+  },
+  "clip_pick": null
+ },
+ {
+  "slide_id": "s11",
+  "narration": "第二棒是誘餌與相機。據 Scientific American，他們放了 23 次掛著烏賊與蝦的餌線，加上數位相機、定時器、頻閃燈與深度感測器。也就是說，相機像是守在餐桌旁的自動快門：牠來不來，由牠決定。",
+  "query": "deep sea fish rattail",
+  "keywords": [
+   "fish"
+  ],
+  "keyword_pick": {
+   "provider": "wikimedia",
+   "provider_id": "36598989",
+   "title": "Ex1402-dive11 fish",
+   "page": "https://commons.wikimedia.org/wiki/File:Ex1402-dive11_fish.webm",
+   "licence": "CC0",
+   "cut_start": 0.5,
+   "file": "s11-keyword-pick.mp4"
+  },
+  "clip_pick": null
+ },
+ {
+  "slide_id": "s13",
+  "narration": "結果呢？約 4 小時內，相機每 30 秒自動拍一張，拍下了 550 張以上的連拍照片。這一回，不是人追著牠跑，是牠被餌引來的。",
+  "query": "giant isopod bait",
+  "keywords": [
+   "bathynomus"
+  ],
+  "keyword_pick": {
+   "provider": "wikimedia",
+   "provider_id": "147546915",
+   "title": "Bathynomus giganteus as seen by remotely operated vehicle (ROV) Deep Discoverer at a depth of 816 meters at South Reed, Gulf of Mexico, 2017-11-30",
+   "page": "https://commons.wikimedia.org/wiki/File:Bathynomus_giganteus_as_seen_by_remotely_operated_vehicle_(ROV)_Deep_Discoverer_at_a_depth_of_816_meters_at_South_Reed,_Gulf_of_Mexico,_2017-11-30.webm",
+   "licence": "Public domain",
+   "cut_start": 6.0,
+   "file": "s13-keyword-pick.mp4"
+  },
+  "clip_pick": null
+ },
+ {
+  "slide_id": "s16",
+  "narration": "長手的用途揭曉了。論文因此改寫了形象：作者的結論是，大王烏賊比原先想的更活躍，會用觸腕打擊並纏住獵物。Scientific American 的報導指出，這和「牠遲鈍、用觸腕當釣線守株待兔」的理論相反。傳說中的怪物不是被動的，是獵人。",
+  "query": "swimming sea cucumber",
+  "keywords": [
+   "animal"
+  ],
+  "keyword_pick": {
+   "provider": "wikimedia",
+   "provider_id": "36598992",
+   "title": "Ex1402-dive06 red animal",
+   "page": "https://commons.wikimedia.org/wiki/File:Ex1402-dive06_red_animal.webm",
+   "licence": "CC0",
+   "cut_start": 1.0,
+   "file": "s16-keyword-pick.mp4"
+  },
+  "clip_pick": null
+ },
+ {
+  "slide_id": "s21",
+  "narration": "為什麼偏偏是這片海？論文給的答案很直接：抹香鯨每年 9 月到 12 月聚集在小笠原外海。據 AFP 稿，久保寺說 2006 年與 2012 年的目擊，也在同一片海域，約在東京南方 1000 公里。看起來，這個地點不是運氣，而是一次又一次回到有鯨魚的地方。想找鯨魚的食物，先去鯨魚的社區。",
+  "query": "hydrothermal vents",
+  "keywords": [
+   "hydrothermal"
+  ],
+  "keyword_pick": {
+   "provider": "wikimedia",
+   "provider_id": "134533086",
+   "title": "0501-hydrothermal-vents-640x360",
+   "page": "https://commons.wikimedia.org/wiki/File:0501-hydrothermal-vents-640x360.webm",
+   "licence": "Public domain",
+   "cut_start": 5.0,
+   "file": "s21-keyword-pick.mp4"
+  },
+  "clip_pick": null
+ },
+ {
+  "slide_id": "s25",
+  "narration": "潛航員的筆記。回到開頭的問題：是牠太會躲嗎？我們的判斷是，答案是我們找錯方法，不是牠太會躲，而是人類一直用追的。論文指出，大王烏賊比原先以為的更積極，是主動獵食者；維德則說，過去的做法嚇跑了動物。我們看起來，真正的突破不是潛得更深，而是把「追著牠跑」換成「跟著抹香鯨、放下誘餌，等牠自己來」。",
+  "query": "ctenophore Duobrachium",
+  "keywords": [
+   "duobrachium"
+  ],
+  "keyword_pick": {
+   "provider": "wikimedia",
+   "provider_id": "163323614",
+   "title": "First footage of Duobrachium Sparksae",
+   "page": "https://commons.wikimedia.org/wiki/File:First_footage_of_Duobrachium_Sparksae.webm",
+   "licence": "Public domain",
+   "cut_start": 8.5,
+   "file": "s25-keyword-pick.mp4"
+  },
+  "clip_pick": null
+ }
+]

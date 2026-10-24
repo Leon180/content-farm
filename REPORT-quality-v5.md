@@ -23,6 +23,11 @@
 | 8 | 現況（不改）：`audio_mix/mix.py` 已是兩段式 loudnorm（pass 1 量測、pass 2 `linear=true` 套用，TP −1.5）；程式預設 `master_lufs=-14`（YouTube 目標），但 cel／deepsea／technews／yokai 設成 −23.4 以保留人聲（沿用九尾狐決策）。實測兩支離線成片 integrated = −23.4 LUFS、true peak −5.2／−8.8 dBFS。要不要改成 −14 是 Leon 的決策，我沒動。 | — | mix |
 | 9 | 全套 pytest 見上；離線驗證見下。 | `scripts/quality_v5_offline.py`、`artifacts/quality-v5/offline.json` | — |
 
+## 追加（orch-personal 2026-10-24：模型比較要同 prompt 給 Leon 看，不直接投入）
+- **CLIP 排序現在預設關閉**：`channels/<code>.yaml` 的 `quality.clip_rank` 預設 `false`，`scripts/media_to_visual.py` 要加 `--clip-rank` 且設 `CF_CLIP_MODEL_DIR` 才會用。
+- **`artifacts/quality-v5/clip-compare/`**：深海 6 個 stock 段（s06、s11、s13、s16、s21、s25）的「關鍵字挑」前 1 名各剪 5 秒（`sNN-keyword-pick.mp4`，640 寬）＋旁白句＋出處授權，在 `compare.json`。**「CLIP 挑」那一半沒做出來**：本機沒有權重，我想用 pip 把 sentence-transformers 裝到暫存目錄，被 auto mode 擋下，我沒有繞過。`compare.json` 的 `clip_pick` 全是 null。權重與套件到位後跑 `scripts/clip_compare.py --cache <worktree>/.cache/footage --dir artifacts/quality-v5/clip-compare` 就會補上 `sNN-clip-pick.mp4`（腳本已寫、只做語法檢查，**未實跑**）。
+- **前後對照**：鏡頭語言／風格檔改變的是 prompt，要看圖得跑本機 mflux（`CF_MFLUX_*` 未設、也不該在這個任務跑模型），所以沒有圖；改附 `artifacts/quality-v5/style-before-after.md`（deepsea s01、s02 同一份 deck 的前後 prompt 全文）。既有 deck 沒指定 `shot_size`，所以鏡頭語言層對舊 deck 沒有改變畫面；風格檔只改了 prefix 的詞序與構圖句。兩者預設開，可關：`quality.shot_language: false`、`quality.style_file: false`（`shot_language` 開關目前只標示、lint 規則仍會跑；要完全關掉 lint 需另改，未做）。
+
 ## 授權處理
 - **OpenMontage（AGPL）、InkOS（AGPL）**：只讀概念（知識庫筆記與研究摘要），所有程式、欄位名稱、權重與規則自行重寫，沒有貼任何原碼。
 - **lemo-opuscar（MIT）、ffmpeg-skill（MIT）**：只改寫概念與節奏清單的意思；DIRECTOR.md 是用 WebFetch 讀了公開檔案，沒有複製段落，沒有引用程式片段，所以沒有需要保留的版權聲明；若日後直接引用要附 MIT 聲明。

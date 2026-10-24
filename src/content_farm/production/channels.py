@@ -270,7 +270,7 @@ class QualityPolicy(_Strict):
     static_scan: bool = True       # qc: classify shots of the final cut, flag static runs > 10 s
     shot_language: bool = True     # deck lint + illustrate: shot size / camera / light layers, no equal neighbours
     style_file: bool = True        # illustrate: read channels/styles/<code>.md
-    clip_rank: bool = True         # stock_video: rank candidates against the narration with local CLIP
+    clip_rank: bool = False        # stock_video: rank candidates against the narration with local CLIP (off until Leon approves)
     hooks_ledger: bool = True      # article / script: hooks_ledger.json, must-keep / must-avoid, coherence check
 
 
