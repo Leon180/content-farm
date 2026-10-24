@@ -1,3 +1,6 @@
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-deepsea-wan/REPORT-deepsea-mega.md","min_bytes":2000,"why":"派工宣告的預期產物"}
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-deepsea-wan/src/content_farm/explainer/wan_chain.py","min_bytes":2000,"why":"接長工具"}
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-deepsea-wan/artifacts/deepsea-mega/sample/s01-wan-1080p.mp4","min_bytes":1000000,"why":"s01 樣片（未 commit）"}
+{"kind": "file_exists", "path": "/Users/lileon/project/content-farm/.claude/worktrees/cf-deepsea-wan/artifacts/deepsea-mega/deepsea-mega-part1.mp4", "min_bytes": 100000, "why": "成片 540p／對照圖（未 commit）"}
+{"kind": "file_exists", "path": "/Users/lileon/project/content-farm/.claude/worktrees/cf-deepsea-wan/artifacts/deepsea-mega/deepsea-mega-part2.mp4", "min_bytes": 100000, "why": "成片 540p／對照圖（未 commit）"}
+{"kind": "file_exists", "path": "/Users/lileon/project/content-farm/.claude/worktrees/cf-deepsea-wan/artifacts/deepsea-mega/compare-8frames.png", "min_bytes": 100000, "why": "成片 540p／對照圖（未 commit）"}
