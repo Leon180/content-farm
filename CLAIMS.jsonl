@@ -1,9 +1,6 @@
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-fable/REPORT-fable.md","min_bytes":2000,"why":"派工時宣告的預期產物"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-fable/artifacts/fable/fable-asymmetry-short.mp4","min_bytes":5000000,"why":"Short 1 成片"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-fable/artifacts/fable/fable-gradient-short.mp4","min_bytes":5000000,"why":"Short 2 成片"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-fable/artifacts/fable/fable-confirmation-short.mp4","min_bytes":5000000,"why":"Short 3 成片"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-fable/artifacts/fable/fable-ess-mid-part1.mp4","min_bytes":3000000,"why":"中片 540p 第 1 段"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-fable/artifacts/fable/fable-ess-mid-part2.mp4","min_bytes":3000000,"why":"中片 540p 第 2 段"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-fable/channels/fable.yaml","min_bytes":1500,"why":"頻道設定"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-fable/channels/fable.yaml","pattern":"CF_YT_FABLE_REFRESH_TOKEN=","why":"頻道設定只放環境變數名、不放值"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-fable/src","pattern":"TODO-fable","why":"沒留暫時碼"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-brand-kit/REPORT-brand-kit.md","min_bytes":2000,"why":"派工宣告的預期產物"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-brand-kit/artifacts/brand-kit/index.md","min_bytes":500,"why":"並排頁入口"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-brand-kit/artifacts/brand-kit/chipcat-sheet.png","min_bytes":50000,"why":"拼版圖（其餘 4 張同產生）"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-brand-kit/artifacts/brand-kit/fable-banner-2-safe.png","min_bytes":50000,"why":"安全區預覽版橫幅"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-brand-kit/artifacts/brand-kit/name_check.json","pattern":"refresh_token|client_secret|access_token","why":"查重結果不含密鑰"}
+{"kind":"clean_worktree","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-brand-kit"}
