@@ -190,6 +190,9 @@ def _form(slide) -> str:
     return slide.media_kind.value
 
 
+form_of = _form    # public name for other explainer modules (slideshow_risk)
+
+
 def _check_visuals_v4(deck: Deck) -> list[LintIssue]:
     """Every section has an AI picture; text-only pages are at most 30 %; no two consecutive slides share a form;
     a long deck has 2-3 Wan key shots."""

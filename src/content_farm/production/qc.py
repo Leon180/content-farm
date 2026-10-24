@@ -80,6 +80,20 @@ def deck_findings(channel: Channel, deck: Deck) -> list[Finding]:
     return policy_findings(channel, deck) + deck_rule_findings(channel, deck, other_identities(channel))
 
 
+def slideshow_findings(channel: Channel, deck: Deck, durations: dict[str, float] | None = None) -> list[Finding]:
+    """Warn-only: pages that read like a slide show (``explainer.slideshow_risk``), measured seconds when known."""
+    if not channel.quality.slideshow_risk:
+        return []
+    from content_farm.explainer.slideshow_risk import score_deck
+
+    risk = score_deck(deck, durations)
+    detail = ", ".join(f"{r.slide_id}={r.score}" for r in risk.risky[:8])
+    level = "warn" if risk.over_limit else "ok"
+    return [Finding("slideshow_risk", level,
+                    f"mean {risk.mean_score:.0f}/100, {len(risk.risky)}/{len(risk.slides)} pages at or above the threshold"
+                    + (f" ({detail})" if detail else ""))]
+
+
 def credits_findings(channel: Channel, credits: dict | None, run_dir: Path | None = None) -> list[Finding]:
     if credits is None:
         return [Finding("credits", "error", "credits.json missing (run media first)")]
@@ -420,6 +434,7 @@ def run_qc(run_dir: Path, channel: Channel, deck: Deck | None) -> dict:
     findings: list[Finding] = []
     if deck is not None:
         findings += deck_findings(channel, deck)
+        findings += slideshow_findings(channel, deck)
     credits_path = run_dir / "credits.json"
     credits = json.loads(credits_path.read_text(encoding="utf-8")) if credits_path.is_file() else None
     if channel.media.stock or channel.media.stock_video or channel.media.ai_image or channel.media.artwork:

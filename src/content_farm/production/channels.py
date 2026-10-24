@@ -264,6 +264,16 @@ class WanPolicy(_Strict):
     motion_only: bool = False   # prompt = the slide's motion_prompt only (environment + camera), not the still's prompt
 
 
+class QualityPolicy(_Strict):
+    """Switches for the picture / script quality checks added in quality v5 (all on by default; a channel turns one off here)."""
+    slideshow_risk: bool = True    # deck: score pages that read like a slide show, ask the producer for one fix
+    static_scan: bool = True       # qc: classify shots of the final cut, flag static runs > 10 s
+    shot_language: bool = True     # deck lint + illustrate: shot size / camera / light layers, no equal neighbours
+    style_file: bool = True        # illustrate: read channels/styles/<code>.md
+    clip_rank: bool = True         # stock_video: rank candidates against the narration with local CLIP
+    hooks_ledger: bool = True      # article / script: hooks_ledger.json, must-keep / must-avoid, coherence check
+
+
 class Channel(_Strict):
     code: str = Field(pattern="^[a-z][a-z0-9_]{1,31}$")
     # False = retired (Leon 2026-10-23: offwork). The yaml, assets and code stay; load_all() skips it,
@@ -287,6 +297,7 @@ class Channel(_Strict):
     identity: Identity | None = None   # opening / sign-off / description per channel
     audio: AudioMix = AudioMix()       # BGM / SFX / mastering (long videos)
     wan: WanPolicy = WanPolicy()       # Wan shot prompt rules
+    quality: QualityPolicy = QualityPolicy()   # quality v5 switches
     publish: dict = {}                 # release windows; validated by production.publish_slot.PublishPlan
     notes: tuple[str, ...] = ()
     # Recurring series run by their own modules (e.g. ``hn`` → production/news), validated there.
