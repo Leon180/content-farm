@@ -59,6 +59,11 @@ def cmd_images(args: argparse.Namespace) -> int:
         return 2
     channel = load_channel(read_channel_code(args.run_dir))
     manifest, drawn = images.build(args.run_dir, fable, channel, env_file=args.env_file)
+    if fable.thumb:
+        from content_farm.production.fable import thumb
+
+        drawn_thumbs = thumb.draw_thumb_images(args.run_dir, fable, channel, env_file=args.env_file)
+        print(f"thumbnail pictures: {len(fable.thumb)} options ({drawn_thumbs} drawn now)")
     print(f"{manifest}: {len(images.drawn_shots(fable))} pictures ({drawn} drawn now), each with a parallax clip")
     return 0
 
