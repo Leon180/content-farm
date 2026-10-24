@@ -242,9 +242,9 @@ SPECS = {
                     taglines=["一次下潛，帶回一個深海冷知識", "越往下越安靜，也越奇怪"],
                     note="符號型（無角色）；名稱候選：深潛日誌（查重無同名）／深海打卡／潛入深藍。",
                     mark=lambda o: avatar_generated("deepsea", 1, "深", "#36e0c4", "#04101c")),
-    "fable": dict(name="寓言學堂", panel="#2b1d12", panel_alpha=205, ink="#efe4cb", soft="#e8b27d",
-                  taglines=["先聽故事，最後才告訴你它在講什麼", "一則小故事，一個大道理"],
-                  note="符號型（無人物）；名稱候選：寓言學堂／先聽個故事（「原來如此」已有同名頻道，不建議）。",
+    "fable": dict(name="不奇而寓", panel="#2b1d12", panel_alpha=205, ink="#efe4cb", soft="#e8b27d",
+                  taglines=["先聽一個故事，再告訴你它在講什麼", "一則小故事，一個大道理"],
+                  note="符號型（無人物）；頻道名定為「不奇而寓」（Leon 2026-10-24）；頭像 C 的「寓」字章取自名稱末字。",
                   mark=lambda o: avatar_generated("fable", 1, "寓", "#e08a52", "#2b1d12")),
 }
 

@@ -16,7 +16,7 @@ NAMES = {
     "yokai": ["妖怪溯源所"],
     "chipcat-news": ["晶片貓快報"],
     "deepsea": ["深潛日誌", "深海打卡", "潛入深藍"],
-    "fable": ["原來如此", "寓言學堂", "先聽個故事"],
+    "fable": ["原來如此", "寓言學堂", "先聽個故事", "不奇而寓"],
 }
 
 
@@ -27,6 +27,10 @@ def call(url: str, data: dict | None = None) -> dict:
 
 
 def main() -> int:
+    only = sys.argv[1:]
+    if only:
+        global OUT
+        OUT = Path("artifacts/brand-kit/name_check_extra.json")
     env = {**env_file_defaults(ENV), **os.environ}
     token = call("https://oauth2.googleapis.com/token", {
         "client_id": env["CF_YOUTUBE_CLIENT_ID"], "client_secret": env["CF_YOUTUBE_CLIENT_SECRET"],
@@ -44,6 +48,8 @@ def main() -> int:
     result = {}
     for channel, names in NAMES.items():
         for name in names:
+            if only and name not in only:
+                continue
             search = get("search", part="snippet", type="channel", q=name, maxResults=5, regionCode="TW", relevanceLanguage="zh-Hant")
             if "error" in search:
                 result[name] = search

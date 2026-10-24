@@ -1,0 +1,49 @@
+{
+ "channel_of": {
+  "晶片貓": "chipcat",
+  "賽璐璐研究室": "cel",
+  "妖怪溯源所": "yokai",
+  "晶片貓快報": "chipcat-news",
+  "深潛日誌": "deepsea",
+  "深海打卡": "deepsea",
+  "潛入深藍": "deepsea",
+  "原來如此": "fable",
+  "寓言學堂": "fable",
+  "先聽個故事": "fable",
+  "不奇而寓": "fable"
+ },
+ "results": {
+  "不奇而寓": [
+   {
+    "title": "心寓租售管理",
+    "channelId": "UCuJaHdfsgpi1ueWYbvqK4fQ",
+    "subscribers": "131",
+    "url": "https://www.youtube.com/channel/UCuJaHdfsgpi1ueWYbvqK4fQ"
+   },
+   {
+    "title": "鑲寓空間設計",
+    "channelId": "UCOM_AUXZCeAwJoAFc60wr9w",
+    "subscribers": "2",
+    "url": "https://www.youtube.com/channel/UCOM_AUXZCeAwJoAFc60wr9w"
+   },
+   {
+    "title": "MIHK.tv_Youtube第一台",
+    "channelId": "UC_N3AFeTwmJPaXzx1yebDGw",
+    "subscribers": "347000",
+    "url": "https://www.youtube.com/channel/UC_N3AFeTwmJPaXzx1yebDGw"
+   },
+   {
+    "title": "碰碰狐 鯊魚寶寶 (兒童兒歌・故事)",
+    "channelId": "UCrLO-yoAu4ZTzRSdmWqS53A",
+    "subscribers": "3720000",
+    "url": "https://www.youtube.com/channel/UCrLO-yoAu4ZTzRSdmWqS53A"
+   },
+   {
+    "title": "Mia C'bon Market",
+    "channelId": "UCZZtijH-bK8GRN10dHSFWSA",
+    "subscribers": "172",
+    "url": "https://www.youtube.com/channel/UCZZtijH-bK8GRN10dHSFWSA"
+   }
+  ]
+ }
+}
