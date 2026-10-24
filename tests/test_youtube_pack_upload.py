@@ -386,3 +386,41 @@ def test_failed_insert_books_one_unit_only(pack: Path, tmp_path: Path) -> None:
     used = sum(QuotaLedger.load(qfile).days.values())
     assert used == 2  # channels.list (1) + failed call (1), not 1601
     assert not (pack / "tech-1" / RESULT_FILENAME).exists()
+
+
+# ---------- read-back check ----------
+
+
+def _video(item, **status_over):
+    status = {"privacyStatus": "private", "madeForKids": False,
+              "selfDeclaredMadeForKids": False, "containsSyntheticMedia": False, **status_over}
+    return {"snippet": {"title": item.title, "description": item.description,
+                        "tags": list(item.tags), "categoryId": item.category_id,
+                        "defaultLanguage": "zh-TW"}, "status": status}
+
+
+def test_compare_video_flags_differences(pack: Path) -> None:
+    from content_farm.youtube.verify import compare_video
+
+    item = load_pack(pack, only="deep-1")[0]  # synthetic = True
+    checks = {c.field: c for c in compare_video(item, _video(item))}
+    assert not checks["containsSyntheticMedia"].ok
+    assert all(c.ok for f, c in checks.items() if f != "containsSyntheticMedia")
+
+
+def test_check_uploaded_script_reads_back(pack: Path, tmp_path: Path, monkeypatch, capsys) -> None:
+    spec = importlib.util.spec_from_file_location(
+        "check_uploaded_script", Path(__file__).resolve().parent.parent / "scripts" / "check_uploaded.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    monkeypatch.setenv("CF_YOUTUBE_REFRESH_TOKEN", "shared")
+    item = load_pack(pack, only="cel-1")[0]
+    (pack / "cel-1" / RESULT_FILENAME).write_text('{"videoId": "v1"}', encoding="utf-8")
+    fake = MagicMock()
+    fake.get_videos.return_value = {"v1": _video(item, selfDeclaredMadeForKids=True)}
+    code = module.main(["--pack-dir", str(pack), "--env-file", str(tmp_path / "none.env")],
+                       provider_factory=lambda _t: fake)
+    out = capsys.readouterr().out
+    assert code == 1 and "DIFF selfDeclaredMadeForKids" in out and "1 video(s) checked" in out
+    fake.get_videos.assert_called_once_with(["v1"])

@@ -66,6 +66,14 @@ class GoogleProvider:
             raise RuntimeError("Token is authorized but owns no YouTube channel")
         return {"id": items[0]["id"], "title": items[0]["snippet"]["title"]}
 
+    def get_videos(self, video_ids: list[str]) -> dict[str, dict]:
+        """Read back snippet+status for up to 50 videos (videos.list, 1 quota unit)."""
+        service = self._ensure_service()
+        response = service.videos().list(  # type: ignore[union-attr]
+            part="snippet,status", id=",".join(video_ids), maxResults=50,
+        ).execute()
+        return {item["id"]: item for item in response.get("items", [])}
+
     async def upload_video(
         self,
         *,
@@ -104,7 +112,8 @@ class GoogleProvider:
             "status": {
                 # publishAt requires a private video; it flips to public at that time.
                 "privacyStatus": "private" if settings.publish_at else settings.privacy_status,
-                "madeForKids": settings.made_for_kids,
+                # status.madeForKids is read-only; selfDeclaredMadeForKids is the writable field.
+                "selfDeclaredMadeForKids": settings.made_for_kids,
             },
         }
         if settings.publish_at:
