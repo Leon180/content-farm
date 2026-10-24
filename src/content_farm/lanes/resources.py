@@ -180,8 +180,12 @@ def decide(me: Job, others: list[Job], probe: Probe, config: Config, now: float)
     waiting = [j for j in others if j.state == "waiting"]
     if me.need.local:
         feeds = [j for j in waiting if me.provides and j.needs == me.provides]    # my output unblocks them
+        # A reservation binds only for a starving job that queued before me (a total order by queue time, so
+        # tickets can never reserve for each other in a ring) and only while a local job is running: if none is,
+        # holding back frees nothing and the reserved job's shortfall is outside our control (2026-10-24 deadlock).
         starving = [j for j in waiting if j.need.local and now - j.since >= config.starve_after_s
-                    and (j.priority < me.priority or now - j.since > now - me.since) and j not in feeds]
+                    and j.since < me.since and j not in feeds
+                    and any(r.need.local for r in running)]
         if starving:
             reasons.append(f"reserved for {starving[0].job} (waiting {int(now - starving[0].since)} s, anti-starvation)")
         ahead = [j for j in waiting if j.need.local and j.fits and j.priority < me.priority

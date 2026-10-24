@@ -54,8 +54,9 @@ def test_backfill_small_job_while_big_one_does_not_fit():
 def test_anti_starvation_reserves_for_a_big_job():
     probe = res.Probe(32, 12, 10, 3, 10)
     starving = job("a:mlx_video", VIDEO, fits=False, since=NOW - 1300)
-    reasons = res.decide(job("b:assembly", ASSEMBLY, since=NOW - 5), [starving], probe, CFG, NOW)
-    assert reasons and "anti-starvation" in reasons[0]
+    busy = job("r:render", ASSEMBLY, state="running", since=NOW - 500)        # something running that may free memory
+    reasons = res.decide(job("b:assembly", ASSEMBLY, since=NOW - 5), [starving, busy], probe, CFG, NOW)
+    assert any("anti-starvation" in r for r in reasons)
     assert res.decide(job("c:gate_title", REVIEW), [starving], probe, CFG, NOW) == []        # cloud still moves
 
 
@@ -104,7 +105,8 @@ def test_waiter_does_not_reserve_against_the_job_that_feeds_it():
                      provides="voice-ref:technews")
     assert res.decide(design, [starving], IDLE_MAC, IDLE_CFG, NOW) == []
     stranger = res.Job("s", "yokai:illustrate", VOICE_DESIGN, (2, 0.0, "c"), "waiting", NOW - 5)
-    assert "anti-starvation" in res.decide(stranger, [starving], IDLE_MAC, IDLE_CFG, NOW)[0]
+    busy = res.Job("r", "x:render", ASSEMBLY, (1, 0.0, "r"), "running", NOW - 500, True)
+    assert any("anti-starvation" in r for r in res.decide(stranger, [starving, busy], IDLE_MAC, IDLE_CFG, NOW))
 
 
 def test_fresh_higher_priority_waiter_does_not_go_first_over_its_feeder():
@@ -143,3 +145,16 @@ def test_voice_steps_use_increments_over_idle_and_a_machine_ceiling():
     assert config.margin_idle_gb == 3 and config.margin_gb == 6
     assert res.impossible(res.need_for("voice_design", config), IDLE_MAC, config) == ""
     assert "can never run here" in res.impossible(res.Need(30), IDLE_MAC, config)              # 30+3 > 32
+
+
+def test_reservations_never_form_a_ring_and_need_a_running_job_to_wait_for():
+    a = job("a:slides", ASSEMBLY, since=NOW - 1500, fits=True)
+    b = job("b:slides", ASSEMBLY, since=NOW - 1400, fits=True)
+    c = job("c:voice", VOICE, since=NOW - 2300, fits=False)
+    # the deepsea/chipcat/voice-design ring (2026-10-24): only the oldest ticket is waited for, nobody waits on a younger one
+    assert not any("anti-starvation" in r for r in res.decide(c, [a, b], ROOMY, CFG, NOW))
+    busy = job("r:render", ASSEMBLY, state="running", since=NOW - 500)
+    assert any("anti-starvation" in r for r in res.decide(a, [b, c, busy], ROOMY, CFG, NOW))      # c is older than a
+    assert not any("anti-starvation" in r for r in res.decide(c, [a, b, busy], ROOMY, CFG, NOW))
+    # nothing running: holding back would free nothing, so the oldest waiter's shortfall does not block the others
+    assert not any("anti-starvation" in r for r in res.decide(a, [b, c], ROOMY, CFG, NOW))

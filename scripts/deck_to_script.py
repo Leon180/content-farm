@@ -56,8 +56,9 @@ def main(argv: list[str] | None = None) -> int:
     issues = lint_deck(deck)
     for issue in issues:
         print(f"[lint:{issue.code}] {issue.message}", file=sys.stderr)
-    if issues and args.strict:
-        print(f"{len(issues)} lint issue(s); refusing under --strict", file=sys.stderr)
+    errors = [issue for issue in issues if issue.severity == "error"]
+    if errors and args.strict:
+        print(f"{len(errors)} lint issue(s); refusing under --strict", file=sys.stderr)
         return 2
 
     script = deck_to_script(deck)

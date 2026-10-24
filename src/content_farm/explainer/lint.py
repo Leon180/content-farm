@@ -47,6 +47,7 @@ _DIGIT = re.compile(r"\d")
 class LintIssue:
     code: str
     message: str
+    severity: str = "error"     # "warn" never fails --strict
 
 
 def lint_deck(deck: Deck) -> tuple[LintIssue, ...]:
@@ -213,6 +214,8 @@ def _check_visuals_v4(deck: Deck) -> list[LintIssue]:
     if len(slides) >= WAN_MIN_DECK_SLIDES and not MIN_WAN_SHOTS <= len(wan) <= MAX_WAN_SHOTS:
         issues.append(LintIssue(
             "wan-shots", f"{len(wan)} Wan key shots ({', '.join(wan) or 'none'}); target {MIN_WAN_SHOTS}-{MAX_WAN_SHOTS}",
+            # no Wan at all is fine when no faceless shot exists: avoiding faces comes first (Leon 2026-10-24)
+            severity="warn" if not wan else "error",
         ))
     issues.extend(_check_wan_faces(slides))
     return issues

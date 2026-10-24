@@ -62,6 +62,12 @@ def test_a_long_deck_needs_two_or_three_wan_key_shots():
     assert "wan-shots" not in _codes([{"title": "甲", "slides": slides}])
 
 
+def test_a_deck_with_no_wan_shot_only_warns():
+    slides = [_ai(f"s{i}", "bullets" if i % 2 else "quote", frame="panel_left" if i % 3 else "lower") for i in range(12)]
+    deck = Deck.model_validate(deck_dict(sections=_pad([{"title": "甲", "slides": slides}])))
+    assert [i.severity for i in lint_deck(deck) if i.code == "wan-shots"] == ["warn"]
+
+
 def test_a_wan_shot_must_not_show_a_person_or_face():
     def codes(prompt: str, motion: str = "wan") -> list[str]:
         sections = [{"title": "甲", "slides": [_ai("a1", "quote", prompt=prompt, motion=motion, motion_prompt="mist drifts")]}]
