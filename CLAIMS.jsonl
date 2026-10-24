@@ -1,6 +1,5 @@
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-brand-kit/REPORT-brand-kit.md","min_bytes":2000,"why":"派工宣告的預期產物"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-brand-kit/artifacts/brand-kit/index.md","min_bytes":500,"why":"並排頁入口"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-brand-kit/artifacts/brand-kit/chipcat-sheet.png","min_bytes":50000,"why":"拼版圖（其餘 4 張同產生）"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-brand-kit/artifacts/brand-kit/fable-banner-2-safe.png","min_bytes":50000,"why":"安全區預覽版橫幅"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-brand-kit/artifacts/brand-kit/name_check.json","pattern":"refresh_token|client_secret|access_token","why":"查重結果不含密鑰"}
-{"kind":"clean_worktree","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-brand-kit"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-fable-owl-fix/REPORT-fable-owl-fix.md","min_bytes":2000,"why":"派工宣告的預期產物"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-fable-owl-fix/artifacts/fable-owl-fix/release.mp4","min_bytes":1000000,"why":"貓頭鷹片全解析度新版"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-fable-owl-fix/artifacts/fable-owl-fix/fable-confirmation-short-540w.mp4","min_bytes":1000000,"why":"540 寬預覽"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/output/upload-20261024/fable-confirmation-short/video-v1-hands.mp4","min_bytes":1000000,"why":"舊版保留"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/output/upload-20261024/fable-ess-mid/video-v1-pron.mp4","min_bytes":1000000,"why":"中片舊版保留"}
