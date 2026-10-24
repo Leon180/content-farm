@@ -56,7 +56,8 @@ def _status(shots: list[WanShot]) -> int:
     for shot in shots:
         state = "no still yet" if shot.request is None else ("cached" if shot.cached else "to bake")
         print(f"{shot.run_dir.name}/{shot.slide_id}: {state}")
-    print(f"{len(todo)} clip(s) to bake ≈ {len(todo) * wan.ESTIMATED_MINUTES_PER_CLIP} min "
+    minutes = sum(s.request.segments for s in todo) * wan.ESTIMATED_MINUTES_PER_CLIP
+    print(f"{len(todo)} clip(s) to bake ≈ {minutes} min "
           f"(one at a time, ~26 GB peak each)")
     return 0
 
