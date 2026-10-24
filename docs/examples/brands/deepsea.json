@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "category": "knowledge",
+  "title": "深潛日誌｜品牌示範",
+  "description": "【品牌示範 deck，非正式內容】深潛日誌頻道品牌系統的示範投影片。",
+  "as_of": "2026-10",
+  "sources": [
+    {"id": "demo", "title": "示範用來源（待查證）"}
+  ],
+  "sections": [
+    {"title": "開場", "slides": [
+      {"id": "s01", "layout": "title", "heading": "往下一千公尺，為什麼有光？",
+       "body": {"subtitle": "一個沒有太陽的世界"},
+       "narration": "往下一千公尺，陽光已經完全消失。可是，在這片黑暗裡，卻有一點一點的光在閃。這一集，我們來看牠們為什麼要發光。"}
+    ]},
+    {"title": "深度", "slides": [
+      {"id": "s02", "layout": "big_number", "heading": "陽光到不了的深度",
+       "body": {"value": "1000", "unit": "公尺", "caption": "示範數字，正式版附出處"},
+       "narration": "你可以把海想成一棟很深的大樓，越往下越暗。大約到了一千公尺，頂樓的陽光就再也照不下來了。", "source_ids": ["demo"]}
+    ]},
+    {"title": "比較", "slides": [
+      {"id": "s03", "layout": "compare", "heading": "淺海 vs 深海",
+       "body": {
+         "left": {"label": "淺海", "items": ["有陽光", "靠眼睛看", "顏色鮮豔"]},
+         "right": {"label": "深海", "items": ["一片漆黑", "靠自己發光", "多半是黑與紅"]}
+       },
+       "narration": "左邊是有陽光的淺海，動物靠眼睛和顏色互相溝通；右邊是深海，沒有光，所以有些動物乾脆自己帶燈。", "source_ids": ["demo"]}
+    ]}
+  ]
+}

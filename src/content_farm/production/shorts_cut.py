@@ -283,9 +283,22 @@ def short_spec_from_long(long_run_dir: Path, long_channel: Channel, options: Map
     )
 
 
+def _audio_seconds(path: Path) -> float:
+    import subprocess
+
+    out = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(path)],
+                         capture_output=True, text=True, check=True, timeout=30)
+    return float(out.stdout.strip())
+
+
 def scene_durations(long_run_dir: Path) -> list[float]:
-    """Measured per-scene seconds the voice stage wrote back into ``script.json``."""
+    """Per-scene seconds: measured from ``audio/scene_NNN.mp3`` when every scene has one (the long
+    video's timeline is the sum of those files), else the values the voice stage wrote into
+    ``script.json`` — which a local-TTS explainer run can leave at the deck's estimates."""
     script = Script.model_validate_json((long_run_dir / "script.json").read_text(encoding="utf-8"))
+    files = [long_run_dir / "audio" / f"scene_{n:03d}.mp3" for n in range(1, len(script.scenes) + 1)]
+    if files and all(path.is_file() for path in files):
+        return [_audio_seconds(path) for path in files]
     return [scene.duration_seconds for scene in script.scenes]
 
 

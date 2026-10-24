@@ -40,6 +40,8 @@ from content_farm.explainer.pages import build_pages
 from content_farm.explainer.render import _label_font
 from content_farm.explainer.scene_cache import SceneCache
 from content_farm.explainer.stage_cues import plan as stage_plan
+from content_farm.explainer.footage.client import FootageClient
+from content_farm.explainer.footage.credits import footage_credits_text, reference_links_text
 from content_farm.explainer.stock import StockClient
 from content_farm.explainer.timeline import SlideClip, place_files
 
@@ -113,7 +115,7 @@ def narration_by_slide(run_dir: Path) -> dict[str, list[tuple[float, str]]] | No
 
 def media_to_visual(
     deck: Deck, run_dir: Path, clips: Sequence[SlideClip], *,
-    stock: StockClient | None, options: MediaOptions = MediaOptions(),
+    stock: StockClient | None, options: MediaOptions = MediaOptions(), footage: FootageClient | None = None,
 ) -> MediaRun:
     work_dir = run_dir / "media"
     write_prompt_files(deck, run_dir)
@@ -130,7 +132,7 @@ def media_to_visual(
     with PageCapturer() as capturer:
         ctx = MediaContext(deck=deck, run_dir=run_dir, work_dir=work_dir, capturer=capturer,
                            stock=stock, static_png_ok=static_png_ok,
-                           brand=options.brand, motion_paths=options.motion_paths)
+                           brand=options.brand, motion_paths=options.motion_paths, footage=footage)
         results = []
         for job, key in zip(jobs, keys):
             result, hit = cached_build(ctx, job, cache, key) if options.cache else (build_clip(ctx, job), False)
@@ -215,24 +217,25 @@ def news_credits_text(entries: Sequence[dict]) -> str:
     return "\n".join(lines)
 
 
-def credits_text(entries: Sequence[dict]) -> str:
-    """Ready-to-paste block for the YouTube description."""
+def credits_text(entries: Sequence[dict], reference_links: Sequence[object] = ()) -> str:
+    """Ready-to-paste block for the YouTube description: credits first, then the reference links (video we may not show)."""
     blocks = [block for block in (artwork_credits_text(entries), news_credits_text(entries),
-                                  ai_credits_text(entries)) if block]
+                                  ai_credits_text(entries), footage_credits_text(entries)) if block]
     artwork = "\n\n".join(blocks)
     stock = [e for e in entries if e.get("kind") == "stock"]
-    if not stock:
-        return artwork
-    lines = [artwork, ""] if artwork else []
-    lines.append("影片素材 / Stock footage:")
-    for e in stock:
-        provider = e["provider"].capitalize()
-        lines.append(f"- {e['author'] or 'Unknown'} on {provider}: {e['source_url']} ({e['license']})")
-    if any(e["provider"] == "pexels" for e in stock):
-        lines.append("Videos provided by Pexels — https://www.pexels.com")
-    if any(e["provider"] == "pixabay" for e in stock):
-        lines.append("Videos from Pixabay — https://pixabay.com")
-    return "\n".join(lines)
+    if stock:
+        lines = [artwork, ""] if artwork else []
+        lines.append("影片素材 / Stock footage:")
+        for e in stock:
+            provider = e["provider"].capitalize()
+            lines.append(f"- {e['author'] or 'Unknown'} on {provider}: {e['source_url']} ({e['license']})")
+        if any(e["provider"] == "pexels" for e in stock):
+            lines.append("Videos provided by Pexels — https://www.pexels.com")
+        if any(e["provider"] == "pixabay" for e in stock):
+            lines.append("Videos from Pixabay — https://pixabay.com")
+        artwork = "\n".join(lines)
+    references = reference_links_text(reference_links)
+    return "\n\n".join(block for block in (artwork, references) if block)
 
 
 def write_credits(deck: Deck, results: Sequence[ClipResult], path: Path) -> Path:
@@ -246,7 +249,7 @@ def write_credits(deck: Deck, results: Sequence[ClipResult], path: Path) -> Path
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "entries": entries,
         "pending": pending,
-        "description_text": credits_text(entries),
+        "description_text": credits_text(entries, deck.reference_links),
     }
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     return path

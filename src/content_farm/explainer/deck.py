@@ -138,6 +138,7 @@ class MediaKind(str, Enum):
     SLIDE = "slide"            # the rendered static slide PNG (v1 behaviour)
     ANIMATED = "animated"      # the same slide with an entrance animation (mp4)
     STOCK = "stock"            # Pexels/Pixabay B-roll + key-text overlay
+    STOCK_VIDEO = "stock_video"  # free / public-domain footage (Commons, NASA, NOAA, Pexels, Pixabay): 3–8 s cuts, source label
     AI_IMAGE = "ai_image"      # generated illustration, moved by ``media.motion`` (default parallax)
     TITLE_CARD = "title_card"  # self-made news headline card (never a screenshot)
     ARTWORK = "artwork"        # public-domain / CC0 museum image (assets/artwork/artwork.json)
@@ -191,6 +192,7 @@ DEFAULT_ANIMATION: dict[Layout, Animation] = {
 _MEDIA_REQUIRED: dict[MediaKind, str] = {
     MediaKind.TITLE_CARD: "source_id",
     MediaKind.STOCK: "query",
+    MediaKind.STOCK_VIDEO: "query",
     MediaKind.AI_IMAGE: "prompt",
     MediaKind.ANIMATED: "animation",
     MediaKind.ARTWORK: "artwork",
@@ -219,6 +221,12 @@ class Media(_Frozen):
     # ai_image: a correction shown beside the 「AI 示意圖」 badge when the picture cannot match the
     # text (e.g. the model draws 6 tails for 「九尾」): say so on screen rather than let it mislead.
     ai_note: str = Field(default="", max_length=24)
+    # stock_video: a pinned clip (Commons file page, images.nasa.gov/details/<id>, noaa.gov page) instead of a search, and
+    # an optional start second inside it. The query is still required (it names what the clip must show).
+    url: str = Field(default="", max_length=500)
+    start: float | None = Field(default=None, ge=0)
+    end: float | None = Field(default=None, gt=0)    # stock_video: stop cutting here (skips an end title card)
+    footage_note: str = Field(default="", max_length=24)  # stock_video: shown after the credit, e.g. 「深海生物示意」
     # diagram: which built-in diagram, and its params ("values"/"labels", | separated; stage times
     # come from the narration — each label is matched to the sentence that says it)
     diagram: str = Field(default="", max_length=32)
@@ -240,8 +248,13 @@ class Media(_Frozen):
             raise ValueError("motion / motion_prompt only apply to media kind 'ai_image'")
         if self.ai_note and self.kind != MediaKind.AI_IMAGE:
             raise ValueError("ai_note only applies to media kind 'ai_image'")
-        if self.frame is not None and self.kind != MediaKind.AI_IMAGE:
-            raise ValueError("frame only applies to media kind 'ai_image'")
+        if self.frame is not None and self.kind not in (MediaKind.AI_IMAGE, MediaKind.STOCK_VIDEO):
+            raise ValueError("frame only applies to media kinds 'ai_image' and 'stock_video'")
+        if (self.url or self.start is not None or self.end is not None or self.footage_note) \
+                and self.kind != MediaKind.STOCK_VIDEO:
+            raise ValueError("url / start / end / footage_note only apply to media kind 'stock_video'")
+        if self.end is not None and self.start is not None and self.end <= self.start:
+            raise ValueError("media.end must be after media.start")
         return self
 
     @property
@@ -263,6 +276,14 @@ class Source(_Frozen):
     # channel's own summary so viewers never mistake our wording for the outlet's).
     headline: str = Field(default="", max_length=200)
     published: str = Field(default="", pattern=r"^$|^\d{4}-\d{2}(-\d{2})?$")  # YYYY-MM[-DD]
+
+
+class ReferenceLink(_Frozen):
+    """A description-box link to a video we may not show (title + URL + one line on why to watch it)."""
+
+    title: str = Field(min_length=1, max_length=120)
+    url: str = Field(pattern=r"^https?://\S+$", max_length=500)
+    note: str = Field(min_length=1, max_length=160)
 
 
 Beat = Literal["gossip", "joke"]
@@ -359,6 +380,8 @@ class Deck(_Frozen):
     # "示意數字・待查證" badge and lint refuses to call the deck publishable.
     draft_data: bool = False
     sources: tuple[Source, ...] = ()
+    # Copyrighted web video (YouTube, MBARI, TV…) never goes on screen; it is linked from the description (after credits).
+    reference_links: tuple[ReferenceLink, ...] = ()
     pronunciation_map: dict[str, str] = {}
     sections: tuple[Section, ...] = Field(min_length=MIN_SECTIONS)
 

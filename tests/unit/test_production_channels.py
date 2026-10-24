@@ -25,7 +25,7 @@ def _write(tmp_path: Path, data: dict) -> Path:
 
 def test_four_channels_each_with_own_brand() -> None:
     channels = {c.code: c for c in load_all(include_disabled=True)}
-    assert set(channels) == {"chipcat", "yokai", "offwork", "cel", "technews", "ent"}
+    assert set(channels) == {"chipcat", "yokai", "offwork", "cel", "technews", "ent", "deepsea"}
     assert {c.brand for c in channels.values()} == set(brand_codes())
     assert all(c.brand == c.code for c in channels.values())
     assert channels["chipcat"].name == "晶片貓"

@@ -60,6 +60,13 @@ personas:
     - {id: parent, who: 46 歲家長, traits: [不想讓孩子看到八卦細節, 對藝人私生活與未成年相關內容很敏感, 喜歡客觀、點到為止的整理]}
     - {id: senior, who: 63 歲退休公務員, traits: [手機看、字幕要大, 不熟網路用語和藝人暱稱, 畫面要清楚不閃]}
     - {id: critic, holdout: true, who: 35 歲影評部落客, traits: [在意是否有出處與論證, 討厭灌水與標題黨, 評論要有自己的觀點而不是複述新聞]}
+  deepsea:       # 深潛日誌：一般觀眾、手機或電視看、沒有角色；留人靠好奇的問題、感官細節、一路往下的結構
+    - {id: curious, who: 29 歲上班族, traits: [睡前用手機看科普, 對海洋有好奇但沒學過生物, 前 15 秒沒被問題抓住就滑走, 討厭一連串學名]}
+    - {id: marine_student, who: 21 歲海洋系大學生, traits: [讀過海洋生物學課本, 講錯物種、深度、年份會留言糾正, 想聽到課本沒寫的研究]}
+    - {id: parent, who: 38 歲家長, traits: [陪小孩在電視上看, 想找能放給孩子看的科普, 不喜歡嚇人的畫面或誇大說法]}
+    - {id: student, who: 16 歲高中生, traits: [喜歡怪生物和極限題材, 名詞沒比喻就跟不上, 喜歡反直覺的事實]}
+    - {id: senior, who: 63 歲退休公務員, traits: [手機看、字幕要大, 不喜歡英文學名一直出現, 畫面太暗或閃太快會看不清]}
+    - {id: teacher, holdout: true, who: 42 歲國中生物老師, traits: [想找能給學生看的課外素材, 在意說法是否正確、有沒有把假說講成定論, 討厭誇張標題]}
   cel:
     - {id: anime_fan, who: 22 歲動漫迷, traits: [每季追番, 想知道製作內幕, 討厭被說教]}
     - {id: industry, who: 33 歲動畫業界從業者, traits: [懂製作委員會與外包, 數字講錯會糾正]}
@@ -131,7 +138,7 @@ review:
   policy: {score_only: true, script_revise_once: true, fact_on_fail: auto_fix_then_pass}
   defaults: {max_parallel: 8, timeout_s: 1200, schema_retries: 1}   # 2026-10-19 4→8；入場檢查仍依可用記憶體往下調
   license_rules:       # 授權程式規則（review/license_rules.py）：素材來源白名單；AI 圖另查標示（AI 示意圖）與 model／prompt／seed
-    allowed_kinds: [ai_image, artwork, stock, wikimedia, news_card, title_card, parallax, wan, article, discussion]
+    allowed_kinds: [ai_image, artwork, stock, stock_video, wikimedia, news_card, title_card, parallax, wan, article, discussion]
   budget: {usd_per_video: 15}                  # 雲端車道（評審＋產出 agent）每支片的名目上限；用完就停下回報，不自動繼續（review/budget.py）
   aggregator: {model: haiku, effort: low}      # 修改清單整理、退回路由、彙整
   roles:
@@ -324,6 +331,11 @@ review:
         script_facts: {waive_on_last_round: false}
         media: {waive_on_last_round: false}
         shorts_script: {rework: news_script}   # 科技新聞 Short：退回給 news_script 步驟（稿是 news_script.json，script.json 由它產生）
+    deepsea:        # 深潛日誌：事實與授權不放行——article／script_facts／media 第 3 輪沒過仍硬停（與 technews 同）
+      stages:
+        article: {waive_on_last_round: false}
+        script_facts: {waive_on_last_round: false}
+        media: {waive_on_last_round: false}
     ent:            # 娛樂快報：同科技新知——事實與授權不放行（policy 為 auto_fix_then_pass 時走自動修一次）；Short 稿退回給 news_script
       stages:
         article: {waive_on_last_round: false}

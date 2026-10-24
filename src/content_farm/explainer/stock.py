@@ -299,6 +299,10 @@ class StockClient:
                 reasons.append(f"{provider}: {type(exc).__name__}: {exc}")
         raise StockUnavailable(f"no on-topic footage for {query!r} ({'; '.join(reasons)})")
 
+    def search(self, provider: str, query: str) -> list[StockCandidate]:
+        """One rate-limited provider search (used by the footage client, which does its own screening)."""
+        return self._search(provider, query)
+
     def _search(self, provider: str, query: str) -> list[StockCandidate]:
         self._limiter.wait(provider)
         if provider == "pexels":
