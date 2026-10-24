@@ -20,12 +20,13 @@ from content_farm.topic_radar.http import RadarHttp, SourceError
 from content_farm.topic_radar.models import Competitor, ViewerQuestion
 
 SEARCH_COST, LIST_COST = 100, 1
-SEARCH_TTL = 24 * 3600
+SEARCH_TTL = 7 * 24 * 3600     # competitor landscapes move slowly; well inside the 30-day storage limit
 LIST_TTL = 12 * 3600
 TOKEN_URL = "https://oauth2.googleapis.com/token"
 API = "https://www.googleapis.com/youtube/v3"
 PROBE_VIDEO = "dQw4w9WgXcQ"
-_QUESTION = re.compile(r"[?？]|為什麼|為何|怎麼|如何|是不是|有沒有|能不能|可不可以|什麼是|是什麼|求|想看|希望")
+# a question mark that ends a sentence, or an explicit ask; a bare "?" inside praise or "希望" alone is not a question
+_QUESTION = re.compile(r"[?？]\s*(?:$|[\s。！!])|為什麼|為何|怎麼會|怎麼做|如何|請問|想知道|想看|能不能|可不可以|求出|求做|可以做|可以講|可以出")
 
 
 class QuotaBudgetExceeded(SourceError):
@@ -103,13 +104,21 @@ def build_auth(http: RadarHttp, *, client_id: str, client_secret: str, refresh_t
     return None, AuthStatus("none", False, "; ".join(notes))
 
 
+_HAN, _KANA = re.compile(r"[\u4e00-\u9fff]"), re.compile(r"[\u3040-\u30ff]")
+
+
+def is_chinese(text: str) -> bool:
+    """The radar serves zh-TW channels: English and Japanese comments are not 'what our viewers ask'."""
+    return len(_HAN.findall(text)) >= 3 and not _KANA.search(text)
+
+
 def extract_questions(comments: list[tuple[str, int]], video_url: str, limit: int = 5) -> list[ViewerQuestion]:
     """Comments that read as a question or a request, most-liked first."""
     seen: set[str] = set()
     found = []
     for text, likes in sorted(comments, key=lambda item: -item[1]):
         clean = " ".join(text.split())
-        if not 6 <= len(clean) <= 140 or clean in seen or not _QUESTION.search(clean):
+        if not 6 <= len(clean) <= 140 or clean in seen or not is_chinese(clean) or not _QUESTION.search(clean):
             continue
         seen.add(clean)
         found.append(ViewerQuestion(text=clean, likes=likes, url=video_url))

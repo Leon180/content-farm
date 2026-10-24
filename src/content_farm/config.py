@@ -113,7 +113,6 @@ class Settings(BaseSettings):
     youtube_client_id: SecretStr = SecretStr("")
     youtube_client_secret: SecretStr = SecretStr("")
     youtube_refresh_token: SecretStr = SecretStr("")
-    youtube_api_key: SecretStr = SecretStr("")  # topic radar read-only fallback when the OAuth token cannot read public data
 
     # --- Telegram ---
     telegram_bot_token: SecretStr = SecretStr("")  # from @BotFather

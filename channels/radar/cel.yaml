@@ -25,7 +25,7 @@ topics:
     wiki: [{lang: zh, title: 新世紀福音戰士}, {lang: ja, title: 新世紀エヴァンゲリオン}]
     youtube_query: 福音戰士 賺了多少錢
   - subject: 串流平台與動畫授權
-    wiki: [{lang: en, title: Anime streaming}, {lang: zh, title: 網飛}]
+    wiki: [{lang: en, title: Anime industry}, {lang: zh, title: 網飛}]
     youtube_query: 動畫 串流 授權 Netflix
 watch:
   hackernews_queries: [anime industry, animation studio, Crunchyroll]

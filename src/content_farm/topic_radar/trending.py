@@ -34,7 +34,8 @@ def _iso(epoch: float) -> str:
 
 
 def fetch_hackernews(http: RadarHttp, query: str, now: float | None = None) -> list[Signal]:
-    since = int((now or time.time()) - HN_WINDOW_DAYS * 86400)
+    day_start = int((now or time.time()) // 86400 * 86400)     # a stable URL within a day, so the cache can serve re-runs
+    since = day_start - HN_WINDOW_DAYS * 86400
     url = (f"https://hn.algolia.com/api/v1/search?query={quote(query)}&tags=story"
            f"&numericFilters=created_at_i%3E{since},points%3E{HN_MIN_POINTS}&hitsPerPage=8")
     reply = http.get_json(url, ttl=FEED_TTL)

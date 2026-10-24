@@ -144,10 +144,20 @@ def test_keyword_filter_empty_means_everything():
 # ── youtube ─────────────────────────────────────────────────────────────────────
 
 def test_extract_questions_keeps_questions_by_likes_and_dedupes():
-    comments = [("為什麼牠會發光？", 3), ("好看", 99), ("為什麼牠會發光？", 50), ("想看馬里亞納海溝的影片", 7), ("?", 100)]
+    comments = [("為什麼牠會發光？", 3), ("好看", 99), ("為什麼牠會發光？", 50), ("想看馬里亞納海溝的影片", 7), ("?", 100),
+                ("氣質好!講話又親切.面帶笑容有親和力?讚👍👍", 600), ("希望這個頻道越來越好", 400),
+                ("Who is here because of the missing submarine?", 900), ("本当にいたのかな？ 怖いです", 800)]
     got = extract_questions(comments, "https://youtu.be/x")
     assert [q.text for q in got] == ["為什麼牠會發光？", "想看馬里亞納海溝的影片"]
     assert got[0].likes == 50
+
+
+def test_trending_bonus_lifts_news_channel_items():
+    plain = build_channel(small_config(), FakeHttp(full_routes()), None, NOW, Notes())
+    boosted_config = small_config().model_copy(update={"trending_bonus": 15})
+    boosted = build_channel(boosted_config, FakeHttp(full_routes()), None, NOW, Notes())
+    pick = lambda radar: next(c for c in radar.candidates if c.kind == "trending").score
+    assert pick(boosted) == pytest.approx(pick(plain) + 15, abs=0.11)
 
 
 def test_auth_prefers_oauth_when_it_can_read():
@@ -280,6 +290,15 @@ def test_build_channel_ranks_and_attaches_evidence():
     assert empty.warnings and empty.score == 0
 
 
+def test_refusing_source_is_asked_once_per_run():
+    config = RadarConfig.model_validate({"channel": "x", "topics": [], "watch": {
+        "subreddits": [{"name": "a"}, {"name": "b"}, {"name": "c"}]}})
+    http = FakeHttp({"reddit.com": (403, None)})
+    radar = build_channel(config, http, None, NOW, Notes())
+    assert sum("reddit.com" in url for url in http.asked) == 1
+    assert not next(s for s in radar.sources if s.source == "reddit").ok
+
+
 def test_one_dead_source_does_not_blank_the_channel():
     routes = {**full_routes(), "hn.algolia.com": (500, None)}
     http = FakeHttp(routes)
@@ -310,7 +329,7 @@ def test_purge_deletes_youtube_data_after_30_days(tmp_path):
     old, new = cache / "www.googleapis.com" / "old.json", cache / "www.googleapis.com" / "new.json"
     old.write_text("{}")
     new.write_text("{}")
-    removed = store.purge_expired(tmp_path, TODAY, cache, now=old.stat().st_mtime + 2 * 86400)
+    removed = store.purge_expired(tmp_path, TODAY, cache, now=old.stat().st_mtime + 9 * 86400)
     kept = sorted(p.name for p in tmp_path.iterdir() if p.is_dir() and p.name != "cache")
     assert kept == sorted([TODAY.isoformat(), (TODAY - timedelta(days=29)).isoformat(), "notes"])
     assert old in removed and not old.exists()

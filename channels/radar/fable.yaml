@@ -16,7 +16,7 @@ topics:
     wiki: [{lang: zh, title: 莊周夢蝶}]
     youtube_query: 莊周夢蝶 莊子 寓言
   - subject: 守株待兔
-    wiki: [{lang: zh, title: 守株待兔}]
+    wiki: []         # 中英日維基都沒有這個成語的條目（2026-10-24 查過），只用 YouTube 需求
     youtube_query: 守株待兔 成語故事
   - subject: 愚公移山
     wiki: [{lang: zh, title: 愚公移山}]

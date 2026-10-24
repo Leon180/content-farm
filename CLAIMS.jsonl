@@ -1,7 +1,5 @@
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-revisual/REPORT-revisual.md","min_bytes":2000,"why":"派工宣告的預期產物"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-revisual/output/cowos-v4/assembly/release.mp4","min_bytes":50000000,"why":"CoWoS v4 成片"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-revisual/artifacts/cowos-v4/cowos-v4-part2.mp4","min_bytes":5000000,"why":"CoWoS 540p"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-revisual/artifacts/cowos-v4/compare.jpg","min_bytes":50000,"why":"前後對照"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-revisual/artifacts/technews-v4/short-verification-hn-50202217-v4.mp4","min_bytes":2000000,"why":"科技新知 Short 2"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-visual-v4/artifacts/cel-run2-v4/cel-run2-v4-part1.mp4","min_bytes":5000000,"why":"cel v4 540p（重組裝後覆蓋）"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-revisual/src","pattern":"TODO-revisual","why":"沒留暫時碼"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-topic-radar/REPORT-topic-radar.md","min_bytes":2000,"why":"派工時宣告的預期產物"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-topic-radar/output/radar/2026-10-24/SUMMARY.md","min_bytes":2000,"why":"實抓一次後的每頻道前 3 名摘要（output/ 不進 git）"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-topic-radar/output/radar/2026-10-24/fable.json","min_bytes":500,"why":"6 個頻道的雷達 JSON 之一（其餘 chipcat／cel／yokai／technews／deepsea 同目錄）"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-topic-radar/output/radar","pattern":"access_token|refresh_token|client_secret|AIza","why":"輸出檔不含任何金鑰或 token"}
+{"kind":"clean_worktree","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-topic-radar","why":"所有改動都已 commit"}

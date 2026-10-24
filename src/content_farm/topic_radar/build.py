@@ -17,7 +17,7 @@ from content_farm.topic_radar.youtube import YouTubeClient, median_views
 
 logger = logging.getLogger(__name__)
 
-YT_TOPICS_PER_CHANNEL = 5
+YT_TOPICS_PER_CHANNEL = 10      # every seed topic: search results are cached 7 days, so a steady day costs ~1/7 of a first run
 TRENDING_PER_CHANNEL = 4
 YOUTUBE_RETENTION_DAYS = 30
 HOST_SOURCE: dict[str, SourceName] = {
@@ -44,14 +44,9 @@ def _title_for(config: RadarConfig, topic: Topic) -> str:
 
 
 def _wiki_evidence(views: list[wikipedia.WikiViews]) -> list[Evidence]:
-    rows: list[Evidence] = []
-    for item in views:
-        name = LANG_NAME[item.lang]
-        rows.append(Evidence(source="wikipedia", metric=f"{name}「{item.title}」近 30 日瀏覽量", value=item.total_30d,
-                             url=item.url, note=f"近 7 日日均 {item.recent_daily}，前 23 日日均 {item.earlier_daily}"))
-        rows.append(Evidence(source="wikipedia", metric=f"{name}「{item.title}」近 7 日日均 ÷ 前 23 日日均",
-                             value=item.growth, url=item.url, note="1.0 = 持平，大於 1 = 近期升溫"))
-    return rows
+    return [Evidence(source="wikipedia", metric=f"{LANG_NAME[item.lang]}「{item.title}」近 30 日瀏覽量", value=item.total_30d,
+                     url=item.url, note=f"近 7 日日均 {item.recent_daily:g}，前 23 日日均 {item.earlier_daily:g}，升溫 ×{item.growth:g}")
+            for item in views]
 
 
 def _youtube_evidence(query: str, videos: list[Competitor], median: float) -> list[Evidence]:
@@ -150,11 +145,16 @@ def _trending_signals(config: RadarConfig, http: RadarHttp, notes: Notes, now: d
             for query in watch.hackernews_queries]
     jobs += [("reddit", sub.name, lambda s=sub: trending.fetch_reddit(http, s)) for sub in watch.subreddits]
     jobs += [("bilibili", str(rid), lambda r=rid: trending.fetch_bilibili(http, r)) for rid in watch.bilibili_rids]
+    dead: set[str] = set()      # a source that refuses us (403/429/risk control) is not asked again this run
     for source, label, run in jobs:
+        if source in dead:
+            continue
         try:
             found.extend(item for item in run() if trending.matches(item.subject, watch.keywords))
         except SourceError as exc:
             notes.add(source, str(exc))
+            if any(mark in str(exc) for mark in ("http 403", "http 429", "code -352")):
+                dead.add(source)
     unique = {item.url: item for item in found}
     return list(unique.values())
 
@@ -169,7 +169,7 @@ def _trending_candidates(config: RadarConfig, signals: list[Signal], now: dateti
                             url=item.url, note="；".join(f"{k} {v:,.0f}" for k, v in item.metrics.items()))
         draft = item.subject if item.lang.startswith("zh") else f"{item.subject}（原題，待譯）"
         out.append(Candidate(id="", kind="trending", subject=item.subject, title_draft=draft, format=fmt,
-                             format_reason=why, score=round(points, 1), evidence=(evidence,),
+                             format_reason=why, score=round(points + config.trending_bonus, 1), evidence=(evidence,),
                              warnings=() if item.lang.startswith("zh") else ("原題為外文，選題階段需改寫成繁中標題",)))
     return out
 

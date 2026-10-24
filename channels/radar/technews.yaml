@@ -2,6 +2,7 @@
 channel: technews
 title_template: "{subject}：這週為什麼值得關注"
 shorts_supported: true
+trending_bonus: 15       # 新聞頻道：時效題比長青背景題更貴重，排序時加 15 分（透明加權，非門檻）
 topics:
   - subject: 大型語言模型
     wiki: [{lang: zh, title: 大型語言模型}, {lang: en, title: Large language model}]

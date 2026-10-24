@@ -12,7 +12,7 @@ from pathlib import Path
 from content_farm.topic_radar.models import ChannelRadar
 
 RETENTION_DAYS = 30
-YOUTUBE_CACHE_MAX_AGE = 86400          # cached API answers are only useful for a day; keep far below 30 days
+YOUTUBE_CACHE_MAX_AGE = 8 * 86400      # longest cache TTL is 7 days; anything older is useless and far below the 30-day limit
 
 
 def default_root() -> Path:

@@ -7,10 +7,12 @@ cached on disk, YouTube quota is capped by ``--youtube-budget``, and radar days 
 from __future__ import annotations
 
 import argparse
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 
-from content_farm.config import Settings
+from dotenv import dotenv_values
+
 from content_farm.topic_radar import store
 from content_farm.topic_radar.build import Notes, build_channel
 from content_farm.topic_radar.config import CHANNEL_CODES, load_radar_config
@@ -36,14 +38,22 @@ def add_parser(sub: argparse._SubParsersAction) -> None:
     radar.add_argument("--no-cache", action="store_true", help="ignore cached answers")
 
 
-def _youtube(http: RadarHttp, settings: Settings, args: argparse.Namespace) -> tuple[YouTubeClient | None, AuthStatus]:
+YOUTUBE_ENV = ("CF_YOUTUBE_CLIENT_ID", "CF_YOUTUBE_CLIENT_SECRET", "CF_YOUTUBE_REFRESH_TOKEN", "CF_YOUTUBE_API_KEY")
+
+
+def youtube_env(env_file: Path) -> dict[str, str]:
+    """Only the four YouTube names, from the process environment first, then the env file. Nothing else is read
+    (Settings is not used: it rejects the unrelated names in the file, and its error text would echo their values)."""
+    file_values = dotenv_values(env_file) if env_file.is_file() else {}
+    return {name: (os.environ.get(name) or file_values.get(name) or "").strip() for name in YOUTUBE_ENV}
+
+
+def _youtube(http: RadarHttp, env: dict[str, str], args: argparse.Namespace) -> tuple[YouTubeClient | None, AuthStatus]:
     if args.no_youtube:
         return None, AuthStatus("none", False, "skipped (--no-youtube)")
     auth, status = build_auth(
-        http, client_id=settings.youtube_client_id.get_secret_value(),
-        client_secret=settings.youtube_client_secret.get_secret_value(),
-        refresh_token=settings.youtube_refresh_token.get_secret_value(),
-        api_key=settings.youtube_api_key.get_secret_value())
+        http, client_id=env["CF_YOUTUBE_CLIENT_ID"], client_secret=env["CF_YOUTUBE_CLIENT_SECRET"],
+        refresh_token=env["CF_YOUTUBE_REFRESH_TOKEN"], api_key=env["CF_YOUTUBE_API_KEY"])
     return (YouTubeClient(http, auth, budget_units=args.youtube_budget) if auth else None), status
 
 
@@ -53,14 +63,14 @@ def _note(status: AuthStatus) -> str:
 
 def run(args: argparse.Namespace) -> int:
     env_file = args.env_file or REPO / ".env"
-    settings = Settings(_env_file=env_file if env_file.is_file() else None)
+    env = youtube_env(env_file)
     root = args.root or store.default_root()
     now = datetime.now(timezone.utc).astimezone()
     http = RadarHttp(cache_dir=REPO / CACHE_DIR, default_ttl=0 if args.no_cache else 6 * 3600)
     try:
         for path in store.purge_expired(root, now.date(), REPO / CACHE_DIR):
             print(f"[purge] {path}")
-        youtube, status = _youtube(http, settings, args)
+        youtube, status = _youtube(http, env, args)
         print(f"[youtube auth] {_note(status)}")
         codes = list(CHANNEL_CODES) if args.all else [args.channel]
         radars: list[ChannelRadar] = []

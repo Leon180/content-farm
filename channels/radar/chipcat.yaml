@@ -8,10 +8,10 @@ topics:
     wiki: [{lang: zh, title: 台積電}, {lang: en, title: TSMC}]
     youtube_query: 台積電 護國神山
   - subject: CoWoS 先進封裝
-    wiki: [{lang: en, title: Chip on wafer on substrate}, {lang: zh, title: 先進封裝}]
+    wiki: [{lang: zh, title: 先進封裝}]
     youtube_query: CoWoS 先進封裝
   - subject: 極紫外光微影
-    wiki: [{lang: zh, title: 極紫外線光刻}, {lang: en, title: Extreme ultraviolet lithography}]
+    wiki: [{lang: zh, title: 極紫外光微影製程}, {lang: en, title: Extreme ultraviolet lithography}]
     youtube_query: EUV 極紫外光 艾司摩爾
   - subject: 高頻寬記憶體 HBM
     wiki: [{lang: en, title: High Bandwidth Memory}, {lang: zh, title: 高頻寬記憶體}]

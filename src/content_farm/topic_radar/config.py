@@ -51,6 +51,7 @@ class RadarConfig(_Strict):
     channel: str
     title_template: str = "{subject}"
     shorts_supported: bool = True
+    trending_bonus: float = Field(default=0.0, ge=0, le=40, description="added to trending items' score (news channels)")
     topics: tuple[Topic, ...]
     watch: Watch = Watch()
 
