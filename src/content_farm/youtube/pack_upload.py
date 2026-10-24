@@ -49,6 +49,8 @@ def describe_item(item: PackItem, environ: Mapping[str, str]) -> str:
     ]
     if item.pinned_comment_path:
         lines.append(f"  reminder   : 公開後手動貼置頂留言 ← {item.pinned_comment_path.name}")
+    tail = [ln for ln in item.description.splitlines() if ln.strip()][-2:]
+    lines.extend(f"  desc tail  : {ln[:80]}" for ln in tail)
     lines.extend(f"  SANITIZED  : {n}" for n in item.notes)
     lines.extend(f"  PROBLEM    : {p}" for p in item.problems())
     return "\n".join(lines)

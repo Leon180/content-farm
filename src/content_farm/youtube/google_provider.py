@@ -74,6 +74,22 @@ class GoogleProvider:
         ).execute()
         return {item["id"]: item for item in response.get("items", [])}
 
+    def update_snippet(self, video_id: str, changes: dict) -> dict:
+        """videos.update (50 units): overlay ``changes`` on the live snippet, keep all other fields.
+
+        videos.update replaces the whole snippet, so the current one is read first.
+        Returns the snippet that was written.
+        """
+        current = self.get_videos([video_id]).get(video_id)
+        if current is None:
+            raise RuntimeError(f"Video {video_id} not found")
+        merged = {**current["snippet"], **changes}
+        service = self._ensure_service()
+        service.videos().update(  # type: ignore[union-attr]
+            part="snippet", body={"id": video_id, "snippet": merged},
+        ).execute()
+        return merged
+
     async def upload_video(
         self,
         *,

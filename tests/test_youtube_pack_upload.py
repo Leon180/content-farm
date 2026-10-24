@@ -424,3 +424,91 @@ def test_check_uploaded_script_reads_back(pack: Path, tmp_path: Path, monkeypatc
     out = capsys.readouterr().out
     assert code == 1 and "DIFF selfDeclaredMadeForKids" in out and "1 video(s) checked" in out
     fake.get_videos.assert_called_once_with(["v1"])
+
+
+# ---------- description fidelity / update_metadata ----------
+
+REAL_PACK = Path("/Users/lileon/project/content-farm/output/upload-20261024")
+
+
+def _raw_description_block(md: Path) -> str:
+    """Independent, line-based extraction: lines between ```text and the next ``` after 說明欄."""
+    lines = md.read_text(encoding="utf-8").splitlines()
+    start = next(i for i, ln in enumerate(lines) if ln.startswith("## 說明欄"))
+    open_i = next(i for i in range(start, len(lines)) if lines[i].strip() == "```text")
+    close_i = next(i for i in range(open_i + 1, len(lines)) if lines[i].strip() == "```")
+    return "\n".join(lines[open_i + 1:close_i]).strip()
+
+
+def test_description_block_taken_verbatim_with_hash_and_dash_lines(pack: Path) -> None:
+    desc = "第一段\n\n章節：\n0:00 a\n\n— 署名\n\n#Shorts #標籤 #寓言"
+    (pack / "tech-1" / "metadata.md").write_text(
+        _metadata("晶片貓（chipcat）", synthetic="**否**", thumb="x", desc=desc), encoding="utf-8"
+    )
+    assert load_pack(pack, only="tech-1")[0].description == desc
+
+
+@pytest.mark.skipif(not REAL_PACK.is_dir(), reason="real upload pack not on this machine")
+def test_real_pack_descriptions_equal_block_length() -> None:
+    from content_farm.youtube.pack import parse_metadata, sanitize_angle_brackets
+
+    folders = sorted(p for p in REAL_PACK.iterdir() if (p / "metadata.md").is_file())
+    assert len(folders) >= 12
+    for folder in folders:
+        want = sanitize_angle_brackets(_raw_description_block(folder / "metadata.md"))[0]
+        got = parse_metadata(folder, listed_in_index=True).description
+        assert got == want, f"{folder.name}: parsed {len(got)} != block {len(want)}"
+
+
+class MetaProvider:
+    def __init__(self) -> None:
+        self.live = {"snippet": {"title": "舊", "description": "舊說明", "tags": ["x"],
+                                 "categoryId": "22", "defaultLanguage": "zh-TW",
+                                 "channelId": "UC1"}, "status": {}}
+        self.updates: list[dict] = []
+
+    def get_videos(self, ids):
+        return {ids[0]: self.live}
+
+    def update_snippet(self, video_id, changes):
+        self.updates.append({"id": video_id, **changes})
+
+
+def _load_update_script():
+    spec = importlib.util.spec_from_file_location(
+        "update_metadata_script", Path(__file__).resolve().parent.parent / "scripts" / "update_metadata.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_update_metadata_dry_run_then_apply(pack: Path, tmp_path: Path, monkeypatch, capsys) -> None:
+    module = _load_update_script()
+    monkeypatch.setenv("CF_YOUTUBE_REFRESH_TOKEN", "shared")
+    (pack / "cel-1" / RESULT_FILENAME).write_text('{"videoId": "v1"}', encoding="utf-8")
+    provider = MetaProvider()
+    base = ["--pack-dir", str(pack), "--env-file", str(tmp_path / "none.env"), "--only", "cel-1"]
+    assert module.main(base, provider_factory=lambda _t: provider) == 0
+    out = capsys.readouterr().out
+    assert "DRY-RUN" in out and "differs: title, description, tags, categoryId" in out
+    assert "說明" in out and provider.updates == []
+    assert module.main([*base, "--apply"], provider_factory=lambda _t: provider) == 0
+    assert provider.updates and set(provider.updates[0]) == {"id", *module.FIELDS}
+
+
+def test_update_snippet_preserves_other_fields() -> None:
+    from content_farm.youtube.google_provider import GoogleProvider
+
+    provider = GoogleProvider("c", "s", "r")
+    service = MagicMock()
+    service.videos.return_value.list.return_value.execute.return_value = {
+        "items": [{"id": "v1", "snippet": {"title": "t", "defaultLanguage": "zh-TW",
+                                           "defaultAudioLanguage": "zh-TW", "description": "d"}}]
+    }
+    provider._service = service
+    written = provider.update_snippet("v1", {"description": "new"})
+    body = service.videos.return_value.update.call_args.kwargs["body"]
+    assert service.videos.return_value.update.call_args.kwargs["part"] == "snippet"
+    assert body["snippet"] == written
+    assert written["description"] == "new" and written["defaultAudioLanguage"] == "zh-TW"
