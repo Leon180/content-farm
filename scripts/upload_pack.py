@@ -7,6 +7,8 @@ Usage:
     .venv/bin/python scripts/upload_pack.py                           # real upload (videos.insert)
 
 Options:
+    --only NAME           repeatable: --only a --only b
+    --env-file PATH       default <repo>/.env (point at the main checkout's .env from a worktree)
     --pack-dir DIR        default output/upload-20261024
     --include-unlisted    also plan folders that have metadata.md but are not in INDEX.md
     --force               re-upload folders that already have upload_result.json
@@ -50,7 +52,8 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("--pack-dir", type=Path, default=DEFAULT_PACK)
     parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument("--only", help="folder name inside the pack")
+    parser.add_argument("--only", action="append", help="folder name inside the pack (repeatable)")
+    parser.add_argument("--env-file", type=Path, default=REPO_ROOT / ".env")
     parser.add_argument("--limit", type=int)
     parser.add_argument("--include-unlisted", action="store_true")
     parser.add_argument("--force", action="store_true")
@@ -70,7 +73,7 @@ def _make_provider(channel: str, refresh_token: str):
 
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
-    load_dotenv(REPO_ROOT / ".env")
+    load_dotenv(args.env_file)
     items = load_pack(
         args.pack_dir, only=args.only, limit=args.limit, include_unlisted=args.include_unlisted
     )

@@ -334,3 +334,28 @@ def test_factory_picks_channel_token(monkeypatch: pytest.MonkeyPatch) -> None:
     settings = Settings()  # type: ignore[call-arg]
     assert create_youtube_uploader(settings, channel="technews")._refresh_token == "chip"  # type: ignore[attr-defined]
     assert create_youtube_uploader(settings, channel="cel")._refresh_token == "shared"  # type: ignore[attr-defined]
+
+
+def test_only_repeatable_keeps_index_order(pack: Path) -> None:
+    got = [i.folder.name for i in load_pack(pack, only=["deep-1", "tech-1"])]
+    assert got == ["tech-1", "deep-1"]
+    with pytest.raises(ValueError):
+        load_pack(pack, only=["tech-1", "nope"])
+
+
+def test_dry_run_script_env_file_and_repeated_only(
+    pack: Path, tmp_path: Path, monkeypatch, capsys
+) -> None:
+    monkeypatch.setenv("CF_YOUTUBE_REFRESH_TOKEN_CEL", "x")  # registers cleanup of dotenv's leak
+    monkeypatch.delenv("CF_YOUTUBE_REFRESH_TOKEN_CEL")
+    env =tmp_path / "custom.env"
+    env.write_text("CF_YOUTUBE_REFRESH_TOKEN_CEL=abc\n", encoding="utf-8")
+    script = _load_script()
+    code = script.main([
+        "--dry-run", "--pack-dir", str(pack), "--quota-file", str(tmp_path / "q.json"),
+        "--env-file", str(env), "--only", "cel-1", "--only", "tech-1",
+    ])
+    out = capsys.readouterr().out
+    assert code == 0 and "(2 videos)" in out
+    assert "token: CF_YOUTUBE_REFRESH_TOKEN_CEL" in out
+    assert "abc" not in out

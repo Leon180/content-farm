@@ -160,7 +160,7 @@ def parse_metadata(folder: Path, *, listed_in_index: bool, note: str = "") -> Pa
 def load_pack(
     pack_dir: Path,
     *,
-    only: str | None = None,
+    only: str | list[str] | None = None,
     limit: int | None = None,
     include_unlisted: bool = False,
 ) -> list[PackItem]:
@@ -177,9 +177,11 @@ def load_pack(
         )
         items += [parse_metadata(p, listed_in_index=False) for p in extras]
     if only:
-        items = [i for i in items if i.folder.name == only]
-        if not items:
-            raise ValueError(f"--only {only!r}: no such folder in the pack")
+        wanted = [only] if isinstance(only, str) else list(only)
+        missing = [w for w in wanted if w not in {i.folder.name for i in items}]
+        if missing:
+            raise ValueError(f"--only {missing!r}: no such folder in the pack")
+        items = [i for i in items if i.folder.name in wanted]
     return items[:limit] if limit is not None else items
 
 
