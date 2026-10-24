@@ -26,7 +26,8 @@ def compare_video(item: PackItem, video: dict[str, Any]) -> list[FieldCheck]:
     return [
         FieldCheck("title", item.title, snippet.get("title")),
         FieldCheck("description", item.description.strip(), snippet.get("description", "").strip()),
-        FieldCheck("tags", list(item.tags), snippet.get("tags", [])),
+        # YouTube returns tags in its own (sorted) order, so compare as sets.
+        FieldCheck("tags", sorted(item.tags), sorted(snippet.get("tags", []))),
         FieldCheck("categoryId", item.category_id, snippet.get("categoryId")),
         FieldCheck("defaultLanguage", "zh-TW", snippet.get("defaultLanguage")),
         FieldCheck("madeForKids", False, status.get("madeForKids")),
