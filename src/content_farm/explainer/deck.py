@@ -162,6 +162,27 @@ class Frame(str, Enum):
     PANEL_RIGHT = "panel_right"  # same, on the right
 
 
+class ShotSize(str, Enum):
+    """Shot-language layer 1 of an ``ai_image`` (quality v5): how much of the subject is in the frame."""
+
+    WIDE = "wide"        # establishing: the subject is small inside its surroundings
+    FULL = "full"        # the whole subject, head to toe / end to end
+    MEDIUM = "medium"    # the subject from the middle up / the main part
+    CLOSE = "close"      # a detail filling most of the frame
+    INSERT = "insert"    # an object or symbol shown on its own, cut in
+
+
+class Camera(str, Enum):
+    """Shot-language layer 2: the move the picture is given (parallax / Wan follow it)."""
+
+    PUSH = "push"
+    PULL = "pull"
+    PAN = "pan"
+    TRACK = "track"
+    CRANE = "crane"
+    STILL = "still"
+
+
 class Animation(str, Enum):
     COUNT_UP = "count_up"
     GROW_BARS = "grow_bars"
@@ -218,6 +239,10 @@ class Media(_Frozen):
     motion: Motion | None = None                         # ai_image: None = parallax
     motion_prompt: str = Field(default="", max_length=600)  # ai_image + wan: what moves (English)
     frame: Frame | None = None                           # ai_image: text form over the picture (None = lower third)
+    # ai_image shot language (quality v5): layers of the prompt besides the subject (``prompt``) and the channel style
+    shot_size: ShotSize | None = None                    # None = read from the prompt words, else unspecified
+    camera: Camera | None = None
+    lighting: str = Field(default="", max_length=60)     # e.g. "cold blue rim light from above"
     # ai_image: a correction shown beside the 「AI 示意圖」 badge when the picture cannot match the
     # text (e.g. the model draws 6 tails for 「九尾」): say so on screen rather than let it mislead.
     ai_note: str = Field(default="", max_length=24)
@@ -246,6 +271,8 @@ class Media(_Frozen):
             raise ValueError("diagram / params only apply to media kind 'diagram'")
         if (self.motion is not None or self.motion_prompt) and self.kind != MediaKind.AI_IMAGE:
             raise ValueError("motion / motion_prompt only apply to media kind 'ai_image'")
+        if (self.shot_size is not None or self.camera is not None or self.lighting) and self.kind != MediaKind.AI_IMAGE:
+            raise ValueError("shot_size / camera / lighting only apply to media kind 'ai_image'")
         if self.ai_note and self.kind != MediaKind.AI_IMAGE:
             raise ValueError("ai_note only applies to media kind 'ai_image'")
         if self.frame is not None and self.kind not in (MediaKind.AI_IMAGE, MediaKind.STOCK_VIDEO):

@@ -20,7 +20,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 
-from content_farm.explainer.deck import Deck, Layout, MediaKind, Motion, Slide
+from content_farm.explainer.deck import Camera, Deck, Layout, MediaKind, Motion, Slide
 from content_farm.explainer.lint import form_of
 
 RISK_THRESHOLD = 40
@@ -105,7 +105,7 @@ def _move(slide: Slide) -> str | None:
     media = slide.media
     if slide.media_kind != MediaKind.AI_IMAGE or media is None or media.motion_kind == Motion.WAN:
         return None
-    return "flat" if not media.motion_prompt else None
+    return "flat" if not media.motion_prompt and media.camera in (None, Camera.STILL) else None
 
 
 def _slide_points(slide: Slide, previous: list[Slide], seconds: float) -> dict[str, int]:

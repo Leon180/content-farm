@@ -16,7 +16,7 @@ import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from content_farm.explainer import parallax, wan
+from content_farm.explainer import parallax, shot_language, wan
 from content_farm.explainer.deck import Motion, Slide
 from content_farm.explainer.motion_cache import MotionPaths
 
@@ -68,7 +68,7 @@ def _baked_wan(run_dir: Path, slide: Slide, image: Path, image_record: dict | No
                reasons: list[str]) -> MotionPlan | None:
     media = slide.media
     try:
-        request = wan.request_for(slide.id, image, image_record, media.motion_prompt if media else "",
+        request = wan.request_for(slide.id, image, image_record, shot_language.motion_prompt_for(media) if media else "",
                                   media.prompt if media else "", wan.policy_for(run_dir))
         found = wan.cached(run_dir, request)
     except (ValueError, OSError) as exc:

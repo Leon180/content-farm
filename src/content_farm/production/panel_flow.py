@@ -335,8 +335,9 @@ def _prompt_only_violations(ctx: Context, step_name: str, gate: str | None, befo
         return []
     from content_farm.review.prompt_rework import prompt_only_problems
 
-    style = (ctx.channel.ai_illustration.style_prefix
-             if getattr(ctx.channel, "ai_illustration", None) is not None else "")
+    from content_farm.explainer.illustrate import style_for
+
+    style = style_for(ctx.channel)[0] if getattr(ctx.channel, "ai_illustration", None) is not None else ""
     after = json.loads((ctx.run_dir / "deck.json").read_text(encoding="utf-8"))
     return prompt_only_problems(json.loads(before["deck.json"]), after, set(ids), style)
 
@@ -400,7 +401,7 @@ def _slideshow_fix(ctx: Context, log: Callable[[str], None], gate: str | None) -
     from content_farm.production import slideshow_fix
 
     slideshow_fix.maybe_redo(
-        ctx.run_dir, enabled=ctx.channel.quality.slideshow_risk, log=log,
+        ctx.run_dir, enabled=getattr(getattr(ctx.channel, "quality", None), "slideshow_risk", False), log=log,
         produce=lambda note: _produce_guarded(ctx, "deck", log, gate=gate, rules=note),
         violations=lambda: channel_rule_violations(ctx, "deck"))
 

@@ -12,7 +12,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-from content_farm.explainer import wan
+from content_farm.explainer import shot_language, wan
 from content_farm.explainer.ai_images import AI_IMAGE_DIR, find_image
 from content_farm.explainer.deck import Deck, MediaKind, Motion
 from content_farm.explainer.illustrate import load_record
@@ -40,7 +40,7 @@ def wan_shots(deck: Deck, run_dir: Path) -> list[WanShot]:
         if image is None:
             shots.append(WanShot(run_dir, slide.id, None, False))
             continue
-        request = wan.request_for(slide.id, image, load_record(image), slide.media.motion_prompt,
+        request = wan.request_for(slide.id, image, load_record(image), shot_language.motion_prompt_for(slide.media),
                                   slide.media.prompt, policy)
         shots.append(WanShot(run_dir, slide.id, request, wan.cached(run_dir, request) is not None))
     return shots
