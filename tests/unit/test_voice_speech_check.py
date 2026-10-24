@@ -113,7 +113,7 @@ def _repo_terms_and_aliases():
 
 def test_owl_and_bird_are_sent_as_tts_friendly_homophones() -> None:
     mapping = load_table(REPO_TABLE, provider="voxcpm2", channel="fable").mapping
-    assert mapping["貓頭鷹"] == "貓頭英" and mapping["鷹鴿"] == "英鴿" and mapping["鳥"] == "尿"
+    assert mapping["貓頭鷹"] == "貓頭英" and mapping["鷹鴿"] == "英歌" and mapping["鳥"] == "尿"
     assert list(mapping).index("貓頭鷹") < list(mapping).index("鷹鴿")
     assert "英國" not in mapping and "鷹" not in mapping           # never rewrite a bare 鷹／英
 
@@ -132,7 +132,7 @@ def test_the_substitute_read_back_as_itself_or_as_the_display_word_passes() -> N
     assert missing_terms("貓頭鷹先認定了答案", "貓頭鷹先認定了答案", terms, aliases) == ()
     assert missing_terms("貓頭鷹先認定了答案", "貓頭英先認定了答案", terms, aliases) == ()
     assert missing_terms("老樹林裡的老鳥，遠兩種鳥都有", "老樹林裏的老尿遠兩種尿都有", terms, aliases) == ()
-    assert cer("這叫鷹鴿博弈", "這叫英鴿博弈", aliases) == 0
+    assert cer("這叫鷹鴿博弈", "這叫英歌博弈", aliases) == 0
     assert cer("他是英國人", "他是英國人", aliases) == 0           # 英 elsewhere is not turned into 鷹
 
 
