@@ -52,3 +52,22 @@ def test_the_negative_prompt_reaches_the_mflux_command(tmp_path: Path) -> None:
     rule = provider.argv(il.IllustrationRequest("s1", "p", 1, 720, 1280, il.ANIMAL_NEGATIVE), tmp_path / "s1.png")
     assert "--negative-prompt" not in plain
     assert rule[rule.index("--negative-prompt") + 1] == il.ANIMAL_NEGATIVE
+
+
+def test_a_redrawn_picture_rebuilds_its_cached_loop(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import os
+
+    from content_farm.production.fable import compose
+
+    built: list[Path] = []
+    monkeypatch.setattr(compose, "run", lambda args, cwd: built.append(Path(args[-1])))
+    clip, loop = tmp_path / "b2_2.parallax.mp4", tmp_path / "b2_2.pp.mp4"
+    clip.write_bytes(b"clip")
+    loop.write_bytes(b"old loop")
+    os.utime(clip, (1000, 1000))
+    os.utime(loop, (2000, 2000))
+    compose.pingpong(clip, loop, tmp_path)
+    assert built == []                                   # loop newer than the clip: cached
+    os.utime(clip, (3000, 3000))
+    compose.pingpong(clip, loop, tmp_path)
+    assert built == [loop.resolve()]                     # the picture was redrawn: rebuilt
