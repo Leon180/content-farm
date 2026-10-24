@@ -84,6 +84,17 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def _clip_ranker():
+    """Local CLIP re-ranking of footage candidates when CF_CLIP_MODEL_DIR points at weights; else keyword order."""
+    from content_farm.explainer.footage import clip_rank
+
+    try:
+        return clip_rank.with_embedder(clip_rank.from_env())
+    except clip_rank.ClipUnavailable as exc:
+        print(f"CLIP ranking off: {exc}", file=sys.stderr)
+        return None
+
+
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
     run_dir: Path = args.run_dir
@@ -105,7 +116,7 @@ def main(argv: list[str] | None = None) -> int:
             keys = _stock_keys(args.env_file)
             stock = StockClient(pexels_key=keys["CF_PEXELS_API_KEY"],
                                 pixabay_key=keys["CF_PIXABAY_API_KEY"], cache_dir=args.stock_cache)
-            footage = FootageClient(cache_dir=args.footage_cache, stock=stock)
+            footage = FootageClient(cache_dir=args.footage_cache, stock=stock, ranker=_clip_ranker())
         run = media_to_visual(deck, run_dir, clips, stock=stock, options=options, footage=footage)
     except (OSError, ValueError, ValidationError, FFmpegError, json.JSONDecodeError) as exc:
         print(f"Error: {exc}", file=sys.stderr)

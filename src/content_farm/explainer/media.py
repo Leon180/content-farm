@@ -190,7 +190,7 @@ def _stock_video(ctx: MediaContext, job: SlideJob) -> ClipResult:
     try:
         if ctx.footage is None:
             raise StockUnavailable("footage disabled (--no-stock)")
-        asset = ctx.footage.fetch(query, job.seconds, keywords, url)
+        asset = ctx.footage.fetch(query, job.seconds, keywords, url, sentence=job.slide.narration)
         c = asset.candidate
         source_seconds = ffmpeg_ops.probe(asset.path)["duration"]
         plan = segments.plan(source_seconds, job.seconds, segments.motion_profile(str(asset.path)),
@@ -217,6 +217,8 @@ def _stock_video(ctx: MediaContext, job: SlideJob) -> ClipResult:
              "segments": [{"start": round(s.start, 2), "length": round(s.length, 2)} for s in plan],
              **{k: v for k, v in json.loads(asset.sidecar_path.read_text("utf-8")).items()
                 if k in {"license_code", "attribution_required", "share_alike", "retrieved_at"}}}
+    if asset.ranking is not None:
+        entry = {**entry, "ranking": asset.ranking}      # CLIP model, its licence and the scores (quality v5)
     return _result(job, "stock_video", clip, note=note, credit=entry, review=True)  # a human still checks the faces
 
 

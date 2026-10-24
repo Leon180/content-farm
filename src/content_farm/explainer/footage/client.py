@@ -12,6 +12,7 @@ import hashlib
 import json
 import logging
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, replace
 from pathlib import Path
 from urllib.parse import urlparse
@@ -46,6 +47,7 @@ class FootageAsset:
     sidecar_path: Path
     from_cache: bool
     matched: tuple[str, ...] = ()
+    ranking: dict | None = None        # semantic re-ranking record (model, licence, scores) when CLIP ranking ran
 
 
 def _slug(text: str) -> str:
@@ -61,17 +63,20 @@ def _from_stock(c: StockCandidate) -> FootageCandidate:
 
 class FootageClient:
     def __init__(self, *, cache_dir: Path, stock: StockClient | None = None, order: tuple[str, ...] = DEFAULT_ORDER,
-                 http: httpx.Client | None = None, limiter: RateLimiter | None = None, avoid_faces: bool = True) -> None:
+                 http: httpx.Client | None = None, limiter: RateLimiter | None = None, avoid_faces: bool = True,
+                 ranker: Callable[[list[FootageCandidate], str], tuple[list[FootageCandidate], dict]] | None = None) -> None:
         self._cache = cache_dir
         self._stock = stock
         self._order = order
         self._http = http or httpx.Client(timeout=45.0, follow_redirects=True, headers={"User-Agent": FOOTAGE_UA})
         self._limiter = limiter or RateLimiter()
         self._avoid_faces = avoid_faces
+        self._ranker = ranker
         self.refusals: list[str] = []
 
     # ---- public ---------------------------------------------------------------------------------------------
-    def fetch(self, query: str, min_seconds: float, keywords: tuple[str, ...] = (), url: str = "") -> FootageAsset:
+    def fetch(self, query: str, min_seconds: float, keywords: tuple[str, ...] = (), url: str = "",
+              sentence: str = "") -> FootageAsset:
         """A screened, cached clip for ``query`` (or the pinned ``url``) or :class:`StockUnavailable` with the reason."""
         self.refusals = []
         if url:
@@ -90,7 +95,18 @@ class FootageClient:
         good = self._rank(self._screened(found), terms, min_seconds)
         if not good:
             raise StockUnavailable(f"no licensed, on-topic footage for {query!r} ({'; '.join(self.refusals[-6:])})")
-        return replace(self._store(query, good[0]), matched=_matched(good[0], terms))
+        good, ranking = self._semantic(good, sentence)
+        return replace(self._store(query, good[0]), matched=_matched(good[0], terms), ranking=ranking)
+
+    def _semantic(self, good: list[FootageCandidate], sentence: str) -> tuple[list[FootageCandidate], dict | None]:
+        """Re-order the best keyword matches by closeness to the spoken sentence (local CLIP); any failure keeps the order."""
+        if self._ranker is None or not sentence.strip():
+            return good, None
+        try:
+            return self._ranker(good, sentence)
+        except Exception as exc:  # noqa: BLE001 - a broken local model must never lose the clip
+            self.refusals.append(f"clip rank skipped: {type(exc).__name__}: {exc}")
+            return good, {"changed": False, "reason": f"ranker failed: {type(exc).__name__}"}
 
     # ---- search ---------------------------------------------------------------------------------------------
     def _search(self, provider: str, query: str) -> list[FootageCandidate]:
