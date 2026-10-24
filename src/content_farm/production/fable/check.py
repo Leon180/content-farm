@@ -206,6 +206,8 @@ def tone_problems(fable: Fable) -> list[str]:
     problems = [f"旁白用了過時流行語「{w}」" for w in TRENDY_WORDS if w in text]
     if text.count("欸") > FILLER_LIMIT:
         problems.append(f"「欸」最多 {FILLER_LIMIT} 次")
+    problems += [f"{b.id} 旁白有單獨的「鳥」字（TTS 念不準：球／酒），改用具體名稱（山雀、貓頭鷹…）"
+                 for b in fable.beats if "鳥" in b.narration]
     return problems
 
 

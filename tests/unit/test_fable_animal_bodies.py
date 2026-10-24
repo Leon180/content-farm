@@ -71,3 +71,11 @@ def test_a_redrawn_picture_rebuilds_its_cached_loop(tmp_path: Path, monkeypatch:
     os.utime(clip, (3000, 3000))
     compose.pingpong(clip, loop, tmp_path)
     assert built == [loop.resolve()]                     # the picture was redrawn: rebuilt
+
+
+def test_a_bare_niao_in_the_narration_is_refused() -> None:
+    data = fable_dict()
+    data["beats"][1]["narration"] = "小鳥慢慢走過山谷，" * 7
+    assert any("b2" in p and "鳥" in p for p in check.tone_problems(load(data)))
+    data["beats"][1]["narration"] = "小山雀慢慢走過山谷，" * 7
+    assert check.tone_problems(load(data)) == []
