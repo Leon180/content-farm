@@ -1,6 +1,10 @@
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-brand-kit/REPORT-brand-kit.md","min_bytes":2000,"why":"派工宣告的預期產物"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-brand-kit/artifacts/brand-kit/index.md","min_bytes":500,"why":"並排頁入口"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-brand-kit/artifacts/brand-kit/chipcat-sheet.png","min_bytes":50000,"why":"拼版圖（其餘 4 張同產生）"}
-{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-brand-kit/artifacts/brand-kit/fable-banner-2-safe.png","min_bytes":50000,"why":"安全區預覽版橫幅"}
-{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-brand-kit/artifacts/brand-kit/name_check.json","pattern":"refresh_token|client_secret|access_token","why":"查重結果不含密鑰"}
-{"kind":"clean_worktree","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-brand-kit"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-yokai-launch/REPORT-yokai-launch.md","min_bytes":2000,"why":"派工宣告的預期產物"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-yokai-launch/artifacts/yokai-launch/yokai-banner-v2-sheet.png","min_bytes":100000,"why":"封面 3 選項拼版"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-yokai-launch/artifacts/yokai-launch/yokai-banner-v2-2b-sheet.png","min_bytes":100000,"why":"選項 2 重生拼版"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-yokai-launch/artifacts/yokai-launch/yokai-avatar-v2-sheet.png","min_bytes":100000,"why":"頭像拼版"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-yokai-launch/artifacts/yokai-launch/kyubi-thumb-sheet.png","min_bytes":100000,"why":"縮圖拼版"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-yokai-launch/artifacts/yokai-launch/about-yokai.md","min_bytes":1000,"why":"頻道簡介"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-yokai-launch/artifacts/yokai-launch/about-fable.md","min_bytes":1000,"why":"頻道簡介"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/output/upload-20261024/yokai-kyubi-v3/metadata.md.bak","min_bytes":5000,"why":"原檔備份存在"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/output/upload-20261024/yokai-kyubi-v3/metadata.md","pattern":"青蛙","why":"說明欄無青蛙字眼"}
+{"kind":"clean_worktree","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-yokai-launch"}
