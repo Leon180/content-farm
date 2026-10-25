@@ -10,6 +10,7 @@ for a moving picture otherwise (visual v4 lesson).
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -21,6 +22,7 @@ from content_farm.explainer.illustrate import (
     forbidden_prompt_terms,
     load_record,
     sidecar_for,
+    with_animal_rules,
 )
 from content_farm.explainer.motion_cache import MotionPaths
 from content_farm.explainer.parallax import ParallaxParams, credit as parallax_credit, ensure_clip
@@ -55,7 +57,11 @@ def resolve(fable: Fable) -> dict[str, str]:
     return mapping
 
 
-def requests_for(fable: Fable, channel: Channel) -> list[IllustrationRequest]:
+RESEED_STEP = 1000          # a redraw of one picture moves its seed by this much per attempt
+
+
+def requests_for(fable: Fable, channel: Channel, reseed: Mapping[str, int] | None = None) -> list[IllustrationRequest]:
+    """One request per drawn shot; ``reseed`` maps an image id to how many redraws it has had (new seed each)."""
     cfg = channel.ai_illustration
     width, height = DRAW[fable.format]
     out = []
@@ -63,22 +69,26 @@ def requests_for(fable: Fable, channel: Channel) -> list[IllustrationRequest]:
         bad = forbidden_prompt_terms(shot.prompt)
         if bad:
             raise ValueError(f"{shot.shot_id}: image_prompt asks for {bad} (rule: 非擬真、不模仿畫家)")
-        out.append(IllustrationRequest(shot.image_id, f"{cfg.style_prefix.strip()} {shot.prompt}".strip(),
-                                       cfg.seed + index, width, height))
+        prompt, negative = f"{cfg.style_prefix.strip()} {shot.prompt}".strip(), ""
+        if cfg.animal_characters:
+            prompt, negative = with_animal_rules(prompt)
+        seed = cfg.seed + index + RESEED_STEP * (reseed or {}).get(shot.image_id, 0)
+        out.append(IllustrationRequest(shot.image_id, prompt, seed, width, height, negative))
     return out
 
 
-def draw_missing(run_dir: Path, fable: Fable, channel: Channel, env_file: Path | None = None, provider=None) -> int:
+def draw_missing(run_dir: Path, fable: Fable, channel: Channel, env_file: Path | None = None, provider=None,
+                 reseed: Mapping[str, int] | None = None) -> int:
     """Draw every picture still missing, one at a time; returns how many were drawn now."""
     folder = run_dir / AI_IMAGE_DIR
     folder.mkdir(parents=True, exist_ok=True)
-    todo = [r for r in requests_for(fable, channel) if find_image(folder, r.slide_id) is None]
+    todo = [r for r in requests_for(fable, channel, reseed) if find_image(folder, r.slide_id) is None]
     if todo and provider is None:
         provider = LocalMflux.from_env(channel.ai_illustration.model, env_with_file(env_file))
     for request in todo:
         out = folder / f"{request.slide_id}.png"
         record = {"slide_id": request.slide_id, **provider.generate(request, out), "prompt": request.prompt,
-                  "seed": request.seed, "size": [request.width, request.height], "ai_label": AI_LABEL}
+                  "negative_prompt": request.negative_prompt, "seed": request.seed, "size": [request.width, request.height], "ai_label": AI_LABEL}
         sidecar_for(out).write_text(json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8")
     return len(todo)
 

@@ -55,6 +55,13 @@ def test_key_term_heard_as_homophone_passes_but_misread_fails() -> None:
     assert missing_terms("沒有這個詞", "沒有這個詞", (COWOS,)) == ()  # only terms the scene says
 
 
+def test_a_key_term_said_twice_but_heard_once_is_missing() -> None:
+    eagle = KeyTerm("鷹", ())
+    assert missing_terms("貓頭鷹說鷹最聰明", "貓頭鷹說鷹最聰明", (eagle,)) == ()
+    assert missing_terms("貓頭鷹說鷹最聰明", "貓頭旗說鷹最聰明", (eagle,)) == ("鷹",)  # one of two heard
+    assert missing_terms("貓頭鷹先認定了答案", "貓頭起先認定了答案", (eagle,)) == ("鷹",)
+
+
 def _write_table(path: Path) -> Path:
     path.write_text(
         "shared: {TSMC: T S M C}\n"
@@ -97,6 +104,35 @@ def test_repo_table_loads_for_every_provider() -> None:
     vox = load_table(REPO_TABLE, provider="voxcpm2")
     assert vox.mapping["蘆葦"] == "盧偉" and vox.mapping["CoWoS"] == "扣窩斯"
     assert load_table(REPO_TABLE, provider="qwen3_tts").mapping["員工"] == "原工"
+
+
+def _repo_terms_and_aliases():
+    table = load_table(REPO_TABLE, provider="voxcpm2", channel="fable")
+    return table.key_terms, build_aliases(table.key_terms, table.mapping)
+
+
+def test_owl_and_bird_are_sent_as_tts_friendly_homophones() -> None:
+    mapping = load_table(REPO_TABLE, provider="voxcpm2", channel="fable").mapping
+    assert mapping["貓頭鷹"] == "貓頭英" and mapping["鷹鴿"] == "英歌" and "鳥" not in mapping
+    assert list(mapping).index("貓頭鷹") < list(mapping).index("鷹鴿")
+    assert "英國" not in mapping and "鷹" not in mapping           # never rewrite a bare 鷹／英
+
+
+def test_the_misreadings_found_on_2026_10_24_are_caught_with_the_repo_table() -> None:
+    terms, aliases = _repo_terms_and_aliases()
+    # real read-backs of 貓頭鷹 from output/fable-confirmation-short/audio/speech_check.json (CER 0.07–0.09, "ok" then)
+    narration = "日子一久，紅門裡的刺蝟一家悄悄搬走了，貓頭鷹的本子卻越來越厚。"
+    assert missing_terms(narration, "日子一久鴻門裏的刺蝟一家悄悄搬走了貓頭起的本子卻越來越厚", terms, aliases) == ("鷹",)
+    assert missing_terms("貓頭鷹先認定了答案", "貓頭七先認定了答案", terms, aliases) == ("鷹",)
+    assert missing_terms("兩隻鳥看上同一塊地", "兩隻球看上同一塊地", terms, aliases) == ("鳥",)
+
+
+def test_the_substitute_read_back_as_itself_or_as_the_display_word_passes() -> None:
+    terms, aliases = _repo_terms_and_aliases()
+    assert missing_terms("貓頭鷹先認定了答案", "貓頭鷹先認定了答案", terms, aliases) == ()
+    assert missing_terms("貓頭鷹先認定了答案", "貓頭英先認定了答案", terms, aliases) == ()
+    assert cer("這叫鷹鴿博弈", "這叫英歌博弈", aliases) == 0
+    assert cer("他是英國人", "他是英國人", aliases) == 0           # 英 elsewhere is not turned into 鷹
 
 
 class FakeTTS:

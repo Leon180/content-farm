@@ -32,8 +32,9 @@ def run(args: list[str], cwd: Path) -> None:
 
 
 def pingpong(clip: Path, out: Path, cwd: Path) -> Path:
-    """The parallax clip played forward then backward (a seamless loop); cached by file name."""
-    if not out.is_file():
+    """The parallax clip played forward then backward (a seamless loop); cached by file name, rebuilt when the
+    clip is newer (a redrawn picture used to keep showing its old loop: owl-fix 2026-10-24)."""
+    if not out.is_file() or out.stat().st_mtime < clip.stat().st_mtime:
         run(["-i", str(clip.resolve()), "-filter_complex", "[0:v]split[a][b];[b]reverse[r];[a][r]concat=n=2:v=1:a=0[v]",
              "-map", "[v]", *ENCODE, str(out.resolve())], cwd)
     return out

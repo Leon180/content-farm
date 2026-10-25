@@ -20,6 +20,9 @@ FILLER_LIMIT = 1                     # 「欸」 at most once per video (Leon's 
 HUMAN_WORDS = re.compile(r"\b(man|men|woman|women|boy|girl|child|children|kid|people|person|human|king|queen|"
                          r"farmer|merchant|villager|villagers|soldier|face|portrait|selfie|crowd|customers?|shoppers?|"
                          r"passers-?by|pedestrians?|vendors?|townsfolk|market street|busy street|lanternmaker)\b", re.IGNORECASE)
+# Prompts that make an animal use human hands (the owl grew hands in 3 of 9 pictures, 2026-10-24)
+HANDS_WORDS = re.compile(r"\b(hands?|arms?|fingers?|holding|holds?|held|gripping|grasping|clutching|"
+                         r"writing (?:with|in|on|at|quickly)|writes|carrying|reading)\b", re.IGNORECASE)
 # The picture model turns a "round grey forest creature" into an existing film character (seen on the first test pictures)
 LOOKALIKE_WORDS = re.compile(r"\b(tanuki|raccoon[- ]dog|big round|fat round|round grey|round gray|chubby)\b", re.IGNORECASE)
 # seconds the narration should fill (estimated at deck.CHARS_PER_SECOND); the measured total is checked by QC
@@ -188,8 +191,10 @@ def _shot_problems(prompt: str, reuse: str, where: str, drawn: dict[str, str]) -
                 for m in [HUMAN_WORDS.search(prompt)] if m]
     problems += [f"{where} 提示詞「{m.group(0)}」會被畫成既有電影角色（圓胖灰色森林生物）；改寫具體外形，例如 slim red-brown fox-like animal with a ringed tail"
                  for m in [LOOKALIKE_WORDS.search(prompt)] if m]
+    problems += [f"{where} 提示詞「{m.group(0)}」會讓動物長出人手；改成「道具放在旁邊的樹枝／地上／桌上」，動物翅膀收起"
+                 for m in [HANDS_WORDS.search(prompt)] if m]
     bad = forbidden_prompt_terms(prompt)
-    return problems + ([f"{where} 提示詞要求 {bad}（非擬真、不模仿畫家）"] if bad else [])
+    return problems +([f"{where} 提示詞要求 {bad}（非擬真、不模仿畫家）"] if bad else [])
 
 
 def keep_avoid_problems(fable: Fable) -> list[str]:
@@ -201,6 +206,8 @@ def tone_problems(fable: Fable) -> list[str]:
     problems = [f"旁白用了過時流行語「{w}」" for w in TRENDY_WORDS if w in text]
     if text.count("欸") > FILLER_LIMIT:
         problems.append(f"「欸」最多 {FILLER_LIMIT} 次")
+    problems += [f"{b.id} 旁白有單獨的「鳥」字（TTS 念不準：球／酒），改用具體名稱（山雀、貓頭鷹…）"
+                 for b in fable.beats if "鳥" in b.narration]
     return problems
 
 

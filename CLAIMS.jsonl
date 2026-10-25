@@ -8,3 +8,8 @@
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/output/upload-20261024/yokai-kyubi-v3/metadata.md.bak","min_bytes":5000,"why":"原檔備份存在"}
 {"kind":"grep_absent","path":"/Users/lileon/project/content-farm/output/upload-20261024/yokai-kyubi-v3/metadata.md","pattern":"青蛙","why":"說明欄無青蛙字眼"}
 {"kind":"clean_worktree","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-yokai-launch"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-fable-owl-fix/REPORT-fable-owl-fix.md","min_bytes":2000,"why":"派工宣告的預期產物"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-fable-owl-fix/artifacts/fable-owl-fix/release.mp4","min_bytes":1000000,"why":"貓頭鷹片全解析度新版"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-fable-owl-fix/artifacts/fable-owl-fix/fable-confirmation-short-540w.mp4","min_bytes":1000000,"why":"540 寬預覽"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/output/upload-20261024/fable-confirmation-short/video-v1-hands.mp4","min_bytes":1000000,"why":"舊版保留"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/output/upload-20261024/fable-ess-mid/video-v1-pron.mp4","min_bytes":1000000,"why":"中片舊版保留"}

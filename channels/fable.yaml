@@ -45,6 +45,7 @@ ai_illustration:            # 頻道統一一種風格：溫暖繪本（水粉�
     Warm picture-book illustration, soft gouache and watercolor, gentle pencil outlines, muted ochre, terracotta,
     sage green and cream palette, storybook scene, illustration, not a photograph, no text, no logos.
     Only original animal characters: no humans, no children, no people, no existing cartoon characters.
+  animal_characters: true   # 動物保持動物身體、不畫人手；道具放旁邊（加身體規則＋預設 negative prompt，見 illustrate.ANIMAL_*）
   seed: 42
   width: 1280
   height: 720
