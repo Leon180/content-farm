@@ -172,6 +172,16 @@ def ken_burns(
     return out
 
 
+# Wan renders 832x480; 1080p needs 2.3x. Lanczos plus a mild unsharp (luma only) is the local,
+# licence-free upscale (ffmpeg, no model); sharper than plain lanczos without ringing.
+WAN_SHARPEN = "unsharp=5:5:0.7:5:5:0.0"
+
+
+def upscale_filter(sharpen: bool) -> str:
+    base = f"scale={WIDTH}:{HEIGHT}:force_original_aspect_ratio=increase:flags=lanczos,crop={WIDTH}:{HEIGHT}"
+    return f"{base},{WAN_SHARPEN}" if sharpen else base
+
+
 def motion_loop(
     clip: Path, overlay: Path | None, out: Path, duration: float, *, retime_fps: int | None = None,
 ) -> Path:
@@ -184,8 +194,7 @@ def motion_loop(
     """
     total = frame_count(duration)
     retime = f"setpts=N/{FPS}/TB," if retime_fps and retime_fps != FPS else ""
-    loop = (f"[0:v]{retime}scale={WIDTH}:{HEIGHT}:force_original_aspect_ratio=increase:flags=lanczos,"
-            f"crop={WIDTH}:{HEIGHT},setsar=1,fps={FPS},split[f][b];[b]reverse[r];"
+    loop = (f"[0:v]{retime}{upscale_filter(sharpen=bool(retime_fps))},setsar=1,fps={FPS},split[f][b];[b]reverse[r];"
             f"[f][r]concat=n=2:v=1:a=0,loop=loop=-1:size=32767")
     args = ["ffmpeg", "-y", "-i", str(clip)]
     if overlay is not None:

@@ -238,6 +238,11 @@ class Media(_Frozen):
     artwork: str = Field(default="", max_length=40)      # artwork: id in assets/artwork/artwork.json
     motion: Motion | None = None                         # ai_image: None = parallax
     motion_prompt: str = Field(default="", max_length=600)  # ai_image + wan: what moves (English)
+    # ai_image + wan: more 2.9 s segments, each started from the previous segment's last frame
+    # (one continuous 6–9 s shot); one prompt per extra segment. See explainer/wan_chain.py.
+    wan_chain: tuple[Annotated[str, Field(min_length=1, max_length=600)], ...] = Field(default=(), max_length=2)
+    # ai_image + wan: the first segment is text-to-video (no start frame); the still is only the fallback.
+    wan_t2v: bool = False
     frame: Frame | None = None                           # ai_image: text form over the picture (None = lower third)
     # ai_image shot language (quality v5): layers of the prompt besides the subject (``prompt``) and the channel style
     shot_size: ShotSize | None = None                    # None = read from the prompt words, else unspecified
@@ -273,6 +278,8 @@ class Media(_Frozen):
             raise ValueError("motion / motion_prompt only apply to media kind 'ai_image'")
         if (self.shot_size is not None or self.camera is not None or self.lighting) and self.kind != MediaKind.AI_IMAGE:
             raise ValueError("shot_size / camera / lighting only apply to media kind 'ai_image'")
+        if (self.wan_chain or self.wan_t2v) and self.motion_kind != Motion.WAN:
+            raise ValueError("wan_chain / wan_t2v need media.motion: wan")
         if self.ai_note and self.kind != MediaKind.AI_IMAGE:
             raise ValueError("ai_note only applies to media kind 'ai_image'")
         if self.frame is not None and self.kind not in (MediaKind.AI_IMAGE, MediaKind.STOCK_VIDEO):
@@ -414,6 +421,9 @@ class Deck(_Frozen):
     # Copyrighted web video (YouTube, MBARI, TV…) never goes on screen; it is linked from the description (after credits).
     reference_links: tuple[ReferenceLink, ...] = ()
     pronunciation_map: dict[str, str] = {}
+    # A deck that deliberately leans on Wan (e.g. the megalophobia cut) raises the 3-shot default;
+    # the nightly bake, lint and QC all read it through wan.max_shots(deck).
+    wan_budget: int | None = Field(default=None, ge=1, le=10)
     sections: tuple[Section, ...] = Field(min_length=MIN_SECTIONS)
 
     @model_validator(mode="after")

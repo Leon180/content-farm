@@ -131,9 +131,10 @@ def problems(credits: dict[str, Any] | None, allowed: tuple[str, ...] | None = N
             out.append(f"{sid}: stock 沒有 source_url")
         if kind == "artwork" and (not e.get("license_url") or any(n in licence.lower() for n in _NON_COMMERCIAL)):
             out.append(f"{sid}: artwork 授權不可營利或缺授權網址")
+    from content_farm.explainer.wan import run_limit
     from content_farm.production.qc import ai_image_findings
 
-    out += [f.message for f in ai_image_findings(entries) if f.level == "error"]
+    out += [f.message for f in ai_image_findings(entries, run_limit(run_dir)) if f.level == "error"]
     return out
 
 

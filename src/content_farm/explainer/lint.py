@@ -24,7 +24,7 @@ MIN_FOOTAGE_SHARE = 0.2  # stock + ai_image share of all slides
 # Visual v4 (Leon 2026-10-24): the picture leads, the slide text supports.
 MAX_TEXT_ONLY_SHARE = 0.30   # slides that are only text (static / animated slide) of all slides
 MIN_WAN_SHOTS = 2            # key shots moved by Wan2.2 I2V (baked overnight)
-MAX_WAN_SHOTS = 3
+MAX_WAN_SHOTS = 3          # a deck's own wan_budget replaces it
 WAN_MIN_DECK_SLIDES = 10     # a short sample deck is not asked for key shots
 TEXT_ONLY_KINDS = (MediaKind.SLIDE, MediaKind.ANIMATED)
 
@@ -216,9 +216,10 @@ def _check_visuals_v4(deck: Deck) -> list[LintIssue]:
             ))
     wan = [s.id for s in slides if s.media_kind == MediaKind.AI_IMAGE and s.media is not None
            and s.media.motion_kind == Motion.WAN]
-    if len(slides) >= WAN_MIN_DECK_SLIDES and not MIN_WAN_SHOTS <= len(wan) <= MAX_WAN_SHOTS:
+    top = max(MAX_WAN_SHOTS, deck.wan_budget or 0)
+    if len(slides) >= WAN_MIN_DECK_SLIDES and not MIN_WAN_SHOTS <= len(wan) <= top:
         issues.append(LintIssue(
-            "wan-shots", f"{len(wan)} Wan key shots ({', '.join(wan) or 'none'}); target {MIN_WAN_SHOTS}-{MAX_WAN_SHOTS}",
+            "wan-shots", f"{len(wan)} Wan key shots ({', '.join(wan) or 'none'}); target {MIN_WAN_SHOTS}-{top}",
             # no Wan at all is fine when no faceless shot exists: avoiding faces comes first (Leon 2026-10-24)
             severity="warn" if not wan else "error",
         ))
