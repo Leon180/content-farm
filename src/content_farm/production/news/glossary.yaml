@@ -67,3 +67,12 @@ terms:
     say: D N S
     analogy: 像網路世界的電話簿：你只記得店名，它幫你查出真正要撥的號碼。
     definition: Domain Name System，把網域名稱（如 example.com）解析成 IP 位址的分散式查詢系統；DNS 解析器負責代使用者查詢。
+  token:
+    analogy: 像 AI 的電表度數，用越多、帳單越高。
+    definition: token，大型語言模型處理文字的計量單位（一個字或一小段字），雲端 AI 服務多半按輸入與輸出的 token 數計費。
+  環境影響評估:
+    analogy: 像蓋房子前先檢查地基，檢查完才准動工。
+    definition: Environmental Impact Assessment（EIA，簡稱環評），大型開發案在動工前評估對環境的影響並取得核可的法定程序。
+  商業模式:
+    analogy: 像擺攤的人靠什麼賺錢；原本賣便當的收入被免費試吃擠掉，只好改賣現場體驗。
+    definition: business model，一個行業如何創造並收取價值（賣產品、訂閱、廣告、現場票房等）；新技術常改變哪一種收入撐得起這個行業。

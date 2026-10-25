@@ -2,7 +2,7 @@
 # Leon 2026-10-23：多來源免費抓取（HN／Lobsters／arXiv／GitHub Trending）、格式看內容（Shorts 或長片）、
 # 不要角色（46a2ff71e087）、新聞感女聲（本機 VoxCPM2 複製）。Secrets never go here.
 code: technews
-name: 科技新知
+name: 晚點你就知道   # 2026-10-25 起署名＝YouTube 頻道名（原暫名「科技新知」）
 line: 每日科技新知（全球科技新聞，台灣中文講解）
 pipeline: explainer
 brand: technews
@@ -66,15 +66,15 @@ youtube:
 identity:
   opening:
     format: 結論先行式開場：第一句直接講這則消息的結論或最反直覺的一點，再用一句話說明它為什麼跟一般人有關；不自我介紹角色，不報投影片張數，不在鉤子裡放免責聲明
-    signature: 這裡是科技新知
+    signature: 這裡是晚點你就知道
   take_label: 編輯觀點
   outro:
     signature: 我們下則新聞見
-    endcard: 下一則，科技新知接著整理
+    endcard: 下一則，晚點你就知道接著整理
   description:
-    header: "【科技新知】{title}"
+    header: "【晚點你就知道】{title}"
     sources_label: 這集讀過的原文與資料：
-    footer: 科技新知是對原文的摘要與評論，不是翻譯；不報明牌、不給投資建議；數字有疑問，歡迎留言附上來源。
+    footer: 晚點你就知道是對原文的摘要與評論，不是翻譯；不報明牌、不給投資建議；數字有疑問，歡迎留言附上來源。
 notes:
   - 不給投資建議；八卦必須有來源
   - 只用公開免費端點、遵守各站 rate limit 與 robots；X／Twitter 一律不抓
@@ -88,11 +88,12 @@ publish:
   source: research/upload-timing-2026-10.md
 series:
   news:                   # production/news；produce.py news daily --channel technews [--auto]
-    name: 科技新知
+    name: 晚點你就知道
+    fact_check: true         # news/fact_check.py：正確性查核（信心度 ≥ 0.5 算錯，自動修一次、不重查）；Leon 2026-10-25
     dir_prefix: technews     # output/technews-<day>…（不和晶片貓的 hn-<day> 混）
     min_per_source: 2        # 候選頁每個非 HN 來源（Lobsters／arXiv／GitHub）至少露出 2 則
     chars_per_second: 4.6    # 本機 VoxCPM2 女聲 tempo 1.1 的暫估，聲音定案後實測校正
-    playlist: 科技新知｜每日快報
+    playlist: 晚點你就知道｜每日快報
     take_label: 編輯觀點
     end_label: 每週六・長片整理
     sources: [hn, lobsters, arxiv, github]

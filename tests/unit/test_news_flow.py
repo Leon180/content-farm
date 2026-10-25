@@ -94,7 +94,7 @@ def test_news_run_dir_gets_the_news_steps(tmp_path: Path, chipcat) -> None:
     (tmp_path / ns.ITEM_FILE).write_text("{}", encoding="utf-8")
     steps = steps_for(chipcat, tmp_path)
     # chipcat (series.hn): no script panel, no claim audit (entertainment-only)
-    assert steps == tuple(s for s in NEWS_SHORT_STEPS if s.name not in ("gate_script", "fact_audit"))
+    assert steps == tuple(s for s in NEWS_SHORT_STEPS if s.name not in ("gate_script", "fact_audit", "fact_check"))
     assert [s.gate for s in steps if s.kind == "gate"] == [Gate.FINAL]
     voice = next(s for s in steps if s.name == "voice")
     assert voice.inputs == ("voice_text.json",) and voice.paid

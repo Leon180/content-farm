@@ -72,7 +72,8 @@ class NewsSeries(_Strict):
     rank_profile: Literal["tech", "ent"] = "tech"
     topic_guard: bool = False                     # guard.blocked_reason on candidates, panel flag, finished script
     claims_audit: bool = False                    # every factual sentence needs a sourced claim (news/claims.py)
-    analogy_required: bool = True                 # tech Shorts explain a glossary term; ent has no analogy beat
+    fact_check: bool = False                      # correctness check of the script vs the original (news/fact_check.py)
+    analogy_required: bool = True                # tech Shorts explain a glossary term; ent has no analogy beat
     beat_labels: dict[str, str] = {}              # on-screen name per beat kind (overrides news.script.BEAT_LABELS)
     bubbles: dict[str, str] = {}                  # the small callout per beat kind (overrides news.render.BUBBLES)
     end_headline: str = "這週最重要的幾則\n週六講深一點"       # end card

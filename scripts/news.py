@@ -52,6 +52,13 @@ def cmd_lint(run_dir: Path) -> int:
     return 1 if problems else 0
 
 
+def cmd_factcheck(run_dir: Path) -> int:
+    from content_farm.production.news import fact_check
+
+    channel = load_channel(read_channel_code(run_dir))
+    return fact_check.run(run_dir, channel.code)
+
+
 def cmd_audit(run_dir: Path) -> int:
     from content_farm.production.news import audit_step
 
@@ -78,11 +85,11 @@ def cmd_prepare(run_dir: Path) -> int:
     return 0
 
 
-def cmd_render(run_dir: Path) -> int:
+def cmd_render(run_dir: Path, env_file: Path | None = None) -> int:
     from content_farm.production.news.render import render_news_short
 
     result = render_news_short(run_dir, load_channel(read_channel_code(run_dir)),
-                               env_file=Path(__file__).resolve().parents[1] / ".env")
+                               env_file=env_file or Path(__file__).resolve().parents[1] / ".env")
     print(f"{result.video} ({result.seconds}s, {result.cues} subtitle cues)")
     return 0
 
@@ -101,12 +108,15 @@ def cmd_weekly_check(run_dir: Path) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("command", choices=("lint", "audit", "prepare", "render", "weekly-check"))
+    parser.add_argument("command", choices=("lint", "audit", "factcheck", "prepare", "render", "weekly-check"))
     parser.add_argument("--run-dir", type=Path, required=True)
+    parser.add_argument("--env-file", type=Path, help="machine-path settings for the picture/motion tools (render)")
     args = parser.parse_args(argv)
-    handler = {"lint": cmd_lint, "audit": cmd_audit, "prepare": cmd_prepare, "render": cmd_render,
+    handler = {"lint": cmd_lint, "audit": cmd_audit, "factcheck": cmd_factcheck, "prepare": cmd_prepare, "render": cmd_render,
                "weekly-check": cmd_weekly_check}[args.command]
     try:
+        if args.command == "render":
+            return cmd_render(args.run_dir.resolve(), args.env_file)
         return handler(args.run_dir.resolve())
     except (OSError, ValueError, ValidationError, json.JSONDecodeError, RuntimeError) as exc:
         print(f"Error: {type(exc).__name__}: {exc}", file=sys.stderr)

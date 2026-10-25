@@ -57,3 +57,9 @@
 {"kind": "file_exists", "path": "/Users/lileon/project/content-farm/.claude/worktrees/cf-deepsea-wan/artifacts/deepsea-mega/deepsea-mega-part2.mp4", "min_bytes": 100000, "why": "成片 540p／對照圖（未 commit）"}
 {"kind": "file_exists", "path": "/Users/lileon/project/content-farm/.claude/worktrees/cf-deepsea-wan/artifacts/deepsea-mega/compare-8frames.png", "min_bytes": 100000, "why": "成片 540p／對照圖（未 commit）"}
 {"kind": "file_exists", "path": "/Users/lileon/project/content-farm/.claude/worktrees/cf-integrate-1025/REPORT-integrate-1025.md", "min_bytes": 2000, "why": "派工宣告的預期產物"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-technews-ep2/REPORT-technews-ep2.md","min_bytes":2000,"why":"報告"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-technews-ep2/artifacts/technews-ep2/ai-payoff-540w.mp4","min_bytes":500000,"why":"成片預覽"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-technews-ep2/artifacts/technews-ep2/finland-trees-540w.mp4","min_bytes":500000,"why":"成片預覽"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-technews-ep2/artifacts/technews-ep2/creative-jobs-540w.mp4","min_bytes":500000,"why":"成片預覽"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-technews-ep2/output/upload-20261025/technews-ai-payoff/metadata.md","min_bytes":1000,"why":"上片資料（gitignore，本機）"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-technews-ep2/output/upload-20261025","pattern":"晶片貓快報","why":"無晶片貓前綴"}
