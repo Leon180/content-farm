@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 
 from content_farm.explainer.deck import load_deck
-from content_farm.explainer.illustrate import LocalMflux, Settings, illustrate, missing_images
+from content_farm.explainer.illustrate import LocalMflux, illustrate, missing_images, settings_for
 from content_farm.production.channels import load_channel
 from content_farm.production.voice_choice import env_file_defaults
 
@@ -40,7 +40,7 @@ def main() -> int:
         return 0
     deck = load_deck(args.run_dir / "deck.json")
     config = channel.ai_illustration
-    settings = Settings(config.model, config.style_prefix, config.seed, config.width, config.height)
+    settings = settings_for(channel)
     pending = missing_images(deck, args.run_dir, settings, replace=args.replace)
     if not pending:
         print("no ai_image slide is missing an image; nothing to generate")

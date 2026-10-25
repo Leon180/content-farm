@@ -357,8 +357,9 @@ def _prompt_only_violations(ctx: Context, step_name: str, gate: str | None, befo
         return []
     from content_farm.review.prompt_rework import prompt_only_problems
 
-    style = (ctx.channel.ai_illustration.style_prefix
-             if getattr(ctx.channel, "ai_illustration", None) is not None else "")
+    from content_farm.explainer.illustrate import style_for
+
+    style = style_for(ctx.channel)[0] if getattr(ctx.channel, "ai_illustration", None) is not None else ""
     after = json.loads((ctx.run_dir / "deck.json").read_text(encoding="utf-8"))
     return prompt_only_problems(json.loads(before["deck.json"]), after, set(ids), style)
 
@@ -403,6 +404,8 @@ def _run_producer(ctx: Context, step_name: str, log: Callable[[str], None], *, g
         broken = channel_rule_violations(ctx, step_name) + _prompt_only_violations(ctx, step_name, gate, before)
         _event(ctx.run_dir, step=step_name, channel_rules=broken, attempt=attempt)
         if not broken:
+            if step_name == "deck":
+                _slideshow_fix(ctx, log, gate)
             return None
         for name, text in before.items():
             (ctx.run_dir / name).write_text(text, encoding="utf-8")
@@ -413,6 +416,16 @@ def _run_producer(ctx: Context, step_name: str, log: Callable[[str], None], *, g
             "上一次的改稿違反頻道規則，已還原成改稿前的版本。頻道規則優先於評審意見；以下規則一條都不能破：\n- "
             + "\n- ".join(broken) + "\n照修改清單重改，但保留上面這些頻道規則要求的內容。"))
     return f"{step_name}：改稿兩次都違反頻道規則，已還原並停下：{'；'.join(broken)[:300]}"
+
+
+def _slideshow_fix(ctx: Context, log: Callable[[str], None], gate: str | None) -> None:
+    """The deck's one automatic slideshow-risk fix (``production.slideshow_fix``); never stops the run."""
+    from content_farm.production import slideshow_fix
+
+    slideshow_fix.maybe_redo(
+        ctx.run_dir, enabled=getattr(getattr(ctx.channel, "quality", None), "slideshow_risk", False), log=log,
+        produce=lambda note: _produce_guarded(ctx, "deck", log, gate=gate, rules=note),
+        violations=lambda: channel_rule_violations(ctx, "deck"))
 
 
 def _produce_guarded(ctx: Context, step_name: str, log: Callable[[str], None], *, gate: str | None = None,

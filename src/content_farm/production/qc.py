@@ -80,6 +80,30 @@ def deck_findings(channel: Channel, deck: Deck) -> list[Finding]:
     return policy_findings(channel, deck) + deck_rule_findings(channel, deck, other_identities(channel))
 
 
+def slideshow_findings(channel: Channel, deck: Deck, durations: dict[str, float] | None = None) -> list[Finding]:
+    """Warn-only: pages that read like a slide show (``explainer.slideshow_risk``), measured seconds when known."""
+    if not channel.quality.slideshow_risk:
+        return []
+    from content_farm.explainer.slideshow_risk import score_deck
+
+    risk = score_deck(deck, durations)
+    detail = ", ".join(f"{r.slide_id}={r.score}" for r in risk.risky[:8])
+    level = "warn" if risk.over_limit else "ok"
+    return [Finding("slideshow_risk", level,
+                    f"mean {risk.mean_score:.0f}/100, {len(risk.risky)}/{len(risk.slides)} pages at or above the threshold"
+                    + (f" ({detail})" if detail else ""))]
+
+
+def script_quality_findings(run_dir: Path, channel: Channel, deck: Deck) -> list[Finding]:
+    """Hooks ledger (open threads) and continuity (the same quantity told two ways); warn-only, off per channel."""
+    if not channel.quality.hooks_ledger:
+        return []
+    from content_farm.review import script_checks
+
+    rows = script_checks.findings(run_dir, json.loads(deck.model_dump_json()))
+    return [Finding(check, level, message) for level, check, message in rows]
+
+
 def credits_findings(channel: Channel, credits: dict | None, run_dir: Path | None = None) -> list[Finding]:
     if credits is None:
         return [Finding("credits", "error", "credits.json missing (run media first)")]
@@ -276,6 +300,29 @@ def black_findings(segments: list[tuple[float, float]]) -> list[Finding]:
     return [Finding("black_frames", "error", f"{len(segments)} black segment(s): {spans}")]
 
 
+def static_scan_findings(run_dir: Path, channel: Channel, video: Path) -> list[Finding]:
+    """Per-shot static / pan / motion; a static shot longer than 10 s is a dead zone (warn). Written to
+    ``qc/static_scan.json`` and to the score ledger. A scan that could not run is a warn, never silence."""
+    if not channel.quality.static_scan:
+        return []
+    from content_farm.production import static_scan
+    from content_farm.review import score_ledger
+
+    try:
+        shots = static_scan.scan(video)
+    except (RuntimeError, OSError, subprocess.SubprocessError, ValueError) as exc:
+        return [Finding("static_scan", "warn", f"could not scan {video.name}: {exc}")]
+    data = static_scan.write_report(run_dir, video, shots)
+    score_ledger.record_qc(run_dir, "static_scan", {k: v for k, v in data.items() if k != "all_shots"})
+    zones = data["dead_zones"]
+    if not zones:
+        return [Finding("static_scan", "ok", f"no static shot over {static_scan.DEAD_ZONE_SECONDS:.0f}s "
+                                             f"(static {data['static_share']:.0%} of the cut)")]
+    spans = ", ".join(f"{z['start']:.0f}-{z['end']:.0f}s" for z in zones[:8])
+    return [Finding("static_scan", "warn", f"{len(zones)} dead zone(s), {data['dead_zone_seconds']:.0f}s in all "
+                                           f"(static shot > {static_scan.DEAD_ZONE_SECONDS:.0f}s): {spans}")]
+
+
 def subtitle_findings(run_dir: Path, channel: Channel) -> list[Finding]:
     srt = run_dir / "subtitles" / "subtitles.srt"
     if not srt.is_file():
@@ -442,6 +489,8 @@ def run_qc(run_dir: Path, channel: Channel, deck: Deck | None) -> dict:
     findings: list[Finding] = []
     if deck is not None:
         findings += deck_findings(channel, deck)
+        findings += slideshow_findings(channel, deck)
+        findings += script_quality_findings(run_dir, channel, deck)
     credits_path = run_dir / "credits.json"
     credits = json.loads(credits_path.read_text(encoding="utf-8")) if credits_path.is_file() else None
     if channel.media.stock or channel.media.stock_video or channel.media.ai_image or channel.media.artwork:
@@ -466,6 +515,7 @@ def run_qc(run_dir: Path, channel: Channel, deck: Deck | None) -> dict:
         try:
             findings += format_findings(channel, probe_streams(video))
             findings += black_findings(black_segments(video))
+            findings += static_scan_findings(run_dir, channel, video)
         except (subprocess.SubprocessError, RuntimeError, KeyError, ValueError) as exc:
             findings.append(Finding("probe", "error", f"could not inspect {video.name}: {exc}"))
         findings += retention_qc(run_dir, channel)

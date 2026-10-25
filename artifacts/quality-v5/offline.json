@@ -1,0 +1,187 @@
+[
+ {
+  "run": "deepsea-1-stock",
+  "decks": [
+   {
+    "file": "deck.json",
+    "slides": 26,
+    "mean_score": 8.5,
+    "risky_pages": 1,
+    "risky_share": 0.038,
+    "over_limit": false,
+    "risky": [
+     {
+      "slide_id": "s24",
+      "score": 45,
+      "factors": [
+       "long_hold",
+       "same_move"
+      ],
+      "risky": true
+     }
+    ],
+    "new_lint_rules": []
+   }
+  ],
+  "static_scan": {
+   "video": "release.mp4",
+   "shots": 121,
+   "seconds_by_kind": {
+    "static": 108.5,
+    "pan": 0,
+    "motion": 455.8
+   },
+   "static_share": 0.192,
+   "dead_zones": [
+    {
+     "start": 29.75,
+     "end": 46.25,
+     "seconds": 16.5,
+     "kind": "static",
+     "energy": 0.001
+    },
+    {
+     "start": 67.25,
+     "end": 83.0,
+     "seconds": 15.75,
+     "kind": "static",
+     "energy": 0.12
+    }
+   ],
+   "dead_zone_seconds": 32.2,
+   "limit_seconds": 10.0
+  }
+ },
+ {
+  "run": "cel-run2-v4",
+  "decks": [
+   {
+    "file": "deck.v3.json",
+    "slides": 23,
+    "mean_score": 20.4,
+    "risky_pages": 2,
+    "risky_share": 0.087,
+    "over_limit": false,
+    "risky": [
+     {
+      "slide_id": "s09",
+      "score": 40,
+      "factors": [
+       "long_hold",
+       "repeat"
+      ],
+      "risky": true
+     },
+     {
+      "slide_id": "s10",
+      "score": 50,
+      "factors": [
+       "long_hold",
+       "plain"
+      ],
+      "risky": true
+     }
+    ],
+    "new_lint_rules": [
+     {
+      "code": "text-hold",
+      "message": "slide 's03': 30 characters on screen need ~8.2s to read, narration lasts 6.2s"
+     },
+     {
+      "code": "text-hold",
+      "message": "slide 's07': 50 characters on screen need ~12.6s to read, narration lasts 7.5s"
+     },
+     {
+      "code": "text-hold",
+      "message": "slide 's08': 63 characters on screen need ~15.5s to read, narration lasts 15.1s"
+     },
+     {
+      "code": "text-hold",
+      "message": "slide 's12': 37 characters on screen need ~9.7s to read, narration lasts 8.4s"
+     }
+    ]
+   },
+   {
+    "file": "deck.json",
+    "slides": 23,
+    "mean_score": 23.3,
+    "risky_pages": 4,
+    "risky_share": 0.174,
+    "over_limit": false,
+    "risky": [
+     {
+      "slide_id": "s06",
+      "score": 45,
+      "factors": [
+       "long_hold",
+       "same_move"
+      ],
+      "risky": true
+     },
+     {
+      "slide_id": "s10",
+      "score": 45,
+      "factors": [
+       "long_hold",
+       "same_move"
+      ],
+      "risky": true
+     },
+     {
+      "slide_id": "s18",
+      "score": 45,
+      "factors": [
+       "long_hold",
+       "same_move"
+      ],
+      "risky": true
+     },
+     {
+      "slide_id": "s22",
+      "score": 45,
+      "factors": [
+       "long_hold",
+       "same_move"
+      ],
+      "risky": true
+     }
+    ],
+    "new_lint_rules": [
+     {
+      "code": "shot-size-variety",
+      "message": "16 AI pictures use only 2 shot size(s); use >= 3"
+     },
+     {
+      "code": "text-hold",
+      "message": "slide 's03': 30 characters on screen need ~8.2s to read, narration lasts 6.2s"
+     },
+     {
+      "code": "text-hold",
+      "message": "slide 's07': 50 characters on screen need ~12.6s to read, narration lasts 7.5s"
+     },
+     {
+      "code": "text-hold",
+      "message": "slide 's08': 63 characters on screen need ~15.5s to read, narration lasts 15.1s"
+     },
+     {
+      "code": "text-hold",
+      "message": "slide 's12': 37 characters on screen need ~9.7s to read, narration lasts 8.4s"
+     }
+    ]
+   }
+  ],
+  "static_scan": {
+   "video": "release.mp4",
+   "shots": 101,
+   "seconds_by_kind": {
+    "static": 70.2,
+    "pan": 0,
+    "motion": 394.8
+   },
+   "static_share": 0.151,
+   "dead_zones": [],
+   "dead_zone_seconds": 0,
+   "limit_seconds": 10.0
+  }
+ }
+]

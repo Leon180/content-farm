@@ -72,6 +72,8 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--transition-seconds", type=float, default=0.25)   # v3: 0.4 s let two pages' text overlap
     parser.add_argument("--replace", action="store_true", help="remove old timeline files first")
     parser.add_argument("--no-stock", action="store_true", help="never call Pexels/Pixabay")
+    parser.add_argument("--clip-rank", action="store_true",
+                        help="re-rank stock_video candidates against the narration with local CLIP (needs CF_CLIP_MODEL_DIR; off by default)")
     parser.add_argument("--no-cache", action="store_true",
                         help="rebuild every slot (default: reuse slots whose scene identity is unchanged)")
     parser.add_argument("--stock-cache", type=Path, default=Path(".cache/explainer_stock"))
@@ -82,6 +84,17 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--require-measured", action="store_true",
                         help="exit 3 instead of warning when only estimated durations exist")
     return parser.parse_args(argv)
+
+
+def _clip_ranker():
+    """Local CLIP re-ranking of footage candidates when CF_CLIP_MODEL_DIR points at weights; else keyword order."""
+    from content_farm.explainer.footage import clip_rank
+
+    try:
+        return clip_rank.with_embedder(clip_rank.from_env())
+    except clip_rank.ClipUnavailable as exc:
+        print(f"CLIP ranking off: {exc}", file=sys.stderr)
+        return None
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -105,7 +118,7 @@ def main(argv: list[str] | None = None) -> int:
             keys = _stock_keys(args.env_file)
             stock = StockClient(pexels_key=keys["CF_PEXELS_API_KEY"],
                                 pixabay_key=keys["CF_PIXABAY_API_KEY"], cache_dir=args.stock_cache)
-            footage = FootageClient(cache_dir=args.footage_cache, stock=stock)
+            footage = FootageClient(cache_dir=args.footage_cache, stock=stock, ranker=_clip_ranker() if args.clip_rank else None)
         run = media_to_visual(deck, run_dir, clips, stock=stock, options=options, footage=footage)
     except (OSError, ValueError, ValidationError, FFmpegError, json.JSONDecodeError) as exc:
         print(f"Error: {exc}", file=sys.stderr)

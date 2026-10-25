@@ -61,6 +61,8 @@ def lint_deck(deck: Deck) -> tuple[LintIssue, ...]:
         *_check_draft(deck),
         *_check_media(deck),
         *_check_visuals_v4(deck),
+        *_check_shot_language(deck),
+        *_check_section_rules(deck),
     )
 
 
@@ -190,6 +192,9 @@ def _form(slide) -> str:
     return slide.media_kind.value
 
 
+form_of = _form    # public name for other explainer modules (slideshow_risk)
+
+
 def _check_visuals_v4(deck: Deck) -> list[LintIssue]:
     """Every section has an AI picture; text-only pages are at most 30 %; no two consecutive slides share a form;
     a long deck has 2-3 Wan key shots."""
@@ -236,4 +241,49 @@ def _check_wan_faces(slides) -> list[LintIssue]:
                 f"slide {slide.id!r}: Wan shot shows people / a face ({', '.join(found)}); "
                 "use parallax, or a scene / object shot without characters",
             ))
+    return issues
+
+
+TEXT_HOLD_CHARS_PER_SECOND = 4.5   # lemo DIRECTOR.md reading rule (Chinese): on-screen text needs chars / 4.5 + 1.5 s
+TEXT_HOLD_BASE_SECONDS = 1.5
+
+
+def _check_shot_language(deck: Deck) -> list[LintIssue]:
+    """Neighbouring AI pictures never share a shot size; a deck with many pictures varies its sizes; page text stays up
+    long enough to be read (DIRECTOR.md pacing rules, rewritten)."""
+    from content_farm.explainer import shot_language
+    from content_farm.explainer.slideshow_risk import screen_text_chars
+
+    issues: list[LintIssue] = []
+    slides = list(deck.slides)
+    for section in deck.sections:
+        for before, after, size in shot_language.adjacent_repeats(list(section.slides)):
+            issues.append(LintIssue("shot-size-repeat", f"slide {after!r}: same shot size ({size.value}) as {before!r}; "
+                                                         "change shot_size (wide / full / medium / close / insert)"))
+    sizes = shot_language.size_variety(slides)
+    pictures = sum(s.media_kind == MediaKind.AI_IMAGE for s in slides)
+    if pictures >= shot_language.MIN_PICTURES_FOR_VARIETY and 0 < sum(sizes.values()) and \
+            len(sizes) < shot_language.MIN_DISTINCT_SIZES:
+        issues.append(LintIssue("shot-size-variety", f"{pictures} AI pictures use only {len(sizes)} shot size(s); "
+                                                      f"use >= {shot_language.MIN_DISTINCT_SIZES}", severity="warn"))
+    for slide in slides:
+        if slide.layout == Layout.TITLE or slide.media_kind in (MediaKind.AI_IMAGE, MediaKind.STOCK_VIDEO):
+            continue          # text over a moving picture is a caption; bare text pages are the ones read like slides
+        need = screen_text_chars(slide) / TEXT_HOLD_CHARS_PER_SECOND + TEXT_HOLD_BASE_SECONDS
+        if slide.estimated_seconds < need:
+            issues.append(LintIssue("text-hold", f"slide {slide.id!r}: {screen_text_chars(slide)} characters on screen "
+                                                  f"need ~{need:.1f}s to read, narration lasts {slide.estimated_seconds:.1f}s",
+                                    severity="warn"))
+    return issues
+
+
+def _check_section_rules(deck: Deck) -> list[LintIssue]:
+    """Chapter rules (quality v5): wording a chapter must keep, and wording it must never contain."""
+    issues: list[LintIssue] = []
+    for section in deck.sections:
+        text = "".join(f"{slide.heading}{slide.narration}" for slide in section.slides)
+        issues += [LintIssue("must-keep-missing", f"section {section.title!r}: must keep {phrase!r}, it is gone")
+                   for phrase in section.must_keep if phrase not in text]
+        issues += [LintIssue("must-avoid-present", f"section {section.title!r}: must not contain {phrase!r}")
+                   for phrase in section.must_avoid if phrase in text]
     return issues

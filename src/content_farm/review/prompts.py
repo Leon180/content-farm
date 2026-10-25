@@ -40,6 +40,11 @@ def _files(materials: Materials, extra: list[str] | None = None) -> str:
     return "素材：\n" + "\n".join(lines)
 
 
+# Observations before scores (Leon 2026-10-24, from InkOS's audit format): the numbers must be traceable to what was seen.
+OBSERVE = ("先填 observations，再打分：observations 每筆只寫「看到什麼」——quote 逐字引用、observed 用平實的話描述那裡有什麼"
+           "（例如「第 3 段連續 5 句都是數字，沒有比喻」），不准寫好壞形容詞、不准有分數；至少 3 筆、至多 10 筆。"
+           "rubric 分數與 issues 必須能對回這些觀察。")
+
 STAGE_TASK = {
     "topic": {
         "viewer": "你在 YouTube 首頁看到這些題目當標題。每一題給點擊意願 0–10（picks 要涵蓋每個候選 id）與一句理由。",
@@ -60,7 +65,10 @@ STAGE_TASK = {
         "viewer": "依序讀講稿，想像這是你在看的影片（每句後面的時間是估計）。每張投影片（slide_id）給投入 0–10 與 stay/leave；"
                   "照你的人設，標出你會離開的那一句（left_at_sentence，看完就 null）。top_fixes 最多 3 條；"
                   "有離開時第一條的 sentence_ids 第一個必須是 left_at_sentence，後面最多再放 3 句造成離開的原因，不要列整頁或整章。",
-        "pro": "依 rubric 評講稿與分鏡，各項 0–10，總分 score 0–10。問題用句子 id 指認。",
+        "pro": "依 rubric 評講稿與分鏡，各項 0–10，總分 score 0–10。問題用句子 id 指認。\n" + OBSERVE
+               + "\n若素材有 hooks.txt（伏筆帳本）：逐條確認每條埋下的線有沒有收；沒收、或收在觀眾早已忘記的地方，列成問題（category=structure，"
+               "ref 指埋線的句子 id，fix 寫在哪裡收或刪掉那條線）。若有 coherence.txt：逐條確認程式找到的疑似矛盾是否屬實，屬實才列問題。"
+               "章節規則（deck.json 的 must_keep／must_avoid）被破壞時也列問題。",
         "fact": "逐條查講稿中的事實說法（數字、單位、日期、引述、因果），對照 article.md 與 sources.json 的原始網址（用 WebFetch），"
                 "確認改稿後沒有走樣：單位、基準、「據報導」等限定詞不能掉。claims 的 sentence_ids 寫句子 id。"
                 "status：ok／wrong／unsourced／unverifiable；analysis＝頻道自己的換算或判斷、文中明確寫成換算／判斷且你驗算過"

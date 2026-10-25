@@ -207,6 +207,25 @@ class Settings:
     seed: int
     width: int
     height: int
+    forbidden: tuple[str, ...] = ()      # things the channel style file bans from every picture
+
+
+def style_for(channel) -> tuple[str, tuple[str, ...]]:
+    """The channel's style prefix and banned terms: ``channels/styles/<code>.md`` when it exists and the channel has not
+    switched ``quality.style_file`` off, else ``ai_illustration.style_prefix`` with nothing banned."""
+    config = channel.ai_illustration
+    if not channel.quality.style_file:
+        return config.style_prefix, ()
+    from content_farm.explainer import style_file
+
+    guide = style_file.load(channel.code)
+    return (guide.prefix(), guide.forbidden) if guide is not None else (config.style_prefix, ())
+
+
+def settings_for(channel) -> Settings:
+    config = channel.ai_illustration
+    prefix, forbidden = style_for(channel)
+    return Settings(config.model, prefix, config.seed, config.width, config.height, forbidden)
 
 
 def sidecar_for(image: Path) -> Path:
@@ -224,7 +243,9 @@ def load_record(image: Path) -> dict | None:
 
 
 def requests_for(deck: Deck, settings: Settings) -> list[IllustrationRequest]:
-    return [IllustrationRequest(slide.id, f"{settings.style_prefix.strip()} {slide.media.prompt.strip()}".strip(),
+    from content_farm.explainer.shot_language import compose_prompt
+
+    return [IllustrationRequest(slide.id, compose_prompt(settings.style_prefix, slide.media),
                                 settings.seed, settings.width, settings.height)
             for slide in deck.slides if slide.media_kind == MediaKind.AI_IMAGE and slide.media is not None]
 
@@ -249,6 +270,11 @@ def illustrate(deck: Deck, run_dir: Path, settings: Settings, provider: Illustra
 
     todo = set(missing_images(deck, run_dir, settings, replace=replace))
     for request in requests:
+        subject = next((sl.media.prompt for sl in deck.slides if sl.id == request.slide_id and sl.media), "")
+        banned = [t for t in settings.forbidden if t.lower() in subject.lower()
+                  and not re.search(rf"\b(?:no|without|never)\s+(?:\w+\s+)?{re.escape(t.lower())}", subject.lower())]
+        if banned:
+            raise ValueError(f"slide {request.slide_id}: prompt asks for {banned}, banned by the channel style file")
         bad = forbidden_prompt_terms(request.prompt)
         if bad:
             raise ValueError(f"slide {request.slide_id}: prompt asks for {bad} (rule: 非擬真、不模仿畫家)")

@@ -103,6 +103,17 @@ The script panel's viewers leave where the article is a stack of glossaries, tim
 
 Write `<run_dir>/story_spine.json`: `{"hook":…,"through_line":…,"beats":[{"section":"a-timeline","turn":…}],"payoff":…}` — at least body-chars ÷ 450 beats (min 3), every section over 700 chars has one. `scripts/check_article.py --require-spine` enforces the shape.
 
+### Hooks ledger (quality v5; `hooks_ledger.json`)
+
+Every thread the article opens is a debt to the viewer: a question it poses, a promise ("後面會告訴你…"), a piece of foreshadowing, a tease. Write `<run_dir>/hooks_ledger.json` next to `article.md` and keep it current while you edit:
+
+```json
+{"version": 1, "hooks": [
+  {"id": "h1", "kind": "question", "text": "為什麼這麼晚才拍到活的？", "planted": "a-hook", "payoff": "a-conclusion", "status": "paid", "note": ""}]}
+```
+
+`kind`: question / promise / foreshadow / tease. `status`: `open` (planted, not yet paid), `paid` (name where in `payoff`), `dropped` (removed on purpose; `note` says why). `planted` / `payoff` are article section anchors here; the deck stage replaces them with slide ids. **Finish with no `open` hook** — every opened thread is paid or deliberately dropped. The hook sentence in the story spine is always hook `h1`. The script panel reads this ledger (rendered as `hooks.txt`) and lists every thread left open; `scripts/produce.py` QC warns on the same.
+
 ## Self-check before showing the user
 
 - Every `[src:id]` in the article exists in `sources.json`; every source is cited at least once.

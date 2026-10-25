@@ -33,9 +33,22 @@ def record(run_dir: Path, gate: str, stage_name: str, card: dict[str, Any], *, w
     entry = {"gate": gate, "stage": stage_name, "round": card.get("round"), "recorded_at": now_iso(),
              "scores": verdict.get("scores"), "passed_thresholds": bool(verdict.get("pass")), "waived": waived,
              "unmet": list(verdict.get("reasons", [])),
+             # concrete observations (what the reviewers saw, quoted) kept apart from the scores above
+             "observations": list(card.get("observations") or []),
              "comments": [{k: i.get(k) for k in ("ref", "category", "severity", "problem", "fix", "who")}
                           for i in verdict.get("issues", [])]}
     ledger["stages"] = {**ledger["stages"], gate: entry}
+    path = _ledger_path(run_dir)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(ledger, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
+    return path
+
+
+def record_qc(run_dir: Path, name: str, data: dict[str, Any]) -> Path:
+    """Keep an automatic QC measurement (e.g. ``static_scan`` dead zones) in the ledger next to the judged scores, so it can
+    be compared with what the audience did. Replaces the entry of the same name; everything else is kept."""
+    ledger = load(run_dir)
+    ledger["qc"] = {**ledger.get("qc", {}), name: {"recorded_at": now_iso(), **data}}
     path = _ledger_path(run_dir)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(ledger, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
