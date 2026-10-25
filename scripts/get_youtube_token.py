@@ -1,6 +1,6 @@
 """Obtain a YouTube OAuth2 refresh token for ONE brand channel and store it in .env.
 
-Usage (one run per channel; chipcat also covers the retired "technews" id):
+Usage (one run per channel; technews = 晚點你就知道 and may stay on the default CF_YOUTUBE_REFRESH_TOKEN):
     .venv/bin/python scripts/get_youtube_token.py --channel chipcat
     .venv/bin/python scripts/get_youtube_token.py --channel cel
     .venv/bin/python scripts/get_youtube_token.py --channel yokai

@@ -9,10 +9,12 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
-CHANNELS: tuple[str, ...] = ("chipcat", "cel", "yokai", "deepsea", "fable")
+# Channel -> YouTube channel (Leon 2026-10-25): fable = 不奇而寓, yokai = 怪談開談, technews = 晚點你就知道
+# (technews uses the default CF_YOUTUBE_REFRESH_TOKEN unless CF_YOUTUBE_REFRESH_TOKEN_TECHNEWS is set).
+CHANNELS: tuple[str, ...] = ("chipcat", "cel", "yokai", "deepsea", "fable", "technews")
 
-# Retired channel ids that publish under another channel's token.
-CHANNEL_ALIASES: dict[str, str] = {"technews": "chipcat"}
+# Retired channel ids that publish under another channel's token (none: technews is its own channel again).
+CHANNEL_ALIASES: dict[str, str] = {}
 
 _FALLBACK_ENV = "CF_YOUTUBE_REFRESH_TOKEN"
 

@@ -56,3 +56,4 @@
 {"kind": "file_exists", "path": "/Users/lileon/project/content-farm/.claude/worktrees/cf-deepsea-wan/artifacts/deepsea-mega/deepsea-mega-part1.mp4", "min_bytes": 100000, "why": "成片 540p／對照圖（未 commit）"}
 {"kind": "file_exists", "path": "/Users/lileon/project/content-farm/.claude/worktrees/cf-deepsea-wan/artifacts/deepsea-mega/deepsea-mega-part2.mp4", "min_bytes": 100000, "why": "成片 540p／對照圖（未 commit）"}
 {"kind": "file_exists", "path": "/Users/lileon/project/content-farm/.claude/worktrees/cf-deepsea-wan/artifacts/deepsea-mega/compare-8frames.png", "min_bytes": 100000, "why": "成片 540p／對照圖（未 commit）"}
+{"kind": "file_exists", "path": "/Users/lileon/project/content-farm/.claude/worktrees/cf-integrate-1025/REPORT-integrate-1025.md", "min_bytes": 2000, "why": "派工宣告的預期產物"}

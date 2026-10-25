@@ -58,7 +58,8 @@ audio:                  # Leon 2026-10-24（visual v4）：科技新知：低調
 youtube:
   client_id_env: CF_YOUTUBE_CLIENT_ID
   client_secret_env: CF_YOUTUBE_CLIENT_SECRET
-  refresh_token_env: CF_YT_TECHNEWS_REFRESH_TOKEN
+  display_name: 晚點你就知道   # 獨立頻道，不併入晶片貓（無「晶片貓快報」前綴與署名）；用預設 token
+  refresh_token_env: CF_YOUTUBE_REFRESH_TOKEN
   channel_id_env: CF_YT_TECHNEWS_CHANNEL_ID
   ai_disclosure: true
   default_privacy: private

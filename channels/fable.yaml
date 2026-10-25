@@ -61,7 +61,8 @@ audio:                      # 配樂（後期步驟，可關）：溫暖、說�
 youtube:
   client_id_env: CF_YOUTUBE_CLIENT_ID
   client_secret_env: CF_YOUTUBE_CLIENT_SECRET
-  refresh_token_env: CF_YT_FABLE_REFRESH_TOKEN
+  display_name: 不奇而寓
+  refresh_token_env: CF_YOUTUBE_REFRESH_TOKEN_FABLE
   channel_id_env: CF_YT_FABLE_CHANNEL_ID
   ai_disclosure: true
   default_privacy: private

@@ -16,6 +16,7 @@ import pytest
 from content_farm.youtube.channel_tokens import (
     normalize_channel,
     resolve_refresh_token,
+    resolve_token_source,
     token_env_name,
 )
 from content_farm.youtube.env_file import EnvVarExistsError, set_env_var
@@ -26,9 +27,10 @@ from content_farm.youtube.quota import QuotaLedger, upload_cost
 # ---------- channel tokens ----------
 
 
-def test_technews_uses_chipcat_token() -> None:
-    assert normalize_channel("technews") == "chipcat"
-    assert token_env_name("technews") == "CF_YOUTUBE_REFRESH_TOKEN_CHIPCAT"
+def test_technews_is_its_own_channel_on_the_default_token() -> None:
+    assert normalize_channel("technews") == "technews"
+    assert token_env_name("technews") == "CF_YOUTUBE_REFRESH_TOKEN_TECHNEWS"
+    assert resolve_token_source("technews", {"CF_YOUTUBE_REFRESH_TOKEN": "x"}) == "CF_YOUTUBE_REFRESH_TOKEN"
 
 
 def test_specific_token_wins_over_shared() -> None:
@@ -332,7 +334,8 @@ def test_factory_picks_channel_token(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("CF_YOUTUBE_REFRESH_TOKEN", "shared")
     monkeypatch.setenv("CF_YOUTUBE_REFRESH_TOKEN_CHIPCAT", "chip")
     settings = Settings()  # type: ignore[call-arg]
-    assert create_youtube_uploader(settings, channel="technews")._refresh_token == "chip"  # type: ignore[attr-defined]
+    assert create_youtube_uploader(settings, channel="chipcat")._refresh_token == "chip"  # type: ignore[attr-defined]
+    assert create_youtube_uploader(settings, channel="technews")._refresh_token == "shared"  # type: ignore[attr-defined]
     assert create_youtube_uploader(settings, channel="cel")._refresh_token == "shared"  # type: ignore[attr-defined]
 
 

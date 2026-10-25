@@ -249,6 +249,7 @@ class YouTube(_Strict):
     client_secret_env: str = "CF_YOUTUBE_CLIENT_SECRET"
     refresh_token_env: str
     channel_id_env: str
+    display_name: str = Field(default="", max_length=40)   # the YouTube channel's public name (documentation; "" = not set)
     ai_disclosure: bool = True          # description-text disclosure line (TTS voice / AI images)
     # Studio's 「變造或合成內容」 checkbox = API status.containsSyntheticMedia. Off by Leon's
     # 2026-10-16 decision (916c2864e31f): disclose in the description only. YouTube asks for the
