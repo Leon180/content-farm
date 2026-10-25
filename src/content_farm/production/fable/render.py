@@ -104,12 +104,19 @@ def write_subtitles(run_dir: Path, work: Path, fable: Fable) -> int:
     return len(cues)
 
 
-def write_thumbnail(run_dir: Path, work: Path, fable: Fable) -> Path:
+def write_thumbnail(run_dir: Path, work: Path, fable: Fable, channel: Channel, durations: list[float]) -> Path:
+    """Thumbnail options (hook + thumbnail-composed picture) when fable.json has them, else the legacy title card;
+    a Short also gets its suggested cover frame."""
     from content_farm.explainer.capture import PageCapturer
+    from content_farm.production.fable import thumb
 
+    if fable.format == "short":
+        thumb.write_cover_frame(run_dir, fable, durations)
+    if fable.thumb:
+        return thumb.render_options(run_dir, fable, channel)["a"]
     first = find_image(run_dir / AI_IMAGE_DIR, images.drawn_shots(fable)[0].image_id)
     html = work / "thumb.html"
-    html.write_text(cards.thumb_html(fable, first.resolve().as_uri()), encoding="utf-8")
+    html.write_text(cards.thumb_html(fable, first.resolve().as_uri(), channel.name), encoding="utf-8")
     with PageCapturer(size=cards.GEOMETRY[fable.format].size) as capturer:
         return capturer.still(html, run_dir / "thumbnails" / "thumbnail.png")
 
@@ -139,6 +146,6 @@ def render_fable(run_dir: Path, channel: Channel, env_file: Path | None = None) 
     scene_files = [run_dir / "audio" / f"scene_{i:03d}.mp3" for i in range(1, len(durations) + 1)]
     audio = compose.concat_audio(scene_files, work / "narration.wav", run_dir)
     video = compose.assemble(segments, reveal_at, pre_seconds, audio, total, run_dir / "assembly" / "final.mp4", work)
-    write_thumbnail(run_dir, work, fable)
+    write_thumbnail(run_dir, work, fable, channel, durations)
     write_credits(run_dir, fable, manifest)
     return RenderResult(video, total, len(manifest["clips"]), 0, cues)

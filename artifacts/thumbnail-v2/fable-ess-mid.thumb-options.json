@@ -1,0 +1,685 @@
+{
+ "version": 1,
+ "format": "mid",
+ "title": "老樹林的山雀，為什麼誰也佔不到便宜",
+ "concept": {
+  "name": "演化穩定策略",
+  "aliases": [
+   "演化穩定均衡",
+   "鷹鴿博弈",
+   "鷹鴿賽局",
+   "鷹鴿模型",
+   "鷹鴿遊戲",
+   "ESS"
+  ],
+  "english": [
+   "evolutionarily stable strategy",
+   "evolutionary stable strategy",
+   "hawk-dove game",
+   "hawk dove"
+  ],
+  "domain": "演化生物學（賽局理論）",
+  "references": [
+   "Maynard Smith & Price (1973), The Logic of Animal Conflict, Nature 246",
+   "Maynard Smith (1982), Evolution and the Theory of Games, Cambridge University Press",
+   "鷹鴿博弈的標準結果（V<C 時唯一的混合 ESS 為鷹比例 V/C；V>C 時鷹為純 ESS）已與課程講義交叉核對（例：V=2、C=4 時鷹比例 V/C=1/2；比例偏離時少數策略報酬較高而被拉回）：UMD ZOOL360 L18 ESS、Berkeley BIOL472 ESS notes、MUN Biology 4250 Hawk vs Dove"
+  ]
+ },
+ "elements": [
+  {
+   "id": "e1",
+   "concept_part": "頻率依賴：策略的好壞取決於族群中別人用什麼策略",
+   "story_ref": "拚命派越多，拚命就越不划算"
+  },
+  {
+   "id": "e2",
+   "concept_part": "資源價值 V 小於衝突代價 C 時，純策略都撐不住",
+   "story_ref": "受傷的代價比莓果還貴；長老鶇數羽毛"
+  },
+  {
+   "id": "e3",
+   "concept_part": "穩定的定義：群體採用後，少數突變者無法靠改變策略佔便宜",
+   "story_ref": "那隻想多打架的山雀討不到好處"
+  },
+  {
+   "id": "e4",
+   "concept_part": "混合比例：鷹的頻率為 V/C，兩種策略報酬相等",
+   "story_ref": "兩種山雀的比例停在某個地方"
+  },
+  {
+   "id": "e5",
+   "concept_part": "ESS 是撐得住，不是最好（不必是最有效率）",
+   "story_ref": "全是讓路派其實吃得更好，卻守不住"
+  }
+ ],
+ "hooks": [
+  {
+   "id": "h1",
+   "text": "為什麼老樹林裡永遠有愛打架的鳥，也永遠有愛讓路的鳥"
+  },
+  {
+   "id": "h2",
+   "text": "長老鶇每年春天為什麼只數受傷的羽毛，不數誰搶到莓果"
+  },
+  {
+   "id": "h3",
+   "text": "為什麼不是全都變成最會贏的那一種"
+  }
+ ],
+ "pronunciation_map": {},
+ "beats": [
+  {
+   "id": "b1",
+   "act": "hook",
+   "narration": "一座林子裡，打架的鳥和讓路的鳥，為什麼永遠誰也贏不了誰？看完你會知道答案，還有一個誰都不敢亂改的規則。",
+   "must_keep": [
+    "承諾觀眾看完會知道什麼",
+    "留下懸念"
+   ],
+   "must_avoid": [
+    "概念名與任何同義詞",
+    "領域名稱",
+    "鷹、鴿字樣"
+   ],
+   "shots": [
+    {
+     "image_prompt": "an old berry forest at golden hour, a branch heavy with red berries, small round songbirds perched far apart, calm wide composition"
+    },
+    {
+     "image_prompt": "close view of two small round songbirds facing off on a berry branch, one with spread wings, one stepping back, soft storybook light"
+    }
+   ]
+  },
+  {
+   "id": "b2",
+   "act": "story",
+   "narration": "老樹林裡，每到秋天，枝頭就結滿紅通通的莓果。山雀們都想要。為什麼這片林子，永遠兩種鳥都有？",
+   "plants": [
+    "h1"
+   ],
+   "must_keep": [
+    "老樹林與莓果",
+    "伏筆 h1"
+   ],
+   "must_avoid": [
+    "說教",
+    "概念名"
+   ],
+   "shots": [
+    {
+     "image_prompt": "a huge ancient tree full of ripe red berries in autumn, tiny round songbirds gathered in its branches, warm lantern-like sunset glow"
+    },
+    {
+     "image_prompt": "two small round songbirds on a branch looking at each other thoughtfully, one with ruffled feathers, one calm, berries around them"
+    }
+   ]
+  },
+  {
+   "id": "b3",
+   "act": "story",
+   "narration": "林子裡的規矩很簡單，誰先搶到，莓果就歸誰。冬天快來了，多吃一顆，就多一分撐過去的力氣，所以每隻山雀，都得做選擇。",
+   "must_keep": [
+    "搶到歸誰的規矩",
+    "冬天讓莓果有價值"
+   ],
+   "must_avoid": [
+    "概念名",
+    "說教"
+   ],
+   "shots": [
+    {
+     "image_prompt": "a cozy forest in late autumn with first frost on leaves, small songbirds eyeing a heavy berry branch, warm golden light"
+    },
+    {
+     "image_prompt": "a small songbird holding one red berry close, a snowy winter hill faintly visible in the distance, soft light"
+    }
+   ]
+  },
+  {
+   "id": "b4",
+   "act": "story",
+   "narration": "山雀有兩種性格。有的見到對手，就撲上去打到底，大家叫它們拚命派。有的一看對手兇，就退到一旁，叫讓路派，不過也有些鳥會先打量對手的體型，才決定撲不撲。",
+   "must_keep": [
+    "兩種性格的明確定義",
+    "拚命派、讓路派兩個名稱"
+   ],
+   "must_avoid": [
+    "說它們是天生固定",
+    "概念名"
+   ],
+   "shots": [
+    {
+     "image_prompt": "a small round songbird with fierce eyebrows and spread wings lunging forward on a branch, berries flying about, dynamic but cute"
+    },
+    {
+     "image_prompt": "a small round songbird with soft gentle eyes, stepping aside on a branch to make way, one wing lifted politely"
+    }
+   ]
+  },
+  {
+   "id": "b5",
+   "act": "story",
+   "narration": "最早的那個秋天，滿樹都是讓路派。兩隻鳥看上同一顆莓果，就互相瞪一瞪，然後各吃一半。樹上一片和氣。",
+   "must_keep": [
+    "全是讓路派",
+    "各吃一半"
+   ],
+   "must_avoid": [
+    "提前暗示會出問題",
+    "概念名"
+   ],
+   "shots": [
+    {
+     "image_prompt": "two small songbirds sharing one big red berry, each pecking one half, peaceful morning light in the forest"
+    },
+    {
+     "image_prompt": "a tree full of calm songbirds eating berries, side by side, soft golden light, friendly atmosphere"
+    }
+   ]
+  },
+  {
+   "id": "b6",
+   "act": "story",
+   "narration": "有一天，一隻拚命派的山雀，飛進了這片林子。它一撲過去，讓路派就全退開。那個秋天，它吃得圓滾滾，比誰都多。",
+   "must_keep": [
+    "第一隻拚命派闖入大賺"
+   ],
+   "must_avoid": [
+    "提到它的族群比例",
+    "概念名"
+   ],
+   "shots": [
+    {
+     "image_prompt": "one fierce small songbird diving into a berry tree while other songbirds retreat to far branches, leaves, swirling"
+    },
+    {
+     "image_prompt": "a very round, plump songbird sitting contentedly among piles of red berries, other birds watching from a distance"
+    }
+   ]
+  },
+  {
+   "id": "b7",
+   "act": "story",
+   "narration": "隔年春天，年輕的山雀們看在眼裡，心想，原來撲上去最划算。於是有的小鳥改學拚命派，拚命派一年比一年多。",
+   "must_keep": [
+    "年輕鳥模仿得利者的選擇",
+    "拚命派變多"
+   ],
+   "must_avoid": [
+    "暗示最後的比例",
+    "說教"
+   ],
+   "shots": [
+    {
+     "image_prompt": "a row of young fluffy songbird chicks on a branch watching a plump bird, with thought bubbles, shaped like berries, spring blossoms"
+    },
+    {
+     "image_prompt": "several young songbirds practicing a fierce lunging pose on a mossy branch, cute and determined, spring light"
+    }
+   ]
+  },
+  {
+   "id": "b8",
+   "act": "story",
+   "narration": "可是拚命派碰上拚命派，誰也不肯退。打到羽毛亂飛，好不容易搶到一顆莓果，翅膀卻傷了，要養整個冬天。這個傷，比莓果還貴。",
+   "must_keep": [
+    "兩個拚命派互不退讓",
+    "受傷的代價比莓果貴"
+   ],
+   "must_avoid": [
+    "直接說出代價大於價值這類術語",
+    "概念名"
+   ],
+   "shots": [
+    {
+     "image_prompt": "two small songbirds clashing in a flurry of feathers over one berry, neither giving way, dramatic but storybook-gentle"
+    },
+    {
+     "image_prompt": "a lone songbird with a bandaged wing resting in a snowy nest in winter, one small berry beside it, melancholy warm light"
+    },
+    {
+     "image_prompt": "a single red berry placed on a tiny balance scale against a bundle of feathers, scale tipping toward the feathers, cozy still life"
+    }
+   ]
+  },
+  {
+   "id": "b9",
+   "act": "story",
+   "narration": "冬天來了，帶傷的山雀縮在巢裡發抖。它們看著窗外那顆沒吃到的莓果，心裡想，這一架，到底值不值得。",
+   "must_keep": [
+    "受傷後的代價感受"
+   ],
+   "must_avoid": [
+    "直接說代價大於價值",
+    "概念名"
+   ],
+   "shots": [
+    {
+     "image_prompt": "a small injured songbird in a cozy nest looking out at falling snow, a single red berry glowing on a distant branch"
+    },
+    {
+     "image_prompt": "a row of tiny nests on a snowy tree, soft lantern glow from each, quiet and sad mood"
+    }
+   ]
+  },
+  {
+   "id": "b10",
+   "act": "story",
+   "narration": "到了第五個秋天，樹上打架聲不斷，幾乎每隻鳥身上都帶著傷。只有讓路派的山雀，兩隻各吃一半莓果，毫髮無傷，過冬的力氣，反而比滿身傷的拚命派還足。",
+   "must_keep": [
+    "拚命派太多時，讓路派各吃一半卻毫髮無傷，平均反而比較好"
+   ],
+   "must_avoid": [
+    "給出比例數字",
+    "概念名"
+   ],
+   "shots": [
+    {
+     "image_prompt": "a crowded autumn tree where many small songbirds fight in tangled clumps, feathers floating down, chaotic but cute"
+    },
+    {
+     "image_prompt": "two calm unhurt small songbirds on a high twig sharing one berry, each pecking one half, while bandaged songbirds fight in tangled clumps on the branches below, humorous"
+    }
+   ]
+  },
+  {
+   "id": "b11",
+   "act": "story",
+   "narration": "冬天過去，大家看在眼裡：各吃一半、毫髮無傷，其實過得比較好。看見的小鳥又改了主意，讓路派又慢慢變多。可是有一天，一隻拚命派又撲進一排讓路派之間，大家紛紛退開，它又吃得圓滾滾。",
+   "must_keep": [
+    "讓路派變多",
+    "拚命派又有機會大賺"
+   ],
+   "must_avoid": [
+    "點出這是循環的名稱",
+    "概念名"
+   ],
+   "shots": [
+    {
+     "image_prompt": "young songbirds turning to follow a calm songbird, one by one, on a long branch, gentle autumn dusk"
+    },
+    {
+     "image_prompt": "a lone fierce songbird landing on a tree full of polite songbirds who step back, berries gleaming, sly smile"
+    }
+   ]
+  },
+  {
+   "id": "b12",
+   "act": "story",
+   "narration": "季節一個接一個過去。每個秋天，都有小鳥在樹梢猶豫，今年，要撲上去，還是讓一步？它們不知道，這個小小的選擇，會牽動整片林子。",
+   "must_keep": [
+    "每隻鳥各自的選擇"
+   ],
+   "must_avoid": [
+    "給出比例",
+    "概念名"
+   ],
+   "shots": [
+    {
+     "image_prompt": "a hesitating small songbird at the tip of a branch, berries ahead, autumn leaves drifting, thoughtful mood"
+    },
+    {
+     "image_prompt": "the whole ancient forest seen from above in changing autumn colors, tiny birds dotted among the branches, wide storybook view"
+    }
+   ]
+  },
+  {
+   "id": "b13",
+   "act": "story",
+   "narration": "就這樣，一個季節擺過來，一個季節擺過去，擺得越來越小。最後，兩種山雀的比例，停在了某個地方，不再變了。可是為什麼，比例偏偏停在這裡，而不是全都變成最會贏的那一種？",
+   "plants": [
+    "h3"
+   ],
+   "must_keep": [
+    "擺盪後穩定下來",
+    "伏筆 h3"
+   ],
+   "must_avoid": [
+    "給出比例公式",
+    "概念名"
+   ],
+   "shots": [
+    {
+     "image_prompt": "a pendulum made of a hanging berry swinging gently, slowing to rest, forest bokeh behind, storybook still life"
+    },
+    {
+     "image_prompt": "a branch with two kinds of songbirds perched in a steady balanced arrangement, evening glow, quiet and settled"
+    },
+    {
+     "image_prompt": "a puzzled small songbird tilting its head under a tree full of berries, question mark shaped leaf drifting down"
+    }
+   ]
+  },
+  {
+   "id": "b14",
+   "act": "story",
+   "narration": "每年春天，林子裡年紀最大的老鳥，長老鶇，會巡一圈。它不數誰搶到了莓果，只數大家身上掉了幾根受傷的羽毛，因為它想知道，打一架到底要賠上多少。",
+   "plants": [
+    "h2"
+   ],
+   "must_keep": [
+    "長老鶇只數受傷的羽毛",
+    "伏筆 h2"
+   ],
+   "must_avoid": [
+    "概念名與代價 C 之類術語"
+   ],
+   "shots": [
+    {
+     "image_prompt": "an old wise thrush with a gray beard of feathers walking slowly along a mossy branch in spring, lantern light"
+    },
+    {
+     "image_prompt": "an old thrush carefully counting a small pile of fallen feathers on the forest floor with one wing, spring flowers around"
+    }
+   ]
+  },
+  {
+   "id": "b15",
+   "act": "story",
+   "narration": "有一年，只有一隻山雀換打法，想比別人多打一點架。它帶著傷過冬，吃到的莓果卻沒比別人多，隔年又退回原本的樣子。",
+   "must_keep": [
+    "只有一隻山雀換打法",
+    "它受傷卻沒多吃到莓果，退回原樣"
+   ],
+   "must_avoid": [
+    "解釋原因",
+    "概念名"
+   ],
+   "shots": [
+    {
+     "image_prompt": "one small songbird lunging boldly alone while the other songbirds on the branch stay in their usual calm poses, determined look, berries between them"
+    },
+    {
+     "image_prompt": "the same songbird with a bandaged wing and an empty beak, sitting back in its old spot among the others, soft dusk, humorous"
+    }
+   ]
+  },
+  {
+   "id": "b16",
+   "act": "reveal",
+   "narration": "這個故事講的，就是演化穩定策略。教科書最經典的模型，叫鷹鴿博弈：拚命派是鷹，讓路派是鴿。",
+   "resolves": [],
+   "card": {
+    "title": "演化穩定策略"
+   },
+   "must_keep": [
+    "第一次說出概念名",
+    "點出鷹鴿模型與兩派的對應"
+   ],
+   "must_avoid": [
+    "提前解釋全部要素"
+   ],
+   "shots": [
+    {
+     "reuse": "b13.2"
+    },
+    {
+     "reuse": "b4.1"
+    }
+   ]
+  },
+  {
+   "id": "b17",
+   "act": "explain",
+   "narration": "先看第一個要素。拚命派好不好，不是看它本身，而是看樹上有多少拚命派。這叫頻率依賴：策略的好壞，取決於族群裡別人用什麼策略。所以不會全都變成最會贏的那一種。",
+   "maps": [
+    "e1"
+   ],
+   "resolves": [
+    "h3"
+   ],
+   "card": {
+    "title": "對照",
+    "rows": [
+     {
+      "story": "拚命派越多，越不划算",
+      "concept": "頻率依賴：好壞看別人怎麼做"
+     }
+    ]
+   },
+   "must_keep": [
+    "e1 頻率依賴",
+    "收掉 h3"
+   ],
+   "must_avoid": [
+    "新增概念",
+    "誇大成定律"
+   ],
+   "shots": [
+    {
+     "reuse": "b11.1"
+    },
+    {
+     "reuse": "b11.2"
+    },
+    {
+     "reuse": "b10.1"
+    }
+   ]
+  },
+  {
+   "id": "b18",
+   "act": "explain",
+   "narration": "第二個要素，是莓果值多少，和打架傷多重。長老鶇數羽毛，就是在估代價。當莓果的價值，小於受傷的代價，全是拚命派，或全是讓路派，都撐不住。",
+   "maps": [
+    "e2"
+   ],
+   "resolves": [
+    "h2"
+   ],
+   "card": {
+    "title": "對照",
+    "rows": [
+     {
+      "story": "莓果值多少、傷多重",
+      "concept": "資源價值 V、衝突代價 C"
+     },
+     {
+      "story": "傷比莓果還貴",
+      "concept": "V 小於 C：純策略撐不住"
+     }
+    ]
+   },
+   "must_keep": [
+    "e2 V 與 C",
+    "收掉 h2"
+   ],
+   "must_avoid": [
+    "說 V 大於 C 的情形也不穩定",
+    "新增概念"
+   ],
+   "shots": [
+    {
+     "reuse": "b8.3"
+    },
+    {
+     "reuse": "b14.2"
+    },
+    {
+     "reuse": "b10.1"
+    }
+   ]
+  },
+  {
+   "id": "b19",
+   "act": "explain",
+   "narration": "第三個要素，是穩定的定義。如果整群山雀都這樣做，偶爾冒出一隻想換打法的突變者，卻佔不到便宜，這個打法就叫演化穩定策略。",
+   "maps": [
+    "e3"
+   ],
+   "card": {
+    "title": "對照",
+    "rows": [
+     {
+      "story": "那隻想多打架的山雀討不到好處",
+      "concept": "少數突變者無法佔便宜"
+     }
+    ]
+   },
+   "must_keep": [
+    "e3 穩定的定義"
+   ],
+   "must_avoid": [
+    "把穩定說成最好",
+    "新增概念"
+   ],
+   "shots": [
+    {
+     "reuse": "b15.1"
+    },
+    {
+     "reuse": "b15.2"
+    }
+   ]
+  },
+  {
+   "id": "b20",
+   "act": "explain",
+   "narration": "那比例停在哪裡？比例一偏，少數那一派就吃得比較多，所以會被拉回來；停下來的地方，是兩種打法平均吃到的一樣多，沒有誰值得換。在價值小於代價時，拚命派的比例，剛好是價值除以代價。比如莓果值二、傷值四，拚命派就約占一半，像林子裡一半在撲、一半在讓。",
+   "maps": [
+    "e4"
+   ],
+   "resolves": [
+    "h1"
+   ],
+   "card": {
+    "title": "對照",
+    "rows": [
+     {
+      "story": "莓果二、傷四，約一半拚命",
+      "concept": "拚命派比例 = V ÷ C = 2 ÷ 4 = 1/2"
+     },
+     {
+      "story": "比例一偏就被拉回，沒人想換",
+      "concept": "兩種策略的平均報酬相等"
+     }
+    ]
+   },
+   "must_keep": [
+    "e4 比例 V/C 與報酬相等",
+    "收掉 h1"
+   ],
+   "must_avoid": [
+    "說比例適用 V 大於 C",
+    "新增概念"
+   ],
+   "shots": [
+    {
+     "reuse": "b13.2"
+    },
+    {
+     "reuse": "b2.2"
+    },
+    {
+     "reuse": "b13.1"
+    }
+   ]
+  },
+  {
+   "id": "b21",
+   "act": "explain",
+   "narration": "第四個要素要小心：穩定，不等於最好。要是全林子都是讓路派，每隻都沒受傷，平均吃得更多。可是那樣撐不住，一隻拚命派闖進來，就能大賺。",
+   "maps": [
+    "e5"
+   ],
+   "card": {
+    "title": "對照",
+    "rows": [
+     {
+      "story": "全是讓路派，吃得更好卻守不住",
+      "concept": "撐得住，不等於最有效率"
+     }
+    ]
+   },
+   "must_keep": [
+    "e5 撐得住不是最好",
+    "全讓路派被闖入的對照"
+   ],
+   "must_avoid": [
+    "暗示應該選哪一邊",
+    "新增概念"
+   ],
+   "shots": [
+    {
+     "reuse": "b5.2"
+    },
+    {
+     "reuse": "b6.1"
+    }
+   ]
+  },
+  {
+   "id": "b22",
+   "act": "explain",
+   "narration": "最後，要記得比喻的極限。策略指的是行為規則，不是某隻鳥的固定個性。比例可以是族群裡各占多少隻，也可以是每隻鳥自己隨機選。真實的動物，招式也比兩種多得多。",
+   "maps": [
+    "e5"
+   ],
+   "card": {
+    "title": "比喻的極限",
+    "rows": [
+     {
+      "story": "兩種性格的山雀",
+      "concept": "策略，不是天生固定的性格"
+     }
+    ]
+   },
+   "must_keep": [
+    "比喻的極限",
+    "比例的兩種解讀"
+   ],
+   "must_avoid": [
+    "把比喻當定理",
+    "新增概念"
+   ],
+   "shots": [
+    {
+     "reuse": "b4.1"
+    },
+    {
+     "reuse": "b4.2"
+    },
+    {
+     "reuse": "b2.1"
+    }
+   ]
+  },
+  {
+   "id": "b23",
+   "act": "apply",
+   "narration": "同樣的邏輯，被拿來分析動物爭地盤，也常被拿來類比網路上越吵越兇的吵架文化，和兩敗俱傷的價格戰。不過那是類比，不是照搬。",
+   "must_keep": [
+    "動物衝突、吵架文化、價格戰的類比"
+   ],
+   "must_avoid": [
+    "投資建議",
+    "說類比等於定理"
+   ],
+   "shots": [
+    {
+     "reuse": "b1.1"
+    },
+    {
+     "reuse": "b2.1"
+    }
+   ]
+  }
+ ],
+ "thumb": [
+  {
+   "hook": "誰會贏？",
+   "layout": "bottom",
+   "image_prompt": "extreme close-up of two small round songbirds facing off on a branch, the left one lunging forward with wings spread wide and beak open, the right one leaning back and stepping away, a single red berry between them, simple warm cream background"
+  },
+  {
+   "hook": "打還是讓？",
+   "layout": "left",
+   "image_prompt": "close-up of two small round songbirds nose to nose on a mossy branch on the right side of the frame, one puffed up with fierce eyebrows and half-open wings, the other shrinking back with wide worried eyes, plain soft sage green background with empty space on the left"
+  },
+  {
+   "hook": "為什麼沒人贏",
+   "layout": "bottom",
+   "image_prompt": "dramatic close-up of two small round songbirds clashing in a burst of flying feathers over one red berry, both with wings flared and equal strength, neither giving way, simple warm golden background"
+  }
+ ]
+}

@@ -76,9 +76,10 @@ def row_times(count: int, seconds: float, lead: float = 0.8) -> list[float]:
     return [round(lead + step * (i + 0.5), 2) for i in range(count)]
 
 
-def thumb_html(fable: Fable, image_name: str) -> str:
+def thumb_html(fable: Fable, image_name: str, tag: str) -> str:
+    """Legacy thumbnail (no thumb options in fable.json): the title over the first story picture."""
     geo = GEOMETRY[fable.format]
     short = fable.format == "short"
     return _env().get_template("fable_thumb.html.j2").render(
-        w=geo.size[0], h=geo.size[1], image=image_name, title=fable.title, tag="寓言學堂",
+        w=geo.size[0], h=geo.size[1], image=image_name, title=fable.title, tag=tag, hook_lines=None, notext=False,
         pad=70 if short else 60, title_px=92 if short else 84, tag_px=40 if short else 34)

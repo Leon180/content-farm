@@ -72,10 +72,22 @@ class Concept(_Frozen):
     references: tuple[str, ...] = ()     # textbook / paper the explanation follows (the fact checker's anchor)
 
 
+THUMB_HOOK_MAX = 8      # big thumbnail words (ideal 4–8): the title already says the rest
+
+
+class ThumbOption(_Frozen):
+    """One thumbnail candidate: a short hook (not the title) and a picture composed for the thumbnail."""
+
+    hook: str = Field(min_length=2, max_length=THUMB_HOOK_MAX + 2)    # + punctuation; QC counts the visible ones
+    image_prompt: str = Field(min_length=10, max_length=420)           # close-up, one subject, simple background
+    layout: Literal["left", "right", "bottom"] = "bottom"              # where the hook sits
+
+
 class Fable(_Frozen):
     version: Literal[1] = 1
     format: Format
     title: str = Field(min_length=4, max_length=40)
+    thumb: tuple[ThumbOption, ...] = Field(default=(), max_length=3)   # candidates from the script panel (optional)
     concept: Concept
     elements: tuple[Element, ...] = Field(min_length=2, max_length=5)
     hooks: tuple[Hook, ...] = Field(default=(), max_length=5)

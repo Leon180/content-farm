@@ -405,6 +405,15 @@ def retention_qc(run_dir: Path, channel: Channel) -> list[Finding]:
     return retention_findings(data, channel)
 
 
+def fable_thumb_findings(run_dir: Path, channel: Channel) -> list[Finding]:
+    """寓言 runs only: the thumbnail options are readable at phone size and carry no retired channel name."""
+    from content_farm.production.fable import model, thumb
+
+    if not model.is_fable_run(run_dir):
+        return []
+    return thumb.thumb_findings(run_dir, model.load(run_dir), channel)
+
+
 def qc_channel(run_dir: Path, channel: Channel) -> Channel:
     """A Short cut is checked as a Short (9:16, Shorts length) whatever channel publishes it;
     e.g. the 7,722 Short on the 16:9 chipcat channel."""
@@ -447,7 +456,8 @@ def run_qc(run_dir: Path, channel: Channel, deck: Deck | None) -> dict:
         findings += thumbnail_findings(run_dir, channel)
     from content_farm.production.thumbnail import variant_findings
 
-    findings += variant_findings(run_dir, channel)   # A/B variants or Shorts covers, when the run has them
+    findings += variant_findings(run_dir, channel)
+    findings += fable_thumb_findings(run_dir, channel)   # A/B variants or Shorts covers, when the run has them
     video = final_video(run_dir)
     if video is None:
         findings.append(Finding("final_video", "error", "assembly/final.mp4 and draft.mp4 missing"))

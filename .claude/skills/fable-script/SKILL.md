@@ -32,6 +32,13 @@ description: Write fable.json for one 寓言學堂 video — an original fable t
 ## 圖片提示詞（image_prompt）
 英文、只寫內容（頻道的繪本風格前綴由系統加上）：角色（動物／器物）、場景、構圖、光線、情緒，一張圖一個清楚的主體。不要人物、人臉、人群（市集、街道、村莊不要寫 crowd／customers／street 這類會畫出路人的字，改寫成空的攤位、遠處的小動物剪影）、文字、招牌、標誌；角色用具體外形描述（例如 slim red-brown fox-like animal with a ringed tail），不要寫 tanuki／raccoon dog／round／chubby（模型會畫成既有的電影角色）；不要寫畫家名字或「照片」。**動物保持動物身體，不畫人手**（Leon 2026-10-24：貓頭鷹長出人手很怪）：不要寫 holding／writing／hands／arms／fingers／carrying／reading 這類讓動物用手的動詞；道具（書、本子、燈）寫成放在旁邊的樹枝／地上／桌上，動物翅膀收起或前爪著地；要「寫字」「翻書」的劇情改成書本特寫（翻開、寫滿字）加動物在背景。系統會自動加身體規則與預設 negative prompt，`scripts/fable.py lint` 會擋上述動詞。直式 9:16（short）與橫式 16:9（mid）由系統決定，不用寫。
 
+## 縮圖選項（thumb，1–3 個，選填但要寫）
+縮圖有自己的鉤子，不是把標題再貼一次：
+- `hook`：**4–8 字**（含標點）的短句，製造「想知道答案」的缺口，與標題互補（標題講什麼事，鉤子丟衝突或問題，例：「誰會贏？」「打還是讓？」「為什麼沒人贏」）。不得含概念名／同義詞；前 60 秒的故事要兌現它。
+- `image_prompt`：英文，**專為縮圖構圖**——特寫、主體佔畫面 60% 以上、背景簡化、高對比、情緒清楚（例：兩隻對峙的小鳥，一隻張翅撲上、一隻退一步）；同樣不得有人物、文字，不寫畫家名。風格前綴與「特寫構圖」句由系統加上。
+- `layout`：`left`／`right`／`bottom`，字放哪一側（主體在另一側）。
+三個選項要有差異（不同鉤子＋不同構圖），會放進 YouTube「測試與比較」。lint 會檢查字數、洩漏、重複標題。
+
 ## 語氣
 台灣中文口語、說書的溫暖感，不說教。句子短，逗號處要能自然換氣（字幕只在標點斷行）。少用「欸」等語氣詞（整支最多 1 次）；不用「狂」「絕了」這類過期流行語；可以用耐久的口語（嘴砲、帶風向、潛水）。數字少用，出現就帶單位；專有名詞第一次出現給一句白話。
 
@@ -48,6 +55,7 @@ description: Write fable.json for one 寓言學堂 video — an original fable t
     {"id": "e2", "concept_part": "決策應只看未來的成本與收益", "story_ref": "鄰居問它：今天起再澆水值得嗎"}
   ],
   "hooks": [{"id": "h1", "text": "松鼠為什麼天天對著枯樹說「再一天就好」"}],
+  "thumb": [{"hook": "誰會贏？", "image_prompt": "close-up of two small songbirds facing off on a branch, one with spread wings lunging, the other stepping back", "layout": "bottom"}],
   "pronunciation_map": {},
   "beats": [
     {"id": "b1", "act": "hook", "narration": "這個故事在講一個行為經濟學的概念，你猜得到嗎？",

@@ -11,9 +11,9 @@ import math
 import re
 from collections.abc import Callable
 
-from content_farm.explainer.deck import estimate_seconds
+from content_farm.explainer.deck import estimate_seconds, visible_len
 from content_farm.explainer.illustrate import forbidden_prompt_terms
-from content_farm.production.fable.model import Beat, Fable
+from content_farm.production.fable.model import THUMB_HOOK_MAX, Beat, Fable
 
 TRENDY_WORDS = ("狂", "絕了")
 FILLER_LIMIT = 1                     # 「欸」 at most once per video (Leon's script-tone preference)
@@ -211,9 +211,30 @@ def tone_problems(fable: Fable) -> list[str]:
     return problems
 
 
+def thumb_problems(fable: Fable) -> list[str]:
+    """Thumbnail options: a short hook that is not the title and does not give the concept away."""
+    terms = concept_terms(fable)
+    title = _squash(fable.title)
+    problems = []
+    for number, option in enumerate(fable.thumb, 1):
+        where = f"thumb[{number}]"
+        shown = visible_len(option.hook)
+        if shown > THUMB_HOOK_MAX:
+            problems.append(f"{where} 鉤子 {shown} 字，上限 {THUMB_HOOK_MAX}（手機小圖要看得清）")
+        text = _squash(f"{option.hook} {option.image_prompt}")
+        problems += [f"{where} 洩漏概念名「{t}」" for t in terms if t in text]
+        hook = _squash(re.sub(r"[？?！!，,。]", "", option.hook))
+        if hook and hook in re.sub(r"[？?！!，,。]", "", title):
+            problems.append(f"{where} 鉤子「{option.hook}」只是把標題重複一次（要與標題互補）")
+        bad = forbidden_prompt_terms(option.image_prompt)
+        if bad:
+            problems.append(f"{where} image_prompt 有 {bad}（非擬真、不模仿畫家）")
+    return problems
+
+
 CHECKS: tuple[Callable[[Fable], list[str]], ...] = (
     order_problems, count_problems, reveal_problems, leak_problems, mapping_problems, ledger_problems,
-    keep_avoid_problems, picture_problems, length_problems, tone_problems)
+    keep_avoid_problems, picture_problems, length_problems, tone_problems, thumb_problems)
 
 
 def fable_problems(fable: Fable) -> list[str]:

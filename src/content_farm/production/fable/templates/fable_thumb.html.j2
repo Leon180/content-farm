@@ -5,14 +5,22 @@
   html, body { width:{{ w }}px; height:{{ h }}px; overflow:hidden; background:#2b1d12; }
   body { font-family:"Songti TC","Noto Serif TC","PingFang TC",serif; position:relative; }
   img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .tag { position:absolute; left:{{ pad }}px; top:{{ pad }}px; background:#b5532f; color:#fff6e0; font-size:{{ tag_px }}px;
+         font-weight:800; letter-spacing:.2em; padding:8px 20px; border-radius:6px; }
+{% if hook_lines %}
+  .shade { position:absolute; inset:0; background:{{ shade }}; }
+  .hook { position:absolute; {{ hook_css }} color:#fff1c4; font-size:{{ hook_px }}px; font-weight:900; line-height:1.12;
+          letter-spacing:.02em; text-align:{{ align }}; -webkit-text-stroke:{{ stroke }}px #3a2210; paint-order:stroke fill;
+          text-shadow:0 6px 24px rgba(30,18,8,.55); }
+{% else %}
   .shade { position:absolute; inset:0; background:linear-gradient(180deg, rgba(30,18,8,.05) 35%, rgba(30,18,8,.88) 100%); }
   .title { position:absolute; left:{{ pad }}px; right:{{ pad }}px; bottom:{{ pad }}px; color:#fff6e0; font-size:{{ title_px }}px;
            font-weight:900; line-height:1.25; text-shadow:0 4px 18px rgba(0,0,0,.6); }
-  .tag { position:absolute; left:{{ pad }}px; top:{{ pad }}px; background:#b5532f; color:#fff6e0; font-size:{{ tag_px }}px;
-         font-weight:800; letter-spacing:.2em; padding:10px 22px; border-radius:6px; }
+{% endif %}
 </style></head>
 <body>
 <img src="{{ image }}"><div class="shade"></div>
-<div class="tag">{{ tag }}</div>
-<div class="title">{{ title }}</div>
+{% if tag %}<div class="tag">{{ tag }}</div>{% endif %}
+{% if hook_lines %}{% if not notext %}<div class="hook">{% for line in hook_lines %}{{ line }}{% if not loop.last %}<br>{% endif %}{% endfor %}</div>{% endif %}
+{% else %}<div class="title">{{ title }}</div>{% endif %}
 </body></html>

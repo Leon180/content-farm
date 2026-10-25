@@ -274,6 +274,8 @@ class Channel(_Strict):
     # so no schedule, quota or new run goes to it. Existing run-dirs can still be opened by code.
     enabled: bool = True
     name: str
+    # Earlier names of the channel: QC rejects any thumbnail that still shows one (renames leave stale art behind).
+    former_names: tuple[str, ...] = ()
     line: str
     pipeline: Pipeline
     brand: str

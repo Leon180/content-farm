@@ -86,6 +86,7 @@ TASKS = {
 explain（故事情節逐一對應概念要素）→ apply（一句現實應用）；每個 beat 先寫 must_keep／must_avoid。概念名與同義詞（concept.aliases、concept.english 要列全）
 在揭曉前不得出現在標題、旁白、圖片提示詞、card。解釋段要精確：先用 WebSearch／WebFetch 查這個概念的標準定義與教科書／論文說法，concept.references 寫你依據的來源，
 解釋只寫查證過的內容，比喻的極限用一句話說明，不把比喻當定理。台灣中文口語、說書的溫暖感，不用真人角色。
+縮圖：照 SKILL.md「縮圖選項」寫 thumb 1–3 個（hook 4–8 字、與標題互補、不洩漏概念；image_prompt 專為縮圖的特寫構圖）。
 寫完跑 `{python} {repo}/scripts/fable.py lint --run-dir {run_dir}`，改到 0 problem(s)。""",
     "news_script": """任務：科技新聞 Short 稿（news_script.json）。這則的原文已讀過並快取：news_short.json（題目、來源、讀取時間、text_path 指到原文快取）。
 照 {repo}/.claude/skills/news-short/SKILL.md 的五段格式與 lint 規則寫 news_script.json（不要停下來等人審）；頻道是「{channel}」：
