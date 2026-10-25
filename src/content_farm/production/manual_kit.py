@@ -44,7 +44,7 @@ TAGS_MAX_CHARS = 500
 DEFAULT_FRAME_AT = 2.0
 CATEGORY_NAMES = {"27": "教育（Education）", "23": "喜劇（Comedy）", "24": "娛樂（Entertainment）"}
 PLAYLISTS = {"chipcat": "晶片貓｜台灣科技產業拆解", "offwork": "晶片貓下班了｜一個數字",
-             "yokai": "妖怪溯源所", "cel": "賽璐璐研究室"}
+             "yokai": "怪談開談", "cel": "賽璐璐研究室"}
 
 
 @dataclass(frozen=True)

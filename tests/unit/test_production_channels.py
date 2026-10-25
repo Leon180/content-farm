@@ -29,7 +29,7 @@ def test_four_channels_each_with_own_brand() -> None:
     assert {c.brand for c in channels.values()} == set(brand_codes())
     assert all(c.brand == c.code for c in channels.values())
     assert channels["chipcat"].name == "晶片貓"
-    assert channels["yokai"].name == "妖怪溯源所"
+    assert channels["yokai"].name == "怪談開談"
     assert channels["offwork"].name == "晶片貓下班了"
     assert channels["cel"].name == "賽璐璐研究室"
 

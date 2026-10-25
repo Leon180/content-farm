@@ -36,7 +36,7 @@ class BrandSpec:
 BRANDS: tuple[BrandSpec, ...] = (
     BrandSpec("chipcat", "晶片貓", "台灣科技產業拆解", "tech",
               "晶片貓（本尊）", ("cleanroom", "datajournal", "blueprint")),
-    BrandSpec("yokai", "妖怪溯源所", "神話・怪物溯源", "knowledge",
+    BrandSpec("yokai", "怪談開談", "神話・怪物溯源", "knowledge",
               "說書貓（晶片貓換裝：斗篷＋提燈）", ("editorial", "newspaper")),
     BrandSpec("offwork", "晶片貓下班了", "冷笑話 Shorts＋迷因考古", "knowledge",
               "下班貓（晶片貓便服）＋配角 PM 狗", ("collage", "pastel")),

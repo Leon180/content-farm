@@ -32,7 +32,7 @@ body {
 }
 /* 版心: the right column carries the channel name and a 魚尾 */
 .stage::after {
-  content: "▼　妖怪溯源所　▲"; position: absolute; right: 28px; top: 20px; width: 64px; height: 852px;
+  content: "▼　怪談開談　▲"; position: absolute; right: 28px; top: 20px; width: 64px; height: 852px;
   border-left: 2px solid rgba(239,228,203,.5);
   writing-mode: vertical-rl; text-align: center; padding-top: 180px;
   font: 700 30px/64px var(--font-serif); letter-spacing: .5em; color: var(--muted);
