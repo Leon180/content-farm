@@ -1,0 +1,29 @@
+# 科技新知 — 選題雷達種子。時效題為主（HN／Reddit／B 站），wiki 條目當長青背景題。
+channel: technews
+title_template: "{subject}：這週為什麼值得關注"
+shorts_supported: true
+trending_bonus: 15       # 新聞頻道：時效題比長青背景題更貴重，排序時加 15 分（透明加權，非門檻）
+topics:
+  - subject: 大型語言模型
+    wiki: [{lang: zh, title: 大型語言模型}, {lang: en, title: Large language model}]
+    youtube_query: 大型語言模型 原理 白話
+  - subject: RISC-V
+    wiki: [{lang: en, title: RISC-V}, {lang: zh, title: RISC-V}]
+    youtube_query: RISC-V 是什麼
+  - subject: 量子電腦
+    wiki: [{lang: zh, title: 量子計算機}, {lang: en, title: Quantum computing}]
+    youtube_query: 量子電腦 進展
+  - subject: Rust 程式語言
+    wiki: [{lang: en, title: Rust (programming language)}, {lang: zh, title: Rust}]
+    youtube_query: Rust 程式語言 為什麼紅
+  - subject: 開源軟體授權
+    wiki: [{lang: zh, title: 開源軟件}, {lang: en, title: Open-source software}]
+    youtube_query: 開源 授權 爭議
+  - subject: 資訊安全漏洞
+    wiki: [{lang: en, title: Vulnerability (computing)}, {lang: zh, title: 漏洞}]
+    youtube_query: 資安 漏洞 事件
+watch:
+  hackernews_queries: [AI, LLM, semiconductor, security vulnerability, open source, Linux, Rust]
+  subreddits: [{name: technology, sort: top}, {name: MachineLearning, sort: top}, {name: netsec, sort: top}]
+  bilibili_rids: [188]
+  keywords: []      # 科技新知吃整個科技動態，不另做關鍵字過濾

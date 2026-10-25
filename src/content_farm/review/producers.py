@@ -19,6 +19,7 @@ from content_farm.review.brief import article_brief, channel_rules_text, deck_br
 from content_farm.review.quick_patch import quick_enabled
 from content_farm.review.client import Call, CallResult, run_call
 from content_farm.review.config import ReviewConfig, Tier
+from content_farm.topic_radar.brief import radar_brief
 
 REPO = Path(__file__).resolve().parents[3]
 RECEIPT = {"type": "object", "additionalProperties": False, "required": ["files", "summary"],
@@ -307,7 +308,8 @@ def produce(step: str, run_dir: Path, *, channel: str, config: ReviewConfig, pyt
              if step == "deck" else "")          # rubric + channel rules + Bash, from the first call
     if step == "article" and (task is TASKS["article"] or task is ARTICLE_STRUCTURE_REWORK):
         guide = article_brief(config)            # narrative spine + the script panel's rubric (not for a fact-fix rework)
-    prompt = "\n\n".join(part for part in (COMMON.format(**fmt), task.format(**fmt), guide, fixes,
+    radar = radar_brief(run_dir, channel) if step == "topic" and not fixes else ""   # first pass only: a rework is a diff
+    prompt = "\n\n".join(part for part in (COMMON.format(**fmt), task.format(**fmt), radar, guide, fixes,
                                            extra, "完成後用結構化輸出回報寫了哪些檔。") if part)
     tier = producer_tier(config, step, skit=skit)
     log_dir = run_dir / "review" / "producers"

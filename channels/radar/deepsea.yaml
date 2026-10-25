@@ -1,0 +1,34 @@
+# 深潛日誌 — 選題雷達種子（channels/deepsea.yaml 在 cf-deepsea 分支；這裡只放雷達設定）
+channel: deepsea
+title_template: "{subject}：深海裡的真相"
+shorts_supported: true
+topics:
+  - subject: 生物發光
+    wiki: [{lang: zh, title: 生物發光}, {lang: en, title: Bioluminescence}]
+    youtube_query: 深海 生物發光
+  - subject: 馬里亞納海溝
+    wiki: [{lang: zh, title: 馬里亞納海溝}, {lang: en, title: Mariana Trench}]
+    youtube_query: 馬里亞納海溝 深海
+  - subject: 大王烏賊
+    wiki: [{lang: zh, title: 大王烏賊}, {lang: en, title: Giant squid}]
+    youtube_query: 大王烏賊 深海巨獸
+  - subject: 皇帶魚
+    wiki: [{lang: zh, title: 皇帶魚}, {lang: ja, title: リュウグウノツカイ}]
+    youtube_query: 皇帶魚 地震 傳說
+  - subject: 海底熱泉
+    wiki: [{lang: zh, title: 海底熱泉}, {lang: en, title: Hydrothermal vent}]
+    youtube_query: 海底熱泉 生命起源
+  - subject: 鯨落
+    wiki: [{lang: zh, title: 鯨落}, {lang: en, title: Whale fall}]
+    youtube_query: 鯨落 深海 生態
+  - subject: 鮟鱇魚
+    wiki: [{lang: zh, title: 鮟鱇目}, {lang: en, title: Anglerfish}]
+    youtube_query: 鮟鱇魚 深海 燈籠
+  - subject: 吸血烏賊
+    wiki: [{lang: zh, title: 吸血烏賊}, {lang: en, title: Vampire squid}]
+    youtube_query: 吸血烏賊 深海
+watch:
+  hackernews_queries: [deep sea, bioluminescence, giant squid, ocean discovery]
+  subreddits: [{name: oceans, sort: top}, {name: marinebiology, sort: top}]
+  bilibili_rids: [36]
+  keywords: [deep sea, deep-sea, ocean, squid, bioluminescen, whale, hydrothermal, trench, marine, 深海, 海洋, 发光, 鲸, 章鱼, 乌贼]

@@ -45,3 +45,8 @@
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-quality-v5/src/content_farm/explainer/slideshow_risk.py","min_bytes":2000,"why":"投影片感評分"}
 {"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-quality-v5/src","pattern":"TODO-quality","why":"沒留暫時碼"}
 {"kind":"clean_worktree","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-quality-v5"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-topic-radar/REPORT-topic-radar.md","min_bytes":2000,"why":"派工時宣告的預期產物"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-topic-radar/output/radar/2026-10-24/SUMMARY.md","min_bytes":2000,"why":"實抓一次後的每頻道前 3 名摘要（output/ 不進 git）"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-topic-radar/output/radar/2026-10-24/fable.json","min_bytes":500,"why":"6 個頻道的雷達 JSON 之一（其餘 chipcat／cel／yokai／technews／deepsea 同目錄）"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-topic-radar/output/radar","pattern":"access_token|refresh_token|client_secret|AIza","why":"輸出檔不含任何金鑰或 token"}
+{"kind":"clean_worktree","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-topic-radar","why":"所有改動都已 commit"}

@@ -1,0 +1,37 @@
+# 妖怪溯源所 — 選題雷達種子（原住民族題材不放進來：只走共製路線）
+channel: yokai
+title_template: "{subject}：最早的原典怎麼寫"
+shorts_supported: true
+topics:
+  - subject: 九尾狐
+    wiki: [{lang: zh, title: 九尾狐}, {lang: ja, title: 九尾の狐}, {lang: en, title: Kitsune}]
+    youtube_query: 九尾狐 山海經 傳說
+  - subject: 魔神仔
+    wiki: [{lang: zh, title: 魔神仔}]
+    youtube_query: 魔神仔 台灣 傳說 由來
+  - subject: 河童
+    wiki: [{lang: ja, title: 河童}, {lang: zh, title: 河童}, {lang: en, title: Kappa (folklore)}]
+    youtube_query: 河童 妖怪 由來
+  - subject: 山海經
+    wiki: [{lang: zh, title: 山海經}, {lang: en, title: Classic of Mountains and Seas}]
+    youtube_query: 山海經 異獸
+  - subject: 饕餮
+    wiki: [{lang: zh, title: 饕餮}]
+    youtube_query: 饕餮 神話 真相
+  - subject: 天狗
+    wiki: [{lang: ja, title: 天狗}, {lang: zh, title: 天狗}]
+    youtube_query: 天狗 日本妖怪
+  - subject: 媽祖信仰的來歷
+    wiki: [{lang: zh, title: 媽祖}]
+    youtube_query: 媽祖 林默娘 來歷
+  - subject: 城隍爺的來歷
+    wiki: [{lang: zh, title: 城隍}]
+    youtube_query: 城隍爺 來歷
+  - subject: 鵺
+    wiki: [{lang: ja, title: 鵺}, {lang: zh, title: 鵺}]
+    youtube_query: 鵺 日本妖怪
+watch:
+  hackernews_queries: [mythology, folklore, yokai]
+  subreddits: [{name: mythology, sort: top}, {name: folklore, sort: top}]
+  bilibili_rids: [36]
+  keywords: [mytholog, folklore, yokai, monster, legend, 神话, 妖怪, 山海经, 传说, 怪物]
