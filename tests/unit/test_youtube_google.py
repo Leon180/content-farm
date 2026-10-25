@@ -104,6 +104,8 @@ class TestUploadVideo:
         assert status["privacyStatus"] == "private"
         assert status["publishAt"] == "2026-10-22T19:00:00+08:00"
         assert status["containsSyntheticMedia"] is True
+        assert status["selfDeclaredMadeForKids"] is False
+        assert "madeForKids" not in status  # read-only field, must not be sent
 
     @pytest.mark.asyncio
     async def test_upload_with_progress(

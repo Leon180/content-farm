@@ -19,3 +19,8 @@
 {"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-thumbnail-v2/src/content_farm/production/fable/thumb.py","min_bytes":5000,"why":"pipeline 縮圖模組"}
 {"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-thumbnail-v2/src/content_farm/production/fable/cards.py","pattern":"寓言學堂","why":"縮圖標籤不再寫死舊頻道名"}
 {"kind":"clean_worktree","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-thumbnail-v2"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-yt-uploader/REPORT-yt-uploader.md","min_bytes":2000,"why":"派工宣告的預期產物"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-yt-uploader/scripts/upload_pack.py","min_bytes":1000,"why":"上傳腳本"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-yt-uploader/scripts/get_youtube_token.py","min_bytes":1000,"why":"授權腳本"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-yt-uploader/tests/test_youtube_pack_upload.py","min_bytes":1000,"why":"mock 測試"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-yt-uploader/src/content_farm/youtube","pattern":"videos\\(\\)\\.insert\\(.*\\.execute","why":"未新增任何會直接送出 videos.insert 的呼叫（沿用既有 provider）"}
