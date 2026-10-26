@@ -83,9 +83,8 @@ def forbidden_prompt_terms(prompt: str) -> list[str]:
 
 # Animal characters stay animals (Leon 2026-10-24: the owl grew human hands in 3 of 9 pictures).
 # The turbo model may ignore a negative prompt, so the rule is also said positively in the prompt.
-ANIMAL_BODY_RULE = ("Every animal keeps its own natural body exactly as in nature, paws or feet on the ground or on a branch "
-                    "(only birds have wings; mammals, reptiles and fish never have wings or feathers); "
-                    "props rest beside the animal on a branch, the ground or a table.")
+ANIMAL_BODY_RULE = ("Every animal keeps its own natural body exactly as in nature, paws or feet on the ground or on a branch; "
+                    "props rest beside the animal on a branch, the ground or a table. Only the animals named above appear.")
 ANIMAL_NEGATIVE = ("human hands, hands, arms, fingers, holding, gripping, anthropomorphic hands, "
                    "humanoid body, standing like a person, writing with a pen, wings on a mammal, "
                    "winged mouse, winged squirrel, feathers on fur")
