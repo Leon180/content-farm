@@ -3,6 +3,7 @@
     python scripts/fable.py lint     --run-dir output/<run>     # fable.json: structure, reveal rule, thread ledger
     python scripts/fable.py prepare  --run-dir output/<run>     # fable.json -> script.json + voice_text.json
     python scripts/fable.py images   --run-dir output/<run> [--env-file .env]   # draw pictures + parallax clips
+    python scripts/fable.py wan      --run-dir output/<run> [--env-file .env]   # Wan clips for the shots marked "wan" (slow, heavy)
     python scripts/fable.py render   --run-dir output/<run>     # compose final.mp4 (needs images + the voice step)
     python scripts/fable.py guesses  --run-dir output/<run>     # the script panel's 「在哪一句猜到」 table
 
@@ -68,6 +69,18 @@ def cmd_images(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_wan(args: argparse.Namespace) -> int:
+    from content_farm.production.fable import wan_shots
+
+    fable = _load(args.run_dir)
+    if fable is None:
+        return 2
+    clips = wan_shots.bake(args.run_dir, fable, args.env_file)
+    path = wan_shots.write_manifest(args.run_dir, clips)
+    print(f"{path}: {len(clips)} Wan clip(s)")
+    return 0
+
+
 def cmd_render(args: argparse.Namespace) -> int:
     from content_farm.production.channels import load_channel
     from content_farm.production.fable import render
@@ -90,11 +103,11 @@ def cmd_guesses(args: argparse.Namespace) -> int:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
-    for name, func in (("lint", cmd_lint), ("prepare", cmd_prepare), ("images", cmd_images), ("render", cmd_render),
-                       ("guesses", cmd_guesses)):
+    for name, func in (("lint", cmd_lint), ("prepare", cmd_prepare), ("images", cmd_images), ("wan", cmd_wan),
+                       ("render", cmd_render), ("guesses", cmd_guesses)):
         p = sub.add_parser(name)
         p.add_argument("--run-dir", type=Path, required=True)
-        if name in ("images", "render"):
+        if name in ("images", "wan", "render"):
             p.add_argument("--env-file", type=Path, default=None)
         p.set_defaults(func=func)
     args = parser.parse_args(argv)

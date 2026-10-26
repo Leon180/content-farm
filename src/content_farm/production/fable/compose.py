@@ -51,6 +51,21 @@ def picture_segment(loop: Path, size: tuple[int, int], seconds: float, out: Path
     return out
 
 
+WAN_STRETCH_MAX = 1.4          # a Wan shot shown longer than its clip is slowed down at most this much, then holds its last frame
+
+
+def wan_segment(clip: Path, size: tuple[int, int], seconds: float, clip_seconds: float, out: Path, cwd: Path) -> Path:
+    """A Wan clip (24 fps, small) at the frame size: lanczos upscale + light luma sharpen (as deepsea-wan), played once —
+    slowed down up to 1.4x when the shot is longer than the clip, then the last frame holds. Never ping-pong (the animals
+    would walk backwards)."""
+    width, height = size
+    stretch = min(WAN_STRETCH_MAX, max(1.0, seconds / clip_seconds))
+    vf = (f"setpts=PTS*{stretch:.4f},scale={width}:{height}:flags=lanczos:force_original_aspect_ratio=increase,"
+          f"crop={width}:{height},unsharp=5:5:0.7:5:5:0.0,fps={FPS},tpad=stop_mode=clone:stop_duration={seconds:.3f}")
+    run(["-i", str(clip.resolve()), "-t", f"{seconds:.3f}", "-vf", vf, *ENCODE, str(out.resolve())], cwd)
+    return out
+
+
 def diagram_filter(geo: Geometry, steps: list[float], fade: tuple[float, float] | None) -> str:
     """Picture window on a paper canvas, then the panel overlays: overlay *k* shows from ``steps[k]``."""
     (wx, wy, ww, wh), (width, height) = geo.window, geo.size

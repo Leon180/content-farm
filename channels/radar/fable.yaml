@@ -1,34 +1,38 @@
-# 寓言學堂 — 選題雷達種子（頻道設定尚未進任何分支；此檔依頻道名「寓言學堂」假設為寓言／成語典故，開頻道時請校正）
+# 不奇而寓 — 選題雷達種子（2026-10-26 第 2 批改寫：避開教科書經典案例，改看「冷門但實用、一般人沒聽過名字」的研究生級概念）
+# 舊種子（龜兔賽跑、狼來了…）是依頻道名假設的寓言／成語典故，與頻道實際定位（用寓言講概念）不符，已移除。
 channel: fable
-title_template: "{subject}：故事背後真正的意思"
+title_template: "{subject}：一則故事讓你懂"
 shorts_supported: true
 topics:
-  - subject: 龜兔賽跑
-    wiki: [{lang: zh, title: 龜兔賽跑}, {lang: en, title: The Tortoise and the Hare}]
-    youtube_query: 龜兔賽跑 寓言 真正的意思
-  - subject: 狼來了
-    wiki: [{lang: zh, title: 狼來了}, {lang: en, title: The Boy Who Cried Wolf}]
-    youtube_query: 狼來了 寓言
-  - subject: 伊索寓言
-    wiki: [{lang: zh, title: 伊索寓言}, {lang: en, title: Aesop's Fables}]
-    youtube_query: 伊索寓言 解析
-  - subject: 莊周夢蝶
-    wiki: [{lang: zh, title: 莊周夢蝶}]
-    youtube_query: 莊周夢蝶 莊子 寓言
-  - subject: 守株待兔
-    wiki: []         # 中英日維基都沒有這個成語的條目（2026-10-24 查過），只用 YouTube 需求
-    youtube_query: 守株待兔 成語故事
-  - subject: 愚公移山
-    wiki: [{lang: zh, title: 愚公移山}]
-    youtube_query: 愚公移山 故事
-  - subject: 拉封丹寓言
-    wiki: [{lang: zh, title: 讓·德·拉封丹}, {lang: en, title: Jean de La Fontaine}]
-    youtube_query: 拉封丹寓言
-  - subject: 鷸蚌相爭
-    wiki: [{lang: zh, title: 鷸蚌相爭}]
-    youtube_query: 鷸蚌相爭 成語故事
+  - subject: 古德哈特定律
+    wiki: [{lang: zh, title: 古德哈特定律}, {lang: en, title: "Goodhart's law"}]
+    youtube_query: 古德哈特定律 指標 變成目標
+  - subject: 林迪效應
+    wiki: [{lang: zh, title: 林迪效應}, {lang: en, title: Lindy effect}]
+    youtube_query: 林迪效應 越老越長壽
+  - subject: 辛普森悖論
+    wiki: [{lang: zh, title: 辛普森悖論}, {lang: en, title: "Simpson's paradox"}]
+    youtube_query: 辛普森悖論 統計 陷阱
+  - subject: 帕金森瑣碎定律
+    wiki: [{lang: en, title: Law of triviality}]
+    youtube_query: 帕金森瑣碎定律 自行車棚 開會
+  - subject: 伯克森悖論
+    wiki: [{lang: en, title: "Berkson's paradox"}, {lang: zh, title: 伯克森悖論}]
+    youtube_query: 伯克森悖論 為什麼好看的都沒才華
+  - subject: 選擇架構
+    wiki: [{lang: en, title: Choice architecture}, {lang: zh, title: 助推理論}]
+    youtube_query: 選擇架構 助推 預設值
+  - subject: 康威定律
+    wiki: [{lang: zh, title: 康威定律}, {lang: en, title: "Conway's law"}]
+    youtube_query: 康威定律 組織 架構
+  - subject: 坎貝爾定律
+    wiki: [{lang: en, title: "Campbell's law"}]
+    youtube_query: 坎貝爾定律 KPI 失真
+  - subject: 切斯特頓圍欄
+    wiki: [{lang: en, title: "G. K. Chesterton"}]
+    youtube_query: 切斯特頓圍欄 不要拆掉
 watch:
-  hackernews_queries: [fable, parable]
+  hackernews_queries: [Goodhart's law, Simpson's paradox, Lindy effect, bikeshedding]
   subreddits: [{name: AskHistorians, sort: top}]
   bilibili_rids: [36]
-  keywords: [fable, parable, aesop, folk tale, 寓言, 成语, 故事, 典故, 伊索]
+  keywords: [goodhart, lindy, simpson's paradox, berkson, bikeshedding, nudge, 古德哈特, 林迪, 辛普森悖論, 助推]

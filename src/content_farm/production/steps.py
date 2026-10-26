@@ -95,6 +95,12 @@ def _py(ctx: Context, script: str, *args: str, env: dict[str, str] | None = None
     return Command((ctx.options.python, str(REPO_ROOT / "scripts" / script), *args), env or {})
 
 
+def _fable_has_wan(ctx: Context) -> bool:
+    from content_farm.production.fable.wan_shots import has_wan
+
+    return has_wan(ctx.run_dir)
+
+
 def _illustrate_pending(ctx: Context) -> bool:
     """Is any ai_image slide still missing its image (the same test ``scripts/illustrate.py`` makes)?"""
     from content_farm.explainer.deck import load_deck
@@ -417,9 +423,13 @@ FABLE_STEPS: tuple[Step, ...] = (
          inputs=(FABLE_FILE,), heavy=True,
          command=lambda c: _py(c, "fable.py", "images", "--run-dir", _run_dir(c), "--env-file", str(c.options.env_file)),
          identity=lambda c: c.channel.ai_illustration.model_dump_json()),
+    Step("fable_wan", "cmd", "Wan 短片（fable.json 標了 wan 的鏡頭，每個接 2 段；很慢）", outputs=("assets/fable/wan.json",),
+         inputs=(FABLE_FILE, "assets/fable/clips.json"), heavy=True, has_work=lambda c: _fable_has_wan(c),
+         command=lambda c: _py(c, "fable.py", "wan", "--run-dir", _run_dir(c), "--env-file", str(c.options.env_file))),
     Step("fable_render", "cmd", "合成（繪本→概念圖解轉場、字幕燒入）",
          outputs=("assembly/final.mp4", "thumbnails/thumbnail.png", "credits.json"),
-         inputs=(FABLE_FILE, "script.json", "audio/scene_*.mp3", "subtitles/subtitles.srt", "assets/fable/clips.json"),
+         inputs=(FABLE_FILE, "script.json", "audio/scene_*.mp3", "subtitles/subtitles.srt", "assets/fable/clips.json",
+                 "assets/fable/wan.json"),
          command=lambda c: _py(c, "fable.py", "render", "--run-dir", _run_dir(c)), heavy=True),
     Step("mix", "cmd", "配樂、轉場音、母帶", outputs=("assembly/release.mp4",),
          inputs=("assembly/final.mp4", "script.json"),

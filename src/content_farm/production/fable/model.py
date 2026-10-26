@@ -23,11 +23,20 @@ class _Frozen(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
 
+class WanSpec(_Frozen):
+    """Turn this shot's picture into a Wan clip: ``motion`` moves segment 1, each ``chain`` prompt adds a 2.9 s segment
+    that starts from the previous last frame (Leon 2026-10-25: ~4 shots per video, 2 segments each, faceless scenes)."""
+
+    motion: str = Field(min_length=10, max_length=300)
+    chain: tuple[str, ...] = Field(default=("keep drifting slowly in the same direction, static camera",), min_length=1, max_length=2)
+
+
 class Shot(_Frozen):
     """One picture. ``reuse`` names an earlier shot (``b3.1``) to show again instead of drawing a new one."""
 
     image_prompt: str = Field(default="", max_length=420)
     reuse: str = ""
+    wan: WanSpec | None = None
 
 
 class Row(_Frozen):

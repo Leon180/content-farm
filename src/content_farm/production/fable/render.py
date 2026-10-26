@@ -12,10 +12,11 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
+from content_farm.explainer import wan_chain
 from content_farm.explainer.ai_images import AI_IMAGE_DIR, find_image
 from content_farm.production import shorts_cut as cut
 from content_farm.production.channels import Channel
-from content_farm.production.fable import cards, compose, images
+from content_farm.production.fable import cards, compose, images, wan_shots
 from content_farm.production.fable.model import Beat, Fable, load
 from content_farm.script_gen.schemas import Script
 
@@ -23,6 +24,7 @@ WORK = "fable_work"
 SUBTITLES = {"short": {"chars": 13, "px": 66, "margin_v": 150, "outline": 5},
              "mid": {"chars": 22, "px": 52, "margin_v": 60, "outline": 4}}
 MIN_SHOT_SECONDS = 1.5
+WAN_FRAMES = 69          # frames per Wan segment (explainer.wan.WanParams default)
 
 
 @dataclass(frozen=True)
@@ -68,6 +70,7 @@ def build_segments(run_dir: Path, work: Path, fable: Fable, durations: list[floa
     from content_farm.explainer.capture import PageCapturer
 
     geo = cards.GEOMETRY[fable.format]
+    wan_clips = wan_shots.load_manifest(run_dir)
     segments: list[Path] = []
     reveal_at: int | None = None
     pre_seconds = 0.0
@@ -76,7 +79,12 @@ def build_segments(run_dir: Path, work: Path, fable: Fable, durations: list[floa
             if beat.act in ("hook", "story"):
                 for n, part in enumerate(shot_seconds(seconds, len(beat.shots)), 1):
                     out = work / f"{beat.id}_{n}.mp4"
-                    compose.picture_segment(_loop_for(run_dir, work, manifest, beat, n), geo.size, part, out, work)
+                    wan_entry = wan_clips.get(f"{beat.id}_{n}")
+                    if wan_entry:
+                        frames = wan_chain.joined_frames(wan_entry["segments"], WAN_FRAMES)
+                        compose.wan_segment(run_dir / wan_entry["clip"], geo.size, part, frames / wan_entry["fps"], out, work)
+                    else:
+                        compose.picture_segment(_loop_for(run_dir, work, manifest, beat, n), geo.size, part, out, work)
                     segments.append(out)
                 continue
             if beat.act == "reveal":
@@ -122,7 +130,10 @@ def write_thumbnail(run_dir: Path, work: Path, fable: Fable, channel: Channel, d
 
 
 def write_credits(run_dir: Path, fable: Fable, manifest: dict) -> Path:
-    payload = {"version": 1, "title": fable.title, "entries": images.credit_entries(run_dir, fable, manifest["clips"]),
+    wan_clips = wan_shots.load_manifest(run_dir)
+    entries = [{**e, "motion": wan_clips[e["slide_id"]]["credit"]} if e["slide_id"] in wan_clips else e
+               for e in images.credit_entries(run_dir, fable, manifest["clips"])]
+    payload = {"version": 1, "title": fable.title, "entries": entries,
                "pending": [], "description_text": "",
                "derived_from": {"series": "fable", "concept": fable.concept.name, "domain": fable.concept.domain,
                                 "references": list(fable.concept.references)}}

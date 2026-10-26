@@ -232,9 +232,31 @@ def thumb_problems(fable: Fable) -> list[str]:
     return problems
 
 
+MAX_WAN_SHOTS = 4
+FACE_WORDS = re.compile(r"\b(close-?up|portrait|face|faces|eyes?|looking (?:at|into) the camera|smil\w+|expression)\b", re.IGNORECASE)
+
+
+def wan_problems(fable: Fable) -> list[str]:
+    """Wan shots (Leon 2026-10-25): at most ~4 per video, drawn (not reused), faceless wide scenes, no hands/people."""
+    marked = [(f"{b.id}.{n}", s) for b in fable.beats for n, s in enumerate(b.shots, 1) if s.wan]
+    problems = [f"Wan 鏡頭 {len(marked)} 個，上限 {MAX_WAN_SHOTS}"] if len(marked) > MAX_WAN_SHOTS else []
+    for where, shot in marked:
+        if shot.reuse or not shot.image_prompt.strip():
+            problems.append(f"{where} wan 要掛在自己畫的圖上（不能 reuse）")
+        problems += [f"{where} Wan 鏡頭的圖不要特寫臉／眼（Wan 會讓臉變形）：「{m.group(0)}」，改成遠景或看不見臉的場景"
+                     for m in [FACE_WORDS.search(shot.image_prompt)] if m]
+        for text in (shot.wan.motion, *shot.wan.chain):
+            problems += [f"{where} Wan 動作提示「{m.group(0)}」會讓動物用手或出現人" for m in
+                         [HANDS_WORDS.search(text) or HUMAN_WORDS.search(text)] if m]
+            bad = forbidden_prompt_terms(text)
+            if bad:
+                problems.append(f"{where} Wan 動作提示要求 {bad}")
+    return problems
+
+
 CHECKS: tuple[Callable[[Fable], list[str]], ...] = (
     order_problems, count_problems, reveal_problems, leak_problems, mapping_problems, ledger_problems,
-    keep_avoid_problems, picture_problems, length_problems, tone_problems, thumb_problems)
+    keep_avoid_problems, picture_problems, length_problems, tone_problems, thumb_problems, wan_problems)
 
 
 def fable_problems(fable: Fable) -> list[str]:
