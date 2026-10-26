@@ -65,6 +65,13 @@ def _overlays(capturer, fable: Fable, beat: Beat, seconds: float, work: Path) ->
     return out
 
 
+def part_overlays(overlays: list[tuple[Path, float]], begin: float, end: float) -> list[tuple[Path, float]]:
+    """The panel overlays that matter for the slice ``[begin, end)`` of a beat, with start times re-based to the slice."""
+    current = max((i for i, (_, start) in enumerate(overlays) if start <= begin + 1e-6), default=0)
+    return [(png, max(0.0, start - begin)) for i, (png, start) in enumerate(overlays)
+            if i == current or begin < start < end]
+
+
 def build_segments(run_dir: Path, work: Path, fable: Fable, durations: list[float], manifest: dict) -> tuple[list[Path], int | None, float]:
     """One mp4 per picture / diagram; returns (segments, index of the reveal segment, seconds before the reveal)."""
     from content_farm.explainer.capture import PageCapturer
@@ -90,11 +97,15 @@ def build_segments(run_dir: Path, work: Path, fable: Fable, durations: list[floa
             if beat.act == "reveal":
                 reveal_at, pre_seconds = len(segments), sum(durations[:fable.beats.index(beat)])
             lead = compose.TRANSITION_SECONDS if beat.act == "reveal" else 0.0
-            out = work / f"{beat.id}.mp4"
-            fade = (lead + 0.2, 0.5) if beat.act == "reveal" else None
-            compose.diagram_segment(_loop_for(run_dir, work, manifest, beat, 1), geo,
-                                    _overlays(capturer, fable, beat, seconds + lead, work), seconds + lead, out, work, fade)
-            segments.append(out)
+            overlays = _overlays(capturer, fable, beat, seconds + lead, work)
+            begin = 0.0
+            for n, part in enumerate(shot_seconds(seconds + lead, len(beat.shots)), 1):
+                out = work / (f"{beat.id}.mp4" if len(beat.shots) == 1 else f"{beat.id}_{n}.mp4")
+                fade = (lead + 0.2, 0.5) if beat.act == "reveal" and n == 1 else None
+                compose.diagram_segment(_loop_for(run_dir, work, manifest, beat, n), geo,
+                                        part_overlays(overlays, begin, begin + part), part, out, work, fade)
+                segments.append(out)
+                begin += part
     return segments, reveal_at, pre_seconds
 
 

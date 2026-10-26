@@ -34,6 +34,7 @@ from content_farm.explainer.motion_cache import (
 
 KIND = "wan"
 MAX_WAN_PER_VIDEO = 3      # visual v4 (Leon 2026-10-24): 2–3 key shots per long video (Deck.wan_budget raises it)
+FABLE_WAN_LIMIT = 4        # 不奇而寓 (Leon 2026-10-25): ~4 Wan shots, 2 chained segments each
 GENERATE_TIMEOUT_SECONDS = 1800
 ESTIMATED_MINUTES_PER_CLIP = 15  # trial: 12.6–17.7 min per 69-frame clip
 WAN_MODEL = {
@@ -102,6 +103,8 @@ def build_prompt(image_prompt: str, motion_prompt: str) -> str:
 
 def run_limit(run_dir: Path | None) -> int:
     """The run's Wan shot limit, read straight from its deck.json (3 when absent / unreadable)."""
+    if run_dir is not None and (run_dir / "fable.json").is_file():
+        return FABLE_WAN_LIMIT        # fable.json has no deck: ~4 Wan shots per video (Leon 2026-10-25)
     try:
         value = json.loads((run_dir / "deck.json").read_text(encoding="utf-8")).get("wan_budget") if run_dir else None
     except (OSError, ValueError, AttributeError):

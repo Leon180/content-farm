@@ -82,3 +82,11 @@ def test_the_wan_segment_is_slowed_at_most_a_little_then_holds_its_last_frame(mo
 def test_the_wan_step_sits_between_images_and_render_and_is_heavy() -> None:
     names = step_names(load_channel("fable"))
     assert names.index("fable_images") < names.index("fable_wan") < names.index("fable_render")
+
+
+def test_a_diagram_beat_is_sliced_over_its_shots_with_rebased_panel_times() -> None:
+    from content_farm.production.fable import render
+
+    overlays = [(Path("a.png"), 0.0), (Path("b.png"), 4.0), (Path("c.png"), 9.0)]
+    assert render.part_overlays(overlays, 0.0, 6.0) == [(Path("a.png"), 0.0), (Path("b.png"), 4.0)]
+    assert render.part_overlays(overlays, 6.0, 12.0) == [(Path("b.png"), 0.0), (Path("c.png"), 3.0)]
