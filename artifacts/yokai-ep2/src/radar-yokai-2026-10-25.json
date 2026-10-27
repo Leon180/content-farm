@@ -1,0 +1,748 @@
+{
+  "channel": "yokai",
+  "date": "2026-10-25",
+  "generated_at": "2026-10-25T15:18:00+00:00",
+  "youtube_data_expires": "2026-11-24T15:18:00+00:00",
+  "candidates": [
+    {
+      "id": "yokai-20261025-01",
+      "kind": "evergreen",
+      "subject": "九尾狐",
+      "title_draft": "九尾狐：最早的原典怎麼寫",
+      "format": "long",
+      "format_reason": "長青題材，資料量撐得起 7–10 分鐘長片",
+      "score": 68.3,
+      "evidence": [
+        {
+          "source": "wikipedia",
+          "metric": "中文維基「九尾狐」近 30 日瀏覽量",
+          "value": 1699.0,
+          "url": "https://zh.wikipedia.org/wiki/%E4%B9%9D%E5%B0%BE%E7%8B%90",
+          "note": "近 7 日日均 58.4，前 23 日日均 56.1，升溫 ×1.04"
+        },
+        {
+          "source": "wikipedia",
+          "metric": "日文維基「九尾の狐」近 30 日瀏覽量",
+          "value": 7487.0,
+          "url": "https://ja.wikipedia.org/wiki/%E4%B9%9D%E5%B0%BE%E3%81%AE%E7%8B%90",
+          "note": "近 7 日日均 243.9，前 23 日日均 251.3，升溫 ×0.97"
+        },
+        {
+          "source": "wikipedia",
+          "metric": "英文維基「Kitsune」近 30 日瀏覽量",
+          "value": 38568.0,
+          "url": "https://en.wikipedia.org/wiki/Kitsune",
+          "note": "近 7 日日均 1217.6，前 23 日日均 1306.3，升溫 ×0.93"
+        },
+        {
+          "source": "youtube",
+          "metric": "YouTube 搜尋「九尾狐 山海經 傳說」前 5 名影片觀看數中位數",
+          "value": 465015.0,
+          "url": "https://www.youtube.com/watch?v=OrLo4FgAplU",
+          "note": "最高：6,153,787 次（老高與小茉 Mr & Mrs Gao，2024-07-10）"
+        }
+      ],
+      "competitors": [
+        {
+          "title": "【最神奇的書】上古三大奇書之山海經，這本書裡寫的的東西你都沒見過，甚至都無法想像，但它們卻有可能真實存在，只是不是五千年前，而是六千五百萬年前 | 老高與小茉 Mr & Mrs Gao",
+          "channel": "老高與小茉 Mr & Mrs Gao",
+          "views": 6153787,
+          "published": "2024-07-10",
+          "url": "https://www.youtube.com/watch?v=OrLo4FgAplU"
+        },
+        {
+          "title": "《山海經》的五個驚奇之三：至今還活著的妖怪，來自《山海經》，你也許見過它……|自說自話的總裁",
+          "channel": "自说自话的总裁",
+          "views": 2409099,
+          "published": "2020-01-31",
+          "url": "https://www.youtube.com/watch?v=MAjI7mVnWyo"
+        },
+        {
+          "title": "21個中國上古神獸用10分鐘看完？！竟有「奇葩」神獸騙人美兔？",
+          "channel": "果子 Guo Zi",
+          "views": 465015,
+          "published": "2020-08-16",
+          "url": "https://www.youtube.com/watch?v=ot1sk89yrZI"
+        },
+        {
+          "title": "《山海经》解说系列02: 南山经之鹊山山系，明星异兽九尾狐登场",
+          "channel": "悟空的宝箱",
+          "views": 202610,
+          "published": "2020-02-01",
+          "url": "https://www.youtube.com/watch?v=80xWAbIakXI"
+        },
+        {
+          "title": "青丘九尾狐：一次看完九尾狐的前世今生，每一个故事都是悲剧 |《山海经》番外篇01",
+          "channel": "悟空的宝箱",
+          "views": 198593,
+          "published": "2020-02-10",
+          "url": "https://www.youtube.com/watch?v=2nyzPJNZK1Y"
+        }
+      ],
+      "viewer_questions": [
+        {
+          "text": "我有一個大膽的想法 ： 會不會當時山海經的作者群寫的不是真實世界的場景而是在集體創作某個RPG遊戲的地圖? 因為裡頭的角色和道具太多了。",
+          "likes": 2602,
+          "url": "https://www.youtube.com/watch?v=OrLo4FgAplU"
+        },
+        {
+          "text": "我其實很同情九尾孤，她只有服從任務，完成後成棄妖，只想從返天庭，又要被追殺！所有大仁大義之士都沒有給過她出路，我不太明白？",
+          "likes": 470,
+          "url": "https://www.youtube.com/watch?v=MAjI7mVnWyo"
+        },
+        {
+          "text": "為什麼我會覺得九尾狐有點可憐呢？",
+          "likes": 340,
+          "url": "https://www.youtube.com/watch?v=MAjI7mVnWyo"
+        },
+        {
+          "text": "然後，殺生石變成了幾百個小塊，飛散到了日本各地 疑，四魂之玉有參考殺生石?",
+          "likes": 284,
+          "url": "https://www.youtube.com/watch?v=MAjI7mVnWyo"
+        },
+        {
+          "text": "能不能让嫂子记起来妙见神那个号的密码",
+          "likes": 172,
+          "url": "https://www.youtube.com/watch?v=OrLo4FgAplU"
+        },
+        {
+          "text": "如果金字塔是傳送點 山海經一切都說的通了 為什麼離譜 因為外星傳送技術沒有了 認知達不到",
+          "likes": 10,
+          "url": "https://www.youtube.com/watch?v=OrLo4FgAplU"
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "id": "yokai-20261025-02",
+      "kind": "evergreen",
+      "subject": "鵺",
+      "title_draft": "鵺：最早的原典怎麼寫",
+      "format": "long",
+      "format_reason": "長青題材，資料量撐得起 7–10 分鐘長片",
+      "score": 67.3,
+      "evidence": [
+        {
+          "source": "wikipedia",
+          "metric": "日文維基「鵺」近 30 日瀏覽量",
+          "value": 13148.0,
+          "url": "https://ja.wikipedia.org/wiki/%E9%B5%BA",
+          "note": "近 7 日日均 447.6，前 23 日日均 435.4，升溫 ×1.03"
+        },
+        {
+          "source": "wikipedia",
+          "metric": "中文維基「鵺」近 30 日瀏覽量",
+          "value": 1284.0,
+          "url": "https://zh.wikipedia.org/wiki/%E9%B5%BA",
+          "note": "近 7 日日均 36.7，前 23 日日均 44.7，升溫 ×0.82"
+        },
+        {
+          "source": "youtube",
+          "metric": "YouTube 搜尋「鵺 日本妖怪」前 5 名影片觀看數中位數",
+          "value": 1165562.0,
+          "url": "https://www.youtube.com/watch?v=ZnfQnTRVEYw",
+          "note": "最高：2,484,201 次（サクトシ【サクッと都市伝説】，2024-03-24）"
+        }
+      ],
+      "competitors": [
+        {
+          "title": "正体が判明した日本の伝説の妖怪3選 #都市伝説 #雑学 #怖い話 #shorts",
+          "channel": "サクトシ【サクッと都市伝説】",
+          "views": 2484201,
+          "published": "2024-03-24",
+          "url": "https://www.youtube.com/watch?v=ZnfQnTRVEYw"
+        },
+        {
+          "title": "日本の歴史上 \"最凶\"と謳われる大妖怪8選！",
+          "channel": "世界の七不思議 えむちゃんねる",
+          "views": 2003394,
+          "published": "2022-08-18",
+          "url": "https://www.youtube.com/watch?v=FEsGWTP8Pp0"
+        },
+        {
+          "title": "【呪物】妖怪ヌエを信仰していた家族 #roomtour #呪物",
+          "channel": "McGuffin",
+          "views": 1165562,
+          "published": "2023-09-18",
+          "url": "https://www.youtube.com/watch?v=PESPHFSOGdY"
+        },
+        {
+          "title": "さすがに笑ってしまう日本の妖怪　part2　  #shorts",
+          "channel": "たっくーTVれいでぃお",
+          "views": 1067914,
+          "published": "2025-01-18",
+          "url": "https://www.youtube.com/watch?v=s1VSTs_mvzs"
+        },
+        {
+          "title": "神と呼ばれる大妖怪3選 #妖怪 #日本神話 #shorts",
+          "channel": "日本神話 みこちゃんねる",
+          "views": 975973,
+          "published": "2024-09-06",
+          "url": "https://www.youtube.com/watch?v=7yK9r0L_gQQ"
+        }
+      ],
+      "viewer_questions": [],
+      "warnings": []
+    },
+    {
+      "id": "yokai-20261025-03",
+      "kind": "evergreen",
+      "subject": "天狗",
+      "title_draft": "天狗：最早的原典怎麼寫",
+      "format": "long",
+      "format_reason": "長青題材，資料量撐得起 7–10 分鐘長片",
+      "score": 66.6,
+      "evidence": [
+        {
+          "source": "wikipedia",
+          "metric": "日文維基「天狗」近 30 日瀏覽量",
+          "value": 7445.0,
+          "url": "https://ja.wikipedia.org/wiki/%E5%A4%A9%E7%8B%97",
+          "note": "近 7 日日均 220.6，前 23 日日均 256.6，升溫 ×0.86"
+        },
+        {
+          "source": "wikipedia",
+          "metric": "中文維基「天狗」近 30 日瀏覽量",
+          "value": 119.0,
+          "url": "https://zh.wikipedia.org/wiki/%E5%A4%A9%E7%8B%97",
+          "note": "近 7 日日均 5.6，前 23 日日均 3.5，升溫 ×1.6"
+        },
+        {
+          "source": "youtube",
+          "metric": "YouTube 搜尋「天狗 日本妖怪」前 5 名影片觀看數中位數",
+          "value": 2484202.0,
+          "url": "https://www.youtube.com/watch?v=u5cBvt7GLQs",
+          "note": "最高：3,209,915 次（日本神話 みこちゃんねる，2024-09-07）"
+        }
+      ],
+      "competitors": [
+        {
+          "title": "【300万回再生】日本軍を救った妖怪3選 #妖怪 #都市伝説 #shorts",
+          "channel": "日本神話 みこちゃんねる",
+          "views": 3209915,
+          "published": "2024-09-07",
+          "url": "https://www.youtube.com/watch?v=u5cBvt7GLQs"
+        },
+        {
+          "title": "神と呼ばれる怪異妖怪３選 #妖怪 #心霊 #怖い話 #都市伝説 #フィクション",
+          "channel": "怪異・妖怪専門チャンネル【ムーマン】",
+          "views": 2647673,
+          "published": "2024-05-22",
+          "url": "https://www.youtube.com/watch?v=jX5tEsAMyd8"
+        },
+        {
+          "title": "正体が判明した日本の伝説の妖怪3選 #都市伝説 #雑学 #怖い話 #shorts",
+          "channel": "サクトシ【サクッと都市伝説】",
+          "views": 2484202,
+          "published": "2024-03-24",
+          "url": "https://www.youtube.com/watch?v=ZnfQnTRVEYw"
+        },
+        {
+          "title": "【閲覧注意】昔の日本に実在していた『最恐の妖怪』の正体がヤバすぎた。",
+          "channel": "ティアロ疾風伝",
+          "views": 1670664,
+          "published": "2026-04-04",
+          "url": "https://www.youtube.com/watch?v=SC6Eo1e5ELQ"
+        },
+        {
+          "title": "【ゆっくり解説】正体が判明した日本の妖怪・UMA６選",
+          "channel": "闇世界のツーリスト【ゆっくり解説】",
+          "views": 742408,
+          "published": "2024-01-29",
+          "url": "https://www.youtube.com/watch?v=QsggS6gHRhU"
+        }
+      ],
+      "viewer_questions": [],
+      "warnings": []
+    },
+    {
+      "id": "yokai-20261025-04",
+      "kind": "evergreen",
+      "subject": "魔神仔",
+      "title_draft": "魔神仔：最早的原典怎麼寫",
+      "format": "long",
+      "format_reason": "長青題材，資料量撐得起 7–10 分鐘長片",
+      "score": 59.4,
+      "evidence": [
+        {
+          "source": "wikipedia",
+          "metric": "中文維基「魔神仔」近 30 日瀏覽量",
+          "value": 995.0,
+          "url": "https://zh.wikipedia.org/wiki/%E9%AD%94%E7%A5%9E%E4%BB%94",
+          "note": "近 7 日日均 36，前 23 日日均 32.3，升溫 ×1.11"
+        },
+        {
+          "source": "youtube",
+          "metric": "YouTube 搜尋「魔神仔 台灣 傳說 由來」前 5 名影片觀看數中位數",
+          "value": 620285.0,
+          "url": "https://www.youtube.com/watch?v=zkBymyA2AVs",
+          "note": "最高：788,608 次（老王，2021-04-28）"
+        }
+      ],
+      "competitors": [
+        {
+          "title": "【老王說】魔神仔原來長這樣...？原住民-巫師 擊斃魔神仔，真實靈異事件！！",
+          "channel": "老王",
+          "views": 788608,
+          "published": "2021-04-28",
+          "url": "https://www.youtube.com/watch?v=zkBymyA2AVs"
+        },
+        {
+          "title": "【深挖】魔神仔是藏在台灣深山的龍族！為什麼日本、南美、菲律賓都有魔神仔的傳說，難道他們是上古智慧種族，或者是外星人？",
+          "channel": "尼可拉斯楊",
+          "views": 662639,
+          "published": "2024-08-04",
+          "url": "https://www.youtube.com/watch?v=jXg4jABkPq4"
+        },
+        {
+          "title": "老婆婆花蓮奇遇記／台灣魔仙仔傳說／午夜奇譚司馬中原／三毛司馬夢中相會【@ebcapocalypse 】復刻版 第 1017集｜洪培翔",
+          "channel": "台灣啟示錄",
+          "views": 620285,
+          "published": "2020-10-15",
+          "url": "https://www.youtube.com/watch?v=D0EHoLgYaB8"
+        },
+        {
+          "title": "真實的魔神仔調查報告 為何台灣會有魔神仔傳說? 能以歷史文化、科學角度來解釋嗎",
+          "channel": "cheap",
+          "views": 437685,
+          "published": "2023-01-24",
+          "url": "https://www.youtube.com/watch?v=yrUSMlkfNMI"
+        },
+        {
+          "title": "拍到魔神仔了！台灣三大恐怖山傳說｜偷聽史多利",
+          "channel": "偷聽史多利",
+          "views": 291738,
+          "published": "2023-08-30",
+          "url": "https://www.youtube.com/watch?v=TKpSyak5vMk"
+        }
+      ],
+      "viewer_questions": [
+        {
+          "text": "倒抽一口涼氣.....最近才獨自去4500公尺高的山上健行，還是沒走過的地方，萬幸遇到一隻德國狼犬和一隻黑白斑狗一路貼身保護，莫非就是為了驅趕這些精怪？",
+          "likes": 35,
+          "url": "https://www.youtube.com/watch?v=jXg4jABkPq4"
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "id": "yokai-20261025-05",
+      "kind": "evergreen",
+      "subject": "河童",
+      "title_draft": "河童：最早的原典怎麼寫",
+      "format": "long",
+      "format_reason": "長青題材，資料量撐得起 7–10 分鐘長片",
+      "score": 57.0,
+      "evidence": [
+        {
+          "source": "wikipedia",
+          "metric": "日文維基「河童」近 30 日瀏覽量",
+          "value": 7373.0,
+          "url": "https://ja.wikipedia.org/wiki/%E6%B2%B3%E7%AB%A5",
+          "note": "近 7 日日均 196.6，前 23 日日均 260.7，升溫 ×0.75"
+        },
+        {
+          "source": "wikipedia",
+          "metric": "中文維基「河童」近 30 日瀏覽量",
+          "value": 1605.0,
+          "url": "https://zh.wikipedia.org/wiki/%E6%B2%B3%E7%AB%A5",
+          "note": "近 7 日日均 50.9，前 23 日日均 54.3，升溫 ×0.94"
+        },
+        {
+          "source": "wikipedia",
+          "metric": "英文維基「Kappa (folklore)」近 30 日瀏覽量",
+          "value": 20793.0,
+          "url": "https://en.wikipedia.org/wiki/Kappa_%28folklore%29",
+          "note": "近 7 日日均 693.9，前 23 日日均 692.9，升溫 ×1"
+        },
+        {
+          "source": "youtube",
+          "metric": "YouTube 搜尋「河童 妖怪 由來」前 5 名影片觀看數中位數",
+          "value": 645325.0,
+          "url": "https://www.youtube.com/watch?v=Y9uXeQFH3xo",
+          "note": "最高：905,365 次（万象有光，2026-06-13）"
+        }
+      ],
+      "competitors": [
+        {
+          "title": "你以為河童是可愛的妖怪？#shorts | #紀錄片 #有趣  #creative",
+          "channel": "万象有光",
+          "views": 905365,
+          "published": "2026-06-13",
+          "url": "https://www.youtube.com/watch?v=Y9uXeQFH3xo"
+        },
+        {
+          "title": "【ゆっくり解説】正体が判明した日本の妖怪・UMA６選",
+          "channel": "闇世界のツーリスト【ゆっくり解説】",
+          "views": 742408,
+          "published": "2024-01-29",
+          "url": "https://www.youtube.com/watch?v=QsggS6gHRhU"
+        },
+        {
+          "title": "怖すぎる河童の正体",
+          "channel": "ホラー・都市伝説の雑学",
+          "views": 645325,
+          "published": "2025-05-20",
+          "url": "https://www.youtube.com/watch?v=-3z07nHIhAo"
+        },
+        {
+          "title": "妖怪パークに河童を見にきたよ！【女子一人旅】 #shorts #初投稿",
+          "channel": "つくもの日常 / TSUKUMO",
+          "views": 543557,
+          "published": "2026-03-03",
+          "url": "https://www.youtube.com/watch?v=62UyYg8jt6c"
+        },
+        {
+          "title": "【妖怪めぐり】妖怪出現！河童・天狗etcいろんな妖怪が生息する街を探索してみた！【前編】福崎町辻川山公園妖怪ベンチ",
+          "channel": "キュープリ♥︎ちゃんねる",
+          "views": 499971,
+          "published": "2021-05-25",
+          "url": "https://www.youtube.com/watch?v=SkTtA_xYBr8"
+        }
+      ],
+      "viewer_questions": [
+        {
+          "text": "😅那都养不起了还能怎么办??",
+          "likes": 1,
+          "url": "https://www.youtube.com/watch?v=Y9uXeQFH3xo"
+        },
+        {
+          "text": "為何嬰兒在河可以生存",
+          "likes": 1,
+          "url": "https://www.youtube.com/watch?v=Y9uXeQFH3xo"
+        },
+        {
+          "text": "我想问一下，你一开始的图片，是不是有个人光着屁股？",
+          "likes": 0,
+          "url": "https://www.youtube.com/watch?v=Y9uXeQFH3xo"
+        },
+        {
+          "text": "但沒解釋鈍器肛門創傷和內臟遺失啊？",
+          "likes": 0,
+          "url": "https://www.youtube.com/watch?v=Y9uXeQFH3xo"
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "id": "yokai-20261025-06",
+      "kind": "evergreen",
+      "subject": "山海經",
+      "title_draft": "山海經：最早的原典怎麼寫",
+      "format": "long",
+      "format_reason": "長青題材，資料量撐得起 7–10 分鐘長片",
+      "score": 54.1,
+      "evidence": [
+        {
+          "source": "wikipedia",
+          "metric": "中文維基「山海经」近 30 日瀏覽量",
+          "value": 7725.0,
+          "url": "https://zh.wikipedia.org/wiki/%E5%B1%B1%E6%B5%B7%E7%BB%8F",
+          "note": "近 7 日日均 254，前 23 日日均 258.6，升溫 ×0.98"
+        },
+        {
+          "source": "wikipedia",
+          "metric": "英文維基「Classic of Mountains and Seas」近 30 日瀏覽量",
+          "value": 5015.0,
+          "url": "https://en.wikipedia.org/wiki/Classic_of_Mountains_and_Seas",
+          "note": "近 7 日日均 155.3，前 23 日日均 170.8，升溫 ×0.91"
+        },
+        {
+          "source": "youtube",
+          "metric": "YouTube 搜尋「山海經 異獸」前 5 名影片觀看數中位數",
+          "value": 656127.0,
+          "url": "https://www.youtube.com/watch?v=oMVGiNebTUs",
+          "note": "最高：3,840,846 次（juezi jue，2024-02-09）"
+        }
+      ],
+      "competitors": [
+        {
+          "title": "拍到山海經真實的一幕，山海經裏的魚，震驚了世界。",
+          "channel": "juezi jue",
+          "views": 3840846,
+          "published": "2024-02-09",
+          "url": "https://www.youtube.com/watch?v=oMVGiNebTUs"
+        },
+        {
+          "title": "先秦傳說「奇珍異獸」戰國山海經最大謎團！ - 關鍵時刻精選 馬西屏 劉燦榮 傅鶴齡",
+          "channel": "關鍵時刻",
+          "views": 1337212,
+          "published": "2018-04-02",
+          "url": "https://www.youtube.com/watch?v=JyeCTcF0bSI"
+        },
+        {
+          "title": "#奇異鳥 #山海經異獸 #鳳凰神鳥 #神鳥下凡 #仙氣十足的鳥",
+          "channel": "dfdffsdfdf",
+          "views": 656127,
+          "published": "2026-09-04",
+          "url": "https://www.youtube.com/watch?v=UruTL9kHmmk"
+        },
+        {
+          "title": "MULTISUB📢新番上线《山海经之万兽图鉴》#最新漫剧 #漫剧合集 #一口气看完 #动漫 #anime #AI漫剧 #破晓动漫社",
+          "channel": "破晓动漫社 Dawn Anime Club",
+          "views": 574926,
+          "published": "2026-07-09",
+          "url": "https://www.youtube.com/watch?v=qbyEeolMKDk"
+        },
+        {
+          "title": "《山海經》可能存在的真實異獸，原型在現實世界也是稀有物種，牠們並不是古人憑空想像出來。",
+          "channel": "傑斯特Jester",
+          "views": 387864,
+          "published": "2021-05-14",
+          "url": "https://www.youtube.com/watch?v=5aanIUJET6g"
+        }
+      ],
+      "viewer_questions": [
+        {
+          "text": "古代蜀国有一个叫纯白镇的小镇，镇里有一个叫大禹博士的人，拿了一本很厚的空白书，给了一位单亲家庭的小孩去记录收集全世界生物。这位小孩那年才10岁，带上博士给他的中华田园犬开始他的冒险。问题是！这个小孩何德何能可以做到这种艰难的事呢，因为这个小孩有一个特殊能力，他永远都十岁",
+          "likes": 1,
+          "url": "https://www.youtube.com/watch?v=JyeCTcF0bSI"
+        },
+        {
+          "text": "第三个明明是鳄鱼啊怎么是龟？！还好第二个嘉宾来纠正了",
+          "likes": 1,
+          "url": "https://www.youtube.com/watch?v=JyeCTcF0bSI"
+        },
+        {
+          "text": "山海經為什麼會有那麼多奇珍異獸..?看完節目突然間豁然開朗，山海經如果是從青銅鼎上臨摹出來的，那答案呼之欲出!實在是當時的匠人刻工太差，才使得每隻動物都變成了四不像.....後人尋得寶鼎不知所以....",
+          "likes": 0,
+          "url": "https://www.youtube.com/watch?v=JyeCTcF0bSI"
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "id": "yokai-20261025-07",
+      "kind": "evergreen",
+      "subject": "媽祖信仰的來歷",
+      "title_draft": "媽祖信仰的來歷：最早的原典怎麼寫",
+      "format": "long",
+      "format_reason": "長青題材，資料量撐得起 7–10 分鐘長片",
+      "score": 49.9,
+      "evidence": [
+        {
+          "source": "wikipedia",
+          "metric": "中文維基「媽祖」近 30 日瀏覽量",
+          "value": 8278.0,
+          "url": "https://zh.wikipedia.org/wiki/%E5%AA%BD%E7%A5%96",
+          "note": "近 7 日日均 276.9，前 23 日日均 275.7，升溫 ×1"
+        },
+        {
+          "source": "youtube",
+          "metric": "YouTube 搜尋「媽祖 林默娘 來歷」前 5 名影片觀看數中位數",
+          "value": 72948.0,
+          "url": "https://www.youtube.com/watch?v=p7llgU_4fQ0",
+          "note": "最高：927,529 次（cheap，2023-02-16）"
+        }
+      ],
+      "competitors": [
+        {
+          "title": "默默無名的非法女巫 如何成為國家級女神? 晉身全國信仰? 歷史上真實的媽祖",
+          "channel": "cheap",
+          "views": 927529,
+          "published": "2023-02-16",
+          "url": "https://www.youtube.com/watch?v=p7llgU_4fQ0"
+        },
+        {
+          "title": "【台灣神話故事 EP6】台中大甲地名由來是？海上女神「媽祖」會接炸彈？大甲媽祖廟在世界大戰的傳說事跡大公開！｜小行星樂樂TV",
+          "channel": "樂樂TV",
+          "views": 349412,
+          "published": "2022-11-15",
+          "url": "https://www.youtube.com/watch?v=rVrKGeHQ1rM"
+        },
+        {
+          "title": "「天上聖母」媽祖誕生的故事｜林默娘的生平故事",
+          "channel": "孩子的未來 花媽親子淘",
+          "views": 72948,
+          "published": "2023-06-20",
+          "url": "https://www.youtube.com/watch?v=3vZ9NDqRqts"
+        },
+        {
+          "title": "媽祖一生｜林默娘羽化成神#媽祖 #天上聖母#媽祖一生 #林默娘 #天妃#媽祖傳奇#媽祖文化 #中華信仰 #民間信仰 #媽祖神蹟 #羽化成神",
+          "channel": "與佛同行PathWithBuddha",
+          "views": 58939,
+          "published": "2025-08-17",
+          "url": "https://www.youtube.com/watch?v=OaumMKoZJfo"
+        },
+        {
+          "title": "林默娘 媽祖傳奇與台灣 Part1｜台灣演義 Taiwan History",
+          "channel": "台灣演義",
+          "views": 45390,
+          "published": "2026-04-20",
+          "url": "https://www.youtube.com/watch?v=cfRPePgSW4w"
+        }
+      ],
+      "viewer_questions": [
+        {
+          "text": "cheap的媽祖真可愛 不愧是28歲的媽祖姊姊(?!",
+          "likes": 5,
+          "url": "https://www.youtube.com/watch?v=p7llgU_4fQ0"
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "id": "yokai-20261025-08",
+      "kind": "evergreen",
+      "subject": "城隍爺的來歷",
+      "title_draft": "城隍爺的來歷：最早的原典怎麼寫",
+      "format": "long",
+      "format_reason": "長青題材，資料量撐得起 7–10 分鐘長片",
+      "score": 43.8,
+      "evidence": [
+        {
+          "source": "wikipedia",
+          "metric": "中文維基「城隍」近 30 日瀏覽量",
+          "value": 2244.0,
+          "url": "https://zh.wikipedia.org/wiki/%E5%9F%8E%E9%9A%8D",
+          "note": "近 7 日日均 74.4，前 23 日日均 74.9，升溫 ×0.99"
+        },
+        {
+          "source": "youtube",
+          "metric": "YouTube 搜尋「城隍爺 來歷」前 5 名影片觀看數中位數",
+          "value": 25995.0,
+          "url": "https://www.youtube.com/watch?v=o5HaHGJ5DzM",
+          "note": "最高：59,900 次（嘉義城隍廟，2020-05-19）"
+        }
+      ],
+      "competitors": [
+        {
+          "title": "【嘉義城隍廟】嘉義城隍爺之歌",
+          "channel": "嘉義城隍廟",
+          "views": 59900,
+          "published": "2020-05-19",
+          "url": "https://www.youtube.com/watch?v=o5HaHGJ5DzM"
+        },
+        {
+          "title": "【精選】城隍爺穿梭陰陽界傳奇 奈何橋幽冥使者謎團？《台灣大代誌》",
+          "channel": "台灣大代誌",
+          "views": 26365,
+          "published": "2025-07-26",
+          "url": "https://www.youtube.com/watch?v=fT4COjD73v8"
+        },
+        {
+          "title": "台南廟會歷史性一刻！全台城隍爺大集合•南北陣頭超精緻•爆點滿滿超熱鬧（府城建城300年.臺灣府城隍廟.城隍尊神.巡城祭典迎廟會）",
+          "channel": "噴泉太陽 ",
+          "views": 25995,
+          "published": "2025-05-04",
+          "url": "https://www.youtube.com/watch?v=tTmcs9ZjPDE"
+        },
+        {
+          "title": "城隍爷说他是文曲星下界 預言人生2件大事 結果都應驗？| 歷史故事 | 文史大觀園",
+          "channel": "文史大觀園",
+          "views": 14269,
+          "published": "2022-08-19",
+          "url": "https://www.youtube.com/watch?v=L2ik50jRSYI"
+        },
+        {
+          "title": "【金門迎城隍】台灣最古樸廟會！六百年歷史城隍爺金尊 神轎晃動激烈到扛不住！國家重要民俗精彩畫面！ ｜民俗大廟埕 ep.303 寶島神很大Online",
+          "channel": "寶島神很大",
+          "views": 11916,
+          "published": "2022-05-02",
+          "url": "https://www.youtube.com/watch?v=DFK0VrWvnMc"
+        }
+      ],
+      "viewer_questions": [],
+      "warnings": []
+    },
+    {
+      "id": "yokai-20261025-09",
+      "kind": "evergreen",
+      "subject": "饕餮",
+      "title_draft": "饕餮：最早的原典怎麼寫",
+      "format": "long",
+      "format_reason": "長青題材，資料量撐得起 7–10 分鐘長片",
+      "score": 33.8,
+      "evidence": [
+        {
+          "source": "wikipedia",
+          "metric": "中文維基「饕餮」近 30 日瀏覽量",
+          "value": 2656.0,
+          "url": "https://zh.wikipedia.org/wiki/%E9%A5%95%E9%A4%AE",
+          "note": "近 7 日日均 87.6，前 23 日日均 88.8，升溫 ×0.99"
+        },
+        {
+          "source": "youtube",
+          "metric": "YouTube 搜尋「饕餮 神話 真相」前 4 名影片觀看數中位數",
+          "value": 132.0,
+          "url": "https://www.youtube.com/watch?v=3uzHRBQBeRY",
+          "note": "最高：3,220 次（上古神話，2026-08-04）"
+        }
+      ],
+      "competitors": [
+        {
+          "title": "【粵語·廣東話】上古第一邪獸窮奇！連饕餮都不配做對手？善惡顛倒的神族墮落真相",
+          "channel": "上古神話",
+          "views": 3220,
+          "published": "2026-08-04",
+          "url": "https://www.youtube.com/watch?v=3uzHRBQBeRY"
+        },
+        {
+          "title": "【饕餮】为什会变成凶兽？饕餮纹，背后的真相是什么？｜王峥",
+          "channel": "峥有此议",
+          "views": 151,
+          "published": "2026-05-20",
+          "url": "https://www.youtube.com/watch?v=V15YftxvSf4"
+        },
+        {
+          "title": "贪婪的象征：饕餮的传说与真相",
+          "channel": "古籍神话",
+          "views": 113,
+          "published": "2024-05-30",
+          "url": "https://www.youtube.com/watch?v=JwoW7Stn43Y"
+        },
+        {
+          "title": "FOMO恐惧症的上古版本｜饕餮独白｜中国神话与现代心理学奇妙共鸣｜山海经 志怪 道家",
+          "channel": "喵言詭語",
+          "views": 34,
+          "published": "2026-03-22",
+          "url": "https://www.youtube.com/watch?v=SA7sQo0dOxM"
+        }
+      ],
+      "viewer_questions": [],
+      "warnings": []
+    }
+  ],
+  "sources": [
+    {
+      "source": "youtube",
+      "ok": true,
+      "requests": 36,
+      "cache_hits": 0,
+      "units": 927,
+      "note": ""
+    },
+    {
+      "source": "wikipedia",
+      "ok": true,
+      "requests": 32,
+      "cache_hits": 0,
+      "units": 0,
+      "note": ""
+    },
+    {
+      "source": "hackernews",
+      "ok": true,
+      "requests": 3,
+      "cache_hits": 0,
+      "units": 0,
+      "note": ""
+    },
+    {
+      "source": "reddit",
+      "ok": false,
+      "requests": 1,
+      "cache_hits": 0,
+      "units": 0,
+      "note": "reddit r/mythology: http 403"
+    },
+    {
+      "source": "bilibili",
+      "ok": false,
+      "requests": 1,
+      "cache_hits": 0,
+      "units": 0,
+      "note": "bilibili ranking rid=36: http 200 code -352"
+    }
+  ]
+}

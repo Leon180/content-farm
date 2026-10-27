@@ -1,0 +1,132 @@
+{
+  "video": "assembly/release.mp4",
+  "errors": 1,
+  "warnings": 4,
+  "findings": [
+    {
+      "check": "media_policy",
+      "level": "ok",
+      "message": "24 slides within channel media policy"
+    },
+    {
+      "check": "identity_opening",
+      "level": "ok",
+      "message": "opening「最早的原典」and sign-off「怪談開談」present"
+    },
+    {
+      "check": "template_phrase",
+      "level": "ok",
+      "message": "no template or other-channel wording"
+    },
+    {
+      "check": "commentary",
+      "level": "ok",
+      "message": "take slides: s19, s19b"
+    },
+    {
+      "check": "slideshow_risk",
+      "level": "ok",
+      "message": "mean 9/100, 0/24 pages at or above the threshold"
+    },
+    {
+      "check": "hooks_ledger",
+      "level": "ok",
+      "message": "2 hook(s), all paid or dropped with a reason"
+    },
+    {
+      "check": "continuity",
+      "level": "warn",
+      "message": "[s02.15]「兩個」之後出現第 3 項，數量對不上"
+    },
+    {
+      "check": "ai_motion",
+      "level": "ok",
+      "message": "motion recorded for 20 AI image(s): parallax, wan"
+    },
+    {
+      "check": "ai_image",
+      "level": "ok",
+      "message": "20 AI image(s) labelled 「AI 示意圖」 with model/prompt/seed recorded"
+    },
+    {
+      "check": "credits",
+      "level": "ok",
+      "message": "21 credited assets, none pending"
+    },
+    {
+      "check": "subtitle_safe_zone",
+      "level": "ok",
+      "message": "every subtitle line clears the mascot column"
+    },
+    {
+      "check": "speech_check",
+      "level": "warn",
+      "message": "3 scene(s) still misread: scene_007.mp3 CER 0.12; scene_014.mp3 CER 0.12; scene_018.mp3 CER 0.18 (24 scenes, worst CER 0.179, 12 re-generation(s))"
+    },
+    {
+      "check": "thumbnail",
+      "level": "ok",
+      "message": "「天狗沒有鼻子？」+ mascot; promise paid off within 60s"
+    },
+    {
+      "check": "thumbnail_variants",
+      "level": "ok",
+      "message": "3 variants keep their promise"
+    },
+    {
+      "check": "final_video",
+      "level": "ok",
+      "message": "assembly/release.mp4"
+    },
+    {
+      "check": "resolution",
+      "level": "ok",
+      "message": "1920x1080 (expected 1920x1080)"
+    },
+    {
+      "check": "duration",
+      "level": "ok",
+      "message": "529.8s (channel target 420-600s)"
+    },
+    {
+      "check": "duration_goal",
+      "level": "ok",
+      "message": "529.8s vs goal >= 480s (mid-roll needs 8:00)"
+    },
+    {
+      "check": "av_drift",
+      "level": "ok",
+      "message": "audio/video differ by 0.02s"
+    },
+    {
+      "check": "black_frames",
+      "level": "ok",
+      "message": "no black segment >= 0.5s"
+    },
+    {
+      "check": "static_scan",
+      "level": "warn",
+      "message": "1 dead zone(s), 16s in all (static shot > 10s): 230-246s"
+    },
+    {
+      "check": "dead_zones",
+      "level": "error",
+      "message": "5 dead zone(s) > 10 s: 401-418s, 421-433s, 460-474s, 503-517s, 517-530s"
+    },
+    {
+      "check": "beat_gap",
+      "level": "warn",
+      "message": "longest gap between hooks 72.9s; first hook at 25.2s; 27 beat problem(s)"
+    },
+    {
+      "check": "still_frames",
+      "level": "ok",
+      "message": "longest still 7.75s (0 over 8s); blank 0, stuck blend 0"
+    },
+    {
+      "check": "loudness",
+      "level": "ok",
+      "message": "I -23.4 LUFS (target -23.4), TP -4.7 dBTP (≤ -1.5), clipped samples 0"
+    }
+  ]
+}

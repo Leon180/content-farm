@@ -1,4 +1,4 @@
-# 妖怪溯源所 — 神話・怪物溯源（東亞比較考據）
+# 怪談開談 — 神話・怪物溯源（東亞比較考據）
 code: yokai
 name: 怪談開談           # Leon 2026-10-25 確認正式名稱（舊名「妖怪溯源所」不再使用）
 line: 神話・怪物溯源
@@ -39,7 +39,7 @@ media:
   artwork: true           # Met／AIC／Rijksmuseum 等 CC0；大英博物館 NC 不可用
   artwork_license_required: true
   source_footage: false
-ai_illustration:          # Leon 2026-10-16 cc801e14fbc2：妖怪溯源所用 Z-Image 水墨風
+ai_illustration:          # Leon 2026-10-16 cc801e14fbc2：怪談開談用 Z-Image 水墨風
   provider: local_mflux
   model: z-image-turbo
   style_prefix: >-
@@ -59,7 +59,7 @@ identity:   # 政策審查 2026-10 D3：開場、說明欄、片尾各頻道不�
   opening:
     format: 「你以為 vs 原典」開場：先講大眾熟悉的形象，再翻出最早的原典記載製造反差，接著列出這集的停靠站
     signature: 最早的原典
-  take_label: 溯源所的解讀
+  take_label: 怪談開談的解讀
   outro:
     signature: 怪談開談
     endcard: 下一隻妖怪，繼續溯源

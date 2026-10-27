@@ -1,0 +1,960 @@
+{
+  "version": 1,
+  "category": "knowledge",
+  "title": "天狗：《史記》裡的一顆流星，怎麼變成日本山裡的長鼻子",
+  "description": "你以為天狗是紅臉長鼻子的山中怪人，但最早的原典寫的是一顆會叫的流星。這支片沿著《史記》、《日本書紀》、《天狗草紙》到江戶畫師，追天狗的名字和臉是怎麼分開、又怎麼接上的。本頻道不提供投資建議。",
+  "tags": [
+    "天狗",
+    "日本妖怪",
+    "史記",
+    "日本書紀",
+    "山伏",
+    "妖怪溯源",
+    "怪談開談"
+  ],
+  "as_of": "2026-10",
+  "draft_data": false,
+  "sources": [
+    {
+      "id": "shiji-27",
+      "title": "史記/卷027（天官書）原文，維基文庫",
+      "url": "https://zh.wikisource.org/wiki/%E5%8F%B2%E8%A8%98/%E5%8D%B7027",
+      "note": "publisher=維基文庫; published=undated; accessed=2026-10-25; type=primary"
+    },
+    {
+      "id": "ndl-sekien",
+      "title": "鳥山石燕と《畫圖百鬼夜行》，國立國會圖書館 Image Bank 專欄",
+      "url": "https://www.ndl.go.jp/en/imagebank/column/sekienyokai",
+      "note": "publisher=National Diet Library; published=undated; accessed=2026-10-25; type=primary"
+    },
+    {
+      "id": "jawiki-tengu",
+      "title": "天狗，日文維基百科",
+      "url": "https://ja.wikipedia.org/wiki/%E5%A4%A9%E7%8B%97",
+      "note": "publisher=Wikipedia(ja); published=undated; accessed=2026-10-25; type=press"
+    },
+    {
+      "id": "enwiki-tengu",
+      "title": "Tengu，英文維基百科",
+      "url": "https://en.wikipedia.org/wiki/Tengu",
+      "note": "publisher=Wikipedia(en); published=undated; accessed=2026-10-25; type=press; first 100000 chars read"
+    },
+    {
+      "id": "nippon-tengu",
+      "title": "天狗：魔物から神へと昇格した稀有な妖怪，nippon.com",
+      "url": "https://www.nippon.com/ja/japan-topics/b02507/",
+      "note": "publisher=nippon.com; published=2022-10-25; accessed=2026-10-25; type=press",
+      "publisher": "nippon.com",
+      "headline": "天狗：魔物から神へと昇格した稀有な妖怪",
+      "published": "2022-10-25"
+    },
+    {
+      "id": "waraku-tengu",
+      "title": "流れ星は天狗だった？ふたご座流星群直前、ちょっと意外な歴史を紹介，和樂web",
+      "url": "https://intojapanwaraku.com/rock/culture-rock/134344/",
+      "note": "publisher=和樂web; published=2020-12-14; accessed=2026-10-25; type=press"
+    },
+    {
+      "id": "kotobank-tengu",
+      "title": "天狗，コトバンク（デジタル大辞泉、日本国語大辞典、世界大百科事典ほか）",
+      "url": "https://kotobank.jp/word/天狗-102256",
+      "note": "publisher=コトバンク; published=undated; accessed=2026-10-25; type=press"
+    },
+    {
+      "id": "shanhai-west",
+      "title": "山海經/西山經（陰山），維基文庫",
+      "url": "https://zh.wikisource.org/wiki/%E5%B1%B1%E6%B5%B7%E7%B6%93/%E8%A5%BF%E5%B1%B1%E7%B6%93",
+      "note": "publisher=維基文庫; published=undated; accessed=2026-10-25; type=primary"
+    }
+  ],
+  "pronunciation_map": {
+    "旻": "民",
+    "鳶": "淵",
+    "咫": "紙"
+  },
+  "sections": [
+    {
+      "title": "你以為的天狗，原典怎麼寫",
+      "must_keep": [
+        "類狗",
+        "最早的原典"
+      ],
+      "must_avoid": [
+        "天狗本來就是日本的山神"
+      ],
+      "slides": [
+        {
+          "id": "s01",
+          "layout": "title",
+          "heading": "天狗，原典沒寫鼻子",
+          "body": {
+            "subtitle": "從《史記》的流星到長鼻子山伏"
+          },
+          "narration": "提到天狗，你腦中大概是紅臉、長鼻子、穿山伏服、手拿羽扇的山中怪人。翻開最早的原典，《史記·天官書》寫的是：天狗，狀如大奔星，有聲，其下止地，類狗。白話就是，一顆會叫的大流星落到地上，樣子像狗，沒有鼻子，也沒有山。一顆會叫的流星，怎麼走到日本深山，還長出一根長鼻子？",
+          "source_ids": [
+            "shiji-27"
+          ],
+          "mascot": {
+            "pose": "think"
+          },
+          "media": {
+            "kind": "ai_image",
+            "prompt": "a bright fireball streaking down a dark night sky toward distant misty mountains, empty paper around",
+            "shot_size": "wide",
+            "camera": "push",
+            "lighting": "faint glow from the fireball",
+            "frame": "lower",
+            "motion": "wan",
+            "motion_prompt": "the fireball slides slowly across the sky, thin clouds drift, mist moves over the mountains, gentle camera push",
+            "wan_chain": [
+              "the fireball sinks lower and scatters into a trail of sparks beyond the ridge, mist keeps rolling over the mountains, slow camera push"
+            ]
+          },
+          "notes": "a-hook；開場 15 秒鉤子＋最早的原典。Wan 1/3：無人物的流星",
+          "sentence_ids": [
+            "s01.1",
+            "s01.9",
+            "s01.10",
+            "s01.4"
+          ]
+        },
+        {
+          "id": "s02",
+          "layout": "quote",
+          "heading": "司馬遷那一頁",
+          "body": {
+            "text": "狀如大奔星，有聲，其下止地，類狗",
+            "who": "《史記·天官書》"
+          },
+          "narration": "原典的關鍵只有兩個字：類狗，樣子像狗。落地的是一顆像狗的流星，不是山裡的怪人。",
+          "source_ids": [
+            "shiji-27"
+          ],
+          "mascot": {
+            "pose": "point"
+          },
+          "notes": "a-terms 大奔星；a-hook",
+          "sentence_ids": [
+            "s02.15",
+            "s02.16"
+          ]
+        },
+        {
+          "id": "s03",
+          "layout": "bullets",
+          "heading": "這集停三站",
+          "body": {
+            "items": [
+              "第一站：中國的天象紀錄",
+              "第二站：日本最早的目擊紀錄",
+              "第三站：長鼻子與山伏"
+            ]
+          },
+          "narration": "第一站，中國的天象紀錄。第二站，日本最早的目擊紀錄。第三站，長鼻子的來歷，連學者都還在吵。先預告一件事：鼻子比你想的晚得多。",
+          "source_ids": [
+            "jawiki-tengu"
+          ],
+          "mascot": {
+            "pose": "point"
+          },
+          "media": {
+            "kind": "ai_image",
+            "prompt": "a winding mountain path with three small wooden gates spaced along it, pine trees, mist",
+            "shot_size": "medium",
+            "camera": "pan",
+            "lighting": "soft diffused morning light",
+            "frame": "panel_left"
+          },
+          "notes": "a-hook 承諾與停靠站",
+          "sentence_ids": [
+            "s03.2",
+            "s03.3",
+            "s03.11",
+            "s03.13"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "第一站：天空的凶兆",
+      "must_keep": [
+        "千里破軍殺將",
+        "天狗食日月"
+      ],
+      "must_avoid": [
+        "天狗是守山神"
+      ],
+      "slides": [
+        {
+          "id": "s04",
+          "layout": "quote",
+          "heading": "天狗是一張貼紙",
+          "body": {
+            "text": "貼紙的名字沒變，貼的東西全換了",
+            "who": "怪談開談的比喻"
+          },
+          "narration": "先給你一個好記的比喻：把天狗想成一張貼紙。同一張貼紙，先貼在天上的流星上，後來被撕下來，貼到山裡的怪物身上。貼紙的名字沒變，貼的東西全換了。所以天狗最早的職業是流星，後來轉職山伏，從天文系轉到登山社，還沒畢業就長出鼻子。",
+          "source_ids": [
+            "jawiki-tengu"
+          ],
+          "beat": "joke",
+          "mascot": {
+            "pose": "smug"
+          },
+          "media": {
+            "kind": "ai_image",
+            "prompt": "a single sticker-like paper label being peeled off a night sky and drifting toward a mountain, plain background",
+            "shot_size": "insert",
+            "camera": "pull",
+            "lighting": "soft even light",
+            "frame": "panel_right"
+          },
+          "notes": "a-terms 貼紙比喻再定義；a-jokes 轉職",
+          "sentence_ids": [
+            "s04.1",
+            "s04.2",
+            "s04.3",
+            "s04.5"
+          ]
+        },
+        {
+          "id": "s05",
+          "layout": "quote",
+          "heading": "天空異常通報",
+          "body": {
+            "text": "千里破軍殺將",
+            "who": "《史記·天官書》"
+          },
+          "narration": "《天官書》是《史記》裡專門記天象的篇章，等於古代的天空異常通報，天狗就收在裡面。注意它的語氣：據《史記·天官書》原文，天狗落下的地方，望之如火光炎炎衝天，原文結尾是，千里破軍殺將。換算起來，它在原典裡是軍事災難的預兆，不是守山神。",
+          "source_ids": [
+            "shiji-27"
+          ],
+          "mascot": {
+            "pose": "shocked"
+          },
+          "media": {
+            "kind": "ai_image",
+            "prompt": "an ancient observatory platform under a night sky with a long glowing streak above a city wall",
+            "shot_size": "full",
+            "camera": "crane",
+            "lighting": "cold moonlight with a red glow at the horizon",
+            "frame": "lower"
+          },
+          "notes": "a-timeline 第一則；a-terms 天官書",
+          "sentence_ids": [
+            "s05.1",
+            "s05.7",
+            "s05.3"
+          ]
+        },
+        {
+          "id": "s06",
+          "layout": "bullets",
+          "heading": "中國不只一本書",
+          "body": {
+            "items": [
+              "《史記》",
+              "《漢書》",
+              "《晉書》",
+              "明代：天狗食日月"
+            ]
+          },
+          "narration": "中國的紀錄不只《史記》。《史記》《漢書》《晉書》都有流星天狗的記載。更有意思的是明代，還發展出天狗食日月的說法，也就是天狗把日月吞掉。",
+          "source_ids": [
+            "jawiki-tengu"
+          ],
+          "beat": "gossip",
+          "mascot": {
+            "pose": "deadpan"
+          },
+          "media": {
+            "kind": "ai_image",
+            "prompt": "a dark disc covering the sun with a thin ring of light, a faint hound-like shape of cloud nearby",
+            "shot_size": "wide",
+            "camera": "track",
+            "lighting": "eerie dim daylight",
+            "frame": "panel_left",
+            "motion": "wan",
+            "motion_prompt": "the dark disc slowly covers the sun, the thin ring of light flickers, faint clouds drift, slow camera push",
+            "wan_chain": [
+              "the ring of light brightens at one edge and the sky glows eerie amber, slow camera push"
+            ]
+          },
+          "notes": "a-timeline 第二則；gossip 天狗食日月（jawiki）；Wan 4/4：日蝕（無人物）",
+          "sentence_ids": [
+            "s06.1",
+            "s06.6",
+            "s06.3"
+          ]
+        },
+        {
+          "id": "s06b",
+          "layout": "quote",
+          "heading": "山海經的天狗",
+          "body": {
+            "text": "其狀如狸而白首，名曰天狗，可以禦凶",
+            "who": "《山海經·西山經》"
+          },
+          "narration": "先踩一下煞車，中國原典裡的天狗，其實不只流星這一種。據《山海經·西山經》原文，陰山條記了一種獸，樣子像野貓，白腦袋，名叫天狗，叫聲像榴榴，榴榴是擬聲，可以擋凶。這隻天狗是長得像野貓、白腦袋的獸，而且是拿來擋凶的。也就是說，同一個名字，在中國就已經一凶一吉。",
+          "source_ids": [
+            "shanhai-west"
+          ],
+          "mascot": {
+            "pose": "point"
+          },
+          "media": {
+            "kind": "ai_image",
+            "prompt": "a wildcat-like beast with a white head standing on a misty mountain ridge, ancient ink bestiary style, no people",
+            "shot_size": "full",
+            "camera": "push",
+            "lighting": "pale dawn mist",
+            "frame": "lower"
+          },
+          "notes": "a-terms 補：山海經天狗（凶吉兩義）；原文維基文庫已打開核對 2026-10-25",
+          "sentence_ids": [
+            "s06b.1",
+            "s06b.7",
+            "s06b.3",
+            "s06b.4"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "第二站：日本最早的目擊",
+      "must_keep": [
+        "六三七年",
+        "天上的狐"
+      ],
+      "must_avoid": [],
+      "slides": [
+        {
+          "id": "s07",
+          "layout": "big_number",
+          "heading": "日本書紀的大星",
+          "body": {
+            "value": "六三七",
+            "unit": "年",
+            "caption": "舒明九年，僧旻說大星是天狗"
+          },
+          "narration": "再看日本。據和樂web轉述，七二〇年成書的《日本書紀》記載，舒明天皇九年，也就是六三七年，有一顆大星從東往西流，還伴隨類似雷的巨響。僧人旻說：這不是流星，是天狗。nippon.com 指出，這反映了中國把這類天象視為戰亂前兆的知識。日文維基記下，旻是從唐朝回到日本的僧人，他說天狗的吼聲只是聽起來像雷。我們的判斷是，這句話等於把中國的天象知識，搬進了日本朝廷。",
+          "source_ids": [
+            "waraku-tengu",
+            "nippon-tengu"
+          ],
+          "mascot": {
+            "pose": "shocked"
+          },
+          "media": {
+            "kind": "ai_image",
+            "prompt": "a great fireball crossing a stormy sky above the tiled roofs of an ancient palace",
+            "shot_size": "medium",
+            "camera": "crane",
+            "lighting": "flash of light between dark clouds",
+            "frame": "panel_right",
+            "motion": "wan",
+            "motion_prompt": "the fireball streaks from right to left, storm clouds roll, roof tiles stay still, slow camera rise",
+            "wan_chain": [
+              "the fireball passes over the palace roofs and fades, dark clouds roll across the stormy sky, slow camera push"
+            ]
+          },
+          "notes": "a-timeline 日本書紀；Wan 2/3 轉折：無人物的天象",
+          "sentence_ids": [
+            "s07.1",
+            "s07.9",
+            "s07.3",
+            "s07.4",
+            "s07.7",
+            "s07.8"
+          ]
+        },
+        {
+          "id": "s08",
+          "layout": "compare",
+          "heading": "狗還是狐狸",
+          "body": {
+            "left": {
+              "label": "中國原典",
+              "items": [
+                "類狗"
+              ]
+            },
+            "right": {
+              "label": "日本北野本",
+              "items": [
+                "あまつきつね",
+                "天上的狐"
+              ]
+            }
+          },
+          "narration": "英文維基說，這本書通常被視為日本最早的天狗紀錄。而日本辭典說，北野本把這個天狗訓讀成「天上的狐」。北野本訓讀為狐，與原典的狗不同。",
+          "source_ids": [
+            "enwiki-tengu",
+            "kotobank-tengu",
+            "shiji-27"
+          ],
+          "beat": "joke",
+          "mascot": {
+            "pose": "smug"
+          },
+          "media": {
+            "kind": "ai_image",
+            "prompt": "a dog and a fox sitting side by side on a bridge at dusk, both looking at the sky",
+            "shot_size": "close",
+            "camera": "push",
+            "lighting": "warm low dusk light",
+            "frame": "lower"
+          },
+          "notes": "a-timeline 同一紀錄另一面；a-jokes 狗/狐",
+          "sentence_ids": [
+            "s08.14",
+            "s08.17",
+            "s08.18"
+          ]
+        },
+        {
+          "id": "s09",
+          "layout": "quote",
+          "heading": "平安：鳶與狐",
+          "body": {
+            "text": "平安中期起，成了會騙人的狐狸型妖怪",
+            "who": "據 nippon.com"
+          },
+          "narration": "進到平安時代，天狗的樣子又變了。日文維基說，當時的天狗常被想像成鳶，也就是一種猛禽。依 nippon.com 的說法，約從平安中期，十世紀前後起，天狗成了會騙人的狐狸型妖怪。看起來，天狗在這個階段離天空越來越遠，離人心越來越近。",
+          "source_ids": [
+            "jawiki-tengu",
+            "nippon-tengu"
+          ],
+          "mascot": {
+            "pose": "think"
+          },
+          "media": {
+            "kind": "title_card",
+            "source_id": "nippon-tengu",
+            "headline": "平安中期起，天狗成了會騙人的狐狸型妖怪",
+            "summary": "約十世紀前後，天狗從凶兆變成會騙人的妖怪。"
+          },
+          "notes": "a-timeline 平安時代；title_card 用 nippon.com（2022-10-25）",
+          "sentence_ids": [
+            "s09.1",
+            "s09.11",
+            "s09.13",
+            "s09.10"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "第三站：鼻子與山伏",
+      "must_keep": [
+        "一二九六年",
+        "十四世紀",
+        "江戶時代"
+      ],
+      "must_avoid": [
+        "江戶時代才有長鼻子的構想"
+      ],
+      "slides": [
+        {
+          "id": "s10",
+          "layout": "timeline",
+          "heading": "名字和臉隔了幾百年",
+          "body": {
+            "events": [
+              {
+                "when": "六三七年",
+                "what": "書紀：大星是天狗"
+              },
+              {
+                "when": "十世紀前後",
+                "what": "會騙人的狐狸型妖怪"
+              },
+              {
+                "when": "約一二九六年",
+                "what": "《天狗草紙》鳥喙"
+              },
+              {
+                "when": "十四世紀",
+                "what": "長鼻子約被構想出來"
+              },
+              {
+                "when": "江戶時代",
+                "what": "長鼻定型成主流"
+              }
+            ]
+          },
+          "narration": "把到目前的線索排成一條線。六三七年，書紀記下天狗。十世紀前後，成了會騙人的狐狸型妖怪。一二九六年左右的《天狗草紙》畫卷，畫上了嘴喙。十四世紀，英文維基說長鼻子約在這時出現；到江戶時代，nippon.com 說它才成為主流。名字和臉之間，隔了好幾百年。",
+          "source_ids": [
+            "waraku-tengu",
+            "nippon-tengu",
+            "enwiki-tengu"
+          ],
+          "mascot": {
+            "pose": "point"
+          },
+          "media": {
+            "kind": "animated",
+            "animation": "draw_line"
+          },
+          "notes": "a-timeline / a-numbers 整合",
+          "sentence_ids": [
+            "s10.1",
+            "s10.21",
+            "s10.12",
+            "s10.22",
+            "s10.17",
+            "s10.18",
+            "s10.3"
+          ]
+        },
+        {
+          "id": "s11",
+          "layout": "bullets",
+          "heading": "拿高僧開玩笑",
+          "body": {
+            "items": [
+              "約一二九六年",
+              "《天狗草紙》",
+              "高僧長出天狗喙"
+            ]
+          },
+          "narration": "英文維基說，《天狗草紙》約作於一二九六年，把高僧畫成長著天狗嘴喙的樣子，是拿高階僧侶開玩笑的諷刺畫。",
+          "source_ids": [
+            "enwiki-tengu"
+          ],
+          "beat": "gossip",
+          "mascot": {
+            "pose": "deadpan"
+          },
+          "media": {
+            "kind": "ai_image",
+            "prompt": "an old picture scroll partly unrolled on a low table, brush and ink stone beside it, empty paper",
+            "shot_size": "close",
+            "camera": "push",
+            "lighting": "warm lamp light",
+            "frame": "lower"
+          },
+          "notes": "a-gossip 3；a-timeline 約一二九六年",
+          "sentence_ids": [
+            "s11.14"
+          ]
+        },
+        {
+          "id": "s12",
+          "layout": "bullets",
+          "heading": "太平記裡的天狗",
+          "body": {
+            "items": [
+              "《太平記》",
+              "崇德 → 金鳶",
+              "天皇與天狗連在一起"
+            ]
+          },
+          "narration": "再後來，《太平記》把崇德等天皇和天狗連在一起。日文維基說，崇德在書裡成了金鳶。看起來，天狗已經不只是天上的流星，而是跟人間權力扯上關係的角色。",
+          "source_ids": [
+            "jawiki-tengu"
+          ],
+          "mascot": {
+            "pose": "think"
+          },
+          "media": {
+            "kind": "ai_image",
+            "prompt": "a golden kite bird circling above the roof of a hall in the mountains",
+            "shot_size": "medium",
+            "camera": "pan",
+            "lighting": "late afternoon gold light",
+            "frame": "panel_right"
+          },
+          "notes": "a-timeline 室町時代",
+          "sentence_ids": [
+            "s12.8",
+            "s12.9",
+            "s12.10"
+          ]
+        },
+        {
+          "id": "s13",
+          "layout": "compare",
+          "heading": "鼻子從哪來",
+          "body": {
+            "left": {
+              "label": "神祇猿田彥",
+              "items": [
+                "中世以後與天狗連結",
+                "《日本書紀》鼻長七咫"
+              ]
+            },
+            "right": {
+              "label": "鳥喙",
+              "items": [
+                "鳶喙人形化",
+                "約十四世紀出現"
+              ]
+            }
+          },
+          "narration": "那鼻子到底從哪來？有兩條說法。和樂web說，猿田彥是日本神話裡帶路的神，以鼻長臉紅聞名，在中世以後與天狗連結。英文維基則另有一說：長鼻子大約在十四世紀出現，可能是把鳶的嘴喙人形化，並提到《日本書紀》裡猿田彥的鼻子長七咫。",
+          "source_ids": [
+            "waraku-tengu",
+            "enwiki-tengu",
+            "jawiki-tengu"
+          ],
+          "mascot": {
+            "pose": "think"
+          },
+          "media": {
+            "kind": "animated",
+            "animation": "grow_bars"
+          },
+          "notes": "a-chain 第三棒；a-unknowns 鼻子",
+          "sentence_ids": [
+            "s13.1",
+            "s13.2",
+            "s13.10",
+            "s13.8"
+          ]
+        },
+        {
+          "id": "s14",
+          "layout": "quote",
+          "heading": "天狗になる",
+          "body": {
+            "text": "天狗になる＝自負",
+            "who": "日本辭典：原因是那根高鼻子"
+          },
+          "narration": "日文說一個人「變成天狗」，意思是他自負、自以為了不起，辭典把原因歸給天狗那根高鼻子。誇人之前，請先確認他沒有鼻子。",
+          "source_ids": [
+            "kotobank-tengu"
+          ],
+          "beat": "joke",
+          "mascot": {
+            "pose": "smug"
+          },
+          "media": {
+            "kind": "ai_image",
+            "prompt": "a single folding fan lying on rice paper beside a tall pine branch",
+            "shot_size": "insert",
+            "camera": "still",
+            "lighting": "soft side light",
+            "frame": "panel_left"
+          },
+          "notes": "a-jokes 3；a-gossip 1（kotobank）",
+          "sentence_ids": [
+            "s14.3",
+            "s14.2"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "畫師、爭議與結論",
+      "must_keep": [
+        "一七七六年",
+        "怪談開談"
+      ],
+      "must_avoid": [],
+      "slides": [
+        {
+          "id": "s15",
+          "layout": "big_number",
+          "heading": "畫師也沒有共識",
+          "body": {
+            "value": "一七七六",
+            "unit": "年",
+            "caption": "石燕《畫圖百鬼夜行》出版"
+          },
+          "narration": "接下來輪到畫師。石燕的《畫圖百鬼夜行》，一七七六年出版，是他四本妖怪畫冊的第一本。國立國會圖書館的專欄說，現在天狗常被畫成人形的山中修行者，但石燕把它畫成大型的飛禽形。專欄沒說這張天狗圖出自哪一本，所以不算進一七七六年那本；飛禽形更接近前面鳶與嘴喙那一邊，這是我們的判斷。",
+          "source_ids": [
+            "ndl-sekien"
+          ],
+          "mascot": {
+            "pose": "point"
+          },
+          "media": {
+            "kind": "ai_image",
+            "prompt": "a large bird with outspread wings perched on a mountain pine, a brush and inkstone in the foreground",
+            "shot_size": "full",
+            "camera": "push",
+            "lighting": "pale morning light",
+            "frame": "lower"
+          },
+          "notes": "a-chain 第四棒；a-unknowns 石燕",
+          "sentence_ids": [
+            "s15.1",
+            "s15.7",
+            "s15.10",
+            "s15.8",
+            "s15.11"
+          ]
+        },
+        {
+          "id": "s16",
+          "layout": "bullets",
+          "heading": "恐懼與敬畏之間",
+          "body": {
+            "items": [
+              "魔物：誤導虔誠的人",
+              "亡魂：墜入天狗道的僧人",
+              "升格：從魔物到神"
+            ]
+          },
+          "narration": "還有一條支線：天狗從凶兆慢慢變得有人味。英文維基說，佛教長期把天狗視為製造混亂的魔物，十二、十三世紀的故事裡，它們會誤導虔誠的人、擄走僧侶，是傲慢或異端僧人墜入「天狗道」後的亡魂。nippon.com 的標題更直接，稱天狗是從魔物升格成神的罕見妖怪。",
+          "source_ids": [
+            "enwiki-tengu",
+            "nippon-tengu"
+          ],
+          "mascot": {
+            "pose": "think"
+          },
+          "media": {
+            "kind": "ai_image",
+            "prompt": "a dark mountain temple on one side and a bright shrine gate on the other side, mist between them",
+            "shot_size": "medium",
+            "camera": "track",
+            "lighting": "dark on the left, soft light on the right",
+            "frame": "panel_right"
+          },
+          "notes": "a-chain 支線",
+          "sentence_ids": [
+            "s16.1",
+            "s16.2",
+            "s16.3"
+          ]
+        },
+        {
+          "id": "s17",
+          "layout": "bullets",
+          "heading": "鞍馬山的師父",
+          "body": {
+            "items": [
+              "鞍馬山的僧正坊",
+              "據說教過年輕牛若丸劍術",
+              "能劇《鞍馬天狗》很有同情心"
+            ]
+          },
+          "narration": "八卦時間。英文維基說，鞍馬山的僧正坊據說教過年輕的牛若丸，也就是後來的源義經劍術。後來的能劇《鞍馬天狗》，把僧正坊寫得很有同情心。從騙人的魔物，到肯教劍術的師父，看起來轉折很大。",
+          "source_ids": [
+            "enwiki-tengu"
+          ],
+          "beat": "gossip",
+          "mascot": {
+            "pose": "deadpan"
+          },
+          "media": {
+            "kind": "ai_image",
+            "prompt": "a quiet mountain trail under tall cedar trees with a wooden practice sword leaning on a trunk",
+            "shot_size": "wide",
+            "camera": "pull",
+            "lighting": "dappled light through the trees",
+            "frame": "lower"
+          },
+          "notes": "a-gossip 2；a-chain 能劇",
+          "sentence_ids": [
+            "s17.1",
+            "s17.2",
+            "s17.3",
+            "s17.4"
+          ]
+        },
+        {
+          "id": "s17b",
+          "layout": "quote",
+          "heading": "台灣觀眾的位置",
+          "body": {
+            "text": "天狗本來不是日本的妖怪，根源在中國",
+            "who": "據 nippon.com"
+          },
+          "narration": "最後看一下台灣在哪個位置。這一段來源不多，所以多半是我們自己的判斷。華語圈的人，多半是透過日本動漫和遊戲，先認識長鼻子的天狗，反而比較少知道，這個詞根在中國的天象紀錄裡。連日本的 nippon.com 也直說，天狗本來不是日本的妖怪，根源在中國。",
+          "source_ids": [
+            "nippon-tengu"
+          ],
+          "mascot": {
+            "pose": "deadpan"
+          },
+          "media": {
+            "kind": "ai_image",
+            "prompt": "a small mountainous island at dusk under a faint comet streak, ink wash, no people",
+            "shot_size": "close",
+            "camera": "crane",
+            "lighting": "violet dusk",
+            "frame": "panel_left"
+          },
+          "notes": "a-taiwan",
+          "sentence_ids": [
+            "s17b.1",
+            "s17b.2",
+            "s17b.3",
+            "s17b.4"
+          ]
+        },
+        {
+          "id": "s18",
+          "layout": "bullets",
+          "heading": "還沒有答案的問題",
+          "body": {
+            "items": [
+              "鼻子到底從哪來",
+              "日文維基列了幾派",
+              "出現和定型是兩件事？"
+            ]
+          },
+          "narration": "回頭整理還沒有答案的問題。第一，鼻子從哪來：日文維基列了幾派，英文維基說約十四世紀出現，nippon.com 則說長鼻形象在江戶時代才成為主流。我們沒有辦法替三份資料裁判，只能說，出現和定型可能是兩件事。",
+          "source_ids": [
+            "jawiki-tengu",
+            "enwiki-tengu",
+            "nippon-tengu"
+          ],
+          "mascot": {
+            "pose": "think"
+          },
+          "media": {
+            "kind": "ai_image",
+            "prompt": "a misty mountain trail forking into two paths with a pair of old stone lanterns, empty paper around, no people",
+            "shot_size": "full",
+            "camera": "pan",
+            "lighting": "soft overcast light",
+            "frame": "panel_right"
+          },
+          "notes": "a-unknowns；h2 payoff",
+          "sentence_ids": [
+            "s18.1",
+            "s18.2",
+            "s18.3"
+          ]
+        },
+        {
+          "id": "s18b",
+          "layout": "bullets",
+          "heading": "還沒有答案的問題",
+          "body": {
+            "items": [
+              "書紀的天狗是同一種嗎",
+              "早期天狗更像狐狸？",
+              "是否直接承接，來源沒說"
+            ]
+          },
+          "narration": "第二，書紀的天狗和後來的是同一種嗎？日文維基提到，聖德太子傳暦等書把天狗與天狐等同，也就是早期天狗曾經更像狐狸，但是否有直接承接，來源沒說。名字換過這麼多次身體，戶口名簿大概很難填。",
+          "source_ids": [
+            "jawiki-tengu"
+          ],
+          "mascot": {
+            "pose": "think"
+          },
+          "media": {
+            "kind": "ai_image",
+            "prompt": "a weathered stone fox statue beside a hanging paper charm at a quiet mountain shrine, empty paper around, no people",
+            "shot_size": "insert",
+            "camera": "push",
+            "lighting": "pale morning light",
+            "frame": "lower"
+          },
+          "notes": "a-unknowns；h2 payoff",
+          "sentence_ids": [
+            "s18.4",
+            "s18.5",
+            "s18b.1"
+          ],
+          "beat": "joke"
+        },
+        {
+          "id": "s19",
+          "layout": "quote",
+          "heading": "同一個名字，換了三次身體",
+          "body": {
+            "text": "天上的凶兆，騙人的狐或鳶，山裡的修行者",
+            "who": "怪談開談的解讀"
+          },
+          "narration": "怪談開談的解讀：在《史記》這條線上，天狗最早是天象；但中國同時有《山海經》的吉獸，名字從一開始就不只一個意思。到了日本這條線上，先是天上的凶兆，再是會騙人的狐或鳶，最後才是山裡的修行者形象。",
+          "source_ids": [
+            "shiji-27",
+            "nippon-tengu",
+            "kotobank-tengu"
+          ],
+          "take": true,
+          "mascot": {
+            "pose": "smug"
+          },
+          "media": {
+            "kind": "ai_image",
+            "prompt": "three empty robes of different shapes hanging side by side in a misty forest, one for each age",
+            "shot_size": "medium",
+            "camera": "crane",
+            "lighting": "cool light from above",
+            "frame": "panel_left"
+          },
+          "notes": "a-chain；a-taiwan；a-conclusion 論點。take 段",
+          "sentence_ids": [
+            "s19.8",
+            "s19.9",
+            "s19.10"
+          ]
+        },
+        {
+          "id": "s19b",
+          "layout": "quote",
+          "heading": "同一個名字，換了三次身體",
+          "body": {
+            "text": "華語圈先認識的，是日本的長鼻子",
+            "who": "怪談開談的解讀"
+          },
+          "narration": "這個名字，每個時代都被拿來裝當時人最怕、最敬、最想嘲諷的東西。看起來，華語圈的我們多半先從日本動漫認識長鼻子天狗，所以更容易忘記，nippon.com 也直說，天狗本來不是日本的妖怪，根源在中國。",
+          "source_ids": [
+            "nippon-tengu"
+          ],
+          "take": true,
+          "mascot": {
+            "pose": "smug"
+          },
+          "media": {
+            "kind": "ai_image",
+            "prompt": "an old paper lantern and a folded hand fan beside a small torii gate in mist, empty paper around, no people",
+            "shot_size": "full",
+            "camera": "track",
+            "lighting": "warm lantern glow in blue mist",
+            "frame": "panel_right"
+          },
+          "notes": "a-chain；a-taiwan；a-conclusion 論點。take 段",
+          "sentence_ids": [
+            "s19.3",
+            "s19.4"
+          ]
+        },
+        {
+          "id": "s20",
+          "layout": "quote",
+          "heading": "鼻子是後來才長的",
+          "body": {
+            "text": "最早的原典寫的是一顆會叫的流星",
+            "who": "怪談開談"
+          },
+          "narration": "回到開頭的問題：流星怎麼變成長鼻子？流星先被拿去當凶兆，再變成騙人的鳶與狐，鼻子最早約十四世紀才見於記載、江戶才定型，至於鼻子從哪來，三份資料各說各的，所以開頭那顆流星，才會沒有鼻子，也沒有山。這裡是怪談開談，下一隻妖怪，繼續溯源。",
+          "source_ids": [
+            "shiji-27"
+          ],
+          "mascot": {
+            "pose": "wave"
+          },
+          "media": {
+            "kind": "ai_image",
+            "prompt": "a lone mountain peak in mist at dusk with a faint streak of light fading in the sky, empty paper around",
+            "shot_size": "wide",
+            "camera": "pull",
+            "lighting": "fading dusk light",
+            "frame": "lower",
+            "motion": "wan",
+            "motion_prompt": "mist drifts slowly across the mountain, the faint streak of light fades, slow camera pull back",
+            "wan_chain": [
+              "the last streak of light dissolves, evening mist thickens around the peak, slow camera pull back"
+            ]
+          },
+          "notes": "a-conclusion 收尾回扣 h1；Wan 3/3",
+          "sentence_ids": [
+            "s20.1",
+            "s20.16",
+            "s20.4"
+          ]
+        }
+      ]
+    }
+  ],
+  "wan_budget": 4
+}

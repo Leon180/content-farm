@@ -1,0 +1,920 @@
+{
+  "version": 1,
+  "title": "天狗：《史記》裡的一顆流星，怎麼變成日本山裡的長鼻子",
+  "generated_at": "2026-10-27T06:54:41+00:00",
+  "entries": [
+    {
+      "slide_id": "s01",
+      "slide_index": 1,
+      "kind": "ai_image",
+      "file": "s01.png",
+      "license": "AI-generated (Z-Image-Turbo (4-bit); model licence Apache-2.0) for this channel",
+      "ai_generated": true,
+      "ai_label": "AI 示意圖",
+      "prompt": "traditional East Asian ink wash painting on aged rice paper, loose expressive brush strokes, muted grey ink with light colour washes, generous empty paper around the subject, one focal figure or landscape, illustration, not a photograph, no text, no seal. wide establishing shot, the subject small within its surroundings, a bright fireball streaking down a dark night sky toward distant misty mountains, empty paper around, lighting: faint glow from the fireball",
+      "provider": "local_mflux",
+      "model": "z-image-turbo",
+      "model_name": "Z-Image-Turbo (4-bit)",
+      "repo": "filipstrand/Z-Image-Turbo-mflux-4bit",
+      "origin_repo": "Tongyi-MAI/Z-Image-Turbo",
+      "license_url": "https://github.com/Tongyi-MAI/Z-Image/blob/main/LICENSE",
+      "seed": 42,
+      "steps": 9,
+      "size": [
+        1280,
+        720
+      ],
+      "motion": {
+        "kind": "wan",
+        "model": "wan22-ti2v-5b-q8",
+        "model_name": "Wan2.2-TI2V-5B (MLX q8)",
+        "repo": "Anes1032/Wan2.2-TI2V-5B-mlx-q8",
+        "origin_repo": "Wan-AI/Wan2.2-TI2V-5B",
+        "license": "Apache-2.0",
+        "license_url": "https://github.com/Wan-Video/Wan2.2/blob/main/LICENSE.txt",
+        "prompt": "traditional East Asian ink wash painting on aged rice paper, loose expressive brush strokes, muted grey ink with light colour washes, generous empty paper around the subject, one focal figure or landscape, illustration, not a photograph, no text, no seal. wide establishing shot, the subject small within its surroundings, a bright fireball streaking down a dark night sky toward distant misty mountains, empty paper around, lighting: faint glow from the fireball Motion: the fireball slides slowly across the sky, thin clouds drift, mist moves over the mountains, gentle camera push Any figure stays perfectly still, facial expression unchanged.",
+        "seed": 42,
+        "params": {
+          "width": 832,
+          "height": 480,
+          "num_frames": 69,
+          "fps": 24,
+          "steps": 20,
+          "guide_scale": 5.0,
+          "tiling": "aggressive",
+          "seed": 42,
+          "negative_prompt": ""
+        },
+        "upscaled_to": [
+          1920,
+          1080
+        ],
+        "segments": 2,
+        "chain_prompts": [
+          "the fireball sinks lower and scatters into a trail of sparks beyond the ridge, mist keeps rolling over the mountains, slow camera push"
+        ],
+        "t2v": false
+      }
+    },
+    {
+      "slide_id": "s03",
+      "slide_index": 3,
+      "kind": "ai_image",
+      "file": "s03.png",
+      "license": "AI-generated (Z-Image-Turbo (4-bit); model licence Apache-2.0) for this channel",
+      "ai_generated": true,
+      "ai_label": "AI 示意圖",
+      "prompt": "traditional East Asian ink wash painting on aged rice paper, loose expressive brush strokes, muted grey ink with light colour washes, generous empty paper around the subject, one focal figure or landscape, illustration, not a photograph, no text, no seal. medium shot, a winding mountain path with three small wooden gates spaced along it, pine trees, mist, lighting: soft diffused morning light",
+      "provider": "local_mflux",
+      "model": "z-image-turbo",
+      "model_name": "Z-Image-Turbo (4-bit)",
+      "repo": "filipstrand/Z-Image-Turbo-mflux-4bit",
+      "origin_repo": "Tongyi-MAI/Z-Image-Turbo",
+      "license_url": "https://github.com/Tongyi-MAI/Z-Image/blob/main/LICENSE",
+      "seed": 42,
+      "steps": 9,
+      "size": [
+        1280,
+        720
+      ],
+      "motion": {
+        "kind": "parallax",
+        "tool": "Depth Anything V2 Small",
+        "tool_repo": "depth-anything/Depth-Anything-V2-Small-hf",
+        "tool_license": "Apache-2.0",
+        "tool_license_url": "https://github.com/DepthAnything/Depth-Anything-V2#license",
+        "params": {
+          "seconds": 3.0,
+          "zoom": 0.06,
+          "pan_x": 0.02,
+          "pan_y": 0.0,
+          "thin_px": 31,
+          "max_shift_px": 18.0,
+          "width": 1920,
+          "height": 1080,
+          "fps": 30
+        },
+        "clip_seconds": 3.0,
+        "depth_strength": 1.0,
+        "thin_share": 0.0154
+      }
+    },
+    {
+      "slide_id": "s04",
+      "slide_index": 4,
+      "kind": "ai_image",
+      "file": "s04.png",
+      "license": "AI-generated (Z-Image-Turbo (4-bit); model licence Apache-2.0) for this channel",
+      "ai_generated": true,
+      "ai_label": "AI 示意圖",
+      "prompt": "traditional East Asian ink wash painting on aged rice paper, loose expressive brush strokes, muted grey ink with light colour washes, generous empty paper around the subject, one focal figure or landscape, illustration, not a photograph, no text, no seal. insert shot of a single object on its own, a single sticker-like paper label being peeled off a night sky and drifting toward a mountain, plain background, lighting: soft even light",
+      "provider": "local_mflux",
+      "model": "z-image-turbo",
+      "model_name": "Z-Image-Turbo (4-bit)",
+      "repo": "filipstrand/Z-Image-Turbo-mflux-4bit",
+      "origin_repo": "Tongyi-MAI/Z-Image-Turbo",
+      "license_url": "https://github.com/Tongyi-MAI/Z-Image/blob/main/LICENSE",
+      "seed": 42,
+      "steps": 9,
+      "size": [
+        1280,
+        720
+      ],
+      "motion": {
+        "kind": "parallax",
+        "tool": "Depth Anything V2 Small",
+        "tool_repo": "depth-anything/Depth-Anything-V2-Small-hf",
+        "tool_license": "Apache-2.0",
+        "tool_license_url": "https://github.com/DepthAnything/Depth-Anything-V2#license",
+        "params": {
+          "seconds": 3.0,
+          "zoom": 0.06,
+          "pan_x": -0.02,
+          "pan_y": 0.0,
+          "thin_px": 31,
+          "max_shift_px": 18.0,
+          "width": 1920,
+          "height": 1080,
+          "fps": 30
+        },
+        "clip_seconds": 3.0,
+        "depth_strength": 0.823,
+        "thin_share": 0.0026
+      }
+    },
+    {
+      "slide_id": "s05",
+      "slide_index": 5,
+      "kind": "ai_image",
+      "file": "s05.png",
+      "license": "AI-generated (Z-Image-Turbo (4-bit); model licence Apache-2.0) for this channel",
+      "ai_generated": true,
+      "ai_label": "AI 示意圖",
+      "prompt": "traditional East Asian ink wash painting on aged rice paper, loose expressive brush strokes, muted grey ink with light colour washes, generous empty paper around the subject, one focal figure or landscape, illustration, not a photograph, no text, no seal. full shot of the whole subject, an ancient observatory platform under a night sky with a long glowing streak above a city wall, lighting: cold moonlight with a red glow at the horizon",
+      "provider": "local_mflux",
+      "model": "z-image-turbo",
+      "model_name": "Z-Image-Turbo (4-bit)",
+      "repo": "filipstrand/Z-Image-Turbo-mflux-4bit",
+      "origin_repo": "Tongyi-MAI/Z-Image-Turbo",
+      "license_url": "https://github.com/Tongyi-MAI/Z-Image/blob/main/LICENSE",
+      "seed": 42,
+      "steps": 9,
+      "size": [
+        1280,
+        720
+      ],
+      "motion": {
+        "kind": "parallax",
+        "tool": "Depth Anything V2 Small",
+        "tool_repo": "depth-anything/Depth-Anything-V2-Small-hf",
+        "tool_license": "Apache-2.0",
+        "tool_license_url": "https://github.com/DepthAnything/Depth-Anything-V2#license",
+        "params": {
+          "seconds": 3.0,
+          "zoom": 0.06,
+          "pan_x": 0.02,
+          "pan_y": 0.0,
+          "thin_px": 31,
+          "max_shift_px": 18.0,
+          "width": 1920,
+          "height": 1080,
+          "fps": 30
+        },
+        "clip_seconds": 3.0,
+        "depth_strength": 0.832,
+        "thin_share": 0.0072
+      }
+    },
+    {
+      "slide_id": "s06",
+      "slide_index": 6,
+      "kind": "ai_image",
+      "file": "s06.png",
+      "license": "AI-generated (Z-Image-Turbo (4-bit); model licence Apache-2.0) for this channel",
+      "ai_generated": true,
+      "ai_label": "AI 示意圖",
+      "prompt": "traditional East Asian ink wash painting on aged rice paper, loose expressive brush strokes, muted grey ink with light colour washes, generous empty paper around the subject, one focal figure or landscape, illustration, not a photograph, no text, no seal. wide establishing shot, the subject small within its surroundings, a dark disc covering the sun with a thin ring of light, a faint hound-like shape of cloud nearby, lighting: eerie dim daylight",
+      "provider": "local_mflux",
+      "model": "z-image-turbo",
+      "model_name": "Z-Image-Turbo (4-bit)",
+      "repo": "filipstrand/Z-Image-Turbo-mflux-4bit",
+      "origin_repo": "Tongyi-MAI/Z-Image-Turbo",
+      "license_url": "https://github.com/Tongyi-MAI/Z-Image/blob/main/LICENSE",
+      "seed": 42,
+      "steps": 9,
+      "size": [
+        1280,
+        720
+      ],
+      "motion": {
+        "kind": "wan",
+        "model": "wan22-ti2v-5b-q8",
+        "model_name": "Wan2.2-TI2V-5B (MLX q8)",
+        "repo": "Anes1032/Wan2.2-TI2V-5B-mlx-q8",
+        "origin_repo": "Wan-AI/Wan2.2-TI2V-5B",
+        "license": "Apache-2.0",
+        "license_url": "https://github.com/Wan-Video/Wan2.2/blob/main/LICENSE.txt",
+        "prompt": "traditional East Asian ink wash painting on aged rice paper, loose expressive brush strokes, muted grey ink with light colour washes, generous empty paper around the subject, one focal figure or landscape, illustration, not a photograph, no text, no seal. wide establishing shot, the subject small within its surroundings, a dark disc covering the sun with a thin ring of light, a faint hound-like shape of cloud nearby, lighting: eerie dim daylight Motion: the dark disc slowly covers the sun, the thin ring of light flickers, faint clouds drift, slow camera push Any figure stays perfectly still, facial expression unchanged.",
+        "seed": 42,
+        "params": {
+          "width": 832,
+          "height": 480,
+          "num_frames": 69,
+          "fps": 24,
+          "steps": 20,
+          "guide_scale": 5.0,
+          "tiling": "aggressive",
+          "seed": 42,
+          "negative_prompt": ""
+        },
+        "upscaled_to": [
+          1920,
+          1080
+        ],
+        "segments": 2,
+        "chain_prompts": [
+          "the ring of light brightens at one edge and the sky glows eerie amber, slow camera push"
+        ],
+        "t2v": false
+      }
+    },
+    {
+      "slide_id": "s06b",
+      "slide_index": 7,
+      "kind": "ai_image",
+      "file": "s06b.png",
+      "license": "AI-generated (Z-Image-Turbo (4-bit); model licence Apache-2.0) for this channel",
+      "ai_generated": true,
+      "ai_label": "AI 示意圖",
+      "prompt": "traditional East Asian ink wash painting on aged rice paper, loose expressive brush strokes, muted grey ink with light colour washes, generous empty paper around the subject, one focal figure or landscape, illustration, not a photograph, no text, no seal. full shot of the whole subject, a wildcat-like beast with a white head standing on a misty mountain ridge, ancient ink bestiary style, no people, lighting: pale dawn mist",
+      "provider": "local_mflux",
+      "model": "z-image-turbo",
+      "model_name": "Z-Image-Turbo (4-bit)",
+      "repo": "filipstrand/Z-Image-Turbo-mflux-4bit",
+      "origin_repo": "Tongyi-MAI/Z-Image-Turbo",
+      "license_url": "https://github.com/Tongyi-MAI/Z-Image/blob/main/LICENSE",
+      "seed": 42,
+      "steps": 9,
+      "size": [
+        1280,
+        720
+      ],
+      "motion": {
+        "kind": "parallax",
+        "tool": "Depth Anything V2 Small",
+        "tool_repo": "depth-anything/Depth-Anything-V2-Small-hf",
+        "tool_license": "Apache-2.0",
+        "tool_license_url": "https://github.com/DepthAnything/Depth-Anything-V2#license",
+        "params": {
+          "seconds": 3.0,
+          "zoom": 0.06,
+          "pan_x": 0.02,
+          "pan_y": 0.0,
+          "thin_px": 31,
+          "max_shift_px": 18.0,
+          "width": 1920,
+          "height": 1080,
+          "fps": 30
+        },
+        "clip_seconds": 3.0,
+        "depth_strength": 0.749,
+        "thin_share": 0.0032
+      }
+    },
+    {
+      "slide_id": "s07",
+      "slide_index": 8,
+      "kind": "ai_image",
+      "file": "s07.png",
+      "license": "AI-generated (Z-Image-Turbo (4-bit); model licence Apache-2.0) for this channel",
+      "ai_generated": true,
+      "ai_label": "AI 示意圖",
+      "prompt": "traditional East Asian ink wash painting on aged rice paper, loose expressive brush strokes, muted grey ink with light colour washes, generous empty paper around the subject, one focal figure or landscape, illustration, not a photograph, no text, no seal. medium shot, a great fireball crossing a stormy sky above the tiled roofs of an ancient palace, lighting: flash of light between dark clouds",
+      "provider": "local_mflux",
+      "model": "z-image-turbo",
+      "model_name": "Z-Image-Turbo (4-bit)",
+      "repo": "filipstrand/Z-Image-Turbo-mflux-4bit",
+      "origin_repo": "Tongyi-MAI/Z-Image-Turbo",
+      "license_url": "https://github.com/Tongyi-MAI/Z-Image/blob/main/LICENSE",
+      "seed": 42,
+      "steps": 9,
+      "size": [
+        1280,
+        720
+      ],
+      "motion": {
+        "kind": "wan",
+        "model": "wan22-ti2v-5b-q8",
+        "model_name": "Wan2.2-TI2V-5B (MLX q8)",
+        "repo": "Anes1032/Wan2.2-TI2V-5B-mlx-q8",
+        "origin_repo": "Wan-AI/Wan2.2-TI2V-5B",
+        "license": "Apache-2.0",
+        "license_url": "https://github.com/Wan-Video/Wan2.2/blob/main/LICENSE.txt",
+        "prompt": "traditional East Asian ink wash painting on aged rice paper, loose expressive brush strokes, muted grey ink with light colour washes, generous empty paper around the subject, one focal figure or landscape, illustration, not a photograph, no text, no seal. medium shot, a great fireball crossing a stormy sky above the tiled roofs of an ancient palace, lighting: flash of light between dark clouds Motion: the fireball streaks from right to left, storm clouds roll, roof tiles stay still, slow camera rise Any figure stays perfectly still, facial expression unchanged.",
+        "seed": 42,
+        "params": {
+          "width": 832,
+          "height": 480,
+          "num_frames": 69,
+          "fps": 24,
+          "steps": 20,
+          "guide_scale": 5.0,
+          "tiling": "aggressive",
+          "seed": 42,
+          "negative_prompt": ""
+        },
+        "upscaled_to": [
+          1920,
+          1080
+        ],
+        "segments": 2,
+        "chain_prompts": [
+          "the fireball passes over the palace roofs and fades, dark clouds roll across the stormy sky, slow camera push"
+        ],
+        "t2v": false
+      }
+    },
+    {
+      "slide_id": "s08",
+      "slide_index": 9,
+      "kind": "ai_image",
+      "file": "s08.png",
+      "license": "AI-generated (Z-Image-Turbo (4-bit); model licence Apache-2.0) for this channel",
+      "ai_generated": true,
+      "ai_label": "AI 示意圖",
+      "prompt": "traditional East Asian ink wash painting on aged rice paper, loose expressive brush strokes, muted grey ink with light colour washes, generous empty paper around the subject, one focal figure or landscape, illustration, not a photograph, no text, no seal. close-up detail filling the frame, a dog and a fox sitting side by side on a bridge at dusk, both looking at the sky, lighting: warm low dusk light",
+      "provider": "local_mflux",
+      "model": "z-image-turbo",
+      "model_name": "Z-Image-Turbo (4-bit)",
+      "repo": "filipstrand/Z-Image-Turbo-mflux-4bit",
+      "origin_repo": "Tongyi-MAI/Z-Image-Turbo",
+      "license_url": "https://github.com/Tongyi-MAI/Z-Image/blob/main/LICENSE",
+      "seed": 42,
+      "steps": 9,
+      "size": [
+        1280,
+        720
+      ],
+      "motion": {
+        "kind": "parallax",
+        "tool": "Depth Anything V2 Small",
+        "tool_repo": "depth-anything/Depth-Anything-V2-Small-hf",
+        "tool_license": "Apache-2.0",
+        "tool_license_url": "https://github.com/DepthAnything/Depth-Anything-V2#license",
+        "params": {
+          "seconds": 3.0,
+          "zoom": 0.06,
+          "pan_x": 0.02,
+          "pan_y": 0.0,
+          "thin_px": 31,
+          "max_shift_px": 18.0,
+          "width": 1920,
+          "height": 1080,
+          "fps": 30
+        },
+        "clip_seconds": 3.0,
+        "depth_strength": 1.0,
+        "thin_share": 0.0143
+      }
+    },
+    {
+      "slide_id": "s09",
+      "slide_index": 10,
+      "kind": "news_card",
+      "source_id": "nippon-tengu",
+      "publisher": "nippon.com",
+      "headline": "天狗：魔物から神へと昇格した稀有な妖怪",
+      "published": "2022-10-25",
+      "source_url": "https://www.nippon.com/ja/japan-topics/b02507/",
+      "license": "引用標題，非轉載全文 / headline quoted, article not reproduced"
+    },
+    {
+      "slide_id": "s11",
+      "slide_index": 12,
+      "kind": "ai_image",
+      "file": "s11.png",
+      "license": "AI-generated (Z-Image-Turbo (4-bit); model licence Apache-2.0) for this channel",
+      "ai_generated": true,
+      "ai_label": "AI 示意圖",
+      "prompt": "traditional East Asian ink wash painting on aged rice paper, loose expressive brush strokes, muted grey ink with light colour washes, generous empty paper around the subject, one focal figure or landscape, illustration, not a photograph, no text, no seal. close-up detail filling the frame, an old picture scroll partly unrolled on a low table, brush and ink stone beside it, empty paper, lighting: warm lamp light",
+      "provider": "local_mflux",
+      "model": "z-image-turbo",
+      "model_name": "Z-Image-Turbo (4-bit)",
+      "repo": "filipstrand/Z-Image-Turbo-mflux-4bit",
+      "origin_repo": "Tongyi-MAI/Z-Image-Turbo",
+      "license_url": "https://github.com/Tongyi-MAI/Z-Image/blob/main/LICENSE",
+      "seed": 42,
+      "steps": 9,
+      "size": [
+        1280,
+        720
+      ],
+      "motion": {
+        "kind": "parallax",
+        "tool": "Depth Anything V2 Small",
+        "tool_repo": "depth-anything/Depth-Anything-V2-Small-hf",
+        "tool_license": "Apache-2.0",
+        "tool_license_url": "https://github.com/DepthAnything/Depth-Anything-V2#license",
+        "params": {
+          "seconds": 3.0,
+          "zoom": 0.06,
+          "pan_x": -0.02,
+          "pan_y": 0.0,
+          "thin_px": 31,
+          "max_shift_px": 18.0,
+          "width": 1920,
+          "height": 1080,
+          "fps": 30
+        },
+        "clip_seconds": 3.0,
+        "depth_strength": 0.692,
+        "thin_share": 0.0001
+      }
+    },
+    {
+      "slide_id": "s12",
+      "slide_index": 13,
+      "kind": "ai_image",
+      "file": "s12.png",
+      "license": "AI-generated (Z-Image-Turbo (4-bit); model licence Apache-2.0) for this channel",
+      "ai_generated": true,
+      "ai_label": "AI 示意圖",
+      "prompt": "traditional East Asian ink wash painting on aged rice paper, loose expressive brush strokes, muted grey ink with light colour washes, generous empty paper around the subject, one focal figure or landscape, illustration, not a photograph, no text, no seal. medium shot, a golden kite bird circling above the roof of a hall in the mountains, lighting: late afternoon gold light",
+      "provider": "local_mflux",
+      "model": "z-image-turbo",
+      "model_name": "Z-Image-Turbo (4-bit)",
+      "repo": "filipstrand/Z-Image-Turbo-mflux-4bit",
+      "origin_repo": "Tongyi-MAI/Z-Image-Turbo",
+      "license_url": "https://github.com/Tongyi-MAI/Z-Image/blob/main/LICENSE",
+      "seed": 42,
+      "steps": 9,
+      "size": [
+        1280,
+        720
+      ],
+      "motion": {
+        "kind": "parallax",
+        "tool": "Depth Anything V2 Small",
+        "tool_repo": "depth-anything/Depth-Anything-V2-Small-hf",
+        "tool_license": "Apache-2.0",
+        "tool_license_url": "https://github.com/DepthAnything/Depth-Anything-V2#license",
+        "params": {
+          "seconds": 3.0,
+          "zoom": 0.06,
+          "pan_x": 0.02,
+          "pan_y": 0.0,
+          "thin_px": 31,
+          "max_shift_px": 18.0,
+          "width": 1920,
+          "height": 1080,
+          "fps": 30
+        },
+        "clip_seconds": 3.0,
+        "depth_strength": 0.767,
+        "thin_share": 0.0079
+      }
+    },
+    {
+      "slide_id": "s14",
+      "slide_index": 15,
+      "kind": "ai_image",
+      "file": "s14.png",
+      "license": "AI-generated (Z-Image-Turbo (4-bit); model licence Apache-2.0) for this channel",
+      "ai_generated": true,
+      "ai_label": "AI 示意圖",
+      "prompt": "traditional East Asian ink wash painting on aged rice paper, loose expressive brush strokes, muted grey ink with light colour washes, generous empty paper around the subject, one focal figure or landscape, illustration, not a photograph, no text, no seal. insert shot of a single object on its own, a single folding fan lying on rice paper beside a tall pine branch, lighting: soft side light",
+      "provider": "local_mflux",
+      "model": "z-image-turbo",
+      "model_name": "Z-Image-Turbo (4-bit)",
+      "repo": "filipstrand/Z-Image-Turbo-mflux-4bit",
+      "origin_repo": "Tongyi-MAI/Z-Image-Turbo",
+      "license_url": "https://github.com/Tongyi-MAI/Z-Image/blob/main/LICENSE",
+      "seed": 42,
+      "steps": 9,
+      "size": [
+        1280,
+        720
+      ],
+      "motion": {
+        "kind": "parallax",
+        "tool": "Depth Anything V2 Small",
+        "tool_repo": "depth-anything/Depth-Anything-V2-Small-hf",
+        "tool_license": "Apache-2.0",
+        "tool_license_url": "https://github.com/DepthAnything/Depth-Anything-V2#license",
+        "params": {
+          "seconds": 3.0,
+          "zoom": 0.06,
+          "pan_x": 0.02,
+          "pan_y": 0.0,
+          "thin_px": 31,
+          "max_shift_px": 18.0,
+          "width": 1920,
+          "height": 1080,
+          "fps": 30
+        },
+        "clip_seconds": 3.0,
+        "depth_strength": 0.884,
+        "thin_share": 0.0413
+      }
+    },
+    {
+      "slide_id": "s15",
+      "slide_index": 16,
+      "kind": "ai_image",
+      "file": "s15.png",
+      "license": "AI-generated (Z-Image-Turbo (4-bit); model licence Apache-2.0) for this channel",
+      "ai_generated": true,
+      "ai_label": "AI 示意圖",
+      "prompt": "traditional East Asian ink wash painting on aged rice paper, loose expressive brush strokes, muted grey ink with light colour washes, generous empty paper around the subject, one focal figure or landscape, illustration, not a photograph, no text, no seal. full shot of the whole subject, a large bird with outspread wings perched on a mountain pine, a brush and inkstone in the foreground, lighting: pale morning light",
+      "provider": "local_mflux",
+      "model": "z-image-turbo",
+      "model_name": "Z-Image-Turbo (4-bit)",
+      "repo": "filipstrand/Z-Image-Turbo-mflux-4bit",
+      "origin_repo": "Tongyi-MAI/Z-Image-Turbo",
+      "license_url": "https://github.com/Tongyi-MAI/Z-Image/blob/main/LICENSE",
+      "seed": 42,
+      "steps": 9,
+      "size": [
+        1280,
+        720
+      ],
+      "motion": {
+        "kind": "parallax",
+        "tool": "Depth Anything V2 Small",
+        "tool_repo": "depth-anything/Depth-Anything-V2-Small-hf",
+        "tool_license": "Apache-2.0",
+        "tool_license_url": "https://github.com/DepthAnything/Depth-Anything-V2#license",
+        "params": {
+          "seconds": 3.0,
+          "zoom": 0.06,
+          "pan_x": -0.02,
+          "pan_y": 0.0,
+          "thin_px": 31,
+          "max_shift_px": 18.0,
+          "width": 1920,
+          "height": 1080,
+          "fps": 30
+        },
+        "clip_seconds": 3.0,
+        "depth_strength": 0.887,
+        "thin_share": 0.0506
+      }
+    },
+    {
+      "slide_id": "s16",
+      "slide_index": 17,
+      "kind": "ai_image",
+      "file": "s16.png",
+      "license": "AI-generated (Z-Image-Turbo (4-bit); model licence Apache-2.0) for this channel",
+      "ai_generated": true,
+      "ai_label": "AI 示意圖",
+      "prompt": "traditional East Asian ink wash painting on aged rice paper, loose expressive brush strokes, muted grey ink with light colour washes, generous empty paper around the subject, one focal figure or landscape, illustration, not a photograph, no text, no seal. medium shot, a dark mountain temple on one side and a bright shrine gate on the other side, mist between them, lighting: dark on the left, soft light on the right",
+      "provider": "local_mflux",
+      "model": "z-image-turbo",
+      "model_name": "Z-Image-Turbo (4-bit)",
+      "repo": "filipstrand/Z-Image-Turbo-mflux-4bit",
+      "origin_repo": "Tongyi-MAI/Z-Image-Turbo",
+      "license_url": "https://github.com/Tongyi-MAI/Z-Image/blob/main/LICENSE",
+      "seed": 42,
+      "steps": 9,
+      "size": [
+        1280,
+        720
+      ],
+      "motion": {
+        "kind": "parallax",
+        "tool": "Depth Anything V2 Small",
+        "tool_repo": "depth-anything/Depth-Anything-V2-Small-hf",
+        "tool_license": "Apache-2.0",
+        "tool_license_url": "https://github.com/DepthAnything/Depth-Anything-V2#license",
+        "params": {
+          "seconds": 3.0,
+          "zoom": 0.06,
+          "pan_x": 0.02,
+          "pan_y": 0.0,
+          "thin_px": 31,
+          "max_shift_px": 18.0,
+          "width": 1920,
+          "height": 1080,
+          "fps": 30
+        },
+        "clip_seconds": 3.0,
+        "depth_strength": 0.914,
+        "thin_share": 0.0242
+      }
+    },
+    {
+      "slide_id": "s17",
+      "slide_index": 18,
+      "kind": "ai_image",
+      "file": "s17.png",
+      "license": "AI-generated (Z-Image-Turbo (4-bit); model licence Apache-2.0) for this channel",
+      "ai_generated": true,
+      "ai_label": "AI 示意圖",
+      "prompt": "traditional East Asian ink wash painting on aged rice paper, loose expressive brush strokes, muted grey ink with light colour washes, generous empty paper around the subject, one focal figure or landscape, illustration, not a photograph, no text, no seal. wide establishing shot, the subject small within its surroundings, a quiet mountain trail under tall cedar trees with a wooden practice sword leaning on a trunk, lighting: dappled light through the trees",
+      "provider": "local_mflux",
+      "model": "z-image-turbo",
+      "model_name": "Z-Image-Turbo (4-bit)",
+      "repo": "filipstrand/Z-Image-Turbo-mflux-4bit",
+      "origin_repo": "Tongyi-MAI/Z-Image-Turbo",
+      "license_url": "https://github.com/Tongyi-MAI/Z-Image/blob/main/LICENSE",
+      "seed": 42,
+      "steps": 9,
+      "size": [
+        1280,
+        720
+      ],
+      "motion": {
+        "kind": "parallax",
+        "tool": "Depth Anything V2 Small",
+        "tool_repo": "depth-anything/Depth-Anything-V2-Small-hf",
+        "tool_license": "Apache-2.0",
+        "tool_license_url": "https://github.com/DepthAnything/Depth-Anything-V2#license",
+        "params": {
+          "seconds": 3.0,
+          "zoom": 0.06,
+          "pan_x": -0.02,
+          "pan_y": 0.0,
+          "thin_px": 31,
+          "max_shift_px": 18.0,
+          "width": 1920,
+          "height": 1080,
+          "fps": 30
+        },
+        "clip_seconds": 3.0,
+        "depth_strength": 0.778,
+        "thin_share": 0.007
+      }
+    },
+    {
+      "slide_id": "s17b",
+      "slide_index": 19,
+      "kind": "ai_image",
+      "file": "s17b.png",
+      "license": "AI-generated (Z-Image-Turbo (4-bit); model licence Apache-2.0) for this channel",
+      "ai_generated": true,
+      "ai_label": "AI 示意圖",
+      "prompt": "traditional East Asian ink wash painting on aged rice paper, loose expressive brush strokes, muted grey ink with light colour washes, generous empty paper around the subject, one focal figure or landscape, illustration, not a photograph, no text, no seal. close-up detail filling the frame, a small mountainous island at dusk under a faint comet streak, ink wash, no people, lighting: violet dusk",
+      "provider": "local_mflux",
+      "model": "z-image-turbo",
+      "model_name": "Z-Image-Turbo (4-bit)",
+      "repo": "filipstrand/Z-Image-Turbo-mflux-4bit",
+      "origin_repo": "Tongyi-MAI/Z-Image-Turbo",
+      "license_url": "https://github.com/Tongyi-MAI/Z-Image/blob/main/LICENSE",
+      "seed": 42,
+      "steps": 9,
+      "size": [
+        1280,
+        720
+      ],
+      "motion": {
+        "kind": "parallax",
+        "tool": "Depth Anything V2 Small",
+        "tool_repo": "depth-anything/Depth-Anything-V2-Small-hf",
+        "tool_license": "Apache-2.0",
+        "tool_license_url": "https://github.com/DepthAnything/Depth-Anything-V2#license",
+        "params": {
+          "seconds": 3.0,
+          "zoom": 0.06,
+          "pan_x": 0.02,
+          "pan_y": 0.0,
+          "thin_px": 31,
+          "max_shift_px": 18.0,
+          "width": 1920,
+          "height": 1080,
+          "fps": 30
+        },
+        "clip_seconds": 3.0,
+        "depth_strength": 0.73,
+        "thin_share": 0.0026
+      }
+    },
+    {
+      "slide_id": "s18",
+      "slide_index": 20,
+      "kind": "ai_image",
+      "file": "s18.png",
+      "license": "AI-generated (Z-Image-Turbo (4-bit); model licence Apache-2.0) for this channel",
+      "ai_generated": true,
+      "ai_label": "AI 示意圖",
+      "prompt": "traditional East Asian ink wash painting on aged rice paper, loose expressive brush strokes, muted grey ink with light colour washes, generous empty paper around the subject, one focal figure or landscape, illustration, not a photograph, no text, no seal. full shot of the whole subject, a misty mountain trail forking into two paths with a pair of old stone lanterns, empty paper around, no people, lighting: soft overcast light",
+      "provider": "local_mflux",
+      "model": "z-image-turbo",
+      "model_name": "Z-Image-Turbo (4-bit)",
+      "repo": "filipstrand/Z-Image-Turbo-mflux-4bit",
+      "origin_repo": "Tongyi-MAI/Z-Image-Turbo",
+      "license_url": "https://github.com/Tongyi-MAI/Z-Image/blob/main/LICENSE",
+      "seed": 42,
+      "steps": 9,
+      "size": [
+        1280,
+        720
+      ],
+      "motion": {
+        "kind": "parallax",
+        "tool": "Depth Anything V2 Small",
+        "tool_repo": "depth-anything/Depth-Anything-V2-Small-hf",
+        "tool_license": "Apache-2.0",
+        "tool_license_url": "https://github.com/DepthAnything/Depth-Anything-V2#license",
+        "params": {
+          "seconds": 3.0,
+          "zoom": 0.06,
+          "pan_x": -0.02,
+          "pan_y": 0.0,
+          "thin_px": 31,
+          "max_shift_px": 18.0,
+          "width": 1920,
+          "height": 1080,
+          "fps": 30
+        },
+        "clip_seconds": 3.0,
+        "depth_strength": 0.915,
+        "thin_share": 0.0039
+      }
+    },
+    {
+      "slide_id": "s18b",
+      "slide_index": 21,
+      "kind": "ai_image",
+      "file": "s18b.png",
+      "license": "AI-generated (Z-Image-Turbo (4-bit); model licence Apache-2.0) for this channel",
+      "ai_generated": true,
+      "ai_label": "AI 示意圖",
+      "prompt": "traditional East Asian ink wash painting on aged rice paper, loose expressive brush strokes, muted grey ink with light colour washes, generous empty paper around the subject, one focal figure or landscape, illustration, not a photograph, no text, no seal. insert shot of a single object on its own, a weathered stone fox statue beside a hanging paper charm at a quiet mountain shrine, empty paper around, no people, lighting: pale morning light",
+      "provider": "local_mflux",
+      "model": "z-image-turbo",
+      "model_name": "Z-Image-Turbo (4-bit)",
+      "repo": "filipstrand/Z-Image-Turbo-mflux-4bit",
+      "origin_repo": "Tongyi-MAI/Z-Image-Turbo",
+      "license_url": "https://github.com/Tongyi-MAI/Z-Image/blob/main/LICENSE",
+      "seed": 42,
+      "steps": 9,
+      "size": [
+        1280,
+        720
+      ],
+      "motion": {
+        "kind": "parallax",
+        "tool": "Depth Anything V2 Small",
+        "tool_repo": "depth-anything/Depth-Anything-V2-Small-hf",
+        "tool_license": "Apache-2.0",
+        "tool_license_url": "https://github.com/DepthAnything/Depth-Anything-V2#license",
+        "params": {
+          "seconds": 3.0,
+          "zoom": 0.06,
+          "pan_x": 0.02,
+          "pan_y": 0.0,
+          "thin_px": 31,
+          "max_shift_px": 18.0,
+          "width": 1920,
+          "height": 1080,
+          "fps": 30
+        },
+        "clip_seconds": 3.0,
+        "depth_strength": 0.949,
+        "thin_share": 0.0077
+      }
+    },
+    {
+      "slide_id": "s19",
+      "slide_index": 22,
+      "kind": "ai_image",
+      "file": "s19.png",
+      "license": "AI-generated (Z-Image-Turbo (4-bit); model licence Apache-2.0) for this channel",
+      "ai_generated": true,
+      "ai_label": "AI 示意圖",
+      "prompt": "traditional East Asian ink wash painting on aged rice paper, loose expressive brush strokes, muted grey ink with light colour washes, generous empty paper around the subject, one focal figure or landscape, illustration, not a photograph, no text, no seal. medium shot, three empty robes of different shapes hanging side by side in a misty forest, one for each age, lighting: cool light from above",
+      "provider": "local_mflux",
+      "model": "z-image-turbo",
+      "model_name": "Z-Image-Turbo (4-bit)",
+      "repo": "filipstrand/Z-Image-Turbo-mflux-4bit",
+      "origin_repo": "Tongyi-MAI/Z-Image-Turbo",
+      "license_url": "https://github.com/Tongyi-MAI/Z-Image/blob/main/LICENSE",
+      "seed": 42,
+      "steps": 9,
+      "size": [
+        1280,
+        720
+      ],
+      "motion": {
+        "kind": "parallax",
+        "tool": "Depth Anything V2 Small",
+        "tool_repo": "depth-anything/Depth-Anything-V2-Small-hf",
+        "tool_license": "Apache-2.0",
+        "tool_license_url": "https://github.com/DepthAnything/Depth-Anything-V2#license",
+        "params": {
+          "seconds": 3.0,
+          "zoom": 0.06,
+          "pan_x": -0.02,
+          "pan_y": 0.0,
+          "thin_px": 31,
+          "max_shift_px": 18.0,
+          "width": 1920,
+          "height": 1080,
+          "fps": 30
+        },
+        "clip_seconds": 3.0,
+        "depth_strength": 0.664,
+        "thin_share": 0.0105
+      }
+    },
+    {
+      "slide_id": "s19b",
+      "slide_index": 23,
+      "kind": "ai_image",
+      "file": "s19b.png",
+      "license": "AI-generated (Z-Image-Turbo (4-bit); model licence Apache-2.0) for this channel",
+      "ai_generated": true,
+      "ai_label": "AI 示意圖",
+      "prompt": "traditional East Asian ink wash painting on aged rice paper, loose expressive brush strokes, muted grey ink with light colour washes, generous empty paper around the subject, one focal figure or landscape, illustration, not a photograph, no text, no seal. full shot of the whole subject, an old paper lantern and a folded hand fan beside a small torii gate in mist, empty paper around, no people, lighting: warm lantern glow in blue mist",
+      "provider": "local_mflux",
+      "model": "z-image-turbo",
+      "model_name": "Z-Image-Turbo (4-bit)",
+      "repo": "filipstrand/Z-Image-Turbo-mflux-4bit",
+      "origin_repo": "Tongyi-MAI/Z-Image-Turbo",
+      "license_url": "https://github.com/Tongyi-MAI/Z-Image/blob/main/LICENSE",
+      "seed": 42,
+      "steps": 9,
+      "size": [
+        1280,
+        720
+      ],
+      "motion": {
+        "kind": "parallax",
+        "tool": "Depth Anything V2 Small",
+        "tool_repo": "depth-anything/Depth-Anything-V2-Small-hf",
+        "tool_license": "Apache-2.0",
+        "tool_license_url": "https://github.com/DepthAnything/Depth-Anything-V2#license",
+        "params": {
+          "seconds": 3.0,
+          "zoom": 0.06,
+          "pan_x": 0.02,
+          "pan_y": 0.0,
+          "thin_px": 31,
+          "max_shift_px": 18.0,
+          "width": 1920,
+          "height": 1080,
+          "fps": 30
+        },
+        "clip_seconds": 3.0,
+        "depth_strength": 0.746,
+        "thin_share": 0.0091
+      }
+    },
+    {
+      "slide_id": "s20",
+      "slide_index": 24,
+      "kind": "ai_image",
+      "file": "s20.png",
+      "license": "AI-generated (Z-Image-Turbo (4-bit); model licence Apache-2.0) for this channel",
+      "ai_generated": true,
+      "ai_label": "AI 示意圖",
+      "prompt": "traditional East Asian ink wash painting on aged rice paper, loose expressive brush strokes, muted grey ink with light colour washes, generous empty paper around the subject, one focal figure or landscape, illustration, not a photograph, no text, no seal. wide establishing shot, the subject small within its surroundings, a lone mountain peak in mist at dusk with a faint streak of light fading in the sky, empty paper around, lighting: fading dusk light",
+      "provider": "local_mflux",
+      "model": "z-image-turbo",
+      "model_name": "Z-Image-Turbo (4-bit)",
+      "repo": "filipstrand/Z-Image-Turbo-mflux-4bit",
+      "origin_repo": "Tongyi-MAI/Z-Image-Turbo",
+      "license_url": "https://github.com/Tongyi-MAI/Z-Image/blob/main/LICENSE",
+      "seed": 42,
+      "steps": 9,
+      "size": [
+        1280,
+        720
+      ],
+      "motion": {
+        "kind": "wan",
+        "model": "wan22-ti2v-5b-q8",
+        "model_name": "Wan2.2-TI2V-5B (MLX q8)",
+        "repo": "Anes1032/Wan2.2-TI2V-5B-mlx-q8",
+        "origin_repo": "Wan-AI/Wan2.2-TI2V-5B",
+        "license": "Apache-2.0",
+        "license_url": "https://github.com/Wan-Video/Wan2.2/blob/main/LICENSE.txt",
+        "prompt": "traditional East Asian ink wash painting on aged rice paper, loose expressive brush strokes, muted grey ink with light colour washes, generous empty paper around the subject, one focal figure or landscape, illustration, not a photograph, no text, no seal. wide establishing shot, the subject small within its surroundings, a lone mountain peak in mist at dusk with a faint streak of light fading in the sky, empty paper around, lighting: fading dusk light Motion: mist drifts slowly across the mountain, the faint streak of light fades, slow camera pull back Any figure stays perfectly still, facial expression unchanged.",
+        "seed": 42,
+        "params": {
+          "width": 832,
+          "height": 480,
+          "num_frames": 69,
+          "fps": 24,
+          "steps": 20,
+          "guide_scale": 5.0,
+          "tiling": "aggressive",
+          "seed": 42,
+          "negative_prompt": ""
+        },
+        "upscaled_to": [
+          1920,
+          1080
+        ],
+        "segments": 2,
+        "chain_prompts": [
+          "the last streak of light dissolves, evening mist thickens around the peak, slow camera pull back"
+        ],
+        "t2v": false
+      }
+    }
+  ],
+  "pending": [],
+  "description_text": "引用報導 / Cited reports（引用標題，非轉載全文）:\n- nippon.com, 2022-10-25〈天狗：魔物から神へと昇格した稀有な妖怪〉: https://www.nippon.com/ja/japan-topics/b02507/\n\nAI 示意圖 / AI illustrations（非史料，僅示意）:\n- Z-Image-Turbo (4-bit)（Tongyi-MAI/Z-Image-Turbo, https://github.com/Tongyi-MAI/Z-Image/blob/main/LICENSE）\n- 動態 / motion: Wan2.2-TI2V-5B (MLX q8)（Wan-AI/Wan2.2-TI2V-5B, https://github.com/Wan-Video/Wan2.2/blob/main/LICENSE.txt）\n- 景深視差 / 2.5D parallax: Depth Anything V2 Small（工具）（depth-anything/Depth-Anything-V2-Small-hf, https://github.com/DepthAnything/Depth-Anything-V2#license）"
+}

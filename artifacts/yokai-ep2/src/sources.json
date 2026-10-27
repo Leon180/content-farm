@@ -1,0 +1,50 @@
+[
+  {
+    "id": "shiji-27",
+    "title": "史記/卷027（天官書）原文，維基文庫",
+    "url": "https://zh.wikisource.org/wiki/%E5%8F%B2%E8%A8%98/%E5%8D%B7027",
+    "note": "publisher=維基文庫; published=undated; accessed=2026-10-25; type=primary"
+  },
+  {
+    "id": "ndl-sekien",
+    "title": "鳥山石燕と《畫圖百鬼夜行》，國立國會圖書館 Image Bank 專欄",
+    "url": "https://www.ndl.go.jp/en/imagebank/column/sekienyokai",
+    "note": "publisher=National Diet Library; published=undated; accessed=2026-10-25; type=primary"
+  },
+  {
+    "id": "jawiki-tengu",
+    "title": "天狗，日文維基百科",
+    "url": "https://ja.wikipedia.org/wiki/%E5%A4%A9%E7%8B%97",
+    "note": "publisher=Wikipedia(ja); published=undated; accessed=2026-10-25; type=press"
+  },
+  {
+    "id": "enwiki-tengu",
+    "title": "Tengu，英文維基百科",
+    "url": "https://en.wikipedia.org/wiki/Tengu",
+    "note": "publisher=Wikipedia(en); published=undated; accessed=2026-10-25; type=press; first 100000 chars read"
+  },
+  {
+    "id": "nippon-tengu",
+    "title": "天狗：魔物から神へと昇格した稀有な妖怪，nippon.com",
+    "url": "https://www.nippon.com/ja/japan-topics/b02507/",
+    "note": "publisher=nippon.com; published=2022-10-25; accessed=2026-10-25; type=press"
+  },
+  {
+    "id": "waraku-tengu",
+    "title": "流れ星は天狗だった？ふたご座流星群直前、ちょっと意外な歴史を紹介，和樂web",
+    "url": "https://intojapanwaraku.com/rock/culture-rock/134344/",
+    "note": "publisher=和樂web; published=2020-12-14; accessed=2026-10-25; type=press"
+  },
+  {
+    "id": "kotobank-tengu",
+    "title": "天狗，コトバンク（デジタル大辞泉、日本国語大辞典、世界大百科事典ほか）",
+    "url": "https://kotobank.jp/word/天狗-102256",
+    "note": "publisher=コトバンク; published=undated; accessed=2026-10-25; type=press"
+  },
+  {
+    "id": "shanhai-west",
+    "title": "山海經/西山經（陰山），維基文庫",
+    "url": "https://zh.wikisource.org/wiki/%E5%B1%B1%E6%B5%B7%E7%B6%93/%E8%A5%BF%E5%B1%B1%E7%B6%93",
+    "note": "publisher=維基文庫; published=undated; accessed=2026-10-25; type=primary"
+  }
+]

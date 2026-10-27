@@ -57,3 +57,10 @@
 {"kind": "file_exists", "path": "/Users/lileon/project/content-farm/.claude/worktrees/cf-deepsea-wan/artifacts/deepsea-mega/deepsea-mega-part2.mp4", "min_bytes": 100000, "why": "成片 540p／對照圖（未 commit）"}
 {"kind": "file_exists", "path": "/Users/lileon/project/content-farm/.claude/worktrees/cf-deepsea-wan/artifacts/deepsea-mega/compare-8frames.png", "min_bytes": 100000, "why": "成片 540p／對照圖（未 commit）"}
 {"kind": "file_exists", "path": "/Users/lileon/project/content-farm/.claude/worktrees/cf-integrate-1025/REPORT-integrate-1025.md", "min_bytes": 2000, "why": "派工宣告的預期產物"}
+{"kind": "file_exists", "path": "/Users/lileon/project/content-farm/.claude/worktrees/cf-yokai-ep2/REPORT-yokai-ep2.md", "min_bytes": 2000, "why": "派工宣告的預期產物"}
+{"kind": "file_exists", "path": "/Users/lileon/project/content-farm/.claude/worktrees/cf-yokai-ep2/artifacts/yokai-ep2/yokai-ep2-part1.mp4", "min_bytes": 1000000, "why": "長片 540p 預覽（未 commit）"}
+{"kind": "file_exists", "path": "/Users/lileon/project/content-farm/.claude/worktrees/cf-yokai-ep2/artifacts/yokai-ep2/yokai-ep2-part2.mp4", "min_bytes": 1000000, "why": "長片 540p 預覽（未 commit）"}
+{"kind": "file_exists", "path": "/Users/lileon/project/content-farm/.claude/worktrees/cf-yokai-ep2/artifacts/yokai-ep2/yokai-ep2-short-540.mp4", "min_bytes": 500000, "why": "Shorts 540 寬（未 commit）"}
+{"kind": "file_exists", "path": "/Users/lileon/project/content-farm/.claude/worktrees/cf-yokai-ep2/artifacts/yokai-ep2/grid/grid-6.jpg", "min_bytes": 20000, "why": "逐 2 秒格狀圖"}
+{"kind": "file_exists", "path": "/Users/lileon/project/content-farm/.claude/worktrees/cf-yokai-ep2/output/upload-20261027/yokai-tengu/video.mp4", "min_bytes": 10000000, "why": "上片資料（未 commit，output/ gitignore）"}
+{"kind": "grep_absent", "path": "/Users/lileon/project/content-farm/.claude/worktrees/cf-yokai-ep2/output/upload-20261027", "pattern": "溯源所", "why": "上片包不含舊頻道名"}

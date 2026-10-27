@@ -1,0 +1,150 @@
+{
+ "chosen": [
+  {
+   "id": "t01",
+   "radar_id": "yokai-20261025-03",
+   "title": "天狗：《史記》裡的一顆流星，怎麼變成日本山裡的長鼻子",
+   "hook": "《史記·天官書》寫的天狗「狀如大奔星」，是一顆流星，不是長鼻子妖怪。",
+   "minutes": 9,
+   "sources": [
+    "https://zh.wikisource.org/wiki/%E5%8F%B2%E8%A8%98/%E5%8D%B7027",
+    "https://www.ndl.go.jp/en/imagebank/column/sekienyokai",
+    "https://ja.wikipedia.org/wiki/%E5%A4%A9%E7%8B%97"
+   ],
+   "note": "一手原典：史記卷27天官書原文（維基文庫）；日本端畫面用國立國會圖書館鳥山石燕《畫圖百鬼夜行》（頁面已列天狗）。中國流星→日本山伏的反差正好做「你以為 vs 原典」開場；選題池 tengu 已在 researching，YT 前 5 中位 248 萬。",
+   "evidence": [
+    {
+     "source": "wikipedia",
+     "metric": "日文維基「天狗」近 30 日瀏覽量",
+     "value": 7445.0,
+     "url": "https://ja.wikipedia.org/wiki/%E5%A4%A9%E7%8B%97",
+     "note": "近 7 日日均 220.6，前 23 日日均 256.6，升溫 ×0.86"
+    },
+    {
+     "source": "wikipedia",
+     "metric": "中文維基「天狗」近 30 日瀏覽量",
+     "value": 119.0,
+     "url": "https://zh.wikipedia.org/wiki/%E5%A4%A9%E7%8B%97",
+     "note": "近 7 日日均 5.6，前 23 日日均 3.5，升溫 ×1.6"
+    },
+    {
+     "source": "youtube",
+     "metric": "YouTube 搜尋「天狗 日本妖怪」前 5 名影片觀看數中位數",
+     "value": 2484202.0,
+     "url": "https://www.youtube.com/watch?v=u5cBvt7GLQs",
+     "note": "最高：3,209,915 次（日本神話 みこちゃんねる，2024-09-07）"
+    }
+   ],
+   "competitors": [
+    {
+     "title": "【300万回再生】日本軍を救った妖怪3選 #妖怪 #都市伝説 #shorts",
+     "channel": "日本神話 みこちゃんねる",
+     "views": 3209915,
+     "published": "2024-09-07",
+     "url": "https://www.youtube.com/watch?v=u5cBvt7GLQs"
+    },
+    {
+     "title": "神と呼ばれる怪異妖怪３選 #妖怪 #心霊 #怖い話 #都市伝説 #フィクション",
+     "channel": "怪異・妖怪専門チャンネル【ムーマン】",
+     "views": 2647673,
+     "published": "2024-05-22",
+     "url": "https://www.youtube.com/watch?v=jX5tEsAMyd8"
+    },
+    {
+     "title": "正体が判明した日本の伝説の妖怪3選 #都市伝説 #雑学 #怖い話 #shorts",
+     "channel": "サクトシ【サクッと都市伝説】",
+     "views": 2484202,
+     "published": "2024-03-24",
+     "url": "https://www.youtube.com/watch?v=ZnfQnTRVEYw"
+    },
+    {
+     "title": "【閲覧注意】昔の日本に実在していた『最恐の妖怪』の正体がヤバすぎた。",
+     "channel": "ティアロ疾風伝",
+     "views": 1670664,
+     "published": "2026-04-04",
+     "url": "https://www.youtube.com/watch?v=SC6Eo1e5ELQ"
+    },
+    {
+     "title": "【ゆっくり解説】正体が判明した日本の妖怪・UMA６選",
+     "channel": "闇世界のツーリスト【ゆっくり解説】",
+     "views": 742408,
+     "published": "2024-01-29",
+     "url": "https://www.youtube.com/watch?v=QsggS6gHRhU"
+    }
+   ],
+   "viewer_questions": []
+  }
+ ],
+ "ranking": [
+  {
+   "id": "t01",
+   "viewer": 8.0,
+   "pro": 9.0,
+   "score": 8.5,
+   "vetoed": false
+  },
+  {
+   "id": "t02",
+   "viewer": 6.67,
+   "pro": 7.75,
+   "score": 7.21,
+   "vetoed": false
+  },
+  {
+   "id": "t03",
+   "viewer": 7.0,
+   "pro": 5.75,
+   "score": 6.38,
+   "vetoed": false
+  },
+  {
+   "id": "t04",
+   "viewer": 7.33,
+   "pro": 4.0,
+   "score": 5.67,
+   "vetoed": false
+  },
+  {
+   "id": "t06",
+   "viewer": 4.0,
+   "pro": 7.0,
+   "score": 5.5,
+   "vetoed": false
+  },
+  {
+   "id": "t10",
+   "viewer": 6.33,
+   "pro": 4.5,
+   "score": 5.42,
+   "vetoed": false
+  },
+  {
+   "id": "t05",
+   "viewer": 5.0,
+   "pro": 5.25,
+   "score": 5.12,
+   "vetoed": false
+  },
+  {
+   "id": "t08",
+   "viewer": 4.0,
+   "pro": 5.5,
+   "score": 4.75,
+   "vetoed": false
+  },
+  {
+   "id": "t09",
+   "viewer": 4.33,
+   "pro": 5.0,
+   "score": 4.67,
+   "vetoed": false
+  },
+  {
+   "id": "t07",
+   "viewer": 3.33,
+   "pro": 5.75,
+   "score": 4.54,
+   "vetoed": false
+  }
+ ]
+}
