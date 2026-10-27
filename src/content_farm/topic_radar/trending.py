@@ -26,11 +26,8 @@ HN_MIN_POINTS = 30
 BILI_MIN_VIEWS = 100_000
 BILI_MAX_AGE_DAYS = 14
 EXCERPT_CHARS = 120
-# Bilibili answers its API with -352 to a non-browser User-Agent. We send an ordinary browser User-Agent plus the
-# site's own Referer — and nothing else: no cookies, no login, no signed (wbi) parameters, no proxy. If Bilibili
-# still answers -352 (risk control, which is also intermittent), that is reported and the source is skipped.
-BILI_HEADERS = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-                "Referer": "https://www.bilibili.com/"}
+# Bilibili answers its API with -352 to a non-browser User-Agent. We keep our honest radar User-Agent and do not
+# disguise it: when Bilibili answers -352 that is reported and the source is skipped (Leon decision 2026-10-27).
 
 
 def matches(text: str, keywords: tuple[str, ...]) -> bool:
@@ -90,7 +87,7 @@ def _excerpt(text: object) -> str:
 
 def _bilibili_items(http: RadarHttp, url: str, label: str) -> list[dict]:
     """Public, no-login Bilibili list endpoint. ``-352`` is Bilibili's risk control: reported, never worked around."""
-    reply = http.get_json(url, headers=BILI_HEADERS, ttl=FEED_TTL)
+    reply = http.get_json(url, ttl=FEED_TTL)
     if reply.status != 200 or not isinstance(reply.data, dict) or reply.data.get("code") != 0:
         code = reply.data.get("code") if isinstance(reply.data, dict) else None
         raise SourceError(f"bilibili {label}: http {reply.status} code {code}")

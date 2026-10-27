@@ -64,15 +64,14 @@ def test_v2ex_node_uses_show_endpoint_and_bad_status_raises():
 
 # ── Bilibili ────────────────────────────────────────────────────────────────────
 
-def test_bilibili_popular_filters_zone_views_and_stale_and_sends_browser_headers():
+def test_bilibili_popular_filters_zone_views_and_stale_and_sends_no_disguise_headers():
     body = {"code": 0, "data": {"list": [
         bili_item("BV1", "芯片横评", 500_000), bili_item("BV2", "搞笑合集", 900_000, tname="搞笑"),
         bili_item("BV3", "冷门", 10), bili_item("BV4", "旧闻", 500_000, pubdate=FRESH - 40 * 86400)]}}
     http = FakeHttp({"web-interface/popular": (200, body)})
     got = trending.fetch_bilibili_popular(http, ("数码",), STAMP)
     assert [s.subject for s in got] == ["芯片横评"] and "SECRET_NAME" not in got[0].model_dump_json()
-    assert "Mozilla" in http.headers_seen[0]["User-Agent"] and http.headers_seen[0]["Referer"].startswith("https://www.bilibili.com")
-    assert set(http.headers_seen[0]) == {"User-Agent", "Referer"}        # no cookies, no signature
+    assert not http.headers_seen[0]        # honest radar User-Agent only: no browser disguise, no cookies, no signature
 
 
 def test_bilibili_risk_control_352_is_a_source_error():
