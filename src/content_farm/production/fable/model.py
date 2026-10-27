@@ -29,6 +29,7 @@ class WanSpec(_Frozen):
 
     motion: str = Field(min_length=10, max_length=300)
     chain: tuple[str, ...] = Field(default=("keep drifting slowly in the same direction, static camera",), min_length=1, max_length=2)
+    seed: int | None = None       # redo a garbled clip with another seed (default: the picture's own seed)
 
 
 class Shot(_Frozen):

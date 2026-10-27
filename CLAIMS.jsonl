@@ -57,3 +57,9 @@
 {"kind": "file_exists", "path": "/Users/lileon/project/content-farm/.claude/worktrees/cf-deepsea-wan/artifacts/deepsea-mega/deepsea-mega-part2.mp4", "min_bytes": 100000, "why": "成片 540p／對照圖（未 commit）"}
 {"kind": "file_exists", "path": "/Users/lileon/project/content-farm/.claude/worktrees/cf-deepsea-wan/artifacts/deepsea-mega/compare-8frames.png", "min_bytes": 100000, "why": "成片 540p／對照圖（未 commit）"}
 {"kind": "file_exists", "path": "/Users/lileon/project/content-farm/.claude/worktrees/cf-integrate-1025/REPORT-integrate-1025.md", "min_bytes": 2000, "why": "派工宣告的預期產物"}
+{"kind": "file_exists", "path": "/Users/lileon/project/content-farm/.claude/worktrees/cf-fable-ep2/REPORT-fable-ep2.md", "min_bytes": 2000, "why": "派工宣告的預期產物"}
+{"kind": "file_exists", "path": "/Users/lileon/project/content-farm/.claude/worktrees/cf-fable-ep2/artifacts/fable-ep2/fable-lindy-mid-release.mp4", "min_bytes": 1000000, "why": "中片成片（未 commit）"}
+{"kind": "file_exists", "path": "/Users/lileon/project/content-farm/.claude/worktrees/cf-fable-ep2/artifacts/fable-ep2/fable-goodhart-short-release.mp4", "min_bytes": 1000000, "why": "Short 成片（未 commit）"}
+{"kind": "file_exists", "path": "/Users/lileon/project/content-farm/.claude/worktrees/cf-fable-ep2/artifacts/fable-ep2/fable-berkson-short-release.mp4", "min_bytes": 1000000, "why": "Short 成片（未 commit）"}
+{"kind": "file_exists", "path": "/Users/lileon/project/content-farm/.claude/worktrees/cf-fable-ep2/output/upload-20261027/fable-lindy-mid/metadata.md", "min_bytes": 1000, "why": "上片資料（未 commit）"}
+{"kind": "grep_absent", "path": "/Users/lileon/project/content-farm/.claude/worktrees/cf-fable-ep2/output/upload-20261027", "pattern": "寓言學堂", "why": "上片資料不含舊頻道名"}

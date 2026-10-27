@@ -45,7 +45,9 @@ def requests_for(run_dir: Path, fable: Fable, policy=None) -> list[wan.WanReques
         if image is None:
             raise FileNotFoundError(f"picture {image_id} was not drawn (run fable_images first)")
         request = wan.request_for(image_id, image, load_record(image), spec.motion, "", policy, chain=tuple(spec.chain))
-        out.append(dataclasses.replace(request, params=dataclasses.replace(request.params, width=width, height=height)))
+        params = dataclasses.replace(request.params, width=width, height=height,
+                                     **({"seed": spec.seed} if spec.seed is not None else {}))
+        out.append(dataclasses.replace(request, params=params))
     return out
 
 
