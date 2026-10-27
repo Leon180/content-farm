@@ -29,6 +29,7 @@ HOST_SPACING = {
     "hn.algolia.com": 0.5,
     "www.reddit.com": 6.5,         # unauthenticated clients are limited to ~10 requests/minute
     "api.bilibili.com": 2.0,
+    "www.v2ex.com": 1.5,           # V2EX documents 120 requests/hour for the public API; a run sends ~10
 }
 _SECRET_PARAM = re.compile(r"([?&](?:key|access_token)=)[^&\s]+")
 
@@ -85,6 +86,8 @@ class RadarHttp:
         path = self._path(url)
         if path is None or reply.status != 200:
             return
+        if isinstance(reply.data, dict) and reply.data.get("code") not in (None, 0):
+            return      # Bilibili reports risk control (-352) as http 200 with a body code: a refusal must not be replayed from cache
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps({"at": self.wall(), "status": reply.status, "data": reply.data}), encoding="utf-8")
 

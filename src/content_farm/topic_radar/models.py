@@ -6,7 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-SourceName = Literal["youtube", "wikipedia", "hackernews", "reddit", "bilibili"]
+SourceName = Literal["youtube", "wikipedia", "hackernews", "reddit", "bilibili", "v2ex"]
 Kind = Literal["evergreen", "trending"]
 VideoFormat = Literal["shorts", "long"]
 
@@ -23,6 +23,7 @@ class Evidence(_Frozen):
     value: float
     url: str
     note: str = ""
+    fetched_at: str = ""        # when the radar read it (trending sources); lets a person judge staleness
 
 
 class Competitor(_Frozen):
@@ -48,6 +49,8 @@ class Signal(_Frozen):
     metrics: dict[str, float] = Field(default_factory=dict)
     lang: str = ""
     published: str = ""
+    excerpt: str = ""           # <= EXCERPT_CHARS of the public body; never author names or comments
+    fetched_at: str = ""
 
 
 class Candidate(_Frozen):
@@ -62,6 +65,7 @@ class Candidate(_Frozen):
     competitors: tuple[Competitor, ...] = ()
     viewer_questions: tuple[ViewerQuestion, ...] = ()
     warnings: tuple[str, ...] = ()
+    excerpt: str = ""
 
 
 class SourceStatus(_Frozen):
@@ -73,6 +77,37 @@ class SourceStatus(_Frozen):
     cache_hits: int = 0
     units: int = 0
     note: str = ""
+
+
+class Fit(_Frozen):
+    """Which channel a candidate suits, and why. ``kind="new"`` is only a label for a possible channel direction."""
+
+    target: str                       # channel code (fable, yokai, technews …) or a new-direction slug (new-history …)
+    kind: Literal["existing", "new"]
+    label: str
+    reason: str
+    hits: int = 0                     # distinct rule keywords found in the candidate's text (0 = seed topic of that channel)
+
+
+class PoolEntry(_Frozen):
+    id: str
+    origin: str                       # channel code whose radar produced it, or "cn-signal"
+    kind: Kind
+    subject: str
+    title_draft: str
+    format: VideoFormat
+    score: float
+    fits: tuple[Fit, ...]
+    evidence: tuple[Evidence, ...]
+    excerpt: str = ""
+    warnings: tuple[str, ...] = ()
+
+
+class Pool(_Frozen):
+    date: str
+    generated_at: str
+    entries: tuple[PoolEntry, ...]
+    sources: tuple[SourceStatus, ...]
 
 
 class ChannelRadar(_Frozen):

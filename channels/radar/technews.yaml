@@ -26,4 +26,5 @@ watch:
   hackernews_queries: [AI, LLM, semiconductor, security vulnerability, open source, Linux, Rust]
   subreddits: [{name: technology, sort: top}, {name: MachineLearning, sort: top}, {name: netsec, sort: top}]
   bilibili_rids: [188]
+  v2ex_nodes: [programmer]      # 不開 v2ex_hot：熱門榜是綜合榜（停電、租房都上榜），科技頻道只吃 programmer 節點
   keywords: []      # 科技新知吃整個科技動態，不另做關鍵字過濾

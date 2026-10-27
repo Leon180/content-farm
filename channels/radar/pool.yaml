@@ -1,0 +1,64 @@
+# 跨頻道選題池：中文網路來源（V2EX、B 站）＋頻道適配規則。
+# 規則是給人看的提示，不是判決。關鍵字用小寫；B 站與 V2EX 是簡體，請同時寫簡體與繁體。
+# ASCII 關鍵字比對整個單字，中文關鍵字比對子字串。target 以 new- 開頭 = 「新頻道方向」標籤，不代表要開頻道。
+pool_size: 40
+per_target: 5
+watch:
+  v2ex_hot: true
+  v2ex_nodes: [programmer, create]       # 不放 share：全是「送码」推廣貼
+  bilibili_popular: true
+  bilibili_popular_zones: [数码, 科学科普, 人文历史, 社科·法律·心理, 计算机技术, 财经商业, 科技, 知识, 动画综合, 野生技术协会, 影视杂谈, 纪录片, 职场·技能, 动物圈, 汽车]
+  bilibili_rids: [188, 36, 177]      # ranking/v2 分區榜；B 站風控偶爾回 -352，失敗只降級，不重試
+rules:
+  # ── 在營運的頻道 ──
+  - target: technews
+    kind: existing
+    label: 科技新知（晚點你就知道）
+    reason: 近期的科技、AI、軟體與資安動態，適合做一週內的時效短片
+    keywords: [ai, llm, openai, gpt, chatgpt, claude, 大模型, 大模型, 大型语言模型, 大型語言模型, 人工智能, 人工智慧, 开源, 開源, open source, github, linux, rust, 漏洞, 黑客, 駭客, 安全事件, 数据泄露, 資料外洩, 苹果, 蘋果, apple, 谷歌, google, 微软, 微軟, microsoft, 发布会, 發表會, 编程, 程式設計, 程序员, 程式設計師, 开发者, 開發者, 算法, 演算法, 手机, 手機]
+  - target: chipcat
+    kind: existing
+    label: 晶片貓（台灣科技產業拆解）
+    reason: 半導體與台灣供應鏈題材，能用台積電、封測、設備商的角度拆解
+    keywords: [台积电, 台積電, tsmc, 半导体, 半導體, 芯片, 晶片, 光刻, 光刻機, 光刻机, asml, hbm, cowos, 封装, 封裝, 晶圆, 晶圓, 联发科, 聯發科, 英伟达, 輝達, nvidia, 算力, gpu, 制程, 製程, 3nm, 2nm, 代工]
+  - target: yokai
+    kind: existing
+    label: 怪談開談（妖怪神話溯源）
+    reason: 神話、妖怪、民俗傳說題材，可追到原典與流變
+    keywords: [妖怪, 妖精, 妖狐, 神话, 神話, 山海经, 山海經, 志怪, 传说, 傳說, 怪谈, 怪談, 鬼故事, 神兽, 神獸, 九尾狐, 河童, 狐妖, 民俗, 封神, 聊斋, 聊齋, 怪物, 都市传说, 都市傳說, mythology, folklore, yokai]
+  - target: fable
+    kind: existing
+    label: 不奇而寓（寓言講抽象概念）
+    reason: 抽象概念（博弈、偏誤、決策、哲學）能改寫成原創寓言來講
+    keywords: [寓言, 成语, 成語, 典故, 哲学, 哲學, 认知偏差, 認知偏誤, 认知, 博弈, 博弈论, 囚徒困境, 幸存者偏差, 倖存者偏差, 沉没成本, 沉沒成本, 内卷, 內卷, 心理学, 心理學, 决策, 決策, 逻辑谬误, 邏輯謬誤, 经济学, 經濟學, 思维, 思維]
+  - target: cel
+    kind: existing
+    label: 賽璐璐研究室（動畫產業）
+    reason: 動畫製作、產業結構與工時題材
+    keywords: [动画, 動畫, 动漫, 動漫, 番剧, 番劇, 声优, 聲優, 京阿尼, 京都动画, 京都動畫, 制作委员会, 製作委員會, 原画, 原畫, 动画师, 動畫師, anime, 宫崎骏, 宮崎駿, 吉卜力, ghibli]
+  - target: deepsea
+    kind: existing
+    label: 深潛日誌（深海）
+    reason: 深海生物與探索題材
+    keywords: [深海, 海沟, 海溝, 马里亚纳, 馬里亞納, 潜水器, 潛水器, 海底, 大王乌贼, 大王烏賊, 热泉, 熱泉, 海洋生物, 鲸, 鯨, deep sea, ocean]
+  # ── 新頻道方向（只是標籤） ──
+  - target: new-history
+    kind: new
+    label: 新頻道方向：歷史人文
+    reason: 歷史事件與人物，B 站人文歷史區觀眾多，但要避開別人影片的原片
+    keywords: [历史, 歷史, 朝代, 皇帝, 战争, 戰爭, 考古, 古代, 文明, 帝国, 帝國, 三国, 三國, 二战, 二戰, 冷战, 冷戰, 革命]
+  - target: new-workplace
+    kind: new
+    label: 新頻道方向：職場與薪資現實
+    reason: 打工、薪資、裁員與工時，V2EX 討論密度高，需換成台灣勞動環境來講
+    keywords: [裁员, 裁員, 加班, 薪资, 薪資, 跳槽, 面试, 面試, 大厂, 大廠, "996", 打工, 年终奖, 年終獎, offer, 外包, 失业, 失業, 35岁, 35歲, 副业, 副業]
+  - target: new-consumer-tech
+    kind: new
+    label: 新頻道方向：3C 與工具實測
+    reason: 手機、電腦、App 與工具評測，容易有人搜尋，但需要自己的實測素材
+    keywords: [评测, 評測, 横评, 橫評, 开箱, 開箱, 手机, 手機, 笔记本, 筆電, 显卡, 顯卡, 耳机, 耳機, 相机, 相機, 软件, 軟體, app, 路由器, nas, 键盘, 鍵盤]
+  - target: new-science
+    kind: new
+    label: 新頻道方向：科普拆解
+    reason: 物理、生物、宇宙與醫學科普，常青題材，適合用比喻先講
+    keywords: [科普, 物理, 化学, 化學, 生物, 宇宙, 黑洞, 量子, 基因, 病毒, 医学, 醫學, 天文, 火箭, 航天, 航太, 进化, 演化, 地球]

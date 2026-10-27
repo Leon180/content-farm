@@ -44,6 +44,10 @@ class Watch(_Strict):
     hackernews_queries: tuple[str, ...] = ()
     subreddits: tuple[Subreddit, ...] = ()
     bilibili_rids: tuple[int, ...] = ()
+    bilibili_popular: bool = Field(default=False, description="the public 'popular' list (a general, entertainment-heavy feed)")
+    bilibili_popular_zones: tuple[str, ...] = Field(default=(), description="keep only these zone names (tname, simplified); empty = all")
+    v2ex_hot: bool = False
+    v2ex_nodes: tuple[str, ...] = Field(default=(), description="V2EX node names, e.g. programmer")
     keywords: tuple[str, ...] = Field(default=(), description="lower-case substrings; an item must contain one")
 
 

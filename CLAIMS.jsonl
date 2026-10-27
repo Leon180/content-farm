@@ -57,3 +57,7 @@
 {"kind": "file_exists", "path": "/Users/lileon/project/content-farm/.claude/worktrees/cf-deepsea-wan/artifacts/deepsea-mega/deepsea-mega-part2.mp4", "min_bytes": 100000, "why": "成片 540p／對照圖（未 commit）"}
 {"kind": "file_exists", "path": "/Users/lileon/project/content-farm/.claude/worktrees/cf-deepsea-wan/artifacts/deepsea-mega/compare-8frames.png", "min_bytes": 100000, "why": "成片 540p／對照圖（未 commit）"}
 {"kind": "file_exists", "path": "/Users/lileon/project/content-farm/.claude/worktrees/cf-integrate-1025/REPORT-integrate-1025.md", "min_bytes": 2000, "why": "派工宣告的預期產物"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-radar-cn/REPORT-radar-cn.md","min_bytes":2000,"why":"派工宣告的預期產物"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-radar-cn/src/content_farm/topic_radar/pool.py","min_bytes":1000,"why":"選題池實作"}
+{"kind":"file_exists","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-radar-cn/tests/unit/test_radar_cn.py","min_bytes":1000,"why":"單測"}
+{"kind":"grep_absent","path":"/Users/lileon/project/content-farm/.claude/worktrees/cf-radar-cn/src/content_farm/topic_radar","pattern":"agent_reach|agent-reach","why":"程式不依賴 Agent-Reach"}

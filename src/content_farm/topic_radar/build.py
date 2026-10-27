@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 
 from content_farm.topic_radar import scoring, trending, wikipedia
-from content_farm.topic_radar.config import RadarConfig, Topic
+from content_farm.topic_radar.config import RadarConfig, Topic, Watch
 from content_farm.topic_radar.http import RadarHttp, SourceError
 from content_farm.topic_radar.models import (
     Candidate, ChannelRadar, Competitor, Evidence, Signal, SourceName, SourceStatus, ViewerQuestion, VideoFormat,
@@ -23,8 +24,12 @@ YOUTUBE_RETENTION_DAYS = 30
 HOST_SOURCE: dict[str, SourceName] = {
     "wikimedia.org": "wikipedia", "zh.wikipedia.org": "wikipedia", "en.wikipedia.org": "wikipedia",
     "ja.wikipedia.org": "wikipedia", "www.googleapis.com": "youtube", "oauth2.googleapis.com": "youtube",
-    "hn.algolia.com": "hackernews", "www.reddit.com": "reddit", "api.bilibili.com": "bilibili",
+    "hn.algolia.com": "hackernews", "www.reddit.com": "reddit", "api.bilibili.com": "bilibili", "www.v2ex.com": "v2ex",
 }
+SOURCE_ORDER: tuple[SourceName, ...] = ("youtube", "wikipedia", "hackernews", "reddit", "bilibili", "v2ex")
+REFUSALS = ("http 403", "http 429", "code -352")      # a source that refuses us is not asked again this run
+CN_SOURCES = ("bilibili", "v2ex")
+CN_SIGNAL_NOTE = "中文網路熱度只是選題信號，不是題目本身；題目與切角要另行確立並查證"
 LANG_NAME = {"zh": "中文維基", "en": "英文維基", "ja": "日文維基"}
 
 
@@ -139,39 +144,68 @@ def _evergreen_candidates(config: RadarConfig, rows: list[dict]) -> list[Candida
     return out
 
 
-def _trending_signals(config: RadarConfig, http: RadarHttp, notes: Notes, now: datetime) -> list[Signal]:
-    watch, found = config.watch, []
-    jobs = [("hackernews", query, lambda q=query: trending.fetch_hackernews(http, q, now.timestamp()))
+def _trending_jobs(watch: Watch, http: RadarHttp, now: datetime) -> list[tuple[str, str, str, Callable[[], list[Signal]]]]:
+    """(source, endpoint, label, run). Bilibili's two endpoints are separate so a -352 on one does not silence the other."""
+    stamp = now.timestamp()
+    jobs = [("hackernews", "search", query, lambda q=query: trending.fetch_hackernews(http, q, stamp))
             for query in watch.hackernews_queries]
-    jobs += [("reddit", sub.name, lambda s=sub: trending.fetch_reddit(http, s)) for sub in watch.subreddits]
-    jobs += [("bilibili", str(rid), lambda r=rid: trending.fetch_bilibili(http, r)) for rid in watch.bilibili_rids]
-    dead: set[str] = set()      # a source that refuses us (403/429/risk control) is not asked again this run
-    for source, label, run in jobs:
-        if source in dead:
+    jobs += [("reddit", "top", sub.name, lambda s=sub: trending.fetch_reddit(http, s)) for sub in watch.subreddits]
+    jobs += [("bilibili", "ranking", str(rid), lambda r=rid: trending.fetch_bilibili(http, r, stamp))
+             for rid in watch.bilibili_rids]
+    if watch.bilibili_popular:
+        jobs.append(("bilibili", "popular", "popular",
+                     lambda: trending.fetch_bilibili_popular(http, watch.bilibili_popular_zones, stamp)))
+    if watch.v2ex_hot:
+        jobs.append(("v2ex", "hot", "hot", lambda: trending.fetch_v2ex(http, None, stamp)))
+    jobs += [("v2ex", "node", node, lambda n=node: trending.fetch_v2ex(http, n, stamp)) for node in watch.v2ex_nodes]
+    return jobs
+
+
+def fetch_trending_signals(watch: Watch, http: RadarHttp, notes: Notes, now: datetime) -> list[Signal]:
+    """Every source in ``watch``; a failure is recorded in ``notes`` and the rest carry on."""
+    found, dead = [], set()
+    for source, endpoint, label, run in _trending_jobs(watch, http, now):
+        if (source, endpoint) in dead:
             continue
         try:
-            found.extend(item for item in run() if trending.matches(item.subject, watch.keywords))
+            found.extend(item for item in run() if trending.matches(f"{item.subject} {item.excerpt}", watch.keywords))
         except SourceError as exc:
             notes.add(source, str(exc))
-            if any(mark in str(exc) for mark in ("http 403", "http 429", "code -352")):
-                dead.add(source)
-    unique = {item.url: item for item in found}
-    return list(unique.values())
+            if any(mark in str(exc) for mark in REFUSALS):
+                dead.add((source, endpoint))
+    return list({item.url: item for item in found}.values())
+
+
+def _trending_signals(config: RadarConfig, http: RadarHttp, notes: Notes, now: datetime) -> list[Signal]:
+    return fetch_trending_signals(config.watch, http, notes, now)
+
+
+def _signal_candidate(config: RadarConfig, item: Signal, points: float) -> Candidate:
+    fmt, why = _pick_format(config, "trending", 1.0)
+    metric, _ = scoring.TREND_REFERENCE[item.source]
+    evidence = Evidence(source=item.source, metric=f"{item.source} {metric}", value=item.metrics.get(metric, 0.0),
+                        url=item.url, note="；".join(f"{k} {v:,.0f}" for k, v in item.metrics.items()),
+                        fetched_at=item.fetched_at)
+    draft = item.subject if item.lang.startswith("zh") else f"{item.subject}（原題，待譯）"
+    warnings = []
+    if item.lang == "zh-Hans":
+        warnings.append("簡體中文原題，選題階段需改寫成繁中標題與台灣語境")
+    elif not item.lang.startswith("zh"):
+        warnings.append("原題為外文，選題階段需改寫成繁中標題")
+    if item.source in CN_SOURCES:
+        warnings.append(CN_SIGNAL_NOTE)
+    return Candidate(id="", kind="trending", subject=item.subject, title_draft=draft, format=fmt, format_reason=why,
+                     score=round(points + config.trending_bonus, 1), evidence=(evidence,), warnings=tuple(warnings),
+                     excerpt=item.excerpt)
+
+
+def signal_candidates(config: RadarConfig, signals: list[Signal], now: datetime, limit: int) -> list[Candidate]:
+    scored = sorted(((scoring.trending_score(item, now), item) for item in signals), key=lambda row: -row[0])
+    return [_signal_candidate(config, item, points) for points, item in scored[:limit]]
 
 
 def _trending_candidates(config: RadarConfig, signals: list[Signal], now: datetime) -> list[Candidate]:
-    scored = sorted(((scoring.trending_score(item, now), item) for item in signals), key=lambda row: -row[0])
-    out = []
-    for points, item in scored[:TRENDING_PER_CHANNEL]:
-        fmt, why = _pick_format(config, "trending", 1.0)
-        metric, _ = scoring.TREND_REFERENCE[item.source]
-        evidence = Evidence(source=item.source, metric=f"{item.source} {metric}", value=item.metrics.get(metric, 0.0),
-                            url=item.url, note="；".join(f"{k} {v:,.0f}" for k, v in item.metrics.items()))
-        draft = item.subject if item.lang.startswith("zh") else f"{item.subject}（原題，待譯）"
-        out.append(Candidate(id="", kind="trending", subject=item.subject, title_draft=draft, format=fmt,
-                             format_reason=why, score=round(points + config.trending_bonus, 1), evidence=(evidence,),
-                             warnings=() if item.lang.startswith("zh") else ("原題為外文，選題階段需改寫成繁中標題",)))
-    return out
+    return signal_candidates(config, signals, now, TRENDING_PER_CHANNEL)
 
 
 def _status(http: RadarHttp, before: dict, youtube: YouTubeClient | None, units_before: int,
@@ -182,12 +216,16 @@ def _status(http: RadarHttp, before: dict, youtube: YouTubeClient | None, units_
     for host, count in http.cached.items():
         hit[HOST_SOURCE.get(host, "wikipedia")] += count - before["hit"].get(host, 0)
     rows = []
-    for source in ("youtube", "wikipedia", "hackernews", "reddit", "bilibili"):
+    for source in SOURCE_ORDER:
         errors = notes.errors.get(source, [])
         units = (youtube.units - units_before) if (source == "youtube" and youtube) else 0
         rows.append(SourceStatus(source=source, ok=not errors, requests=net[source], cache_hits=hit[source],
                                  units=units, note=" | ".join(errors[:3])))
     return tuple(rows)
+
+
+def status_rows(http: RadarHttp, before: dict, notes: Notes) -> tuple[SourceStatus, ...]:
+    return _status(http, before, None, 0, notes)
 
 
 def build_channel(config: RadarConfig, http: RadarHttp, youtube: YouTubeClient | None, now: datetime,
